@@ -1,0 +1,115 @@
+﻿syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+//加注=倍数*底注，allin = -1，跟注 = 0
+message CS_ShowHandAddScore {
+	enum MsgID { Nil = 0; ID = 17000; }
+    int32 target = 1;  //目标值
+	int32 round_index = 2;  //第几轮的指令
+}
+//弃牌
+message CS_ShowHandGiveUp {
+	enum MsgID { Nil = 0; ID = 17001; }
+}
+//让牌
+message CS_ShowHandPass {
+	enum MsgID { Nil = 0; ID = 17002; }
+	int32 round_index = 1;  //第几轮的指令
+}
+//弃牌 并 退出
+message CS_ShowHandGiveUpEixt {
+	enum MsgID { Nil = 0; ID = 17003; }
+}
+
+
+message ShowHand_Player_Info {
+	repeated int32 tiles                    = 1;	// 牌列表
+	int32 chair_id		            = 2; 	// id
+    int32 add_total	            = 3; 	// 累计下注
+    int32 cur_round_add            = 4;    // 当前轮下注
+	string nick 					= 5;
+	int32 icon 					= 6;
+	int32 gold 					= 7;
+	int32 guid		            	= 8; 	// guid
+	// game end
+	int32 card_type	           	= 9; 	// 牌型
+	bool is_win 		= 10;			//是否赢了
+	int32 win_money 	= 11; 			//赢钱
+	int32 taxes 		= 12; 			//税收
+	bool is_give_up	= 13; 			//弃牌
+	//reconnect
+};
+message ShowHand_Reconnect_Data {
+	int32 act_left_time = 1;						// 操作剩余时间
+	int32 current_round = 2; 						//第几轮
+}
+
+message SC_ShowHand_Desk_Enter {
+	enum MsgID { Nil = 0; ID = 17100; }
+	repeated ShowHand_Player_Info pb_players 	= 1; 		// 玩家
+	int32 state = 2;							//状态
+    int32 zhuang = 3;							//庄家
+    int32 self_chair_id = 4;					//id
+	int32 act_time_limit = 5;					// 操作时间
+	bool is_reconnect = 6;						//reconnect
+	int32 base_score = 7;
+	int32 max_call = 8;
+	ShowHand_Reconnect_Data pb_rec_data = 9;		//断线数据
+}
+
+//服务器的游戏状态
+message SC_ShowHand_Desk_State{
+	enum MsgID { Nil = 0; ID = 17101; }
+	int32 state = 1;				
+}
+
+//结算
+message SC_ShowHand_Game_Finish {
+	enum MsgID { Nil = 0; ID = 17102; }
+	repeated ShowHand_Player_Info pb_players 	= 1; 		// 玩家
+	int32 tax_show = 2;							//税收是否显示(1显示,0不显示))
+}
+
+//翻牌  下一回合
+message SC_ShowHand_Next_Round {
+	enum MsgID { Nil = 0; ID = 17103; }
+	repeated ShowHand_Player_Info pb_players 	= 1; 		// 玩家
+	int32 current_round = 2;  //第几轮
+}
+
+//加注=倍数*底注，allin = -1，跟注 = 0
+message SC_ShowHandAddScore {
+	enum MsgID { Nil = 0; ID = 17104; }
+    int32 target       = 1;  //目标值
+    int32 chair_id	    = 2; 	// id
+}
+//弃牌
+message SC_ShowHandGiveUp {
+	enum MsgID { Nil = 0; ID = 17105; }
+    int32 chair_id	    = 1; 	// id
+}
+//让牌
+message SC_ShowHandPass {
+	enum MsgID { Nil = 0; ID = 17106; }
+    int32 chair_id	    = 1; 	// id
+}
+//更新发言者
+message SC_ShowHand_NextTurn {
+	enum MsgID { Nil = 0; ID = 17107; }
+    int32 chair_id	    = 1; 	// 当前玩家表态
+	int32 type = 2; 			// 当前玩家表态类型
+	int32 max_add = 3; 		// 当前玩家最大加注
+	int32 act_left_time = 4;	// 操作剩余时间
+	
+	//1 --加注
+	//2 --allin
+	//4 --跟注
+	//8 --让牌
+	//16 --弃牌
+}
+
+  							

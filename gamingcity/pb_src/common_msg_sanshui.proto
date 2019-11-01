@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+message CardArray
+{
+	repeated int32 cards = 1;	//牌列表
+};
+
+//选牌
+message CS_SelectCards
+{
+	enum MsgID { Nil = 0; ID = 25000;}
+	repeated CardArray	pb_cards = 1;//牌列表
+};
+
+message CS_BiPaiAccomplish
+{
+	enum MsgID { Nil = 0;ID = 25001;}
+};
+
+message CS_PlayerInfos
+{
+	enum MsgID { Nil = 0;ID = 25002;}	
+};
+
+
+
+message SC_SelectCards
+{
+	enum MsgID { Nil = 0;ID = 25100;}
+	repeated CardArray pb_cards = 1;
+};
+
+
+message SC_PlayerInfo
+{
+	enum MsgID { Nil = 0;ID = 25104;}
+	int32 guid = 1;
+	int32 chair_id = 2;
+	int32 status = 3;
+	repeated CardArray pb_cards = 4;
+	int32 op_elasped = 5;
+}
+
+//发牌
+message SC_DealCards
+{
+	enum MsgID { Nil = 0;ID = 25101;}
+	repeated CardArray pb_cards = 1;
+	int32	   next_op_seconds_time = 2;
+	repeated SC_PlayerInfo pb_players = 3;
+};
+
+message SC_PlayerBalance
+{
+	int32 	chair_id = 1;
+	int32	score = 2;
+	int64	tax = 3;					  //税收
+	int64  increment_money = 4;	  	  //金币变化量
+}
+
+//结算
+message SC_Balance
+{
+	enum MsgID { Nil = 0;ID = 25102;}
+	repeated SC_PlayerBalance pb_balances = 1;//玩家结算信息
+	int32 table_status = 2;
+};
+
+message SC_TableInfo
+{
+	enum MsgID { Nil = 0;ID = 25103;}
+	int32 status = 1;	
+};
+
+
+
+message SC_PlayerInfos
+{
+	enum MsgID { Nil = 0;ID = 25105;}	
+	repeated SC_PlayerInfo pb_playerinfos = 1;
+	int32 	table_status = 2;
+};
+
+message SC_ReadyStart
+{
+	enum MsgID { Nil = 0;ID = 25106;}
+	int32 wait_time = 1;//
+	int32 is_stop = 2;
+}
+
+message SC_PlayerMoney
+{
+	enum MsgID { Nil = 0;ID = 25107;}
+	int32 chair_id = 1;
+	int32 guid = 2;
+	int64 money = 3;
+}
+
+message SC_NotifyGameOver
+{
+	enum MsgID { Nil = 0;ID = 25108;}
+	repeated SC_PlayerMoney pb_moneies = 1;
+}

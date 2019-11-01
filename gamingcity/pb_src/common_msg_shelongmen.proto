@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+enum TableStatus{
+    Nil  = 0;
+	T_Error = -1;
+    T_Idle = 1;
+    T_WaitBet = 2;
+    T_GameOver = 3;
+}
+
+//下注区域
+enum BET_AREA{
+    BEG_Nil  = 0;
+    SHE_PIAN      = 1;//射偏
+    SHE_ZHONG  = 2;//射中
+    SHUN_ZI  = 3;//顺子
+    ZHUANG_ZHU  = 4;//撞柱
+    DUI_ZI = 5;//对子
+}
+
+
+//下注信息
+message PlayerBetInfo{
+    int32 area = 1 ;
+    int32 money = 2 ;
+    int32 guid = 3 ;
+}
+
+//玩家列表
+message GamePlayer{
+    int32   guid = 1 ;
+    int32   header = 2 ;
+    int32   money = 3 ;
+    bytes   location = 4;//地区信息
+}
+
+//区域下注信息
+message AreaBetInfo{
+    int32 area = 1 ;
+    int32 money = 2 ;
+}
+
+//游戏走势
+message GameRecord{
+    repeated int32 cards_dipai = 1;//底牌
+    int32 card_shechu = 2 ;
+    int32 area = 3 ;
+}
+
+//定时器
+message GameTimer{
+    float  total = 1 ;
+    float  remain = 2 ;
+}
+
+//玩家金钱结算
+message PlayerMoneyBalance{
+    int32 profit = 1 ;
+    int32 tax = 2 ;
+    int32 money = 3 ;
+}
+
+//开始游戏
+message SC_GameStart{
+    enum MsgID { Nil = 0; ID = 33001; }
+    GameTimer   pb_timer = 2;//定时器
+    repeated GamePlayer  pb_players = 3;//玩家
+}
+
+//结算游戏
+message SC_NotifyGameOver{
+    enum MsgID { Nil = 0; ID = 33002; }
+    GameTimer    pb_timer = 2;//等待定时器
+    GameRecord   pb_game = 3;//桌面牌局
+    PlayerMoneyBalance pb_money = 4;//玩家自己金钱结算
+    int32             cards_area = 5;
+    GamePlayer   pb_bigwin = 6;//大赢家
+}
+
+
+//桌面信息
+message SC_TableInfo{
+    enum MsgID { Nil = 0; ID = 33003; }
+    int32               status = 1;
+    repeated PlayerBetInfo   pb_player_bets = 2;//玩家下注信息 
+    repeated AreaBetInfo     pb_area_bets = 3;//总区域下注信息
+    GameRecord    pb_table_cards = 4;//桌牌 
+    int32               cards_area = 5 ;
+}
+
+//玩家区域下注信息
+message SC_PlayerBet{
+    enum MsgID { Nil = 0; ID = 33004; }
+    int32           money = 1 ;
+    repeated AreaBetInfo pb_table_area_bets = 2;//总区域下注信息
+    repeated PlayerBetInfo pb_player_area_bets = 3;//玩家区域下注信息
+    int32           error = 5 ; 
+}
+
+message SC_RoomCfg{
+	enum MsgID { Nil = 0;ID = 33006;}
+	repeated int64 	chips_optional = 1;//筹码列表
+}
+
+message SC_GameHistory{
+    enum MsgID { Nil = 0; ID = 33007; }
+    repeated GameRecord  pb_trends = 4;//历史走势
+}
+
+message SC_Switch2TableStatus{
+    enum MsgID { Nil = 0; ID = 33008; }
+    int32          status = 1;//桌子状态
+    GameTimer pb_timer = 2;//倒计时
+}
+
+//下注请求
+message CS_Bet{
+    enum MsgID { Nil = 0; ID = 33101; }
+    int32 area = 1 ;
+    int32 money = 2 ; 
+}
+
+message CS_ReadyStart{
+    enum MsgID { Nil = 0; ID = 33102; }
+}

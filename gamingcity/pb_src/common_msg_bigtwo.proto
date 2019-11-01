@@ -1,0 +1,107 @@
+﻿syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 锄大地相关消息
+//////////////////////////////////////////////////////////////////////////
+// 出牌类型
+enum BIGTWO_CARD_TYPE 
+{
+	Nil  = 0;
+	BT_Error    			= 1;								//错误类型
+	BT_HIGH_CARD			= 2;								//单牌类型
+	BT_ONE_PAIR				= 3;								//对子类型
+	BT_THREE_OF_A_KIND		= 4;								//三条类型
+	BT_STRAIGHT				= 5;								//顺子类型
+	BT_FLUSH				= 6;								//同花类型
+	BT_FULL_HOUSE			= 7;								//葫芦类型
+	BT_FOUR_OF_KIND			= 8;								//四条类型
+	BT_STRAIT_FLUSH			= 9;								//同花顺型
+}
+
+// 发送扑克
+message SC_BTStart {
+	enum MsgID { Nil = 0; ID = 29002; }
+	int32 first_turn = 1;					// 开始玩家
+	repeated int32 cards = 2;						// 扑克列表 
+};
+
+// 出牌
+message CS_BTOutCard {
+	enum MsgID { Nil = 0; ID = 29007; }
+	repeated int32 cards = 1;						// 扑克列表
+};
+message SC_BTOutCard {
+	enum MsgID { Nil = 0; ID = 29008; }
+	int32 cur_chair_id = 1;				// 当前玩家
+	int32 out_chair_id = 2;				// 出牌玩家
+	repeated int32 cards = 3;						// 扑克列表
+};
+
+// 放弃出牌
+message CS_BTPassCard {
+	enum MsgID { Nil = 0; ID = 29009; }
+}
+message SC_BTPassCard {
+	enum MsgID { Nil = 0; ID = 29010; }
+	int32 cur_chair_id = 1;				// 当前玩家
+	int32 pass_chair_id = 2;				// 放弃玩家
+};
+
+
+// 游戏结束
+message BTPlayerConclude {
+	int32 score = 1;						// 得分
+	int32 tax = 2;							// 税
+	repeated int32 cards = 3;						// 扑克列表
+}
+message SC_BTConclude {
+	enum MsgID { Nil = 0; ID = 29011; }
+	repeated BTPlayerConclude pb_conclude = 1; 	// 玩家结果
+};
+
+//用户托管
+message CS_BTTrusteeship{
+	enum MsgID { Nil = 0; ID = 29018; }
+}
+
+message SC_BTTrusteeship{
+	enum MsgID { Nil = 0; ID = 29019; }
+	int32 chair_id = 1;			// 托管玩家id
+	bool  isTrusteeship = 2; 		// 托管状态
+}
+//玩家掉线
+message SC_BTPlayerOffline {
+	enum MsgID { Nil = 0; ID = 29020; }
+	int32 cur_chair_id = 1;				// 掉线玩家id
+	int32 wait_time = 2;					// 等待时间
+};
+
+//玩家上线
+message SC_BTPlayerOnline {
+	enum MsgID { Nil = 0; ID = 29021; }
+	int32 cur_online_chair_id = 1;			// 上玩家id
+	int32 cur_chair_id = 2;				// 出牌玩家id
+};
+
+message PlayerCardsMsg{
+	int32 chair_id = 1;				// 位置id
+	int32 cardsnum = 2;				// 当前牌数
+	bool  isTrusteeship = 3; 			// 是否托管状态
+}
+//恢复上线玩家的牌
+message SC_BTRecoveryPlayerCard {
+	enum MsgID { Nil = 0; ID = 29022; }
+	int32 cur_chair_id = 1;			// 玩家id
+	repeated int32 cards = 2;					// 当前所有的牌
+	repeated PlayerCardsMsg pb_msg = 3;			// 其他玩家数据
+	repeated int32 lastCards = 4;				// 上个玩家出的牌
+	int32 lastcardid = 5;				// 上个出牌玩家chairid
+	int32 outcardid = 6;				// 当前出牌玩家
+	repeated int32 alreadyoutcards = 7;		// 已经出了的牌
+};

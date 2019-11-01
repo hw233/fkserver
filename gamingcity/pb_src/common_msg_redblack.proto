@@ -1,0 +1,150 @@
+﻿syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 红黑相关消息
+//////////////////////////////////////////////////////////////////////////
+
+//牌型 牌0~52
+//扑克类型 使用诈金花的牌型定义
+// 出牌类型
+enum REDBLACK_CARD_TYPE {
+    REDBLACK_CARD_TYPE_NIL  = 0;
+	REDBLACK_CARD_TYPE_SPECIAL	= 1;//特殊类型
+	REDBLACK_CARD_TYPE_SINGLE	= 2;//单牌类型
+	REDBLACK_CARD_TYPE_DOUBLE	= 3;//对子类型
+	REDBLACK_CARD_TYPE_SHUN_ZI	= 4;//顺子类型
+	REDBLACK_CARD_TYPE_JIN_HUA	= 5;//金花类型
+	REDBLACK_CARD_TYPE_SHUN_JIN	= 6;//顺金类型
+	REDBLACK_CARD_TYPE_BAO_ZI	= 7;//豹子类型
+}
+
+//游戏阶段
+enum REDBLACK_STATE{
+    STATE_NIL  = 0;
+    STATE_WAIT = 1;//等待
+    STATE_BET = 2;//下注
+    STATE_GAMEOVER = 3;//结算
+}
+
+//下注类型
+enum REDBLACK_BET_AREA{
+    BET_NIL  = 0;
+    BET_R = 1;//红
+    BET_B = 2;//黑
+    BET_S = 3;//特殊
+}
+
+//下注信息
+message RedblackBet{
+    int32 area = 1;
+    int32 money = 2;
+    int32 guid = 3;
+}
+
+//玩家列表
+message RedblackUser{
+    int32 guid = 1;
+    int32 header = 2;//头像
+    int32 money = 3;
+    bytes area = 4;//位置信息
+    bool lucky = 5;//true 表示为幸运星
+}
+
+//下注区域
+message RedblackArea{
+    int32 area = 1;
+    int32 money = 2;
+}
+
+//游戏走势
+message RedblackTrend{
+    int32 area = 1;//区域
+    int32 type = 2;//牌型
+    int32 light = 3;//> 0 高亮
+}
+
+//开始游戏
+message SC_RedblackStart{
+    enum MsgID { Nil = 0; ID = 27001; }
+    int32 state = 1;//当前游戏阶段
+    int32 time = 2;//定时器剩余时间s
+    repeated RedblackUser pb_users = 3;
+    repeated RedblackTrend pb_trends = 4;
+}
+
+//结算信息
+message RedblackGame{
+    repeated int32 redcards = 1;
+    repeated int32 blackcards = 2;
+    int32 redtype = 3;
+    int32 blacktype = 4;
+    int32 winarea = 5;//获胜区域
+    int32 special = 6;//特殊赔率
+    int32 redlight = 7;//> 0 高亮
+    int32 blacklight = 8;//> 0 高亮
+}
+
+//结算游戏
+message SC_RedblackEnd{
+    enum MsgID { Nil = 0; ID = 27002; }
+    int32 state = 1;//当前游戏阶段
+    int32 time = 2;//定时器剩余时间s
+    int32 money = 3;//收益
+    repeated RedblackTrend pb_trends = 4;//走势
+    RedblackGame pb_game = 5;//结算信息
+    int32 cur_money = 6;//玩家当前身上的钱
+    int32 tax = 7;//本局税收
+    RedblackUser pb_bigwin = 8;//大赢家
+    int32 prize_join = 9;//1 参加
+    int32 prize_money = 10;//奖池抽中的奖金
+}
+
+//等待开始
+message SC_RedblackWait{
+    enum MsgID { Nil = 0; ID = 27003; }
+    int32 state = 1;//当前游戏阶段
+    int32 time = 2;//定时器剩余时间s
+    repeated RedblackTrend pb_trends = 3;
+}
+
+//更新信息
+message SC_RedblackUpdate{
+    enum MsgID { Nil = 0; ID = 27004; }
+    repeated RedblackBet pb_bets = 1;//下注信息 
+    repeated RedblackArea pb_areas = 2;//总区域下注信息
+    repeated int32 lucky = 3;//幸运星下注区域
+}
+
+//下注
+message CS_RedblackBet{
+    enum MsgID { Nil = 0; ID = 27005; }
+    int32 area = 1;
+    int32 money = 2; 
+}
+
+//玩家区域下注信息
+message SC_RedblackBetResult{
+    enum MsgID { Nil = 0; ID = 27006; }
+    int32 money = 1;
+    repeated RedblackArea pb_areas = 2;//总区域下注信息
+    repeated RedblackArea pb_scores = 3;//玩家区域下注信息
+    repeated int32 chips = 4;//筹码
+    int32 errno = 5;//下注失败错误代码 10086-本局游戏下注总额已达上限！
+}
+
+//请求初始化消息
+message CS_RedblackInit{
+    enum MsgID { Nil = 0; ID = 27007; }
+}
+
+//更新奖池
+message SC_RedblackPrizePool{
+    enum MsgID { Nil = 0; ID = 27008; }
+    int32 money = 1;//奖池金额
+}

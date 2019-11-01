@@ -1,0 +1,200 @@
+
+Š#
+player_define.proto"ø
+GameClientRoomListCfg
+game_id (RgameId(
+second_game_type (RsecondGameType&
+first_game_type (RfirstGameType
+	game_name (	RgameName
+table_count (R
+tableCount
+money_limit (R
+moneyLimit
+
+cell_money (R	cellMoney
+tax (Rtax-
+game_switch_is_open	 (RgameSwitchIsOpen
+platform_id
+ (	R
+platformId
+title (	Rtitle"Þ
+PlayerBaseInfo
+bank (Rbank&
+login_award_day (RloginAwardDay5
+login_award_receive_day (RloginAwardReceiveDay*
+online_award_time (RonlineAwardTime(
+online_award_num (RonlineAwardNum0
+relief_payment_count (RreliefPaymentCount
+level (Rlevel
+money (Rmoney
+header_icon	 (R
+headerIcon'
+slotma_addition
+ (RslotmaAddition
+gold (Rgold
+diamond (Rdiamond
+	room_card (RroomCard 
+open_id_icon (	R
+openIdIcon
+status (Rstatus
+phone (	Rphone
+sex (Rsex
+type (Rtype
+nickname (	Rnickname"Ü
+PlayerVisualInfo
+chair_id (RchairId
+guid (Rguid
+account (	Raccount
+nickname (	Rnickname
+level (Rlevel
+money (Rmoney
+header_icon (R
+headerIcon
+ip_area (	RipArea
+gold	 (Rgold
+diamond
+ (Rdiamond
+	room_card (RroomCard
+sex (Rsex 
+open_id_icon (	R
+openIdIcon">
+ItemInfo
+item_id (RitemId
+item_num (RitemNum"¦
+Msg_DataInfo
+id (Rid
+
+start_time (R	startTime
+end_time (RendTime
+msg_type (RmsgType
+is_read (RisRead
+content (	Rcontent"3
+ItemBagInfo$
+pb_items (2	.ItemInfoRpbItems"ú
+MailInfo
+mail_id (	RmailId'
+expiration_time (RexpirationTime
+guid (Rguid
+	send_guid (RsendGuid
+	send_name (	RsendName
+title (	Rtitle
+content (	Rcontent.
+pb_attachment (2	.ItemInfoRpbAttachment"4
+MailListInfo$
+pb_mails (2	.MailInfoRpbMails"²
+BankStatement
+serial (Rserial
+guid (Rguid
+time (Rtime
+opt (Ropt
+target (	Rtarget
+money (Rmoney!
+bank_balance (RbankBalance"d
+RankItem
+rank (Rrank
+guid (Rguid
+nickname (	Rnickname
+money (Rmoney"7
+RankList+
+pb_rank_list (2	.RankItemR
+pbRankList"†
+AndroidInfo
+guid (Rguid
+account (	Raccount
+nickname (	Rnickname
+game_id (RgameId
+money (Rmoney"ƒ
+	CashFalse
+guid (Rguid
+order_id (RorderId
+coins (Rcoins
+status (Rstatus
+status_c (RstatusC"½
+CashMoneyType
+	cash_type (RcashType
+money (Rmoney
+
+created_at (	R	createdAt
+status (Rstatus
+
+agent_guid (R	agentGuid#
+exchange_code (	RexchangeCode"7
+PlayerMoney
+money (Rmoney
+bank (Rbank"—
+Recharge
+guid (Rguid
+id (Rid#
+exchange_gold (RexchangeGold
+
+pay_status (R	payStatus#
+server_status (RserverStatus"ª
+Marquee
+id (Rid
+
+start_time (R	startTime
+end_time (RendTime
+content (	Rcontent
+number (Rnumber#
+interval_time (RintervalTime"ë
+AgentsTransferData
+	agents_id (RagentsId
+	player_id (RplayerId
+transfer_id (	R
+transferId#
+transfer_type (RtransferType%
+transfer_money (RtransferMoney
+ret_id (RretId
+re_code (RreCode"­
+	ProxyInfo
+proxy_id (RproxyId
+name (	Rname!
+min_recharge (RminRecharge
+qq (	Rqq
+weixin (	Rweixin
+zfb (	Rzfb
+phone (	Rphone"e
+PlatformProxyInfos
+platform_id (R
+platformId.
+pb_proxy_list (2
+.ProxyInfoRpbProxyList"Ó
+
+GameNotice&
+first_game_type (RfirstGameType(
+second_game_type (RsecondGameType
+number (Rnumber#
+interval_time (RintervalTime
+
+start_time (R	startTime
+notice_type (R
+noticeType
+param1 (	Rparam1
+param2 (	Rparam2
+param3	 (	Rparam3
+param4 (	Rparam4
+param5 (	Rparam5"à
+
+RegAccount
+account (	Raccount
+password (	Rpassword
+phone (	Rphone
+
+phone_type (	R	phoneType
+version (	Rversion
+
+channel_id (	R	channelId!
+package_name (	RpackageName
+imei (	Rimei
+ip	 (	Rip
+ip_area
+ (	RipArea
+platform_id (	R
+platformId'
+deprecated_imei (	RdeprecatedImei
+	shared_id (	RsharedId%
+promotion_info (	RpromotionInfo
+invite_code (	R
+inviteCode
+invite_type (R
+inviteTypebproto3

@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+message NetworkAddress {
+	string ip = 1;
+	int32 port = 2;
+	int32 server_id = 3;
+}
+
+message DBConnectOption {
+	string host = 1;
+	string user = 2;
+	string password = 3;
+	string database = 4;
+	string name = 5;
+}
+
+message RedisConnectOption {
+	string ip = 1;
+	int32 port = 2;
+	int32 dbnum = 3;
+	string password = 4;
+}
+message RedisSentinelOption {
+	string ip = 1;
+	int32 port = 2;
+	int32 dbnum = 3;
+	string master_name = 4;
+	string password = 5;
+}
+
+// 配置服务器的配置
+message ConfigServer_Config {
+	int32 port = 1;
+	DBConnectOption config_db = 2;
+	bool log_print_open = 3;
+    DBConnectOption account_db = 4;
+}
+
+// 通用配置
+message CommonServer_Config {
+	NetworkAddress config_addr = 1;
+	bool log_print_open = 2;
+}
+
+// login配置
+message LoginServerConfigInfo {
+	int32 login_id = 1;
+	int32 port = 2;
+	repeated NetworkAddress db_addr = 3;
+	RedisConnectOption def_redis = 4;
+	repeated RedisSentinelOption def_sentinel = 5;
+}
+
+// 游戏配置
+message GameServerConfigInfo {
+	int32 game_id = 1;
+	int32 port = 2;
+	int32 using_login_validatebox = 3;
+	int32 default_lobby = 4;
+	int32 first_game_type = 5;
+	int32 second_game_type = 6;
+	int32 player_limit = 7;
+	int32 table_count = 8;
+	int32 money_limit = 9;
+	int32 cell_money = 10;
+	int32 tax_open = 11;
+	int32 tax_show = 12;
+	int32 tax = 13;
+	string room_lua_cfg = 14;
+	repeated NetworkAddress login_addr = 15;
+	repeated NetworkAddress db_addr = 16;
+	RedisConnectOption def_redis = 17;
+	repeated RedisSentinelOption def_sentinel = 18;
+	int32 bank_transfer_tax = 19;
+	int32 register_money = 20;
+	int32 private_room_bank = 21;
+	int32 game_switch_is_open = 22;		//单个游戏服开关
+	string platform_id = 23;				//平台ID
+    string title = 24;
+}
+
+// gate配置
+message GateServerConfigInfo {
+	int32 gate_id = 1;
+	int32 port = 2;
+	int32 timeout_limit = 3;
+	int32 sms_time_limit = 4;
+	string sms_url = 5;
+	repeated NetworkAddress login_addr = 6;
+	repeated NetworkAddress game_addr = 7;
+	string sms_sign_key = 8;
+	RedisConnectOption def_redis = 9;
+    repeated RedisSentinelOption def_sentinel = 10;
+}
+
+// asyn_gmserver  配置
+message AsyngmServerConfigInfo {
+	string ip = 1;
+	int32  port = 2;
+	string sign_key = 3;
+	string posturl = 4;
+	int32  timeout_limit = 5;
+	int32  try_times = 6;
+	repeated NetworkAddress login_addr = 7;
+	RedisConnectOption def_redis = 8;
+    repeated RedisSentinelOption def_sentinel = 9;
+}
+
+message DBServerConfig {
+	int32 port = 1;
+	DBConnectOption login_db = 2;
+	DBConnectOption game_db = 3;
+	DBConnectOption log_db = 4;
+	DBConnectOption recharge_db = 5;
+	RedisConnectOption def_redis = 7;
+	repeated RedisSentinelOption def_sentinel = 8;
+	int32 init_money = 9;
+	string php_sign_key = 10;
+	int32 bank_transfer_tax = 11;
+	string php_interface_addr = 12;
+	string cash_money_addr = 13;
+	int32 login_switch =14;
+	int32 register_money = 15;
+	int32 instructor_weixin_sec = 16; 
+	string config = 17;
+}
+
+// 私人房间配置
+message PrivateRoomInfoConfig {
+	int32 game_id = 1;
+	int32 first_game_type = 2;
+	string room_lua_cfg = 3;
+}
+message PrivateRoomListConfig {
+	repeated PrivateRoomInfoConfig info = 1;
+}
+
+//公共告警地址
+message PublicWarningAddr {
+	string notice_potato_addr = 1;
+	string notice_telegram_addr = 2;
+}

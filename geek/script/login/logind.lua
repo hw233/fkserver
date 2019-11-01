@@ -1,0 +1,54 @@
+local skynet = require "skynetproto"
+local msgopt = require "msgopt"
+local redisopt = require "redisopt"
+local log = require "log"
+local channel = require "channel"
+local serviceconf = require "serviceconf"
+local nameservice = require "nameservice"
+require "login.msg.runtime"
+local redismetadata = require "redismetadata"
+local onlineguid = require "netguidopt"
+
+local reddb = redisopt.default
+
+local MSG = {}
+
+
+
+function MSG.C2S_LOGOUT_REQ(msg,gateid)
+
+end
+
+local sconf
+
+local CMD = {}
+
+local function checkloginconf(conf)
+    assert(conf)
+    assert(conf.id)
+    assert(conf.type)
+    assert(conf.name)
+end
+
+function CMD.start(conf)
+    checkloginconf(conf)
+    sconf = conf
+end
+
+skynet.start(function() 
+    skynet.dispatch("lua",function(_,_,cmd,...) 
+        local f = CMD[cmd]
+        if not f then
+            log.error("unknow cmd:%s",cmd)
+            return
+        end
+
+        skynet.retpack(f(...))
+    end)
+
+    require "login.register"
+    msgopt.register_handle(MSG)
+    skynet.dispatch("msg",function(_,_,msgid,...)
+        skynet.retpack(msgopt.on_msg(msgid,...))
+    end)
+end)

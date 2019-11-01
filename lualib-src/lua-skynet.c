@@ -355,6 +355,21 @@ ltostring(lua_State *L) {
 }
 
 static int
+lfromstring(lua_State *L) {
+	if (lua_isnoneornil(L,1)) {
+		return 0;
+	}
+	size_t sz = 0;
+	const char * msg = lua_tolstring(L,1,&sz);
+	uint8_t *buffer = skynet_malloc(sz);
+	memcpy(buffer,msg,sz);
+	lua_pushlightuserdata(L, buffer);
+	lua_pushinteger(L,sz);
+
+	return 2;
+}
+
+static int
 lharbor(lua_State *L) {
 	struct skynet_context * context = lua_touserdata(L, lua_upvalueindex(1));
 	uint32_t handle = (uint32_t)luaL_checkinteger(L,1);
@@ -497,6 +512,7 @@ luaopen_skynet_core(lua_State *L) {
 	// functions without skynet_context
 	luaL_Reg l2[] = {
 		{ "tostring", ltostring },
+		{ "fromstring",lfromstring},
 		{ "pack", luaseri_pack },
 		{ "unpack", luaseri_unpack },
 		{ "packstring", lpackstring },

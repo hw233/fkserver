@@ -1,0 +1,50 @@
+{
+    "account":{
+        "name":"account",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user": "root",
+        "password": "123456",
+        "pool_size":8
+    },
+    "game":{
+        "name":"game",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user": "root",
+        "password": "123456",
+        "pool_size":8
+    },
+    "proxy":{
+        "name":"proxy",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user": "root",
+        "password": "123456",
+        "pool_size":8
+    },
+    "log":{
+        "name":"log",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user": "root",
+        "password": "123456",
+        "pool_size":8
+    },
+    "recharge":{
+        "name":"recharge",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user": "root",
+        "password": "123456",
+        "pool_size":8
+    },
+    "config":{
+        "name":"config",
+        "host":"127.0.0.1",
+        "port":3306,
+        "user":"root",
+        "password": "123456",
+        "pool_size":8
+    }
+}

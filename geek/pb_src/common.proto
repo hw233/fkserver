@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+message ObjectField{
+	enum ObjectFieldType{ 
+		Nil = 0;
+		Number = 1;
+		String = 2;
+		Json = 3;
+	};
+	string 			 name = 1;  //字段名字
+	ObjectFieldType  type = 2; //字段数型
+	string 			 value = 3;//字符值
+}
+
+//更新对象属性
+message SyncObjectField{
+	enum MsgID{ Nil = 0;ID = 1180;}
+	string 		object_type = 2; //对象类型（字符)
+	ObjectField object_id = 3; // 对象id
+	repeated ObjectField fields = 4;//要同步的字段
+}
+
+
+//俱乐部，玩家角色
+enum CLUB_ROLE_TYPE{
+    CRT_NOT_MEMBER = 0; //非成员（不是该亲友圈的成员）
+    CRT_PLAYER = 1; //普通成员
+    CRT_ADMIN = 2;  //管理员
+    CRT_BOSS = 3;   //创建者，老板
+}
+
+//桌子同步类型
+enum TABLE_SYNC_TYPE{
+    SYNC_NONE=0;
+    SYNC_ADD=1;//添加房间
+    SYNC_DEL=2;//删除房间信息
+    SYNC_UPDATE=3;//刷新房间信息
+}
+
+//-----------------------基础结构----------------------------
+
+//俱乐部信息
+message PB_CLUB_INFO {
+    enum MsgID {NIL = 0;ID = 14001;}
+    int32 id = 1;
+    string name = 2;
+    string icon = 3;
+}
+
+//单个座位信息
+message SEAT_INFO { 
+    enum MsgID {NIL = 0;ID = 14048;}
+    int32 chair_id = 1; //座位序号
+    string open_id_icon = 2; //头像图标
+    int32 guid = 3; //玩家ID
+    string nickname = 4;//昵称
+    bool sex =5; // 性别
+}
+
+message TABLE_INFO {
+	int32 game_type = 1;				// 一级菜单
+	int32 owner = 2;
+	int32 club_id = 3;
+	int32 table_id = 4;			
+	string rule = 5;	
+}
+
+//单个房间信息
+message TABLE_STATUS_INFO { 
+    enum MsgID {NIL = 0;ID = 14049;}
+    int32 table_id = 1; //桌号
+    repeated SEAT_INFO seat_list = 2; //桌子对应的位置信息
+    int32 table_status = 3;   //房间状态
+    int32 room_cur_round = 4; //当前局数
+    bool locked = 5;    //是否加锁  true锁住
+    string rule = 6;
+    int32 game_type = 7;
+}
+
+message TABLE_TEMPLATE{
+    int32   game_type = 1;
+    int32   template_id = 2;
+    string  rule = 3;
+}
+
+enum PAY_OPTION{
+    NIL = 0;
+    AA = 1;
+    BOSS = 2;
+    ROOM_OWNER = 3;
+}

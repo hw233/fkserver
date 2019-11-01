@@ -1,0 +1,230 @@
+﻿syntax = "proto3";
+
+enum ACTION{
+	NIL = 0;
+	TRUSTEE = 0x1;
+	PENG = 0x2;
+	AN_GANG = 0x4;
+	MING_GANG = 0x8;
+	BA_GANG = 0x10;
+	HU = 0x20;
+	PASS = 0x40;
+	LEFT_CHI = 0x80;
+	MID_CHI = 0x100;
+	RIGHT_CHI = 0x200;
+	JIA_BEI = 0x800;
+}
+
+enum FSM_STATE {
+    PER_BEGIN       		= 0;	//预开始
+    XI_PAI		    		= 1;    //洗牌 
+	BU_HUA_BIG				= 2;	//补花
+	WAIT_MO_PAI  			= 4;	//等待 摸牌
+	WAIT_CHU_PAI  			= 5;	//等待 出牌
+	WAIT_PENG_GANG_HU_CHI	= 6;	//等待 碰 杠 胡 用户出牌的时候
+	WAIT_BA_GANG_HU  		= 7;	//等待 胡 用户巴杠的时候，抢胡
+	GAME_BALANCE			= 15;	//结算
+	GAME_CLOSE				= 16;	//关闭游戏
+	GAME_ERR				= 17;	//发生错误
+	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
+}
+
+
+
+//胡
+message CS_Maajan_Act_Win {
+	enum MsgID { Nil = 0; ID = 23001; }
+}
+
+//加倍
+message CS_Maajan_Act_Double {
+	enum MsgID { Nil = 0; ID = 23002; }
+	int32 tile = 1;					// 牌值
+}
+
+//打牌
+message CS_Maajan_Act_Discard {
+	enum MsgID { Nil = 0; ID = 23003; }
+	int32 tile = 1;					// 牌值
+}
+
+//碰
+message CS_Maajan_Act_Peng {
+	enum MsgID { Nil = 0; ID = 23004; }
+}
+
+//杠
+message CS_Maajan_Act_Gang {
+	enum MsgID { Nil = 0; ID = 23005; }
+	int32 tile = 1;					// 牌值
+}
+
+//过
+message CS_Maajan_Act_Pass {
+	enum MsgID { Nil = 0; ID = 23006; }
+}
+
+//吃
+message CS_Maajan_Act_Chi {
+	enum MsgID { Nil = 0; ID = 23007; }
+	int32 tile = 1;					// 牌值
+	int32 action = 2;					//吃类型
+}
+
+//托管
+message CS_Maajan_Act_Trustee {
+	enum MsgID { Nil = 0; ID = 23008; }
+}
+
+//报听
+message CS_Maajan_Act_BaoTing {
+	enum MsgID { Nil = 0; ID = 23009; }
+}
+
+message Maajan_Tiles {
+	repeated int32 tiles = 1;						// 牌
+}
+
+message Maajan_MingPai{
+	int32 tile = 1;
+	int32 type = 2;
+}
+
+message Maajan_Player_Info {
+	repeated Maajan_MingPai pb_ming_pai 	= 1; 	// 明牌
+	repeated int32 shou_pai 	= 2; 			// 手牌
+	repeated int32 hua_pai 		= 3; 			// 花牌
+	repeated int32 desk_pai 	= 4; 			// 桌牌，打出去的牌
+	int32 chair_id		= 5; 			// id
+	
+	// game end
+	bool is_hu 			= 6;			//是否胡了
+	int32 hu_fan	 	= 7; 			//番数
+	int32 jiabei	 	= 8; 			//加倍次数
+	string describe		= 9;			//牌型描述
+	int32 win_money 	= 10; 			//赢钱
+	int32 taxes 		= 11; 			//税收
+	bool finish_task	= 12; 			//完成任务
+	bool is_ting 		= 13;			//是否听
+}
+
+message Maajan_Reconnect_Data {
+	int32 act_left_time = 1;						// 操作剩余时间
+	int32 chu_pai_player_index = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
+	int32 last_chu_pai = 3;						// 最后一次的出牌
+}
+
+message Maajan_Task_Data {
+	int32 task_type = 1;						// 任务类型
+	int32 task_tile = 2;						// 牌值
+	int32 task_scale = 3;						// 加倍就是 2
+}
+
+message SC_Maajan_Desk_Enter {
+	enum MsgID { Nil = 0; ID = 23100; }
+	repeated Maajan_Player_Info pb_players 	= 1; 		// 玩家
+	int32 state = 2;							//状态
+    int32 zhuang = 3;							//庄家
+    int32 self_chair_id = 4;					//id
+	int32 act_time_limit = 5;					// 操作时间
+	int32 decision_time_limit = 6;				// 碰刚吃胡加倍 思考时间时间
+	bool is_reconnect = 7;						//reconnect
+	Maajan_Reconnect_Data pb_rec_data = 8;		//断线数据
+	Maajan_Task_Data pb_task_data = 9;			//任务
+}
+
+//胡
+message SC_Maajan_Act_Win {
+	enum MsgID { Nil = 0; ID = 23101; }
+	int32 chair_id		= 1; 		// id
+	int32 tile 		= 2;			// 牌值
+	int32 ba_gang_hu	= 3;		// 是否是巴杠胡 1 为true
+}
+
+//加倍
+message SC_Maajan_Act_Double {
+	enum MsgID { Nil = 0; ID = 23102; }
+	int32 chair_id		= 1; 			// id
+	int32 jiabei_val	= 2; 			// jiabei_val
+}
+
+//打牌
+message SC_Maajan_Act_Discard {
+	enum MsgID { Nil = 0; ID = 23103; }
+	int32 chair_id		= 1; 			// id
+	int32 tile = 2;					// 牌值
+}
+
+//碰
+message SC_Maajan_Act_Peng {
+	enum MsgID { Nil = 0; ID = 23104; }
+	int32 chair_id		= 1; 			// id
+	int32 tile = 2;					// 牌值
+}
+
+//杠
+message SC_Maajan_Act_Gang {
+	enum MsgID { Nil = 0; ID = 23105; }
+	int32 chair_id	 	= 1; 			// id
+	int32 tile = 2;					// 牌值
+	int32 action = 3;					// 类型，1自己手上四张，暗杠， 2自己手上三张，明杠， 3已经碰了，摸了一张，巴杠
+}
+
+//吃
+message SC_Maajan_Act_Chi {
+	enum MsgID { Nil = 0; ID = 23107; }
+	int32 chair_id	 = 1; 		// id
+	int32 tile = 2;					// 牌值，吃进的牌
+	int32 action = 3;				//吃牌类型
+}
+
+//剩余多少张公牌
+message SC_Maajan_Tile_Left {
+	enum MsgID { Nil = 0; ID = 23108; }
+	int32 tile_left = 1;				
+}
+
+//该谁出牌
+message SC_Maajan_Discard_Round{
+	enum MsgID { Nil = 0; ID = 23109; }
+	int32 chair_id	 = 1;				
+}
+
+//服务器的游戏状态
+message SC_Maajan_Desk_State{
+	enum MsgID { Nil = 0; ID = 23110; }
+	int32 state = 1;				
+}
+
+//摸牌
+message SC_Maajan_Draw{
+	enum MsgID { Nil = 0; ID = 23111; }
+	int32 chair_id = 1;
+	int32 tile = 2;					// 摸到的牌值，含补花	
+}
+
+//开始阶段补花
+message SC_Maajan_Bu_Hua{
+	enum MsgID { Nil = 0; ID = 23112; }
+	repeated Maajan_Tiles pb_bu_hu 	= 1; 		// 补花
+}
+
+//托管
+message SC_Maajan_Act_Trustee {
+	enum MsgID { Nil = 0; ID = 23113; }
+	int32 chair_id	 = 1;	
+	bool is_trustee = 2;				//最終托管狀態 true托管 false 非托管
+}
+
+//报听
+message SC_Maajan_Act_BaoTing {
+	enum MsgID { Nil = 0; ID = 23114; }
+	int32 chair_id	 = 1;	
+	bool is_ting = 2;				//最終报听狀態 true听 false 非听
+}
+
+//结算
+message SC_Maajan_Game_Finish {
+	enum MsgID { Nil = 0; ID = 23115; }
+	repeated Maajan_Player_Info pb_players 	= 1; 		// 玩家
+}

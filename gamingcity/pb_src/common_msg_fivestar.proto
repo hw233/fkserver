@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 五星宏辉相关消息
+//////////////////////////////////////////////////////////////////////////
+
+
+// 玩家下注
+message CS_FiveStarBetting {
+	enum MsgID { Nil = 0; ID = 40001; }
+	int32 betting_money = 1;			// 下注金额
+	int32 color = 2;					// 1 黑 2 红 3 梅 4 方 5 大小王 其它错误
+};
+
+// 玩家下注
+message SC_FiveStarBetting {
+	enum MsgID { Nil = 0; ID = 40002; }
+	int32 re_status = 1;				// 是否成功 1 成功 其它 失败 (2 金钱不足 3 小于单次下最小限制 4 大于单区域单玩家最大下注限制 5 大于单局所有区下注限制)
+	int32 money = 2;					// 已下注金额 返回2时读取
+	int32 color = 3;					// 下注花色 1 黑 2 红 3 梅 4 方 5 大小王 其它错误
+	int64 cur_money = 4;				// 当前携带剩余的钱
+	int64 bet_left = 5;				// 该区还可下注金额
+};
+
+// 玩家下注成功广播
+message SC_FiveStarBetting_broad {
+	enum MsgID { Nil = 0; ID = 40003; }
+	int32 guid = 1;					// 玩家id
+	int32 color = 2;					// 下注花色 1 黑 2 红 3 梅 4 方 5 大小王 其它错误
+	int32 betting_money = 3;			// 下注金额
+	int64 bet_left = 4;				// 所有区还可下注金额
+};
+
+message color_Settlement{
+	int32 color = 1;					// 花色 1 黑 2 红 3 梅 4 方 5 大小王 其它错误
+	int32 bet_sum = 2;					// 下注金额
+	int32 money = 3;					// 结算金额 ( 大于0 为从庄家身上所赢的金额 小于0 为输给庄家的金额)
+}
+
+// 游戏结算
+message SC_FiveStarSettlement{	
+	enum MsgID { Nil = 0; ID = 40004; }
+	repeated color_Settlement pb_player = 1;	//玩家在各区域的总输赢
+	int32 bet_sum = 2;					//玩家总下注
+	int32 player_money = 3;			//结算金额（不管输赢都会扣所押的金额，但不收税）
+	int64 cur_money =  4;				//当前玩家的钱
+	int32 show_tax = 5;      			//税收开启
+	int32 tax  = 6;					//税收 
+};
+
+// 玩家获取记录
+message CS_FiveStarGetHistory {
+	enum MsgID { Nil = 0; ID = 40005; }
+};
+
+// 玩家获取记录
+message SC_FiveStarGetHistory {
+	enum MsgID { Nil = 0; ID = 40006; }
+	repeated int32 cards = 1;						// 扑克列表
+};
+
+message PlayerTopInfo{
+	int32 guid = 1;
+	int32 head_id = 2;
+	string nickname = 3;
+	int64 money = 4;
+	int32 header_icon = 5; 	// 头像
+	string ip_area =  6; //所属区域
+}
+
+//显示最高排名的游戏玩家
+message SC_FiveStarPlayerList{
+	enum MsgID { Nil = 0;ID = 40007;}
+	int32 top_player_total = 1; //总人数
+	repeated PlayerTopInfo pb_player_info_list = 2;
+}
+
+message CS_GetPlayInfo{
+	enum MsgID { Nil = 0;ID = 40008;}
+}
+
+message SC_GetPlayInfo{
+	enum MsgID { Nil = 0;ID = 40009;}
+	repeated color_Settlement pb_player = 1;	//玩家在各区域的下注情况
+	repeated color_Settlement pb_allplayer = 2;	//所有玩家在各区域的下注情况
+	int32 game_status = 3;				//游戏当前状态
+	int32 left_time = 4;				//当前状态剩余时间
+	int32 bet_max = 5;					//单区下注最大金额
+	int32 bet_all_max = 6;				//所有区总合下注金额（所有玩家共用）
+}
+
+message SC_FiveStarServerStatuse{
+	enum MsgID { Nil = 0;ID = 40010;}
+	int32 game_status = 1;				//游戏当前状态
+	int32 left_time = 2;				//当前状态剩余时间
+}
+
+message LuckPlayerTopInfo{
+	int32 guid = 1;
+	int32 head_id = 2;
+	int64 money = 3;
+	int32 header_icon = 4; 	// 头像
+	string ip_area =  5; //所属区域
+	int32 rateofwin =  6; //胜率
+	int64 winmoney =  7; //输赢金钱
+	//string nickname = 6;
+}
+
+
+//显示幸运玩家排名
+message SC_FiveStarLuckPlayerList{
+	enum MsgID { Nil = 0;ID = 40011;}
+	repeated LuckPlayerTopInfo pb_luck_player_list = 1;
+}
+
+message BigWinInfo{
+	int32 guid = 1;
+	int32 head_id = 2;
+	int64 winmoney = 3;
+	int64 time = 4;
+	string ip_area =  5; //所属区域
+}
+
+message SC_BigWinPlayerList{
+	enum MsgID { Nil = 0; ID = 40012; }
+	repeated BigWinInfo pb_bigwinlist = 1;	//大玩家列表
+}
+
+//玩家下注列表
+message SC_FiveStarBetNumList{
+	enum MsgID { Nil = 0; ID = 40013; }
+	repeated int32 betnumlist = 1;
+}
+
+message player_Settlement{
+	int32 guid = 1;
+	int32 color = 2;					// 花色 1 黑 2 红 3 梅 4 方 5 大小王 其它错误
+	int32 bet_sum = 3;					// 下注金额
+	int32 money = 4;					// 结算金额 ( 大于0 为从庄家身上所赢的金额 小于0 为输给庄家的金额)
+}
+
+message player_win_lose{
+	int32 guid = 1;
+	int32 money = 2;					// 结算金额 ( 大于0 为从庄家身上所赢的金额 小于0 为输给庄家的金额)
+}
+
+// 游戏结算
+message SC_FiveStarSettlement_all{	
+	enum MsgID { Nil = 0; ID = 40014; }
+	repeated color_Settlement pb_allplayer_area = 1;		//所有玩家在各区域的总输赢
+	repeated player_Settlement pb_allplayer_Settlement = 2;	//所有玩家输赢明细
+	int64 total_money = 3;							//庄家总输赢 正为庄家输 负为庄家赢
+	int32 card = 4;								//所开的牌
+	float tax_num = 5;								// 0 为无税收 客服端 0会为nil 需要处理
+	repeated player_win_lose pb_win_lose = 6;
+};
+
+message CS_GetBigWinListHistory{
+	enum MsgID { Nil = 0;ID = 40015;}
+}
+
+message SC_BigWinPlayerListHistory{
+	enum MsgID { Nil = 0; ID = 40016; }
+	repeated BigWinInfo pb_bigwinlist = 1;	//大玩家列表
+}

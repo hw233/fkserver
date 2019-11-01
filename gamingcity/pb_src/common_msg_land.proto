@@ -1,0 +1,211 @@
+﻿syntax = "proto3";
+
+// 客户端和服务器通信消息
+// C Client, L LoginServer, D DBServer, S GameServer
+// CS 即C-发送->S
+
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 斗地主相关消息
+//////////////////////////////////////////////////////////////////////////
+
+// 出牌类型
+enum LAND_CARD_TYPE {
+	LAND_CARD_TYPE_ERROR                    = 0;                                //错误类型
+    LAND_CARD_TYPE_SINGLE                   = 1;                                //单牌类型
+    LAND_CARD_TYPE_DOUBLE                   = 2;                                //对牌类型
+    LAND_CARD_TYPE_THREE                    = 3;                                //三不带
+    LAND_CARD_TYPE_THREE_TAKE_ONE           = 4;                                //三带一
+    LAND_CARD_TYPE_THREE_TAKE_TWO           = 5;                                //三带一对
+    LAND_CARD_TYPE_FOUR_TAKE_ONE            = 6;                                //四带二
+    LAND_CARD_TYPE_FOUR_TAKE_TWO            = 7;                                //四带两对
+    LAND_CARD_TYPE_SINGLE_LINE              = 8;                                //顺子
+    LAND_CARD_TYPE_DOUBLE_LINE              = 9;                                //连对
+    LAND_CARD_TYPE_PLANE                    = 10;                               //飞机 不带
+    LAND_CARD_TYPE_PLANE_TAKE_ONE           = 11;                               //飞机 带牌 单
+    LAND_CARD_TYPE_PLANE_TAKE_TWO           = 12;                               //飞机 带牌 对
+    LAND_CARD_TYPE_BOMB                     = 13;                               //炸弹
+    LAND_CARD_TYPE_MISSILE                  = 14;                               //火箭
+}
+
+// 发送扑克
+message SC_LandStart {
+	enum MsgID { Nil = 0; ID = 5001; }
+	int32 first_turn = 1;					// 开始玩家
+	int32 valid_card_chair_id = 2;			// 明牌位置
+	int32 valid_card = 3;					// 明牌扑克
+	repeated int32 cards = 4;						// 扑克列表
+};
+
+// 用户叫分
+message CS_LandCallScore {
+	enum MsgID { Nil = 0; ID = 5002; Target = 2; }
+	int32 call_score = 1;					// 叫分数目
+};
+message SC_LandCallScore {
+	enum MsgID { Nil = 0; ID = 5003; }
+	int32 cur_chair_id = 1;				// 当前玩家
+	int32 call_chair_id = 2;				// 叫分玩家
+	int32 call_score = 3;					// 叫分数目
+};
+
+// 叫分失败
+message SC_LandCallFail {
+	enum MsgID { Nil = 0; ID = 5004; }
+}
+
+//地主信息
+message SC_LandInfo {
+	enum MsgID { Nil = 0; ID = 5005; }
+	int32 land_chair_id = 1;				// 地主玩家
+	int32 call_score = 2;					// 叫分数目
+	repeated int32 cards = 3;						// 地主扑克
+};
+
+// 出牌
+message CS_LandOutCard {
+	enum MsgID { Nil = 0; ID = 5006; Target = 2; }
+	repeated int32 cards = 1;						// 扑克列表
+};
+message SC_LandOutCard {
+	enum MsgID { Nil = 0; ID = 5007; }
+	int32 cur_chair_id = 1;				// 当前玩家
+	int32 out_chair_id = 2;				// 出牌玩家
+	repeated int32 cards = 3;						// 扑克列表
+	int32 turn_over = 4;					// 一轮结束，火箭
+};
+
+// 放弃出牌
+message CS_LandPassCard {
+	enum MsgID { Nil = 0; ID = 5008; Target = 2; }
+}
+message SC_LandPassCard {
+	enum MsgID { Nil = 0; ID = 5009; }
+	int32 cur_chair_id = 1;				// 当前玩家
+	int32 pass_chair_id = 2;				// 放弃玩家
+	int32 turn_over = 3;					// 一轮结束
+};
+
+// 游戏结束
+message LandPlayerConclude {
+	int32 score = 1;						// 得分
+	int32 bomb_count = 2;					// 炸弹个数
+	repeated int32 cards = 3;						// 扑克列表
+	int32 flag = 4;           				// 税收开启
+	int32 tax  = 5;						// 税收
+}
+message SC_LandConclude {
+	enum MsgID { Nil = 0; ID = 5010; }
+	repeated LandPlayerConclude pb_conclude = 1; 	// 玩家结果
+	int32 chuntian = 2;					// 春天
+	int32 fanchuntian = 3;					// 反春天
+};
+
+//玩家掉线
+message SC_LandPlayerOffline {
+	enum MsgID { Nil = 0; ID = 5011; }
+	int32 cur_chair_id = 1;				// 掉线玩家id
+	int32 wait_time = 2;					// 等待时间
+};
+
+//玩家上线
+message SC_LandPlayerOnline {
+	enum MsgID { Nil = 0; ID = 5012; }
+	int32 cur_online_chair_id = 1;			// 上玩家id
+	int32 cur_chair_id = 2;				// 出牌玩家id
+};
+message PlayerCardsMsg{
+	int32 chair_id = 1;				// 位置id
+	int32 cardsnum = 2;				// 当前牌数
+	bool  isTrusteeship = 3; 			// 是否托管状态
+}
+//恢复上线玩家的牌
+message SC_LandRecoveryPlayerCard {
+	enum MsgID { Nil = 0; ID = 5013; }
+	int32 cur_chair_id = 1;			// 玩家id
+	repeated int32 cards = 2;					// 当前所有的牌
+	repeated PlayerCardsMsg pb_msg = 3;			// 其他玩家数据
+	int32 landchairid = 4;				// 地主位置号
+	repeated int32 landcards = 5;				// 地主牌
+	int32 call_score = 6;				// 叫分
+	repeated int32 lastCards = 7;				// 上个玩家出的牌
+	int32 lastcardid = 8;				// 上个出牌玩家chairid
+	int32 outcardid = 9;				// 当前出牌玩家
+	repeated int32 alreadyoutcards = 10;		// 已经出了的牌
+	int32 bomb = 11;					// 炸弹数量
+};
+message pofflineMsg{
+	int32 chair_id = 1;				//位置id
+	int32 outTimes = 2;				//掉线超时时间
+}
+message SC_LandRecoveryPlayerCallScore{	
+	enum MsgID { Nil = 0; ID = 5014; }
+	int32 cur_chair_id = 1;				// 当前叫分玩家
+	int32 call_chair_id = 2;				// 叫分最主玩家
+	int32 call_score = 3;					// 叫分最高数目
+	repeated int32 cards = 4;						// 当前所有的牌
+	repeated pofflineMsg pb_playerOfflineMsg = 5;	// 当前掉线玩家信息
+}
+message SC_LandCallScorePlayerOffline{
+	enum MsgID { Nil = 0; ID = 5015; }
+	int32 cur_chair_id = 1;			// 掉线玩家id	
+	int32 wait_time = 2;				// 等待时长
+}
+message CS_LandTrusteeship{
+	enum MsgID { Nil = 0; ID = 5016; Target = 2; }
+}
+
+message SC_LandTrusteeship{
+	enum MsgID { Nil = 0; ID = 5017; }
+	int32 chair_id = 1;			// 托管玩家id
+	bool  isTrusteeship = 2; 		// 托管状态
+}
+
+// 用户加倍
+message CS_LandCallDouble {
+	enum MsgID { Nil = 0; ID = 5018; Target = 2; }
+	int32 is_double = 1;					// 是否加倍 1是false    2是true
+};
+message SC_LandCallDouble {
+	enum MsgID { Nil = 0; ID = 5019; }
+	int32 call_chair_id = 1;				// 加倍玩家
+	int32 is_double = 2;					// 是否加倍 1是false    2是true
+};
+
+message SC_LandCallDoubleFinish{
+	enum MsgID { Nil = 0; ID = 5020; }
+	int32 land_chair_id = 1;				// 地主玩家
+}
+
+message PlayerDoubleMsg{
+	int32 chair_id = 1;				// 位置id
+	int32 is_double = 2; 				// 是加倍状态 1是false    2是true
+}
+
+//恢复上线玩家的加倍情况
+message SC_LandRecoveryPlayerDouble {
+	enum MsgID { Nil = 0; ID = 5021; }
+	repeated PlayerDoubleMsg pb_double_state = 1;  // 加倍情况
+	int32 double_count_down	= 2; //加倍阶段倒计时
+};
+
+message CS_LandLastTrusteeship{
+	enum MsgID { Nil = 0; ID = 5022; }
+	bool  isTrusteeship = 1; 		// 托管状态
+}
+
+message SC_LandLastTrusteeship{
+	enum MsgID { Nil = 0; ID = 5023; }
+	int32 chair_id = 1;			// 托管玩家id
+	bool  LastTrusteeship = 2; 		// 托管状态
+}
+
+message CS_LandGetCards{
+	enum MsgID { Nil = 0; ID = 5024; }
+}
+
+message SC_LandGetCards{
+	enum MsgID { Nil = 0; ID = 5025; }
+	repeated int32 cards = 1;						// 扑克列表
+}

@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+//请求 匹配
+message C2S_PLAYER_MATCH_REQ
+{
+    enum MsgID {NONE = 0; ID = 12001;}
+    int32 type = 1;                 //1金花  2 麻将 3 ddz 4 ddz-glod
+    int32 level = 2;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+    bool isSwitchDesk = 3;//是否是换桌？
+}
+
+//响应 匹配
+message S2C_PLAYER_MATCH_RES
+{
+    enum MsgID {NONE = 0; ID = 12002;}
+    int32 type = 1;                 //1金花  2 麻将 3 ddz 4 ddz-glod
+    bool isStartedMatch = 2;//是否开始匹配
+    int32 level = 3;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+    bool isSwitchDesk = 4;//是否是换桌？
+}
+
+//请求 获取金币场配置
+message C2S_FETCH_GOLD_RULE_REQ {
+    enum MsgID {NONE = 0; ID = 12003;}
+    int32 type = 1;//游戏类型
+}
+
+//响应 获取金币场配置
+message S2C_FETCH_GOLD_RULE_RES {
+    enum MsgID {NONE = 0; ID = 12004;}
+    int32 type = 1;//游戏类型
+    repeated DB_GOLD_RULE glodRule = 2;
+}
+
+message DB_GOLD_RULE {
+    enum MsgID {NONE = 0; ID = 12005;}
+    int32 level = 1;//级别
+    int32 consume = 2;//金币消耗
+    int32 bottomScore = 3;//低分
+    int32 maxLimit = 4;//入场限制max
+    int32 minLimit = 5;//入场限制min
+}
+
+//请求 检查
+message C2S_FETCH_GOLD_CHECK_REQ {
+    enum MsgID {NONE = 0; ID = 12006;}
+    int32 type = 1;                 //1金花  2 麻将 3 ddz 4 ddz-glod
+    int32 level = 2;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+}
+
+//响应 检查
+message S2C_FETCH_GOLD_CHECK_RES {
+    enum MsgID {NONE = 0; ID = 12007;}
+    int32 type = 1; //1金花  2 麻将 3 ddz 4 ddz-glod
+    int32 matchValue = 2;//0正常，1小了，2大了
+    int32 level = 3;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+}
+
+
+//请求  取消匹配
+message C2S_CANCEL_MATCH_REQ{
+    enum MsgID {NONE = 0; ID = 12008;}
+    int32 type = 1;                 //1金花  2 麻将 3 ddz 4 ddz-glod
+    int32 level = 2;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+    bool returnRes = 3;//是否需要返回响应消息 true 发送  false 不发送
+}
+
+//响应  取消匹配
+message S2C_CANCEL_MATCH_RES{
+    enum MsgID {NONE = 0; ID = 12009;}
+    int32 type = 1;                 //1金花  2 麻将 3 ddz 4 ddz-glod
+    int32 level = 2;//级别 0:新手场 1:初级场 2:中级场 3:高级场
+}
+
+
+
+
+

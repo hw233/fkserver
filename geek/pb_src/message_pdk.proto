@@ -1,0 +1,374 @@
+syntax = "proto3";
+
+//玩法
+enum PLAY_METHOD{
+    Method_Common = 0;//经典玩法
+    Method_Fifteen = 1;//15张牌
+}
+
+//坐庄
+enum BANKER_TYPE{
+    Win_Priority = 0;//赢家先出
+    Take_Turns  = 1;//轮流庄
+    Hei_Tao_San = 2;//黑桃三先出
+}
+
+//切牌
+enum QIE_PAI{
+    System_Run = 0;//系统切牌
+    Manual_work  = 1;//手动切牌
+}
+
+//游戏阶段
+enum PDK_GameStage{
+    Stage_Ready = 0;//准备阶段
+    Stage_Play = 1;//出牌阶段
+    Stage_SingleOver = 2;//单局结算阶段
+    Stage_GameOver = 3;//总局结算阶段 游戏结束
+}
+
+enum OUT_TYPE {
+    OUT = 0;//正常打牌
+    PASS = 1;//过牌
+}
+
+//跑得快规则
+message DB_PDK_Rule
+{
+    enum MsgID {NONE = 0; ID = 13005;}
+    int32 juShu = 1;       //局数，类型
+    int32 bottomScore = 2; //底分
+    int32 playerNumber = 3; //人数
+    int32 payType = 4;     //支付方式，类型
+    PLAY_METHOD playMethod = 5; //玩法
+    BANKER_TYPE bankerType = 6; //庄家选择模式
+    bool mustGoOn = 7;//能管必须管
+    bool hongTaoShiAddScore = 8; //红桃10扎鸟
+    bool threeABomb = 9;//三A算炸弹
+    bool three3Bomb = 10;//三个3算炸弹
+    bool siDaiSan = 11;//四带三
+    bool siDaiEr = 12;//四带三
+    bool showCardNumber = 13;//显示牌数量
+    bool mustDaiHeiTaoSan = 14;//必带黑桃三
+    QIE_PAI qiePai = 15;//切牌
+    int32 upperLimit = 16;//封顶（传选项，0不封顶，1_30/32,2_60/64）
+    int32 tuoGuan = 17;//托管，（传选项，0不托管，1_1分钟，2_2分钟，3_3分钟）
+    int32 subGameTypeId = 18;//子游戏id
+}
+
+
+
+//（跑得快）DB ==> data bean
+message DB_PDK_Room
+{
+    enum MsgID {NONE = 0; ID = 13006;}
+    int32 room_id = 1;      //房间ID
+    int32 m_Creator = 2;    //房主ID
+    bool m_bTableStarted = 3;  //房间状态 是否开始
+    DB_PDK_Rule roomRule = 4;  //房间规则
+    repeated DB_PDK_player  dbPlayer = 5;  //玩家组
+    int32 curRound = 6;     //当前局数
+    int32 landlordId = 7;    //地主ID
+    int32 currentOpPlayerId = 8;  //当前操作的玩家id
+    bool m_bGameStarted = 9;   //游戏状态
+    bool m_bDisMissStarted = 10;    //是否在申请解散状态
+    S2C_PDK_Dismiss_Room_Res disMiss = 11; //申请解散信息
+    int32 timeStamp = 12;     //时间戳
+    int32 readyTime = 13;    //准备阶段限时
+    int32 clubId = 14;      //俱乐部ID
+    PDK_GameStage gameStage = 15; //游戏阶段
+    int32 callLandlordTime = 16;    //叫地主阶段限时
+    int32 maxCallValue = 17;       //房间内最高叫分
+    int32 magicPropsCost = 24;// 魔法表情消耗
+    int32 zhuangId = 25;//庄家id
+    S2C_PDK_Play_Res outPokerType = 26;//当前玩家出牌信息
+}
+
+//玩家组（跑得快）
+message DB_PDK_player
+{
+    enum MsgID {NONE = 0; ID = 13007;}
+    int32 id = 1;       //用户ID
+    string nickName = 2; //用户名称
+    string icon = 3 ;   //用户头像
+    int32 userScore = 4;  //用户积分（初始）
+    int32 glodCoin = 5;     //金币
+    bool isOffline = 6; //true离线
+    int32 order = 7;    //座位
+    bool ready = 8;    //是否准备
+    repeated int32 handCards = 9;//玩家手牌
+    int32 handCardCount =10;//手牌数量
+    int32 cardType = 11;    //牌型
+    bool isLookOnUser = 12; //是否是观众
+    bool isGamed = 13;  //是否玩过游戏
+    bool sex = 14;  //性别 true-男  false-女
+    DB_PDK_Battle_Log battleLog = 15;  //战绩消息封装
+    string loginIp = 16;//玩家登录ip
+    string location = 17;//地理位置信息
+    string latitude = 18;//纬度(double)
+    string longitude = 19;//经度(double)
+    S2C_PDK_Play_Res outPokerType = 20;//当前玩家出牌信息
+}
+
+//发牌消息
+message S2C_PDK_Deal_Cards_Res
+{
+    enum MsgID {NONE = 0; ID = 13008;}
+    repeated int32 handCards = 1;//玩家手牌
+    int32 currentNum = 2;//当前回合数
+    int32 firstOutPlayerId = 3;//第一次打牌用户
+}
+
+
+
+//出牌请求
+message C2S_PDK_Play_Req
+{
+    enum MsgID {NONE = 0; ID = 13001;}
+    repeated int32 outCards = 1; //玩家打出手牌
+    OUT_TYPE outType = 2; //打牌类型
+    //操作类型
+    //后面添加
+}
+
+enum RETURN_TYPE {
+    NORMAL = 0;//正常
+    ERROR = 1;//不合法
+}
+
+//出牌回复
+message S2C_PDK_Play_Res
+{
+    enum MsgID {NONE = 0; ID = 13002;}
+    repeated int32 outCards = 1; //玩家打出手牌
+    int32 outPlayerId = 2; //打牌用户id
+    int32 nextOutPlayerId = 3; //下一个打牌用户
+    OUT_TYPE outAndPass = 4; //打牌或者过牌
+    int32 outCardType = 5;//打出牌的类型
+    int32 compareCardId = 6;//比较大小的牌
+    RETURN_TYPE returnType = 7;//返回状态
+}
+
+
+//准备(请求)
+message C2S_PDK_Ready_Req
+{
+    enum MsgID {NONE = 0; ID = 13003;}
+
+}
+
+//准备（回复）
+message S2C_PDK_Ready_Res
+{
+    enum MsgID {NONE = 0; ID = 13004;}
+    int32 result = 1;
+    int32 dpPlayerId = 2;   //玩家ID
+    int32 order = 3;       //座位
+    int32 timeStamp = 4;     //时间戳
+    int32 readyTime = 5;    //限时
+}
+
+//有其他玩家，加入房间回复
+message S2C_PDK_Other_Player_Join_Res
+{
+    enum MsgID {NONE = 0; ID = 13010;}
+    DB_PDK_player dbPlayer = 1;    //跑得快玩家信息
+}
+
+
+//单局结算
+message S2C_PDK_RoundOver_Res
+{
+    enum MsgID {NONE = 0; ID = 13011;}
+    int32 result = 1;
+    int32 currRound = 2;    //当前局数
+    int32 landlordId = 3;     //地主id
+    int32 m_Creator = 4;    //房主id
+    int32 baseCedits = 5; //底分
+    repeated DB_PDK_Over_Player overPlayer = 50;
+}
+
+//小结算 玩家组
+message DB_PDK_Over_Player
+{
+    enum MsgID {NONE = 0; ID = 13012;}
+    int32 id = 1;       //用户ID
+    string nickName = 2; //用户名称
+    string icon = 3 ;   //用户头像
+    int32 allCedit = 4; //总积分
+    int32 currentWinCedit = 5;  //本局输赢分
+    bool isWinner = 6;     //是否是赢家
+    repeated int32 handCards = 7; //手牌
+    int32 zhaDanCount = 8;//炸弹数量
+}
+
+message C2S_PDK_Sync_Room_Info_Res{
+    enum MsgID {NONE = 0; ID = 13013;}
+
+}
+
+//响应 断线重连
+message S2C_PDK_Sync_Room_Info_Res{
+    enum MsgID {NONE = 0; ID = 13014;}
+    int32 result = 1;//错误码
+    int32 type = 2;//游戏id
+    DB_PDK_Room roomResult = 3;     //房间信息
+}
+
+
+/////////////////////申请解散消息/////////////////////////
+//申请解散 请求
+message C2S_PDK_Dismiss_Room_Req
+{
+    enum MsgID {NONE = 0; ID = 13015;}
+}
+//申请解散 回复
+message S2C_PDK_Dismiss_Room_Res
+{
+    enum MsgID {NONE = 0; ID = 13016;}
+    int32 result = 1;
+    int32 playerId = 2; //申请人ID
+    string nickName = 3;    //玩家昵称
+    repeated DB_PDK_Dismiss_Room_Player disPlayer = 4; //玩家组
+    int32 wCurrentUserId = 5;   //当前操作ID
+    int32 timeStamp = 6;     //时间戳
+    int32 readyTime = 7;    //限时
+}
+
+message DB_PDK_Dismiss_Room_Player
+{
+    enum MsgID {NONE = 0; ID = 13017;}
+    int32 playerId = 1;
+    string nickName = 2;    //玩家昵称
+    int32 choiceResult = 3;      //选择状态 0 等待  1 同意   2 拒绝
+    string icon = 4 ;   //头像
+}
+//操作申请解散  确认 拒绝
+message C2S_PDK_Choose_Dismiss_Room_Req
+{
+    enum MsgID {NONE = 0; ID = 13018;}
+    int32 type = 1;     //操作 1 同意  2 拒绝
+}
+//解散房间结果
+message S2C_PDK_Dismiss_Over_Res{
+    enum MsgID {NONE = 0; ID = 13019;}
+    int32 result = 1;
+    bool isSuccess = 2;//是否解散成功?
+}
+////////////////////申请解散消息//////////////////////////
+
+
+//表情语音 请求
+message C2S_PDK_Interactive_Req{
+    enum MsgID {NONE = 0; ID = 13020;}
+    int32 index = 1;    // 表情语音 编号
+    int32 type = 2;     // 类型 0：表情   1：快捷语言   2：语音  3:魔法表情
+    string content = 3;  // 语音内容
+    int32 content_time = 4; //语音时间
+    int32 receivers = 5;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+//表情语音 回复
+message S2C_PDK_Interactive_Res{
+    enum MsgID {NONE = 0; ID = 13021;}
+    int32 result = 1;
+    int32 index = 2;    // 表情语音 编号
+    int32 type = 3;     // 类型 0：表情   1：快捷语言   2：语音 3:魔法表情
+    string content = 4;  // 语音内容
+    int32 player_id = 5;    //发起人
+    int32 content_time = 6;  //语音时间
+    int32 receivers = 7;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+//退出 请求
+message C2S_PDK_Leave_Room_Req
+{
+    enum MsgID {NONE = 0; ID = 13022;}
+}
+//退出 返回
+message S2C_PDK_Leave_Room_Res
+{
+    enum MsgID {NONE = 0; ID = 13023;}
+    int32 result = 1;
+    int32 playerId = 2; //退出玩家ID
+    bool isOwner = 3;   //是否是房主
+}
+
+//踢人请求
+message C2S_PDK_Tick_Player_Req
+{
+    enum MsgID {NONE = 0; ID = 13024;}
+    int32 playerId = 1;
+}
+
+//踢人回复
+message S2C_PDK_Tick_Player_Res
+{
+    enum MsgID {NONE = 0; ID = 13025;}
+    int32 result = 1;
+    int32 playerId = 2;
+    int32 roomType = 3;
+}
+
+
+//玩家离线
+message S2C_PDK_Player_Offline_Res
+{
+    enum MsgID {NONE = 0; ID = 13026;}
+    int32 playerId = 1;     //离线玩家ID
+}
+
+//玩家上线
+message S2C_PDK_Player_Online_Res
+{
+    enum MsgID {NONE = 0; ID = 13027;}
+    int32 playerId = 1;     //上线玩家ID
+}
+
+
+////////////////////总局结算////////////////////
+//跑得快 总局结算
+message S2C_PDK_GameOverMsg_Res{
+    enum MsgID {NONE = 0; ID = 13028;}
+    int32 roomId = 1;//房号
+    int32 roomType = 2;//房间类型  1：扎金花   2：麻将 6：跑得快,
+    string overDate = 3;//结束时间
+    int32 creatorId = 4;//房主id
+    repeated DB_PDK_PlayerGameOverLog playerOverInfos= 5;//玩家总局信息
+    int32 clubId = 6;     //俱乐部id
+    int32 deskId = 7;//桌号
+
+}
+//跑得快 每个玩家的总局信息
+message DB_PDK_PlayerGameOverLog{
+    enum MsgID {NONE = 0; ID = 13029;}
+    string icon = 1;    //头像
+    int32 playerId =2;//玩家id
+    string nickName = 3;//玩家昵称
+    int32 finalScore = 4;    //最终分数
+    int32 maxCredit = 6;    //最高得分
+    int32 landlordCount = 7;//地主次数
+    int32 winRound = 8;     //胜利局数
+    int32 bombCount = 9;     //炸弹次数
+}
+
+////////////////////ending---总局结算////////////////////
+
+
+//战绩消息
+message DB_PDK_Battle_Log{
+    enum MsgID {NONE = 0; ID = 13030;}
+    string icon = 1;    //头像
+    int32 score = 2;    //输赢分
+    int32 cost = 3;     //剩余分
+    repeated int32 cards = 4;   //玩家牌数组
+    int32 maxCredit = 5;    //最高得分
+    int32 partakeRound = 6;     //参与局数
+    int32 winRound = 7;     //胜利局数
+}
+
+
+
+
+
+

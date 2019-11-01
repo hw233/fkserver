@@ -1,0 +1,129 @@
+
+º
+config_define.proto"Q
+NetworkAddress
+ip (	Rip
+port (Rport
+	server_id (RserverId"…
+DBConnectOption
+host (	Rhost
+user (	Ruser
+password (	Rpassword
+database (	Rdatabase
+name (	Rname"j
+RedisConnectOption
+ip (	Rip
+port (Rport
+dbnum (Rdbnum
+password (	Rpassword"Œ
+RedisSentinelOption
+ip (	Rip
+port (Rport
+dbnum (Rdbnum
+master_name (	R
+masterName
+password (	Rpassword"¯
+ConfigServer_Config
+port (Rport-
+	config_db (2.DBConnectOptionRconfigDb$
+log_print_open (RlogPrintOpen/
+
+account_db (2.DBConnectOptionR	accountDb"m
+CommonServer_Config0
+config_addr (2.NetworkAddressR
+configAddr$
+log_print_open (RlogPrintOpen"Û
+LoginServerConfigInfo
+login_id (RloginId
+port (Rport(
+db_addr (2.NetworkAddressRdbAddr0
+	def_redis (2.RedisConnectOptionRdefRedis7
+def_sentinel (2.RedisSentinelOptionRdefSentinel"Š
+GameServerConfigInfo
+game_id (RgameId
+port (Rport6
+using_login_validatebox (RusingLoginValidatebox#
+default_lobby (RdefaultLobby&
+first_game_type (RfirstGameType(
+second_game_type (RsecondGameType!
+player_limit (RplayerLimit
+table_count (R
+tableCount
+money_limit	 (R
+moneyLimit
+
+cell_money
+ (R	cellMoney
+tax_open (RtaxOpen
+tax_show (RtaxShow
+tax (Rtax 
+room_lua_cfg (	R
+roomLuaCfg.
+
+login_addr (2.NetworkAddressR	loginAddr(
+db_addr (2.NetworkAddressRdbAddr0
+	def_redis (2.RedisConnectOptionRdefRedis7
+def_sentinel (2.RedisSentinelOptionRdefSentinel*
+bank_transfer_tax (RbankTransferTax%
+register_money (RregisterMoney*
+private_room_bank (RprivateRoomBank-
+game_switch_is_open (RgameSwitchIsOpen
+platform_id (	R
+platformId
+title (	Rtitle"’
+GateServerConfigInfo
+gate_id (RgateId
+port (Rport#
+timeout_limit (RtimeoutLimit$
+sms_time_limit (RsmsTimeLimit
+sms_url (	RsmsUrl.
+
+login_addr (2.NetworkAddressR	loginAddr,
+	game_addr (2.NetworkAddressRgameAddr 
+sms_sign_key (	R
+smsSignKey0
+	def_redis	 (2.RedisConnectOptionRdefRedis7
+def_sentinel
+ (2.RedisSentinelOptionRdefSentinel"Î
+AsyngmServerConfigInfo
+ip (	Rip
+port (Rport
+sign_key (	RsignKey
+posturl (	Rposturl#
+timeout_limit (RtimeoutLimit
+	try_times (RtryTimes.
+
+login_addr (2.NetworkAddressR	loginAddr0
+	def_redis (2.RedisConnectOptionRdefRedis7
+def_sentinel	 (2.RedisSentinelOptionRdefSentinel"œ
+DBServerConfig
+port (Rport+
+login_db (2.DBConnectOptionRloginDb)
+game_db (2.DBConnectOptionRgameDb'
+log_db (2.DBConnectOptionRlogDb1
+recharge_db (2.DBConnectOptionR
+rechargeDb0
+	def_redis (2.RedisConnectOptionRdefRedis7
+def_sentinel (2.RedisSentinelOptionRdefSentinel
+
+init_money	 (R	initMoney 
+php_sign_key
+ (	R
+phpSignKey*
+bank_transfer_tax (RbankTransferTax,
+php_interface_addr (	RphpInterfaceAddr&
+cash_money_addr (	RcashMoneyAddr!
+login_switch (RloginSwitch%
+register_money (RregisterMoney2
+instructor_weixin_sec (RinstructorWeixinSec
+config (	Rconfig"z
+PrivateRoomInfoConfig
+game_id (RgameId&
+first_game_type (RfirstGameType 
+room_lua_cfg (	R
+roomLuaCfg"C
+PrivateRoomListConfig*
+info (2.PrivateRoomInfoConfigRinfo"s
+PublicWarningAddr,
+notice_potato_addr (	RnoticePotatoAddr0
+notice_telegram_addr (	RnoticeTelegramAddrbproto3

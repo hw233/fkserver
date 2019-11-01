@@ -1,0 +1,398 @@
+syntax = "proto3";
+
+message ENUM_DDZ_Role{ 
+    enum MsgID {NONE = 0;ID = 13301;}
+    //身份
+    enum DDZ_Role{
+        Role_None = 0;//nothing
+        Role_Farmer = 1;//农民
+        Role_Landlord = 2;//地主
+    }
+}
+
+message ENUM_DDZ_OP{ 
+    enum MsgID {NONE = 0;ID = 13302;}
+
+    //玩家操作类型
+    enum DDZ_OP{
+        OP_Pass = 0;//不出
+        OP_Play = 1;//出牌
+        OP_None = 2;//没有操作
+    }
+}
+
+message ENUM_DDZ_GameStage{ 
+    enum MsgID {NONE = 0;ID = 13303;}
+    //游戏阶段
+    enum DDZ_GameStage{
+        Stage_Ready = 0;//准备阶段
+        Stage_CallLandlord = 1;//叫地主阶段
+        Stage_Play = 2;//出牌阶段
+        Stage_SingleOver = 3;//单局结算阶段
+        Stage_GameOver = 4;//总局结算阶段 游戏结束
+    }
+}
+
+//斗地主规则
+message DB_DDZ_Rule
+{ 
+    enum MsgID {NONE = 0;ID = 13304;}
+    bool isCallLandlordLimitTime = 1; //叫地主阶段是否限时
+    int32 ju_shu = 2;       //局数，类型
+    int32 zhanDanLimit = 3; //炸弹封顶 0:不封顶 3 4 5
+    int32 pay_type = 4;     //支付方式，类型
+    bool isAntiCheating=5;//是否防止作弊 true 是 false 不是
+    int32 zhuangType = 6; //庄家,谁先叫地主   0随机/1赢家
+    bool shuangWangMustCall = 7;// 叫地主规则  双王必叫3分
+    bool siErMustCall = 8;     //叫地主规则    四二必叫3分
+}
+
+//（斗地主）DB ==> data bean
+message DB_DDZ_Room
+{ 
+    enum MsgID {NONE = 0;ID = 13305;}
+    int32 room_id = 1;      //房间ID
+    int32 m_Creator = 2;    //房主ID
+    bool m_bTableStarted = 3;  //房间状态 是否开始
+    DB_DDZ_Rule roomRule = 4;  //房间规则
+    repeated DB_DDZ_player  dbPlayer = 5;  //玩家组
+    int32 curRound = 6;     //当前局数
+    int32 landlordId = 7;    //地主ID
+    int32 currentOpPlayerId = 8;  //当前操作的玩家id
+    bool m_bGameStarted = 9;   //游戏状态
+    bool m_bDisMissStarted = 10;    //是否在申请解散状态
+    S2C_DDZ_Dismiss_Room_Res disMiss = 11; //申请解散信息
+    int32 timeStamp = 12;     //时间戳
+    int32 readyTime = 13;    //准备阶段限时
+    int32 clubId = 14;      //俱乐部ID
+    ENUM_DDZ_GameStage.DDZ_GameStage gameStage = 15; //游戏阶段
+    int32 callLandlordTime = 16;    //叫地主阶段限时
+    int32 maxCallValue = 17;       //房间内最高叫分
+    //当前出牌数据
+    int32 minCardId = 18;//最小牌id
+    int32 cardType =19;//牌型
+    repeated int32 cardIds = 20;//出的牌数据
+    int32 prePlayPlayerId = 21;     //上一个出牌操作的玩家 用于判断重连者是否为首家
+    int32 multiple = 22 ; //游戏倍数
+    repeated int32 hideCardIds = 23;//房间地主牌
+    int32 magicPropsCost = 24;// 魔法表情消耗
+}
+
+//玩家组（斗地主）
+message DB_DDZ_player
+{ 
+    enum MsgID {NONE = 0;ID = 13306;}
+    int32 id = 1;       //用户ID
+    string nickName = 2; //用户名称
+    string icon = 3 ;   //用户头像
+    int32 userScore = 4;  //用户积分（初始）
+    int32 glodCoin = 5;     //金币
+    bool isOffline = 6; //true离线
+    int32 order = 7;    //座位
+    bool ready = 8;    //是否准备
+    repeated int32 handCards = 9;//玩家手牌
+    int32 handCardCount =10;//手牌数量
+    int32 cardType = 11;    //牌型 1:单张 2:对子 3:三不带 4:三带单 5:三带对 6:单顺子 7:对顺子 8:飞机不带 9:飞机带单 10:飞机带对 11:四带单 12:四带对 13:炸弹 14:火箭
+    bool isLookOnUser = 12; //是否是观众
+    bool isGamed = 13;  //是否玩过游戏
+    bool sex = 14;  //性别 true-男  false-女
+    DB_DDZ_Battle_Log battleLog = 15;  //战绩消息封装
+    string loginIp = 16;//玩家登录ip
+    string location = 17;//地理位置信息
+    string latitude = 18;//纬度(double)
+    string longitude = 19;//经度(double)
+    ENUM_DDZ_Role.DDZ_Role role = 20;//身份
+    ENUM_DDZ_OP.DDZ_OP preOp = 21;      //上一次的操作
+    int32 callScore = 22;      //叫地主所叫分  -1为未进行叫地主
+    repeated int32 prePlayCards = 23; //上一次出的牌
+}
+
+
+//准备(请求)
+message C2S_DDZ_Ready_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13307;}
+    
+}
+
+//准备（回复）
+message S2C_DDZ_Ready_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13308;}
+    int32 result = 1;
+    int32 dpPlayerId = 2;   //玩家ID
+    int32 order = 3;       //座位
+    int32 timeStamp = 4;     //时间戳
+    int32 readyTime = 5;    //限时
+}
+
+//有其他玩家，加入房间回复
+message S2C_DDZ_Other_Player_Join_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13309;}
+    DB_DDZ_player dbPlayer = 1;    //斗地主玩家信息
+}
+
+//发牌群发
+message S2C_DDZ_Deal_Cards_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13310;}
+    int32 result = 1;
+    int32 firstCallPlayerId = 2; //第一个叫地主的玩家id
+    int32 curRound = 3; //当前局数
+    int32 handCardCount = 4;//手牌数量
+    repeated int32 cards = 5; //牌数据
+    int32 timeStamp = 6;//时间戳
+    int32 callLandlordTimeOut = 7;    //叫地主限时
+
+}
+
+//[req] 叫地主请求
+message C2S_DDZ_Call_Landlord_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13311;}
+    int32 callScore = 1;//0:不叫分 >=1 叫指定的分
+}
+//[res] 叫地主响应
+message S2C_DDZ_Call_Landlord_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13312;}
+    int32 playerId =1 ;//玩家id
+    int32 callScore = 2;//0:不叫分 >=1 叫指定的分
+    int32 nexCallPlayerId = 3;//下一个叫地主的玩家id
+    int32 nextCallValue = 4;//下一个玩家可以叫的分
+    int32 timeStamp = 5;//时间戳
+    int32 callLandlordTimeOut = 6;    //叫地主限时
+}
+
+//[res] 叫地主结束 响应
+message S2C_DDZ_Call_Landlord_Over_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13313;}
+    int32 landlordId =1 ;//地主玩家id
+    repeated int32 landlordCards = 2;//地主的隐藏牌
+    int32 timeStamp = 3;//时间戳
+    int32 playCardTimeOut = 4;//出牌限时
+    int32 baseCedits = 5;     //底分
+}
+
+//出牌 请求
+message C2S_DDZ_Play_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13314;}
+    int32 minCardId = 1;//最小牌id
+    int32 cardType = 2;//牌型
+    repeated int32 cardIds = 3;//出的牌数据
+    ENUM_DDZ_OP.DDZ_OP opType= 4;
+}
+//出牌 回复
+message S2C_DDZ_Play_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13315;}
+    int32 result = 1;
+    int32 minCardId = 2;//最小牌id
+    int32 cardType =3;//牌型
+    repeated int32 cardIds = 4;//出的牌数据
+    int32 playerId = 5;//玩家id
+    int32 remainCardNum = 6;//剩余牌数量
+    int32 timeStamp = 7;     //时间戳 计算倒计时
+    int32 nextPlayPlayerId = 8;//下一个出牌的玩家id
+    int32 playCardTimeOut = 9;//出牌限时
+    ENUM_DDZ_OP.DDZ_OP opType= 10;  //操作类型
+    int32 multiple = 11;    //当前倍数
+}
+
+//单局结算
+message S2C_DDZ_RoundOver_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13316;}
+    int32 result = 1;
+    int32 currRound = 2;    //当前局数
+    int32 landlordId = 3;     //地主id
+    int32 m_Creator = 4;    //房主id
+    int32 spring = 5;//反春  0 既不是春天也不是反春 1 春天 2 反春
+    int32 zhaDanCount = 6;//炸弹数量
+    int32 baseCedits = 7; //底分
+    int32 isSyncData = 8;   //是否重连数据
+    repeated DB_DDZ_Over_Player overPlayer = 50;
+}
+
+//小结算 玩家组
+message DB_DDZ_Over_Player
+{ 
+    enum MsgID {NONE = 0;ID = 13317;}
+    int32 id = 1;       //用户ID
+    string nickName = 2; //用户名称
+    string icon = 3 ;   //用户头像
+    int32 allCedit = 4; //总积分
+    int32 currentWinCedit = 5;  //本局输赢分
+    bool isWinner = 7;     //是否是赢家
+    bool isLandlord = 8;//是否是地主
+    repeated int32 handCards = 9;     //手牌
+    int32 times =10;//倍数
+}
+
+//响应 断线重连
+message S2C_DDZ_Sync_Room_Info_Res{ 
+    enum MsgID {NONE = 0;ID = 13318;}
+    int32 result = 1;//错误码
+    int32 type = 2;//游戏id
+    DB_DDZ_Room roomResult = 3;     //房间信息
+}
+
+
+/////////////////////申请解散消息/////////////////////////
+//申请解散 请求
+message C2S_DDZ_Dismiss_Room_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13319;}
+}
+//申请解散 回复
+message S2C_DDZ_Dismiss_Room_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13320;}
+    int32 result = 1;
+    int32 playerId = 2; //申请人ID
+    string nickName = 3;    //玩家昵称
+    repeated DB_DDZ_Dismiss_Room_Player disPlayer = 4; //玩家组
+    int32 wCurrentUserId = 5;   //当前操作ID
+    int32 timeStamp = 6;     //时间戳
+    int32 readyTime = 7;    //限时
+}
+
+message DB_DDZ_Dismiss_Room_Player
+{ 
+    enum MsgID {NONE = 0;ID = 13321;}
+    int32 playerId = 1;
+    string nickName = 2;    //玩家昵称
+    int32 choiceResult = 3;      //选择状态 0 等待  1 同意   2 拒绝
+    string icon = 4 ;   //头像
+}
+//操作申请解散  确认 拒绝
+message C2S_DDZ_Choose_Dismiss_Room_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13322;}
+    int32 type = 1;     //操作 1 同意  2 拒绝
+}
+//解散房间结果
+message S2C_DDZ_Dismiss_Over_Res{ 
+    enum MsgID {NONE = 0;ID = 13323;}
+    int32 result = 1;
+    bool isSuccess = 2;//是否解散成功?
+}
+////////////////////申请解散消息//////////////////////////
+
+
+//表情语音 请求
+message C2S_DDZ_Interactive_Req{ 
+    enum MsgID {NONE = 0;ID = 13324;}
+    int32 index = 1;    // 表情语音 编号
+    int32 type = 2;     // 类型 0：表情   1：快捷语言   2：语音  3:魔法表情
+    string content = 3;  // 语音内容
+    int32 content_time = 4; //语音时间
+    int32 receivers = 5;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+//表情语音 回复
+message S2C_DDZ_Interactive_Res{ 
+    enum MsgID {NONE = 0;ID = 13325;}
+    int32 result = 1;
+    int32 index = 2;    // 表情语音 编号
+    int32 type = 3;     // 类型 0：表情   1：快捷语言   2：语音 3:魔法表情
+    string content = 4;  // 语音内容
+    int32 player_id = 5;    //发起人
+    int32 content_time = 6;  //语音时间
+    int32 receivers = 7;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+//退出 请求
+message C2S_DDZ_Leave_Room_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13326;}
+}
+//退出 返回
+message S2C_DDZ_Leave_Room_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13327;}
+    int32 result = 1;
+    int32 playerId = 2; //退出玩家ID
+    bool isOwner = 3;   //是否是房主
+}
+
+//踢人请求
+message C2S_DDZ_Tick_Player_Req
+{ 
+    enum MsgID {NONE = 0;ID = 13328;}
+    int32 playerId = 1;
+}
+
+//踢人回复
+message S2C_DDZ_Tick_Player_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13329;}
+    int32 result = 1;
+    int32 playerId = 2;
+    int32 roomType = 3;
+}
+
+
+//玩家离线
+message S2C_DDZ_Player_Offline_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13330;}
+    int32 playerId = 1;     //离线玩家ID
+}
+
+//玩家上线
+message S2C_DDZ_Player_Online_Res
+{ 
+    enum MsgID {NONE = 0;ID = 13331;}
+    int32 playerId = 1;     //上线玩家ID
+}
+
+
+////////////////////总局结算////////////////////
+//斗地主 总局结算
+message S2C_DDZ_GameOverMsg_Res{ 
+    enum MsgID {NONE = 0;ID = 13332;}
+    int32 roomId = 1;//房号
+    int32 roomType = 2;//房间类型  1：扎金花   2：麻将 3：斗地主
+    string overDate = 3;//结束时间
+    int32 creatorId = 4;//房主id
+    repeated DB_PlayerGameOverLog playerOverInfos= 5;//玩家总局信息
+    int32 clubId = 6;     //俱乐部id
+    int32 deskId = 7;//桌号
+
+}
+//斗地主 每个玩家的总局信息
+message DB_PlayerGameOverLog{ 
+    enum MsgID {NONE = 0;ID = 13333;}
+    string icon = 1;    //头像
+    int32 playerId =2;//玩家id
+    string nickName = 3;//玩家昵称
+    int32 finalScore = 4;    //最终分数
+    int32 maxCredit = 6;    //最高得分
+    int32 landlordCount = 7;//地主次数
+    int32 winRound = 8;     //胜利局数
+}
+
+////////////////////ending---总局结算////////////////////
+
+
+//战绩消息
+message DB_DDZ_Battle_Log{ 
+    enum MsgID {NONE = 0;ID = 13334;}
+    string icon = 1;    //头像
+    int32 score = 2;    //输赢分
+    int32 cost = 3;     //剩余分
+    repeated int32 cards = 4;   //玩家牌数组
+    int32 maxCredit = 5;    //最高得分
+    int32 partakeRound = 6;     //参与局数
+    int32 winRound = 7;     //胜利局数
+}
+
+
+
+
+
+

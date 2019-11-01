@@ -580,6 +580,7 @@ skynet.packstring = assert(c.packstring)
 skynet.unpack = assert(c.unpack)
 skynet.tostring = assert(c.tostring)
 skynet.trash = assert(c.trash)
+skynet.fromstring = assert(c.fromstring)
 
 local function yield_call(service, session)
 	watching_session[session] = service

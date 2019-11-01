@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+enum ERROR_CODE {
+    ERROR_NONE = 0; //无错误
+
+    ERROR_CLUB_OVERFLOW_MAX = 80; //超过拥有的俱乐部最大数量限制
+    ERROR_CLUB_UNKONW = 81;      //创建时出现未处理的异常错误
+    ERROR_CLUB_NOT_FOUND = 82;   //没有这个俱乐部
+    ERROR_NOT_IS_CLUB_MEMBER = 83;   //不是俱乐部成员
+    ERROR_NOT_IS_CLUB_ADMIN = 84;    //不是俱乐部管理员
+    ERROR_NOT_IS_CLUB_BOSS = 85;     //不是俱乐部老板
+    ERROR_NOT_SET_ADMIN = 86;        //不能设置为管理员
+    ERROR_CLUB_ADMIN_MAX = 87;       //俱乐部管理员人数超过最大值
+    ERROR_CLUB_PLAYER_MAX = 88;      //俱乐部人数超过最大值
+    ERROR_NOT_REMOVE_ADMIN_OR_BOSS = 89; //不能删除管理员或老板
+    ERROR_CLUB_UNLOCK_CRT = 90; //没有权限
+
+    ERROR_JOIN_ROOM_NO = 100;     //房间不存在
+    ERROR_JOIN_ROOM_EXCESS =101;   //房间人数已满  createRoom
+    ERROR_JOIN_ROOM_NO_JOIN = 102;  //N局后禁止加入
+
+    ERROR_CLUB_OP_EXPIRE = 103;     //操作已过期（其他管理员已操作）
+    ERROR_CLUB_OP_JOIN_CHECK = 104;     //申请成功，请等待审核
+    ERROR_CLUB_OP_JOIN_REPEATED = 105; //已存在未处理的申请记录，重复申请加入俱乐部
+    ERROR_CLUB_OP_EXIT_REPEATED = 106; //已存在未处理的申请记录，重复申请退出俱乐部
+    ERROR_JOIN_ROOM_CARD_NO = 107;  //房卡不足
+    ERROR_CLUB_OP_JOIN_CHECKED = 108;   //已是茶楼成员，请勿重复申请
+    ERROR_CLUB_OP_JOIN_REFUSE = 109;   //拒绝重复申请
+
+    ERROR_CREATE_ROOM_NO = 110;     //创建失败 暂没有空的房间
+    ERROR_CREATE_ROOM_CLUB_RULE = 111;  //创建俱乐部房间失败 暂没有基础玩法规则
+    ERROR_CREATE_ROOM_CLUB_PLAYERSTATUS = 112;  //玩家在俱乐部中的状态受到限制，不能创建俱乐部 (黑名单)
+    ERROR_CREATE_ROOM_CLUB_MAPINFO = 113;  //创建俱乐部房间失败 不是该亲友圈成员
+    ERROR_CREATE_ROOM_GEM_NO = 114;     //创建俱乐部房间失败 钻石不足
+    ERROR_CREATE_ROOM_CARD_NO = 115;     //创建房间失败 房卡不足
+
+    ERROR_CREATE_ROOM_CLUB_JOIN_NO = 120;  //加入俱乐部房间失败 不是该亲友圈成员
+    ERROR_CREATE_ROOM_CLUB_JOIN_STATUS = 121;  //加入俱乐部房间失败 黑名单玩家
+    ERROR_CLUB_UNLOCK_JOIN_STATUS = 122; //该桌子已上锁 无法进入
+    ERROR_CLUB_UNLOCK_JOIN_CLOSED = 123;    //已歇业
+    ERROR_CREATE_ROOM_CLUB_JOIN_DELETE = 124;   //该亲友群已解散 不存在
+    ERROR_CLUB_ADD_PLAYER_NO = 125; //没有此玩家
+
+    ERROR_ZJH_ROOM_DISCARD_REPEAT = 130;   //已弃牌 重复操作
+    ERROR_ZJH_ROOM_DISCARD_GAMESTARTED = 131;   //游戏未开始
+    ERROR_ZJH_ROOM_DISCARD_SEECARD = 132;   //已看牌 重复操作  followBet
+    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_REPEATVERSYS = 133; //已和该玩家比牌  重复比牌
+    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_REPEAT = 134;    //已操作  重复操作
+    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_ISLOCK = 135;     //对方为中途加入玩家  不能比牌
+    ERROR_ZJH_ROOM_DISCARD_ADDBET_REPEAT = 136;     //已加注  重复操作
+    ERROR_ZJH_ROOM_DISCARD_FOLLOWBET_REPEAT = 137;  //已跟注  重复操作
+    ERROR_ZJH_ROOM_DISMIS_NO = 138; //30秒后才能申请解散
+
+    ERROR_PRODUCT_CHANGE_NO = 200;  //改商品已过期  请刷新商城
+    ERROR_PRODUCT_CHANGE_UP = 201;  //暂未开放
+    ERROR_PRODUCT_CHANGE_MONEY_NO = 202;  //余额不足
+
+    ERROR_MAIL_CHECK_NO = 210;  //领取邮件附件失败
+    ERROR_BINDING_CHECK_NO = 211;   //已邀请码 重复绑定
+    ERROR_BINDING_CHECK_ERROR = 212;  //邀请码错误
+    ERROR_BINDING_CHECK_ME = 213;   //不能绑定自己
+    ERROR_BINDING_CHECK_MUTUAL = 214; //不能相互绑定
+
+    ERROR_ACTIVITY_CHECK_NO = 220;  //已领过该奖励
+    ERROR_ACTIVITY_CHECK_OUT = 221; //该活动已关闭
+    ERROR_ACTIVITY_CHECK_DISMIS = 222; //未达到领取条件
+    ERROR_ACTIVITY_HAS_NO_ACTIVITY = 223; //暂时没有活动
+
+    ERROR_PLAYER_IS_LOCKED = 224;//玩家已经被封号，限制登录
+
+    ERROR_UNABLE_TO_CREATE_ROOM = 225;//即将进入维护，禁止创建房间,传回消息参数(游戏类型 (0:所有游戏  1:拼三张   2：山西推倒胡麻将))
+
+    ERROR_HAS_PLYAERS_IN_CLUB_ROOM = 226;//俱乐部中有玩家在房间中，不能修改玩法
+    ERROR_CREATE_CLUB_FAILED_HAS_NO_RULE_ARGS = 227;//创建俱乐部失败，没有玩法参数
+
+    ERROR_AGENT_HAS_NO_ZJH_AUTH = 228;//代理没有金花权限
+    ERROR_CLUB_FORBID_PLAY_GAME = 229;//俱乐部成员禁止游戏
+
+    ERROR_PLAYER_NOT_EXIST = 230;//玩家不存在
+    ERROR_DESK_LOCKED = 231;//桌子已经加锁
+    ERROR_AREADY_MEMBER = 232;//已经是成员
+
+    ERROR_PLAYER_NOT_IN_ROOM = 233; //成员已不在房间内
+    ERROR_IN_GAME=234;     //已经在游戏中
+
+    ERROR_LOGIN_INFO_INVAILD = 235;//登录消息错误
+    ERROR_NO_HALL_SVR = 236;//没有找到大厅服务器
+    ERROR_NO_SUB_SVR = 237;//没有找到子游戏服务器
+
+    ERROR_LESS_MIN_LIMIT = 238;//小于最小限制
+    ERROR_GREATE_MMAX_LIMIT = 239;//大于最大限制
+
+    ERROR_NOT_OPEN_GAME_AUTH = 240;//群主没有开启自主创建的权限
+    ERROR_LIMIT_MAX_RULE= 241;//快捷玩法超过最大限制
+
+    ERROR_RULE_NOT_EXIST = 242;//俱乐部快捷玩法不存在
+
+    ERROR_NO_AUTH = 243;//没有权限
+
+    ERROR_FORCE_DISBAND = 244;//强制解散提示
+
+    ERROR_LESS_PLAYERS = 245;//目前玩家过少
+
+    ERROR_PLAYER_LEAVE = 246;//有玩家离开
+
+    ERROR_PLAYER_IN_ROOM = 247;//玩家在房间中
+
+    ERROR_LESS_GOLDS_SEND_MAJIC_PROPS = 248;//玩家发送魔法表情，金币不足，无法发送
+
+    ERROR_UN_READY_PLAYER_LEAVE = 249;//玩家没有准备，有人离开
+
+    ERROR_DO_REQ_MATCH_NO_TIPS = 250;//玩家请求准备，服务器提示重新匹配
+}

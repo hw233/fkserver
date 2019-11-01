@@ -1,0 +1,21 @@
+require "game.club.on_club"
+
+--俱乐部
+register_dispatcher("C2S_CLUBLIST_REQ",on_cs_club_list)
+register_dispatcher("C2S_CREATE_CLUB_REQ",on_cs_club_create)
+register_dispatcher("C2S_CLUB_DISMISS_REQ",on_cs_club_dismiss)
+register_dispatcher("C2S_SEARCH_CLUB_REQ",on_cs_club_query)
+register_dispatcher("C2S_JOIN_CLUB_REQ",on_cs_club_join_req)
+register_dispatcher("C2S_CLUB_KICK_PLAYER_REQ",on_cs_club_kickout)
+register_dispatcher("C2S_CLUB_INVITE_PLAYER_REQ",on_cs_club_invite_join_req)
+register_dispatcher("C2S_CLUB_INFO_REQ",on_cs_club_detail_info_req)
+register_dispatcher("C2S_CLUB_PLAYER_LIST_REQ",on_cs_club_query_memeber)
+register_dispatcher("C2S_CLUB_OP_REQ",on_cs_club_operation)
+register_dispatcher("C2S_CLUB_SELECT_RECORD_REQ",on_cs_club_history_record)
+register_dispatcher("C2S_INVITE_MEMBER_TO_GAME_REQ",on_cs_invite_member_to_game)
+register_dispatcher("C2S_REPSONSE_INVITE_TO_GAME_REQ",on_cs_response_invite_to_game)
+-- register_dispatcher("C2S_ROOM_CREATE_REQ",on_cs_create_table)
+register_dispatcher("C2S_CLUB_REQUEST_LIST_REQ",on_cs_club_request_list_req)
+register_dispatcher("C2S_EDIT_CLUB_GAME_TYPE_REQ",on_cs_club_edit_game_type)
+-- register_dispatcher("C2S_JOIN_ROOM_REQ",on_cs_club_enter_table_req)
+-- register_dispatcher("SyncObjectField",on_cs_edit_object_field)
