@@ -53,17 +53,25 @@ local function logout(...)
 	skynet.exit()
 end
 
+local function afk(...)
+    log.warning("afk,guid:%s",guid)
+    if inserverid then
+        channel.publish("service."..tostring(inserverid),"lua","afk",guid)
+    end
+    logout()
+end
+
 function CMD.logout(...)
 	log.warning("%s is logout", guid)
 	logout()
 end
 
 function CMD.afk(...)
-    log.warning("afk,guid:%s",guid)
-    if inserverid then
-        channel.publish("service."..tostring(inserverid),"lua","afk",guid)
-    end
-    logout()
+    afk()
+end
+
+function CMD.kickout()
+    skynet.exit()
 end
 
 function CMD.goserver(_,id)
@@ -553,6 +561,12 @@ function MSG.C2S_HEARTBEAT_REQ()
     })
 end
 
+function MSG.CS_HEARTBEAT()
+    netmsgopt.send(fd,"SC_HEARTBEAT",{
+        severTime = os.time(),
+    })
+end
+
 local function dispatch_client(buf)
     local msgid,msgstr = netmsgopt.unpack(buf)
     local msgname = netmsgopt.msgname(msgid)
@@ -562,7 +576,7 @@ local function dispatch_client(buf)
     end
 
     if msgname ~= "C2S_HEARTBEAT_REQ" then
-        log.info("agent.dispatch %s,%s,%s",msgname,msgid,msgstr)
+        log.info("agent.dispatch %s,%s,%s",msgname,msgid,#msgstr)
     end
 
     local msg = netmsgopt.decode(msgid,msgstr)
@@ -598,6 +612,7 @@ skynet.start(function()
 
     skynet.dispatch("proxy",function (_,_,msgname,msg)
         log.info("agent toclient msgname:%s,%s",guid,msgname)
+        -- dump(msg,3)
         netmsgopt.send(fd,msgname,msg)
     end)
 end)

@@ -8,7 +8,6 @@ if #args == 0 then
     return
 end
 
-
 local clusterid = tonumber(args[1])
 if not clusterid then
     log.error("cluster id is nil")
@@ -16,7 +15,6 @@ if not clusterid then
 end
 
 skynet.setenv("clusterid",tonumber(clusterid))
-
 
 require "bootloader"
 

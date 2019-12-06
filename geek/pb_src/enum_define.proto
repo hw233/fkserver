@@ -52,6 +52,7 @@ enum LOGIN_RESULT {
 	LOGIN_RESULT_IP_CONTROL = 41;							//该IP当天限制登录
 	LOGIN_RESULT_POTATO_CHECK_ERROR = 42;					// 土豆验证失败
 	LOGIN_RESULT_NEED_INVITE_CODE = 43;						// 有邀请码才能注册
+	LOGIN_RESULT_AUTH_CHECK_ERROR = 44;						//平台授权参数错误
 }
 
 // 银行操作结果
@@ -309,4 +310,11 @@ enum ChangeMoneyRecode{
 	ChangMoney_DB_NoFind_Player = 5;								//数据库中未找到玩家记录
 	ChangMoney_DB_NotData = 6;										//操作数据库存储过程无data返回
 	ChangMoney_DB_Error = 7;										//数据库报错
+}
+
+enum STANDUP_REASON{ 
+	STANDUP_REASON_NORMAL = 0;
+	STANDUP_REASON_DISMISS = 1;
+	STANDUP_REASON_OFFLINE = 2;
+	STANDUP_REASON_FORCE = 3;
 }

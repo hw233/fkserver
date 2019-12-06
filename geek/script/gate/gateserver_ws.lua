@@ -211,7 +211,7 @@ function gateserver.start(handler)
     local ws_frame_dispatch = {
         [ws.OPCODE_CLOSE] = function(fd,msg,reason)
             local code = msg
-            -- ws_close(fd,code,reason)
+            ws_close(fd,code,reason)
         end,
         [ws.OPCODE_BINARY] = function(fd,msg,_)
             dispatch_msg(fd,msg)
@@ -290,6 +290,10 @@ function gateserver.start(handler)
 
         skynet.fork(dispatch_queue,fd)
     end
+
+    local function fake_close(...)
+
+    end
     
     local socket_message = {
         -- SKYNET_SOCKET_TYPE_DATA = 1
@@ -297,7 +301,7 @@ function gateserver.start(handler)
         -- SKYNET_SOCKET_TYPE_CONNECT = 2
         [2] = function(fd, _ , addr) end,
         -- SKYNET_SOCKET_TYPE_CLOSE = 3
-        [3] = close,
+        [3] = fake_close,
         -- SKYNET_SOCKET_TYPE_ACCEPT = 4
         [4] = open,
         -- SKYNET_SOCKET_TYPE_ERROR = 5

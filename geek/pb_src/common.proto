@@ -1,20 +1,20 @@
 syntax = "proto3";
 
 message ObjectField{
-	enum ObjectFieldType{ 
+	enum Type{ 
 		Nil = 0;
 		Number = 1;
 		String = 2;
 		Json = 3;
 	};
 	string 			 name = 1;  //字段名字
-	ObjectFieldType  type = 2; //字段数型
+	Type             type = 2; //字段数型
 	string 			 value = 3;//字符值
 }
 
 //更新对象属性
 message SyncObjectField{
-	enum MsgID{ Nil = 0;ID = 1180;}
+	enum MsgID{ Nil = 0;ID = 998;}
 	string 		object_type = 2; //对象类型（字符)
 	ObjectField object_id = 3; // 对象id
 	repeated ObjectField fields = 4;//要同步的字段
@@ -29,12 +29,12 @@ enum CLUB_ROLE_TYPE{
     CRT_BOSS = 3;   //创建者，老板
 }
 
-//桌子同步类型
-enum TABLE_SYNC_TYPE{
+//同步类型
+enum SYNC_TYPE{
     SYNC_NONE=0;
-    SYNC_ADD=1;//添加房间
-    SYNC_DEL=2;//删除房间信息
-    SYNC_UPDATE=3;//刷新房间信息
+    SYNC_ADD=1;//添加
+    SYNC_DEL=2;//删除信息
+    SYNC_UPDATE=3;//刷新信息
 }
 
 //-----------------------基础结构----------------------------
@@ -55,6 +55,7 @@ message SEAT_INFO {
     int32 guid = 3; //玩家ID
     string nickname = 4;//昵称
     bool sex =5; // 性别
+    bool ready = 6; //准备状态
 }
 
 message TABLE_INFO {

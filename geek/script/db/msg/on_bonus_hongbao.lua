@@ -164,7 +164,6 @@ end
 
 
 function on_sd_query_bonus_activity_limit_info(game_id,msg)
-	local db = get_game_db()
 	local sql = string.format([[SELECT * FROM game.t_player_bonus_activity_limit WHERE guid = %d AND activity_id = %d;]],
 										msg.guid,msg.activity_id)
 	dump(sql)
@@ -187,7 +186,7 @@ end
 function on_sd_update_bonus_activity_limit_info(game_id,msg)
 	local db = dbopt.game
 	local data = db:query([[SELECT * FROM game.t_player_bonus_activity_limit WHERE guid = %d AND activity_id = %d;]],
-										msg.guid,msg.activity_id)
+							msg.guid,msg.activity_id)
 	dump(data)
 	if data.errno or #data == 0 then 
 		db:query("INSERT INTO game.t_player_bonus_activity_limit VALUES(%d,%d,%d,%d,%d,%d);",

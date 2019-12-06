@@ -1,58 +1,0 @@
-
-ì
-
-redis_define.proto"Õ
-
-PlayerLoginInfo
-
-session_id (R	sessionId
-gate_id (RgateId
-account (	Raccount
-guid (Rguid
-nickname (	Rnickname
-vip (Rvip
-
-login_time (R	loginTime
-logout_time (R
-logoutTime&
-h_bank_password	 (RhBankPassword
-is_guest
- (RisGuest!
-is_reconnect (RisReconnect%
-alipay_account (	RalipayAccount
-alipay_name (	R
-alipayName*
-change_alipay_num (RchangeAlipayNum
-phone (	Rphone
-
-phone_type (	R	phoneType
-version (	Rversion
-
-channel_id (	R	channelId!
-package_name (	RpackageName
-imei (	Rimei
-ip (	Rip
-risk (Rrisk
-ip_area (	RipArea
-password (	Rpassword*
-create_channel_id (	RcreateChannelId'
-enable_transfer (RenableTransfer
-is_first (:2RisFirst$
-inviter_guid (:0RinviterGuid
-invite_code (	R
-inviteCode#
-bank_password (	RbankPassword'
-deprecated_imei (	RdeprecatedImei
-platform_id  (	R
-platformId9
-using_login_validatebox! (:0RusingLoginValidatebox$
-bank_card_name" (	RbankCardName"
-bank_card_num# (	RbankCardNum.
-change_bankcard_num$ (RchangeBankcardNum
-	bank_name% (	RbankName#
-bank_province& (	RbankProvince
-	bank_city' (	RbankCity
-bank_branch( (	R
-bankBranch
-	shared_id) (	RsharedId
-	unique_id* (	RuniqueId

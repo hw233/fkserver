@@ -13,15 +13,18 @@ require "functions"
 
 local server = {}
 local onlineguid = {}
-local heartbeat_check_time = 10
+local heartbeat_check_time = 8
 
 local MSG = {}
 
 function server.login(fd,guid,inserverid,conf)
     local s = onlineguid[guid]
     if s then
-        log.warning(" %d login repeated!",guid)
-        return
+        if s.fd == fd then
+            log.warning(" %d login repeated!",guid)
+            return
+        end
+        server.kickout(guid)
     end
 
     local agent = skynet.newservice("gate.agent",skynet.self(),protocol,inserverid)
@@ -53,7 +56,8 @@ end
 function server.kickout(guid)
 	local u = onlineguid[guid]
 	if u then
-		pcall(skynet.call, u.agent, "lua", "logout")
+        pcall(skynet.call, u.agent, "lua", "kickout")
+        server.logout(guid)
 	end
 end
 
@@ -83,7 +87,7 @@ function server.request_handler(msgstr,session)
         return
     end
 
-    u.last_live_time = os.clock()
+    u.last_live_time = os.time()
 
     skynet.send(u.agent,"client",msgstr)
 end
@@ -91,7 +95,7 @@ end
 local function guid_monitor()
     for _,u in pairs(onlineguid) do
         local last_live_time = u.last_live_time
-        if last_live_time and os.clock() - last_live_time > heartbeat_check_time then
+        if last_live_time and os.time() - last_live_time > heartbeat_check_time then
             pcall(skynet.call,u.agent, "lua", "afk")
         end
     end

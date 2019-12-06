@@ -162,7 +162,8 @@ main(int argc, char *argv[]) {
 	config.profile = optboolean("profile", 1);
 
 	char args[4096] = {0};
-	for(int i = 2;i < argc;i++){
+	int i = 2;
+	for(i = 2;i < argc;i++){
 		strcat(args,argv[i]);
 		strcat(args," ");
 	}

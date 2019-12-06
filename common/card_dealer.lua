@@ -36,7 +36,6 @@ function card_dealer:shuffle()
 end
 
 function card_dealer:deal_one()
---	print(self.remainder_card_count)
 	local k = self.remainder_card_count
     local j = math.random(k)
     local card = self.cards[j]

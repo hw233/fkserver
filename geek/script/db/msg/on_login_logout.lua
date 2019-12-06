@@ -182,8 +182,6 @@ function on_sd_cash_money_type(game_id, msg)
 	end
 	cash_type = cash_type..")"
 
-
-	local db = get_recharge_db()
 	local sql = string.format([[
 		select type as cash_type,money,created_at,status,agent_guid,exchange_code from t_cash where  guid = %d and created_at BETWEEN (curdate() - INTERVAL 6 DAY) and (curdate() - INTERVAL -1 DAY) and type in %s  order by created_at desc limit 50
 	]], guid_,cash_type)

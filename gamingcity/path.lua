@@ -1,6 +1,0 @@
-root = "./"
-luaservice = root.."common/?.lua;"..root.."service/?.lua;"..root.."gamingcity/script/?.lua"
-lualoader = root .. "lualib/loader.lua"
-lua_path = root.."common/?.lua;"..root.."lualib/?.lua;"..root.."lualib/?/init.lua;"..root.."gamingcity/script/?.lua;"..root.."gamingcity/?.lua"
-lua_cpath = root.."common/luaclib/?.so;"..root .. "luaclib/?.so;"..root .. "gamingcity/luaclib/?.so"
-snax = root.."common/?.lua;"..root.."gamingcity/script/?.lua;"..root.."gamingcity/?.lua"

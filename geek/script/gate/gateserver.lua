@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-local netpack = require "skynet.netpack"
 local socketdriver = require "skynet.socketdriver"
+local ws = require "websocket"
 local log = require "log"
 
 skynet.register_protocol {
@@ -13,13 +13,81 @@ skynet.register_protocol {
 local gateserver = {}
 
 local socket	-- listen socket
-local queue		-- message queue
 local maxclient	-- max client
 local client_number = 0
-local CMD = setmetatable({}, { __gc = function() netpack.clear(queue) end })
-local nodelay = false
+local buffer_pool = {}
+local CMD = setmetatable({}, { __gc = function() socketdriver.clear(buffer_pool) end })
+local nodelay
 
 local connection = {}
+
+local function wakeup(c)
+    local co = c.co
+    if co then
+        c.co = nil
+        skynet.wakeup(co)
+    end
+end
+
+local function suspend(c)
+    assert(not c.co)
+    c.co = coroutine.running()
+    skynet.wait(c.co)
+    -- wakeup closing corouting every time suspend,
+    -- because socket.close() will wait last socket buffer operation before clear the buffer.
+    if not connection[c.fd] then
+        skynet.wakeup(c.closing)
+    end
+end
+
+local function read(fd,sz)
+    local c = connection[fd]
+    if not c then
+        log.warning("socket closed when read,fd:%d,size:%d",fd,sz)
+        return nil
+    end
+ 
+	if sz == nil then
+		-- read some bytes
+		local ret = socketdriver.readall(c.buffer, buffer_pool)
+		if ret ~= "" then
+			return ret
+		end
+
+		if not connection[fd] then
+			return nil, ret
+        end
+
+		assert(not c.read_required)
+        c.read_required = 0
+		suspend(c)
+		ret = socketdriver.readall(c.buffer, buffer_pool)
+		if ret ~= "" then
+			return ret
+        end
+
+		return nil, ret
+	end
+
+	local ret = socketdriver.pop(c.buffer, buffer_pool, sz)
+	if ret then
+		return ret
+    end
+
+	if not connection[fd] then
+		return nil, socketdriver.readall(c.buffer, buffer_pool)
+	end
+
+	assert(not c.read_required)
+    c.read_required = sz
+	suspend(c)
+	ret = socketdriver.pop(c.buffer, buffer_pool, sz)
+    if ret then
+		return ret
+	end
+
+    return nil, socketdriver.readall(c.buffer, buffer_pool)
+end
 
 function gateserver.openclient(fd)
 	if connection[fd] then
@@ -30,8 +98,8 @@ end
 function gateserver.closeclient(fd)
 	local c = connection[fd]
 	if c then
-		connection[fd] = false
-		socketdriver.close(fd)
+        socketdriver.close(fd)
+        connection[fd] = nil
 	end
 end
 
@@ -56,99 +124,140 @@ function gateserver.start(handler)
 	function CMD.close()
 		assert(socket)
 		socketdriver.close(socket)
-	end
+    end
 
-	local MSG = {}
+    local function data(fd,size,msg) 
+        local c = connection[fd]
+        if c == nil then
+            log.error("no connection when data arrive, drop package from " .. fd)
+            socketdriver.drop(msg, size)
+            return
+        end
 
-	local function dispatch_msg(fd, msg, sz)
-		if connection[fd] then
-			handler.message(fd, netpack.tostring(msg,sz))
-		else
-			log.error("Drop message from fd (%d) : %s", fd, netpack.tostring(msg,sz))
-		end
-	end
+        local sz = socketdriver.push(c.buffer, buffer_pool, msg, size)
+        dump(sz)
+        if c.read_required and sz >= c.read_required then
+            c.read_required = nil
+            wakeup(c)
+        end
+    end
 
-	MSG.data = dispatch_msg
-
-	local function dispatch_queue()
-		local fd, msg, sz = netpack.pop(queue)
-		if fd then
-			-- may dispatch even the handler.message blocked
-			-- If the handler.message never block, the queue should be empty, so only fork once and then exit.
-			skynet.fork(dispatch_queue)
-			dispatch_msg(fd, msg, sz)
-
-			for fd, msg, sz in netpack.pop, queue do
-				dispatch_msg(fd, msg, sz)
-			end
-		end
-	end
-
-	MSG.more = dispatch_queue
-
-	function MSG.open(fd, msg)
-		if client_number >= maxclient then
-			socketdriver.close(fd)
-			return
-		end
-		if nodelay then
-			socketdriver.nodelay(fd)
-		end
-		connection[fd] = true
-		client_number = client_number + 1
-		handler.connect(fd, msg)
-	end
-
-	local function close_fd(fd)
+    local function close_fd(fd)
 		local c = connection[fd]
-		if c ~= nil then
+        if c then
+            log.warning("close_fd,fd:%d,addr:%s",fd,c.addr)
+            if c.co then
+                wakeup(c)
+            end
 			connection[fd] = nil
 			client_number = client_number - 1
 		end
 	end
 
-	function MSG.close(fd)
-		if fd ~= socket then
+    local function close(fd)
+        if fd ~= socket then
 			if handler.disconnect then
 				handler.disconnect(fd)
-			end
+            end
+            log.info("%s closed",fd)
 			close_fd(fd)
-		else
+        else
+            log.warning("listen fd: %d closed...",socket)
 			socket = nil
 		end
-	end
+    end
 
-	function MSG.error(fd, msg)
-		if fd == socket then
+    local function error(fd,msg)
+        if fd == socket then
 			socketdriver.close(fd)
-			log.error("gateserver close listen socket, accpet error:",msg)
-		else
+			log.error("gateserver_ws close listen socket, accpet error:",msg)
+        else
 			if handler.error then
 				handler.error(fd, msg)
 			end
 			close_fd(fd)
 		end
-	end
+    end
 
-	function MSG.warning(fd, size)
-		if handler.warning then
+    local function warning(fd,size)
+        if handler.warning then
 			handler.warning(fd, size)
 		end
-	end
+    end
 
-	skynet.register_protocol {
-		name = "socket",
-		id = skynet.PTYPE_SOCKET,	-- PTYPE_SOCKET = 6
-		unpack = function ( msg, sz )
-			return netpack.filter( queue, msg, sz)
-		end,
-		dispatch = function (_, _, q, type, ...)
-			queue = q
-			if type then
-				MSG[type](...)
-			end
+    local function dispatch_msg(fd, msg)
+		if connection[fd] then
+			handler.message(fd, msg)
+		else
+			-- log.warning("drop message from fd (%s) : %s", fd, msg)
 		end
-	}
+	end
+	
+	local function read_msg(fd)
+		local c = connection[fd]
+		if not c then
+			return
+		end
+
+        local szstr = read(fd,2)
+        if not szstr then
+            return
+        end
+
+        local len = string.unpack("<H",szstr)
+        local msg = read(fd,len - 2)
+        return msg or ""
+	end
+    
+    local function dispatch_queue(fd)
+        local msg = read_msg(fd)
+        if not msg and not connection[fd] then
+            return
+        end
+        dispatch_msg(fd,msg)
+        skynet.fork(dispatch_queue,fd)
+    end
+
+
+    local function open(_,fd,addr)
+        log.info("got connection from %s",addr)
+        local c = {
+            fd = fd,
+            addr = addr,
+            buffer = socketdriver.buffer(),
+        }
+
+        connection[fd] = c
+        client_number = client_number + 1
+        handler.connect(fd,addr)
+        skynet.fork(dispatch_queue,fd)
+    end
+    
+    local socket_message = {
+        -- SKYNET_SOCKET_TYPE_DATA = 1
+        [1] = data,
+        -- SKYNET_SOCKET_TYPE_CONNECT = 2
+        [2] = function(fd, _ , addr) end,
+        -- SKYNET_SOCKET_TYPE_CLOSE = 3
+        [3] = close,
+        -- SKYNET_SOCKET_TYPE_ACCEPT = 4
+        [4] = open,
+        -- SKYNET_SOCKET_TYPE_ERROR = 5
+        [5] = error,
+        -- SKYNET_SOCKET_TYPE_UDP = 6
+        [6] = function(fd, size, data, address) end,
+        -- SKYNET_SOCKET_TYPE_WARNING
+        [7] = warning,
+    }
+
+    skynet.register_protocol {
+        name = "socket",
+        id = skynet.PTYPE_SOCKET,	-- PTYPE_SOCKET = 6
+        unpack = socketdriver.unpack,
+        dispatch = function (_, _, t, ...)
+            socket_message[t](...)
+        end
+    }
 
 	skynet.start(function()
 		skynet.dispatch("lua", function (_, address, cmd, ...)

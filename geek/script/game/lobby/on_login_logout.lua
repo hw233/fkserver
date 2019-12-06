@@ -8,7 +8,6 @@ local login_award_table = login_award_table
 require "game.net_func"
 local send2db_pb = send2db_pb
 local send2client_pb = send2client_pb
-local send2client_login = send2client_login
 
 local base_player = require "game.lobby.base_player"
 local base_players = require "game.lobby.base_players"
@@ -128,6 +127,7 @@ end
 function on_ls_login_notify(msg)
 	local info = msg.player_login_info
 	log.info("on_ls_login_notify game_id = %d %s", def_game_id, info.is_reconnect)
+	onlineguid[info.guid] = nil
 	local player = base_players[info.guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player",def_game_id)
@@ -139,17 +139,16 @@ function on_ls_login_notify(msg)
 	player.risk = player.risk or 0
 	player.inviter_guid = player.inviter_guid or player.inviter_guid or 0
 	player.invite_code = player.invite_code or player.invite_code or "0"
-
 	if info.is_reconnect then
 		-- 重连
 		log.info("login step reconnect game->LC_Login,account=%s", info.account)
 		return
 	end
 
-	log.info("ip_area =%s", info.ip_area)
-	log.info("player[%d] has_bank_password[%s] bankpwd[%s] platform_id[%s]",player.guid,tostring(player.has_bank_password),tostring(player.bank_password),player.platform_id)
-	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]",
-		player.guid, player.bank_card_name , player.bank_card_num, tostring(player.change_bankcard_num),player.bank_name,
+	log.info("ip_area =%s",info.ip_area)
+	log.info("player[%s] has_bank_password[%s] bankpwd[%s] platform_id[%s]",player.guid,player.has_bank_password,player.bank_password,player.platform_id)
+	log.info("player[%s] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]",
+		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,player.bank_name,
 		player.bank_province,player.bank_city,player.bank_branch)
 	
 	-- math.randomseed(tostring(os.time()):reverse():sub(1, 6))
@@ -249,7 +248,7 @@ function logout(guid)
 	log.info("===========logout")
 	local player = base_players[guid]
 	if not player then
-		log.error("logout,guid[%d] not find in game= %d", guid, def_game_id)
+		log.error("logout,guid[%s] not find in game= %s", guid, def_game_id)
 		return
 	end
 
@@ -290,6 +289,7 @@ function logout(guid)
 
 	-- 删除玩家
 	base_players[guid] = nil
+	onlineguid[guid] = nil
 
 	return false
 end
@@ -329,11 +329,11 @@ local function load_player_data_complete(player)
 		log.info("-------------------------1")
 	end
 	
-	if room:is_play(player) then
+	if g_room:is_play(player) then
 		log.info("-------------------------2")
 	end
 
-	if player.is_offline and room:is_play(player) then
+	if player.is_offline and g_room:is_play(player) then
 		log.info("=====================================send SC_ReplyPlayerInfoComplete")
 		local notify = {
 			pb_gmMessage = {
@@ -347,7 +347,7 @@ local function load_player_data_complete(player)
 
 		log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete send have data gate_id[%d]" , player.guid,player.account,player.gate_id)
 		send2client_pb(player,"SC_ReplyPlayerInfoComplete", notify)
-		room:player_online(player)
+		g_room:player_online(player)
 		return
 	end
 
@@ -418,12 +418,9 @@ function on_cs_request_player_info(msg,guid)
 	info.pb_base_info = player
 	info.pb_emails = emails
 
-	-- dump(info)
-
-	-- on_CS_QueryRechargeAndCashSwitch(player)	
 	onlineguid.send(guid,"SC_ReplyPlayerInfo",info)
 
-	log.info ("test .................. on_ce_request_player_info")
+	log.info("test .................. on_ce_request_player_info")
 end
 
 
@@ -788,7 +785,7 @@ function on_cs_change_game(msg,guid)
 	if msg.first_game_type == def_first_game_type and msg.second_game_type == def_second_game_type then
 		-- 已经在这个服务器中了
 		log.info("on_cs_change_game: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d]",def_game_name,def_game_id,room.game_switch_is_open)
-		if room.game_switch_is_open == 1 then --游戏进入维护阶段
+		if g_room.game_switch_is_open == 1 then --游戏进入维护阶段
 			if player.vip ~= 100 then	
 				send2client_pb(player, "SC_GameMaintain", {
 						result = enum.GAME_SERVER_RESULT_MAINTAIN,
@@ -1051,7 +1048,7 @@ end
 function on_ss_change_game(guid)
 	local player = base_players[guid]
 	player.online = true
-	log.info([[player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]],
+	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s",
 		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
 		player.bank_name,player.bank_province,player.bank_city,player.bank_branch)
 
@@ -1064,9 +1061,9 @@ function on_ss_change_game(guid)
 		first_game_type = def_first_game_type,
 		second_game_type = def_second_game_type,
 		server = def_game_id,
-		room_id = def_game_id,
 	})
 
+	dump(player)
 	onlineguid.control(player,"goserver",def_game_id)
 	onlineguid[player.guid] = nil
 	
@@ -1179,6 +1176,8 @@ function on_cs_create_private_room(msg,guid)
 
 	local player = base_players[guid]
 
+	-- dump(msg)
+
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
 		local room_id = find_best_room(game_type)
@@ -1202,8 +1201,6 @@ function on_cs_create_private_room(msg,guid)
 		play = {}
 	}
 
-	dump(rule)
-
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= ERROR_NONE  then
 		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
@@ -1225,15 +1222,22 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		result,global_table_id,tb = club:create_table(player,chair_count,round,rule)
+		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
 	elseif pay_option == PAY_OPTION_AA then
 		if club then
-			result,global_table_id,tb = club:create_table(player,rule)
+			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
 		else
-			result,global_table_id,tb = room:create_private_table(player,chair_count,round,rule)
+			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
 		end
 	elseif pay_option == PAY_OPTION_ROOM_OWNER then
 		
+	end
+
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = result,
+		})
+		return
 	end
 
 	send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
@@ -1245,19 +1249,96 @@ function on_cs_create_private_room(msg,guid)
 			rule = msg.rule,
 			owner = guid,
 		},
-		seat_list = {player},
+		seat_list = {{
+			chair_id = player.chair_id,
+			open_id_icon = player.open_id_icon,
+			guid = player.guid,
+			nickname = player.nickname,
+			sex = player.sex,
+			ready = tb.ready_list[player.chair_id] and true or false,
+		}},
 	})
+end
+
+function on_cs_reconnect(guid)
+	local player = base_players[guid]
+	local onlineinfo = onlineguid[guid]
+	if not onlineinfo then
+		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			result = ERROR_JOIN_ROOM_NO,
+		})
+		return
+	end
+
+	if not onlineinfo.table or not onlineinfo.chair then
+		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			result = ERROR_JOIN_ROOM_NO,
+		})
+		return
+	end
+
+	local table_id = onlineinfo.table
+	local chair_id = onlineinfo.chair
+	local private_table = base_private_table[onlineinfo.global_table]
+	if not private_table then
+		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			result = ERROR_JOIN_ROOM_NO,
+		})
+		return
+	end
+
+	local tb = g_room.tables[table_id]
+	local seats = {}
+	tb:foreach(function(p)
+		table.insert(seats,{
+			chair_id = p.chair_id,
+			open_id_icon = p.open_id_icon,
+			guid = p.guid,
+			nickname = p.nickname,
+			sex = p.sex,
+			ready = tb.ready_list[p.chair_id] and true or false,
+		})
+	end)
+
+	send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		result = enum.ERROR_NONE,
+		info = {
+			game_type = private_table.game_type,
+			club_id = private_table.club_id,
+			table_id = private_table.table_id,
+			rule = json.encode(private_table.rule),
+			owner = guid,
+		},
+		seat_list = seats,
+	})
+
+	g_room:reconnect(player,table_id,chair_id)
 end
 
 -- 加入私人房间
 function on_cs_join_private_room(msg,guid)
 	local player = base_players[guid]
-	if player.table_id and player.chair_id then
-		
+	local reconnect = msg.reconnect
+	local global_table_id = msg.table_id
+	if reconnect and reconnect ~= 0 then
+		local onlineinfo = onlineguid[guid]
+		if not onlineinfo then
+			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+				result = ERROR_JOIN_ROOM_NO,
+			})
+			return
+		end
+		global_table_id = onlineinfo.global_table
+	end
+
+	if not global_table_id then
+		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			result = ERROR_JOIN_ROOM_NO,
+		})
 		return
 	end
 
-	local private_table = base_private_table[msg.table_id]
+	local private_table = base_private_table[global_table_id]
 	if not private_table then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
 			result = ERROR_JOIN_ROOM_NO,
@@ -1266,12 +1347,25 @@ function on_cs_join_private_room(msg,guid)
 	end
 
 	local game_type = private_table.game_type
+	if not game_type then
+		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			result = ERROR_JOIN_ROOM_NO,
+		})
+	end
+
+
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
 		local room_id = find_best_room(game_type)
+		log.info("ss_changegame to %s,%s",guid,room_id)
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","C2S_JOIN_ROOM_REQ",msg,guid)
+		return
+	end
+
+	if reconnect and reconnect ~= 0 then
+		on_cs_reconnect(guid)
 		return
 	end
 
@@ -1297,9 +1391,7 @@ function on_cs_join_private_room(msg,guid)
 		return
 	end
 
-	local result = GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 	local tb
-
 	local club_id = private_table.club_id
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == PAY_OPTION_BOSS then
@@ -1315,30 +1407,36 @@ function on_cs_join_private_room(msg,guid)
 		if club then
 			result,tb = club:join_table(player,private_table,chair_count)
 		else
-			result,tb = room:join_private_table(player,private_table,chair_count)
+			result,tb = g_room:join_private_table(player,private_table,chair_count)
 		end
 	elseif pay_option == PAY_OPTION_ROOM_OWNER then
 		
 	end
 
 	local seats = {}
-	tb:foreach(function(p) 
-		table.insert(seats,{
-			chair_id = p.chair_id,
-			open_id_icon = p.open_id_icon,
-			guid = p.guid,
-			nickname = p.nickname,
-			sex = p.sex,
-		})
-	end)
+	if result == enum.GAME_SERVER_RESULT_SUCCESS then
+		tb:foreach(function(p) 
+			table.insert(seats,{
+				chair_id = p.chair_id,
+				open_id_icon = p.open_id_icon,
+				guid = p.guid,
+				nickname = p.nickname,
+				sex = p.sex,
+				ready = tb.ready_list[p.chair_id] and true or false,
+			})
+		end)
+	else
+		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
+	end
+
 	send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
 		result = result,
 		info = {
-			game_type = game_type,
-			club_id = club_id,
+			game_type = private_table.game_type,
+			club_id = private_table.club_id,
 			table_id = private_table.table_id,
-			rule = json.encode(rule),
-			owner = guid,
+			rule = json.encode(private_table.rule),
+			owner = private_table.owner,
 		},
 		seat_list = seats,
 	})
@@ -1490,7 +1588,7 @@ function do_on_ds_reset_account(msg, register_money)
 	if msg.ret == LOGIN_RESULT_SUCCESS then
 		player.is_guest = false
 
-		player:add_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = register_money}}, LOG_MONEY_OPT_TYPE_RESET_ACCOUNT)
+		player:add_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD, money = register_money}}, LOG_MONEY_OPT_TYPE_RESET_ACCOUNT)
 
 		local account_key = get_account_key(player.account,player.platform_id)
 		-- redis数据修改
@@ -1689,7 +1787,7 @@ end
 function on_gm_android_opt(opt_type_, roomid_, num_)
 	log.info "on_gm_android_opt .........................."
 
-	if not room:find_room(roomid_) then
+	if not g_room:find_room(roomid_) then
 		log.error("on_gm_android_opt room not find")
 		return
 	end
@@ -1808,7 +1906,7 @@ end
 function on_ls_set_tax(msg)
 	log.info("on_ls_SetTax...................................on_ls_set_tax")
 	log.info(msg.tax, msg.is_show, msg.is_enable)
-	room:change_tax(msg.tax, msg.is_show, msg.is_enable)
+	g_room:change_tax(msg.tax, msg.is_show, msg.is_enable)
 	local nmsg = {
 	webid = msg.webid,
 	result = 1,
@@ -1843,7 +1941,7 @@ function on_ls_FreezeAccount( msg )
 	if player.disable == 1 then
 		-- 踢用户下线 封停所有功能
 		log.info("=======================disable == 1")
-		if not room:is_play(player) then
+		if not g_room:is_play(player) then
 			log.info("on_ls_FreezeAccount.....................player not in play forced_exit")
 			-- 强行T下线
 			player:forced_exit();
@@ -1994,7 +2092,7 @@ function on_cs_change_maintain(msg)
 			--[[room:broadcast2client_by_player("SC_GameMaintain", {
 			result = GAME_SERVER_RESULT_MAINTAIN,
 			}) --广播游戏维护状态--]]
-			room:foreach_by_player(function (player) 
+			g_room:foreach_by_player(function (player) 
 				if player and player.vip ~= 100 then --非系统玩家广播维护
 					send2client_pb(player, "SC_GameMaintain", {
 					result = 0,

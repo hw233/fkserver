@@ -21,7 +21,7 @@ function util.verify_sms(who,telephone,sms)
 end
 
 function util.geo_lookup(ip)
-    return skynet.call(utild,"lua","query_geo",ip)
+    return skynet.call(utild,"lua","geo_lookup",ip)
 end
 
 skynet.start(function()

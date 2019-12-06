@@ -4,8 +4,8 @@ local pb = require "pb_files"
 require "functions"
 local base_character = require "game.lobby.base_character"
 require "game.lobby.base_android"
-
 local log  = require "log"
+local enum = require "pb_enums"
 require "data.item_details_table"
 local item_details_table = item_details_table
 local base_active_android = base_active_android
@@ -15,23 +15,6 @@ require "table_func"
 local send2client_pb = send2client_pb
 local redisopt = require "redisopt"
 local reddb = redisopt.default
-
-
--- enum GAME_SERVER_RESULT
-local GAME_SERVER_RESULT_SUCCESS = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_SUCCESS")
-local GAME_SERVER_RESULT_IN_GAME = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_GAME")
-local GAME_SERVER_RESULT_IN_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_ROOM")
-local GAME_SERVER_RESULT_OUT_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OUT_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_TABLE = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_TABLE")
-local GAME_SERVER_RESULT_NOT_FIND_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_CHAIR")
-local GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER")
-local GAME_SERVER_RESULT_PLAYER_NO_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_PLAYER_NO_CHAIR")
-local GAME_SERVER_RESULT_OHTER_ON_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OHTER_ON_CHAIR")
-local LOG_MONEY_OPT_TYPE_LAND = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_LAND")
-
-local ChangMoney_Success = pb.enum("ChangeMoneyRecode", "ChangMoney_Success")
-local ChangMoney_NotEnoughMoney = pb.enum("ChangeMoneyRecode", "ChangMoney_NotEnoughMoney")
 
 -- enum ITEM_PRICE_TYPE 
 local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
@@ -90,7 +73,7 @@ end
 
 -- 进入房间并坐下
 function base_player:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, result_, tb)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		local notify = {
 			room_id = room_id_,
 			table_id = table_id_,
@@ -112,6 +95,8 @@ function base_player:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, 
 					money = p:get_money(),
 					header_icon = p:get_header_icon(),
 					ip_area = p.ip_area,
+					open_id_icon = p.open_id_icon,
+					sex = p.sex,
 				}
 				notify.pb_visual_info = notify.pb_visual_info or {}
 				table.insert(notify.pb_visual_info, v)
@@ -128,7 +113,7 @@ end
 
 function base_player:change_table( room_id_, table_id_, chair_id_, result_, tb )
 	print("===========base_player:change_table")
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		local notify = {
 			room_id = room_id_,
 			table_id = table_id_,
@@ -160,8 +145,8 @@ end
 
 -- 站起并离开房间
 function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
-		print("send SC_StandUpAndExitRoom :"..result_)
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
+		log.info("send SC_StandUpAndExitRoom :"..result_)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
 			room_id = room_id_,
 			table_id = table_id_,
@@ -174,7 +159,7 @@ function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, r
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"second_game_type")
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"server")
 	else
-		print("send SC_StandUpAndExitRoom nil"..result_)
+		log.info("send SC_StandUpAndExitRoom nil"..result_)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
 			result = result_,
 			})
@@ -183,7 +168,7 @@ end
 
 -- 切换座位
 function base_player:on_change_chair(table_id_, chair_id_, result_, tb)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		local notify = {
 			table_id = table_id_,
 			chair_id = chair_id_,
@@ -215,7 +200,7 @@ end
 
 -- 进入房间
 function base_player:on_enter_room(room_id_, result_)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		send2client_pb(self, "SC_EnterRoom", {
 			room_id = room_id_,
 			result = result_,
@@ -234,7 +219,7 @@ end
 
 -- 离开房间
 function base_player:on_exit_room(result_)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		send2client_pb(self, "SC_ExitRoom", {
 			room_id = 0,
 			result = result_,
@@ -254,7 +239,7 @@ end
 
 -- 坐下
 function base_player:on_sit_down(table_id_, chair_id_, result_)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		send2client_pb(self, "SC_SitDown", {
 			table_id = table_id_,
 			chair_id = chair_id_,
@@ -270,14 +255,14 @@ function base_player:on_sit_down(table_id_, chair_id_, result_)
 end
 
 -- 通知坐下
-function base_player:on_notify_sit_down(notify)	
+function base_player:on_notify_sit_down(notify)
 	log.info("on_notify_sit_down  player guid[%d] ip_area =%s",self.guid , notify.pb_visual_info.ip_area)
 	send2client_pb(self, "SC_NotifySitDown", notify)
 end
 
 -- 站起
 function base_player:on_stand_up(table_id_, chair_id_, result_)
-	if result_ == GAME_SERVER_RESULT_SUCCESS then
+	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		print("=========base_player:on_stand_up true")
 		send2client_pb(self, "SC_StandUp", {
 			table_id = table_id_,
@@ -475,7 +460,7 @@ function base_player:decr_gold(p,why)
 	money = money - p.money
 
 	self.money = money
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_GOLD)
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
 	
 	if self.is_player and not self.is_android then
 		local newmoney = self:decrby("money",p.money)
@@ -483,7 +468,7 @@ function base_player:decr_gold(p,why)
 			log.error("change gold money db ~= runtime")
 		end
 
-		self:log_money(ITEM_PRICE_TYPE_GOLD,why,oldmoney,self.money,self.bank,self.bank)
+		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,why,oldmoney,self.money,self.bank,self.bank)
 	end
 
 	log.info("cost_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)
@@ -493,7 +478,7 @@ end
 function base_player:cost_money(price, why, whatever)
 	for _, p in ipairs(price) do
 		log.info("guid[%d] money_type[%d]  money[%d]" ,self.guid, p.money_type, p.money)
-		if p.money_type == ITEM_PRICE_TYPE_GOLD then
+		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			self:decr_gold(p,why,whatever)
 		elseif p.money_type == ITEM_PRICE_TYPE_ROOM_CARD then
 			self:decr_room_card(p,why,whatever)
@@ -505,7 +490,7 @@ end
 
 --通知客户端金钱变化
 function base_player:notify_money(why,money,changeMoney,money_type)
-	money_type = money_type or ITEM_PRICE_TYPE_GOLD
+	money_type = money_type or enum.ITEM_PRICE_TYPE_GOLD
 	send2client_pb(self, "SC_NotifyMoney", {
 		opt_type = why,
 		money_type = money_type,
@@ -515,7 +500,7 @@ function base_player:notify_money(why,money,changeMoney,money_type)
 end
 
 function base_player:notify_bank_money(why,money,change_money,money_type)
-	money_type = money_type or ITEM_PRICE_TYPE_GOLD
+	money_type = money_type or enum.ITEM_PRICE_TYPE_GOLD
 	send2client_pb(self, "SC_NotifyBank", {
 		opt_type = why,
 		money_type = money_type,
@@ -535,7 +520,7 @@ function base_player:incr_gold(p,why)
 	money = money + p.money
 	self.money = money
 	
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_GOLD)
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
 	
 	if self.is_player and not self.is_android then
 		local newmoney = self:incrby("money",p.money)
@@ -543,7 +528,7 @@ function base_player:incr_gold(p,why)
 			log.error("change gold money db ~= runtime")
 		end
 
-		self:log_money(ITEM_PRICE_TYPE_GOLD,why,oldmoney,self.money,self.bank,self.bank)
+		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,why,oldmoney,self.money,self.bank,self.bank)
 	end
 end
 
@@ -595,7 +580,7 @@ end
 function base_player:add_money(price, opttype)
 	for _, p in ipairs(price) do
 		log.info("guid[%d] add money[%d],money_type:%d",self.guid , p.money,p.money_type)
-		if p.money_type == ITEM_PRICE_TYPE_GOLD then
+		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			self:incr_gold(p,opttype)
 		elseif p.money_type == ITEM_PRICE_TYPE_ROOM_CARD then
 			self:incr_room_card(p,opttype)
@@ -624,7 +609,7 @@ function base_player:add_item(id, num)
 			money = num,
 		})
 
-		self:log_money(ITEM_PRICE_TYPE_GOLD,LOG_MONEY_OPT_TYPE_BOX,oldmoney,self.money,self.bank,self.bank)
+		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,LOG_MONEY_OPT_TYPE_BOX,oldmoney,self.money,self.bank,self.bank)
 		return
 	end
 	
@@ -718,10 +703,10 @@ function  base_player:changeBankMoney( value,opttype, is_savedb)
 	self.bank = bank_
 	self:notify_bank_money(opttype,bank_,bank_ - oldbank)
 	log.info("opttype--------------%d",opttype)
-	self:log_money(ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
+	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
 	log.info("changeBankMoney  end oldbank[%d] new_bank[%d]" , oldbank, self.bank)
 
-	return ChangMoney_Success,bank_,self.bank
+	return enum.ChangMoney_Success,bank_,self.bank
 end
 
 

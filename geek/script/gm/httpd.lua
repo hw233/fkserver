@@ -7,7 +7,7 @@ local listend
 
 function httpd.open(conf,dispatch)
     local host = conf.host
-    local port = 8080
+    local port = conf.port
     if not conf.port then
         host,port = host:match("([^:]+):(%d+)")
     end

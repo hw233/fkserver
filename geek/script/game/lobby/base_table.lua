@@ -8,9 +8,16 @@ require "table_func"
 local enum = require "pb_enums"
 require "msgopt"
 local base_players = require "game.lobby.base_players"
+local base_private_table = require "game.lobby.base_private_table"
 local redisopt = require "redisopt"
+local club_table = require "game.club.club_table"
+local base_clubs = require "game.club.base_clubs"
+local timer_manager = require "game.timer_manager"
+local onlineguid = require "netguidopt"
 
 local reddb = redisopt.default
+
+local dismiss_timeout = 30
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
 -- 奖池
@@ -50,8 +57,13 @@ function base_table:start_save_info()
 end
 
 function base_table:can_enter(player)
-	print("base_table:can_enter")
+	log.info("base_table:can_enter")
 	return true
+end
+
+function base_table:clear()
+	self:clear_private()
+	self:clear_ready()
 end
 
 -- 初始化
@@ -84,12 +96,12 @@ function base_table:init(room, table_id, chair_count)
 end
 
 function base_table:is_play( ... )
-	print("base_table:is_play")
+	log.info("base_table:is_play")
 	return false
 end
 
 function base_table:load_lua_cfg( ... )
-	print("base_table:load_lua_cfg")
+	log.info("base_table:load_lua_cfg")
 	return false
 end
 
@@ -103,6 +115,84 @@ function base_table:get_free_chair_id()
 	end
 
 	return #self.players + 1
+end
+
+function base_table:request_dismiss(player)
+	local timer = timer_manager:new_timer(dismiss_timeout,function()
+		self.foreach(function(p)
+			self:commit_dismiss(p,false)
+		end)
+	end)
+	self.dismiss_request = {
+		commissions = {},
+		requester = player,
+		datetime = os.time(),
+		timer = timer,
+	}
+
+	self.dismiss_request.commissions[player.chair_id] = true
+
+	self:broadcast2client("SC_DismissTableReq",{
+		result = enum.ERROR_NONE,
+		request_guid = player.guid,
+		request_chair_id = player.chair_id,
+		datetime = os.time(),
+		timeout = dismiss_timeout,
+	})
+
+	self:broadcast2client("SC_DismissTableCommit",{
+		result = enum.ERROR_NONE,
+		chair_id = player.chair_id,
+		guid = player.guid,
+		agree = true,
+	})
+
+	return enum.ERROR_NONE
+end
+
+function base_table:commit_dismiss(player,agree)
+	local commissions = self.dismiss_request.commissions
+	agree = agree and agree == true or false
+
+	if not agree then
+		self:broadcast2client("SC_DismissTable",{success = false,})
+		return enum.ERROR_NONE
+	end
+
+	commissions[player.chair_id] = agree and agree == true or false
+
+	self:broadcast2client("SC_DismissTableCommit",{
+		chair_id = player.chair_id,
+		guid = player.guid,
+		agree = agree and agree == true,
+	})
+
+	if table.logic_and(self.players,function(p) return not p.online or commissions[p.chair_id] ~= nil end)
+	then
+		self.dismiss_request.timer:kill()
+		self.dismiss_request.timer = nil
+		self.dismiss_request = nil
+	end
+
+	if not table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
+	then
+		return enum.ERROR_NONE
+	end
+
+	local result = self:dismiss()
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		return result
+	end
+
+	self:foreach(function(p)
+		p:forced_exit()
+	end)
+
+	return enum.ERROR_NONE
+end
+
+function base_table:on_game_over()
+	self:check_game_maintain()
 end
 
 -- 得到玩家
@@ -148,7 +238,7 @@ function base_table:foreach_except(except, func)
 end
 
 function  base_table:save_game_log(s_playid,s_playType,s_log,s_starttime,s_endtime)
-	print("==============================base_table:save_game_log")
+	log.info("==============================base_table:save_game_log")
 	local nMsg = {
 		playid = s_playid,
 		type = s_playType,
@@ -243,7 +333,7 @@ function base_table:do_player_money_log(player, s_type,s_old_money,s_tax,s_chang
 end
 
 function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,money_change,table_id)
-	print("==============================base_table:robot_money_log")
+	log.info("==============================base_table:robot_money_log")
 	local nMsg = {
 		guid = robot.guid,
 		isbanker = banker_flag,
@@ -261,13 +351,13 @@ end
 
 --渠道税收分成
 function base_table:channel_invite_taxes(channel_id_p,guid_p,guid_invite_p,tax_p)
-	print("ChannelInviteTaxes channel_id:" .. channel_id_p .. " guid:" .. guid_p .. " guid_invite:" .. tostring(guid_invite_p) .. " tax:" .. tax_p)
+	log.info("ChannelInviteTaxes channel_id:" .. channel_id_p .. " guid:" .. guid_p .. " guid_invite:" .. tostring(guid_invite_p) .. " tax:" .. tax_p)
 	if tax_p == 0 or guid_invite_p == nil or guid_invite_p == 0 then
 		return
 	end
 	local cfg = channel_invite_cfg(channel_id_p)
 	if cfg and cfg.is_invite_open == 1 then
-		print("ChannelInviteTaxes step 2--------------------------------")
+		log.info("ChannelInviteTaxes step 2--------------------------------")
 		local nMsg = {
 			channel_id = channel_id_p,
 			guid = guid_p,--贡献者
@@ -290,7 +380,7 @@ end
 
 function base_table:broadcast2client_except(except, msg_name, msg)
 	self:foreach_except(except,function(p)
-		send2client_pb(p, msg_name, pb)
+		send2client_pb(p, msg_name, msg)
 	end)
 end
 
@@ -314,6 +404,8 @@ function base_table:player_sit_down(player, chair_id)
 		table = self.table_id_,
 		chair = chair_id,
 	})
+
+	onlineguid[player.guid] = nil
 end
 
 function base_table:player_sit_down_finished(player)
@@ -322,61 +414,149 @@ end
 
 --处理掉线玩家
 function base_table:player_offline(player)
-	print("base_table:player_offline")
+	log.info("base_table:player_offline")
 	log.info("set player[%d] in_game false" ,player.guid)
 	player.in_game = false
 end
 
--- 玩家站起
-function base_table:player_stand_up(player, is_offline)
-	log.info(string.format("GameInOutLog,base_table:player_stand_up, guid %s, table_id %s, chair_id %s, is_offline %s",
-	tostring(player.guid),tostring(player.table_id),tostring(player.chair_id),tostring(is_offline)))
-
-	print("base_table:player_stand_up")
-	if is_offline then
-		print ("is_offline is true")
-	else
-		print ("is_offline is false")
+function base_table:dismiss()
+	if not self.conf or not self.private_id then
+		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 	end
 
-	if self:check_cancel_ready(player, is_offline) then
-		log.info("base_table:player_stand_up set nil ")
+	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
+	local private_table_conf = base_private_table[self.private_id]
+	local club_id = private_table_conf.club_id
+	local private_table_id = private_table_conf.table_id
+	local private_table_owner = private_table_conf.owner
+	reddb:del("table:info:"..private_table_id)
+	reddb:del("player:table:"..private_table_owner)
+	if club_id then
+		reddb:srem("club:table:"..club_id,private_table_id)
+		club_table[club_id][private_table_id] = nil
+		local club = base_clubs[club_id]
+		if club then
+			club:broadcast("S2C_SYNC_TABLES_RES",{
+				club_id = club_id,
+				sync_type = enum.SYNC_DEL,
+				sync_table_id = private_table_id,
+			})
+		else
+			log.warning("dismiss table %s,club %s not exists.",private_table_id,club_id)
+		end
+	end
+
+	base_private_table[self.private_id] = nil
+	self:broadcast2client("SC_DismissTable",{success = true,})
+	self:clear()
+
+	self.private_id = nil
+	self.conf = nil
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
+end
+
+function base_table:transfer_owner()
+	log.info("transfer owner:%s,%s",self.conf.private_id,self.conf.owner)
+	if not self.conf or not self.private_id then
+		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+	end
+
+	local function next_player(owner)
+		local chair_id = owner.chair_id
+		local chair_count = self.chair_count
+		for i = chair_id,chair_id + chair_count - 2 do
+			local p = self.players[i % chair_count + 1]
+			if p then
+				return p
+			end
+		end
+
+		return nil
+	end
+
+	local private_conf = self.conf
+	local private_table_id = self.private_id
+	local old_owner = private_conf.owner
+	local new_owner = next_player(old_owner)
+	if not new_owner then
+		log.warning("base_table:transfer_owner %s,%s,old:%s, new owner not found",self.private_id,self.table_id_,old_owner.guid)
+		return enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR
+	end
+
+	log.info("base_table:transfer_owner %s,%s,old:%s,new:%s",self.private_id,self.table_id_,old_owner.guid,new_owner.guid)
+	reddb:srem("player:table:"..old_owner.guid,private_table_id)
+	reddb:hset("table:info:"..private_table_id,"owner",new_owner.guid)
+	reddb:sadd("player:table:"..new_owner.guid,private_table_id)
+	reddb:expire("player:table:"..new_owner.guid,dismiss_timeout)
+	base_private_table[self.private_id] = nil
+
+	self:broadcast2client("S2C_TRANSFER_ROOM_OWNER_RES",{
+		table_id = self.private_id,
+		old_owner = old_owner.guid,
+		new_owner = new_owner.guid,
+	})
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
+end
+
+-- 玩家站起
+function base_table:player_stand_up(player, reason)
+	log.info("GameInOutLog,base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s",
+			player.guid,player.table_id,player.chair_id,reason)
+
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		log.info ("is_offline is true")
+	else
+		log.info ("is_offline is false")
+	end
+
+	if self:check_cancel_ready(player, reason) then
+		log.info("base_table:player_stand_up set true")
 		local chairid = player.chair_id
 		local p = self.players[chairid]
 		local list_guid = p and p.guid or -1
-		log.info(string.format("set guid[%s] table_id[%s] players[%d] is false [ player_list is %s , player_list.guid [%s]]",
-			tostring(player.guid),tostring(player.table_id),chairid , tostring(self.players[chairid]), tostring(list_guid)))
-		self.players[chairid] = nil
+		log.info("set guid[%s] table_id[%s] players[%d] is false [ player_list is %s , player_list.guid [%s]]",
+			player.guid,player.table_id,chairid , self.players[chairid], list_guid)
 
-		-- player:on_stand_up(player.table_id,player.chair_id,GAME_SERVER_RESULT_SUCCESS)
-
-		player.table_id = nil
-		player.chair_id = nil
 		if self.ready_list[chairid] then
 			self.ready_list[chairid] = nil
-			local notify = {
+			self:broadcast2client("SC_Ready", {
 				ready_chair_id = chairid,
 				is_ready = false,
-			}
-			self:broadcast2client("SC_Ready", notify)
+			})
+		end
+
+		if self.private_id and player == self.conf.owner then
+			self:transfer_owner()
+		end
+
+		self.players[chairid] = nil
+		player.table_id = nil
+		player.chair_id = nil
+
+		if self.private_id and table.nums(self.players) == 0 then
+			self:dismiss()
 		end
 
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"table")
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"chair")
-
+		onlineguid[player.guid] = nil
 		return true
 	end
-	log.info("guid %s,is_offline %s",	player.guid,is_offline)
-	if is_offline then
-		print("set player is_offline true")
+
+	log.info("guid %s,reason %s",player.guid,reason)
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		log.info("set player is_offline true")
 		player.is_offline = true -- 掉线了
 	end
-	-- player:on_stand_up(player.table_id,player.chair_id,GAME_SERVER_RESULT_IN_GAME)
 	return false
 end
 
 function base_table:set_trusteeship(player)
-	print("====================base_table:set_trusteeship")
+	log.info("====================base_table:set_trusteeship")
 end
 
 -- 准备开始
@@ -412,7 +592,7 @@ function base_table:ready(player)
 		return
 	end
 
-	log.info("set tableid [%d] chair_id[%d]  ready_list is true ",self.table_id_,player.chair_id)
+	log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
 	self.ready_list[player.chair_id] = player
 
 	-- 机器人准备
@@ -442,24 +622,25 @@ end
 
 function base_table:reconnect(player)
 	-- 重新上线
-	print("---------base_table:reconnect-----------")
-	print("set Dropped is false")
+	log.info("---------base_table:reconnect,%s-----------",player.guid)
+	log.info("set Dropped is false")
 	player.droped = false
-	print("set online is true")
+	log.info("set online is true")
 	player.online = true
 	log.info("set player[%d] in_game true" ,player.guid)
 	player.in_game = true
 end
+
 -- 检查是否可准备
 function base_table:check_ready(player)
 	return true
 end
 
 -- 检查是否可取消准备
-function base_table:check_cancel_ready(player, is_offline)
-	if is_offline then
+function base_table:check_cancel_ready(player, reason)
+	if reason == enum.STANDUP_REASON_OFFLINE then
 		--掉线 用于结算
-		print("set Dropped true")
+		log.info("set Dropped true")
 		player.droped = true
 	end
 	return self.room_:get_ready_mode() ~= enum.GAME_READY_MODE_NONE
@@ -509,8 +690,8 @@ function base_table:start(player_count)
 
 	local ret = false
 	if self.config_id ~= self.room_.config_id then
-		print ("-------------configid:",self.config_id ,self.room_.config_id)
-		print (self.room_.tax_show_, self.room_.tax_open_ , self.room_.tax_)
+		log.info ("-------------configid:",self.config_id ,self.room_.config_id)
+		log.info (self.room_.tax_show_, self.room_.tax_open_ , self.room_.tax_)
 		self.tax_show_ = self.room_.tax_show_ -- 是否显示税收信息
 		self.tax_open_ = self.room_.tax_open_ -- 是否开启税收
 		self.tax_ = self.room_.tax_
@@ -527,7 +708,7 @@ function base_table:start(player_count)
 		self.config_id = self.room_.config_id
 
 		ret = true
-		print ("self.room_.room_cfg --------" ,self.room_.room_cfg )
+		log.info ("self.room_.room_cfg --------" ,self.room_.room_cfg )
 		if self.room_.room_cfg ~= nil then
 			self:load_lua_cfg()
 		end
@@ -535,6 +716,10 @@ function base_table:start(player_count)
 
 	self:broadcast2client("SC_ShowTax", self.notify_msg)
 	return ret
+end
+
+function base_table:round_over()
+
 end
 
 -- 检查是否维护
@@ -573,22 +758,30 @@ end
 
 -- 心跳
 function base_table:tick()
+
 end
 
 function base_table:private_init(conf)
 	self.rule = conf.rule
-	self.chair_count = self.conf.chair_count
-	self.money_type = self.conf.money_type
+	self.chair_count = conf.chair_count
+	self.money_type = conf.money_type
+	self.conf = conf
+end
+
+function base_table:clear_private()
+	self.rule = nil
+	self.conf = nil
+	self.private_id = nil
 end
 
 function base_table:destroy_private_room(b)
-	if b and self.private_room then
+	if b and self.private_id then
 		local player = base_players[self.private_room_owner_guid]
 		if player  then
 			player:change_money(self.private_room_chair_count * self.private_room_score_type, LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
 		end
 	end
-	self.private_room = false
+	self.private_id = nil
 end
 
 -- 检查单个游戏维护
@@ -675,7 +868,7 @@ end
 
 function base_table:log( str , level , number)
 	if not self.logLevel then
-		print(str)
+		log.info(str)
 	elseif self.logLevel >= level then
 		if number == nil then
 			log.info("%s [%s][%s][%s]" , str , debug.getinfo(2).short_src , debug.getinfo(2).name , debug.getinfo(2).currentline)
@@ -683,7 +876,7 @@ function base_table:log( str , level , number)
 			log.info("%s [%s][%s][%s]" , str , debug.getinfo(number).short_src , debug.getinfo(number).name , debug.getinfo(number).currentline)
 		end
 	else
-		print(str)
+		log.info(str)
 	end
 end
 
@@ -701,6 +894,10 @@ end
 
 function base_table:log_msg(str)
 	self:log(str, 1 ,3)
+end
+
+function base_table:global_status_info(table_id)
+	return {}
 end
 
 return base_table

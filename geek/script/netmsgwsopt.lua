@@ -82,8 +82,8 @@ function NETMSG.encode(msgid,msg)
 end
 
 function NETMSG.dispatch(msgid,msg,...)
-    local f = assert(dispatcher[msgid])
-	assert(f, string.format("on_net_msg func:%s", tostring(msgidmap[msgid])))
+    local f = dispatcher[msgid]
+	assert(f, string.format("on_net_msg func:%s", tostring(dispatcher[msgid])))
 
     return f(msg,...)
 end

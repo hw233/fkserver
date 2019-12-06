@@ -22,7 +22,12 @@ local online_service = {}
 local function load_service_cfg()
     local confs = dbopt.config:query("SELECT * FROM t_service_cfg WHERE is_launch != 0;")
     for _,conf in pairs(confs) do
-        conf.conf = conf.conf and conf.conf ~= "" and json.decode(conf.conf) or nil
+        if conf.conf and type(conf.conf) == "string" and conf.conf ~= "" then
+            conf.conf = json.decode(conf.conf)
+        end
+        if not conf.conf then
+            conf.conf = {}
+        end
     end
 
     return confs
@@ -48,14 +53,14 @@ local function load_db_cfg()
 end
 
 local function load_global()
-    local s = dbopt.config:query("SELECT * FROM t_globle_string_cfg;")
-    for key,value in pairs(s) do
-        globalconf[key] = value
+    local ps = dbopt.config:query("SELECT * FROM t_globle_string_cfg;")
+    for _,p in pairs(ps) do
+        globalconf[p.key] = p.value
     end
 
-    local i = dbopt.config:query("SELECT * FROM t_globle_int_cfg;")
-    for key,value in pairs(i) do
-        globalconf[key] = tonumber(value)
+    local pi = dbopt.config:query("SELECT * FROM t_globle_int_cfg;")
+    for _,p in pairs(pi) do
+        globalconf[p.key] = tonumber(p.value)
     end
 end
 

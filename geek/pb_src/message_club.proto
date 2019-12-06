@@ -278,7 +278,7 @@ message S2C_SYNC_TABLES_RES{
     TABLE_STATUS_INFO room_info=2;
     int32 sync_room_id = 3;
     int32 sync_table_id = 4;
-    TABLE_SYNC_TYPE sync_type=5;
+    SYNC_TYPE sync_type=5;
 }
 
 //请求 在线没有游戏的玩家列表

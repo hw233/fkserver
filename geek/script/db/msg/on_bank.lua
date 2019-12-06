@@ -12,11 +12,11 @@ local httpc = require "http.httpc"
 local httpurl = require "http.url"
 local md5 = require "md5"
 local log = require "log"
+local enum = require "pb_enums"
 
 local reddb = redisopt.default
 
 
--- enum BANK_OPT_RESULT
 local BANK_OPT_RESULT_SUCCESS = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_SUCCESS")
 local BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET")
 local BANK_OPT_RESULT_PASSWORD_IS_NOT_SET = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_PASSWORD_IS_NOT_SET")
@@ -28,12 +28,10 @@ local BANK_OPT_RESULT_MONEY_ERR = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_MO
 local BANK_OPT_RESULT_TRANSFER_ACCOUNT = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_TRANSFER_ACCOUNT")
 local BANK_OPT_RESULT_FORBID_IN_GAMEING = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_FORBID_IN_GAMEING")
 
--- enum BANK_STATEMENT_OPT_TYPE
 local BANK_STATEMENT_OPT_TYPE_DEPOSIT = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_DEPOSIT")
 local BANK_STATEMENT_OPT_TYPE_DRAW = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_DRAW")
 local BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT")
 local BANK_STATEMENT_OPT_TYPE_TRANSFER_IN = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_TRANSFER_IN")
-
 
 local LOG_MONEY_OPT_TYPE_BANKDRAW = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_BANKDRAW")
 local LOG_MONEY_OPT_TYPE_BANKDEPOSIT = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_BANKDEPOSIT")
@@ -70,7 +68,7 @@ function on_sd_resetpw(msg)
 	return {
 		guid = guid_,
 		bank_password_new = password_ ,
-		result = (ret > 0 and BANK_OPT_RESULT_SUCCESS or BANK_OPT_RESULT_OLD_PASSWORD_ERR),
+		result = (ret > 0 and enum.BANK_OPT_RESULT_SUCCESS or enum.BANK_OPT_RESULT_OLD_PASSWORD_ERR),
 	}
 end
 
@@ -82,13 +80,12 @@ function on_sd_bank_change_password(msg)
 	local  password_ = msg.password
 	local sql = string.format("UPDATE t_account SET bank_password = '%s' WHERE guid = %d AND bank_password = '%s';", 
 		msg.password, guid_, msg.old_password)
-	local gameid = game_id
 	log.info(sql)
 	local ret = dbopt.account:query(sql)[1]
 	return {
 		guid = guid_,
 		bank_password = password_,
-		result = (ret > 0 and BANK_OPT_RESULT_SUCCESS or BANK_OPT_RESULT_OLD_PASSWORD_ERR),
+		result = (ret > 0 and enum.BANK_OPT_RESULT_SUCCESS or enum.BANK_OPT_RESULT_OLD_PASSWORD_ERR),
 	}
 end
 
@@ -103,7 +100,7 @@ function on_sd_bank_login(msg)
 
 	return {
 		guid = guid_,
-		result = (data ~= nil and BANK_OPT_RESULT_SUCCESS or BANK_OPT_RESULT_LOGIN_FAILED)
+		result = (data ~= nil and enum.BANK_OPT_RESULT_SUCCESS or enum.BANK_OPT_RESULT_LOGIN_FAILED)
 	}
 end
 
@@ -111,7 +108,6 @@ end
 function on_sd_bank_transfer(msg)
 	local sql = string.format("CALL bank_transfer(%d, %d, '%s', %d, %d);", 
 		msg.guid, msg.time, msg.target, msg.money, msg.bank_balance)
-	local gameid = msg.game_id
 	
 	local data = dbopt.game:query(sql)
 	if not data then
@@ -125,19 +121,19 @@ function on_sd_bank_transfer(msg)
 		-- 没有找到收款的人
 		log.warning("bank transfer data.ret != 0, guid:"..msg.guid .. ",target:" .. msg.target)
 		return {
-			result = BANK_OPT_RESULT_TRANSFER_ACCOUNT,
+			result = enum.BANK_OPT_RESULT_TRANSFER_ACCOUNT,
 			guid = msg.guid,
 			money = msg.money,
 		}
 	end
 	
 	return {
-		result = BANK_OPT_RESULT_SUCCESS,
+		result = enum.BANK_OPT_RESULT_SUCCESS,
 		pb_statement = {
 			serial = tostring(data.id),
 			guid = msg.guid,
 			time = msg.time,
-			opt = BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT,
+			opt = enum.BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT,
 			target = msg.target,
 			money = msg.money,
 			bank_balance = msg.bank_balance,
@@ -150,18 +146,8 @@ function on_s_bank_transfer_by_guid(msg)
 		msg.money, msg.target_guid)
 
 	local ret = dbopt.game:query(sql)[1]
-	--[[
-	redis_cmd_query(string.format("HGET player_base_info %d", msg.target_guid), function (reply)
-		if reply:is_string() then
-			local info = pb.decode("PlayerBaseInfo", from_hex(reply:get_string()))
-			info.bank = info.bank + msg.money
-			
-			redis_command(string.format("HSET player_base_info %d %s", msg.target_guid, to_hex(pb.encode("PlayerBaseInfo", info))))
-		end
-	end--)]]
-
 	return {
-		result = (ret > 0 and BANK_OPT_RESULT_SUCCESS or BANK_OPT_RESULT_TRANSFER_ACCOUNT),
+		result = (ret > 0 and enum.BANK_OPT_RESULT_SUCCESS or enum.BANK_OPT_RESULT_TRANSFER_ACCOUNT),
 		guid = msg.guid,
 		money = msg.money,
 	}
@@ -246,14 +232,14 @@ function on_change_bank(msg)
 	}
 
 	--  1 取钱 2 存钱
-	local log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAW
+	local log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAW
 	if tonumber(optType) == 1 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAW
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAW
 		money_ = money_ * -1
 	elseif tonumber(optType) == 2 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDEPOSIT
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDEPOSIT
 	elseif tonumber(optType) == 3 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAWBACK
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAWBACK
 	else
 		return
 	end
@@ -282,8 +268,8 @@ function on_change_bank(msg)
 			else
 				notify.oldbankmoeny = data.oldbank
 				notify.newbankmoney = data.newbank
-				log.info(string.format("on_change_bank is success gameid[%d] guid[%d] optType[%d] changemoeny[%d] oldmoney[%s] newmoney[%s] oldbank[%d] newbank[%d]", 
-					gameid ,guid , optType , money_ , tostring(oldmoney) , tostring(newmoney) , notify.oldbankmoeny , notify.newbankmoney))
+				log.info("on_change_bank is success gameid[%s] guid[%s] optType[%s] changemoeny[%s] oldmoney[%s] newmoney[%s] oldbank[%s] newbank[%s]", 
+					gameid,guid,optType,money_,oldmoney,newmoney,notify.oldbankmoeny,notify.newbankmoney)
 
 				-- 存钱入金币流水日志表 取钱在更改玩家金币后写日志
 				if tonumber(optType) == 2 then
@@ -306,8 +292,8 @@ function on_change_bank(msg)
 			notify.retcode = data.ret
 		end
 		if tonumber(optType) == 1 or tonumber(optType) == 2 then
-			log.info(string.format("on_change_bank  send DS_ChangeBank  gameid[%d] guid[%d] optType[%d] changemoeny[%d] oldmoney[%s] newmoney[%s] oldbank[%s] newbank[%s] retcode[%d]", 
-				gameid ,guid , optType , money_ , tostring(oldmoney) , tostring(newmoney) , tostring(notify.oldbankmoeny) , tostring(notify.newbankmoney) , notify.retcode))
+			log.info("on_change_bank  send DS_ChangeBank  gameid[%s] guid[%s] optType[%s] changemoeny[%s] oldmoney[%s] newmoney[%s] oldbank[%s] newbank[%s] retcode[%s]", 
+				gameid ,guid , optType , money_ , oldmoney , newmoney , notify.oldbankmoeny, notify.newbankmoney, notify.retcode)
 			return notify
 		end
 	end
@@ -322,13 +308,13 @@ function  on_banklog_new(msg)
 	dblog:query(sql)
 	print("==========================================1")
 	--  1 取钱 2 存钱
-	local log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAW
+	local log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAW
 	if tonumber(msg.opt_type) == 1 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAW
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAW
 	elseif tonumber(msg.opt_type) == 2 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDEPOSIT
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDEPOSIT
 	elseif tonumber(msg.opt_type) == 3 then
-		log_money_type = LOG_MONEY_OPT_TYPE_BANKDRAWBACK
+		log_money_type = enum.LOG_MONEY_OPT_TYPE_BANKDRAWBACK
 	else
 		return
 	end
@@ -352,10 +338,7 @@ function get_agent_name(agent_guid)
 	return data_ and data_[1].proxy_name or nil
 end
 
-function on_SD_CheckBankTransferEnable(gameid, msg)
-	
-	local db_account = get_account_db()
-
+function on_SD_CheckBankTransferEnable(msg)
 	--判断收钱的是否是代理商，并且2人平台相同
 	local sql_check_is_agent  = string.format("CALL check_is_agent(%d , %d )",msg.recv_guid, msg.pay_guid)
 	local data = dbopt.account:query(sql_check_is_agent)

@@ -68,18 +68,19 @@ function CMD.start(conf)
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
 
+	local boot = require("game."..def_game_name..".bootstrap")
+	g_room = boot(gameconf)
+
 	require "game.lobby.register"
 	require "game.club.register"
 	require "hotfix"
 	require "game.lobby.base_android"
 	require "game.lobby.gm_cmd"
 	require "game.timer_manager"
-
-	local boot = require("game."..def_game_name..".bootstrap")
-	g_room = boot(gameconf)
 	
-    local base_passive_android = base_passive_android
-    local room = g_room
+	local base_passive_android = base_passive_android
+	local room = g_room
+	
     local function on_tick()
         timer_manager:tick()
         base_players:save_all()
@@ -88,7 +89,7 @@ function CMD.start(conf)
 
         skynet.timeout(4,on_tick)
     end
-    skynet.timeout(4,on_tick)
+    on_tick()
 end
 
 function CMD.afk(guid)

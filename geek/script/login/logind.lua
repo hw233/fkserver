@@ -1,23 +1,10 @@
 local skynet = require "skynetproto"
 local msgopt = require "msgopt"
-local redisopt = require "redisopt"
 local log = require "log"
 local channel = require "channel"
-local serviceconf = require "serviceconf"
-local nameservice = require "nameservice"
 require "login.msg.runtime"
-local redismetadata = require "redismetadata"
-local onlineguid = require "netguidopt"
-
-local reddb = redisopt.default
 
 local MSG = {}
-
-
-
-function MSG.C2S_LOGOUT_REQ(msg,gateid)
-
-end
 
 local sconf
 
@@ -33,6 +20,9 @@ end
 function CMD.start(conf)
     checkloginconf(conf)
     sconf = conf
+    global_conf = channel.call("config.?","msg","global_conf")
+    dump(global_conf)
+    default_open_id_icon = global_conf.default_open_id_icon
 end
 
 skynet.start(function() 

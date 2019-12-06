@@ -17,18 +17,6 @@ local tile_names = {
 local ACTION = def.ACTION
 
 
-function mj_util.arraySortMJ(pai,anPaiIndex)
-	anPaiIndex = anPaiIndex or 1
-	local tmp = {}
-	for i=anPaiIndex,#pai do
-		tmp[#tmp + 1] = pai[i]
-	end
-	table.sort(tmp)
-	for i=anPaiIndex,#pai do
-		pai[i] = tmp[i-anPaiIndex + 1]
-	end
-end
-
 function mj_util.printPai(pai)
 	local names = {}
 	for _,tile in pairs(pai) do
@@ -56,46 +44,70 @@ function mj_util.check_tile(tile)
 	return men >= 0 and men <= 4 and value > 0 and value < 10
 end
 
-function mj_util.get_actions(pai, inPai)
+function mj_util.tile_value(tile)
+	return tile % 10
+end
+
+function mj_util.tile_men(tile)
+	return math.floor(tile / 10)
+end
+
+function mj_util.get_actions(pai, mo_pai,in_pai)
 	local actions = {}
-
 	local counts = pai.shou_pai
-	if inPai then
-		local pai_count = counts[inPai] or 0
-		if pai_count >= 2 then
-			actions[ACTION.PENG] = {[inPai] = true,}
+
+	if mo_pai then
+		for _,s in pairs(pai.ming_pai) do
+			if s.tile == mo_pai and s.type == ACTION.PENG then
+				actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
+				actions[ACTION.BA_GANG][s.tile] = true
+			end
 		end
 
-		if pai_count >= 3 then
-			actions[ACTION.AN_GANG] = {[inPai] = true,}
-		end
-
-		if #rule.is_hu(pai,inPai) > 0 then
-			actions[ACTION.HU] = {[inPai] = true,}
-		end
-
-		table.mergeto(actions,rule.is_chi(pai,inPai))
-	end
-
-	for _,s in ipairs(pai.ming_pai) do
-		if s.type == ACTION.PENG and counts[s.tile] == 1 then
-			actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
-			actions[ACTION.BA_GANG][s.tile] = true
-		end
-	end
-
-	for k,c in ipairs(counts) do
-		if c == 4 then
+		if counts[mo_pai] and counts[mo_pai] == 3 then
 			actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
-			actions[ACTION.AN_GANG][k] = true
+			actions[ACTION.AN_GANG][mo_pai] = true
+		end
+
+		for t,c in pairs(counts) do
+			if c == 4 then
+				actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
+				actions[ACTION.AN_GANG][t] = true
+			end
 		end
 	end
 
+	if in_pai then
+		if counts[in_pai] and counts[in_pai] == 3 then
+			actions[ACTION.MING_GANG] = actions[ACTION.MING_GANG] or {}
+			actions[ACTION.MING_GANG][in_pai] = true
+		end
+	
+		if counts[in_pai] and counts[in_pai] == 2 then
+			actions[ACTION.PENG] = {[in_pai] = true,}
+		end
+	end
+
+	if in_pai and rule.is_hu(pai,in_pai) then
+		actions[ACTION.HU] = {[in_pai] = true,}
+		actions[ACTION.MEN] = {[in_pai] = true,}
+	end
+
+	if mo_pai and rule.is_hu(pai,mo_pai) then
+		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
+		actions[ACTION.MEN_ZI_MO] = {[mo_pai] = true,}
+	end
+
+	-- table.mergeto(actions,rule.is_chi(pai,inPai))
 	return actions
 end
 
-function mj_util.panHu(pai, inPai)
+function mj_util.is_hu(pai, inPai)
 	return rule.is_hu(pai,inPai)
+end
+
+function mj_util.hu(pai,inPai)
+	return rule.hu(pai,inPai)
 end
 
 function mj_util.panGangWithOutInPai(pai)
@@ -121,33 +133,23 @@ function mj_util.panGangWithOutInPai(pai)
 	return anGangList,baGangList
 end
 
-function mj_util.panTing(pai)
-	for i=1,16 do
-		local info = rule.is_hu(pai,i)
-		if #info > 0 then
-			return true
-		end
-	end
-	return false
-end
-
-function mj_util.panTing_14(pai)
-	for k,v in pairs(pai.shou_pai) do
-		local pai_tmp = clone(pai)
-		pai_tmp.shou_pai[k] = pai_tmp.shou_pai[#pai_tmp.shou_pai]
-		pai_tmp.shou_pai[#pai_tmp.shou_pai] = nil
-		for i=1,16 do
-			local info = rule.is_hu(pai,i)
-			if #info > 0 then
-				return true
-			end
-		end
-	end
-	return false
+function mj_util.is_ting(pai)
+	return rule.ting(pai)	
 end
 
 function mj_util.get_fan_table_res(base_fan_table)
 	return rule.get_fan_table_res(base_fan_table)
 end
+
+-- local tiles = {2}
+-- local shou_pai = table.fill(nil,0,1,50)
+-- for _,tile in pairs(tiles) do
+-- 	table.incr(shou_pai,tile)
+-- end
+
+-- local is = mj_util.is_hu({
+-- 	shou_pai = shou_pai,
+-- 	ming_pai = {},
+-- },2)
 
 return mj_util

@@ -222,7 +222,6 @@ function CMD.call(source,id,proto,...)
         wait(id)
     until node ~= nil
 
-    log.info("channel.call id:%s",id)
     return node:call(proto,...)
 end
 
@@ -264,11 +263,17 @@ skynet.start(function()
         end
     end)
 
+    skynet.register_protocol {
+        id = skynet.PTYPE_CLIENT,
+        name = "client",
+        pack = skynet.pack,
+        unpack = skynet.unpack,
+    }
+
     cluster.register("channel",skynet.self())
 
     require "skynet.manager"
     local handle = skynet.localname ".channeld"
-    
 	if handle then
 		skynet.exit()
 		return

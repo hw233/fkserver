@@ -36,8 +36,6 @@ local base_request = setmetatable({},{
         end
 
         req = redismetadata.club.request:decode(req)
-
-        dump(req)
     
         setmetatable(req,{__index = request_meta})
 

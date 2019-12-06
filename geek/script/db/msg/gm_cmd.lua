@@ -7,8 +7,9 @@ local log = require "log"
 
 require "db.net_func"
 
-local LOG_MONEY_OPT_TYPE_GM = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_GM")
+local reddb = redisopt.default
 
+local enum = require "pb_enums"
 
 function gm_change_money(guid,money,log_type)
 	print("gm_change_money comming......")
@@ -28,7 +29,7 @@ function gm_change_money(guid,money,log_type)
 		db:query("UPDATE t_player SET money=%d WHERE guid=%d;",new_money,guid)
 		-- 加钱日志存档
 		dbopt.log:query("INSERT INTO t_log_money SET guid = %d,old_money=%d,new_money=%d,old_bank=%d,new_bank=%d,opt_type=%d;",
-			guid,old_money,new_money,old_bank,old_bank,log_type or LOG_MONEY_OPT_TYPE_GM)
+			guid,old_money,new_money,old_bank,old_bank,log_type or enum.LOG_MONEY_OPT_TYPE_GM)
 	end
 	return true
 end
@@ -50,7 +51,7 @@ function gm_change_bank_money(guid,bank_money,log_type)
 		db:query("UPDATE t_player SET bank=%d WHERE guid=%d;",new_bank_money,guid)
 		-- 加钱日志存档
 		dbopt.log:query("INSERT INTO t_log_money SET guid = %d,old_money=%d,new_money=%d,old_bank=%d,new_bank=%d,opt_type=%d;",
-			guid,old_money,old_money,old_bank,new_bank_money,log_type or LOG_MONEY_OPT_TYPE_GM)
+			guid,old_money,old_money,old_bank,new_bank_money,log_type or enum.LOG_MONEY_OPT_TYPE_GM)
 	end
 
 	return true
@@ -86,7 +87,7 @@ function gm_change_bank(web_id_, login_id, guid, bank_money, log_type)
 		new_money = data.money,
 		old_bank = data.bank-bank_money,
 		new_bank = data.bank,
-		opt_type = log_type or LOG_MONEY_OPT_TYPE_GM,
+		opt_type = log_type or enum.LOG_MONEY_OPT_TYPE_GM,
 	}
 	dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$;", log)
 

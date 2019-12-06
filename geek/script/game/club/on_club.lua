@@ -17,6 +17,7 @@ local player_request = require "game.club.player_request"
 local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
 local json = require "cjson"
+local enum = require "pb_enums"
 require "functions"
 
 local g_room = g_room
@@ -67,15 +68,21 @@ function on_cs_club_create(msg,guid)
         }
     end
 
-    dump(msg)
+    dump(player)
 
     -- if not player:has_club_rights() then
 	-- 	return {
     --         result = CLUB_OP_RESULT_NO_RIGHTS,
     --     }
-	-- end
+    -- end
+    
+    local id = math.random(1000000,9999999)
+    for _ = 1,1000 do
+        if not base_clubs[id] then break end
+        id = math.random(1000000,9999999)
+    end
 
-    local id = base_club:create(msg.name,msg.icon,msg.notice,player)
+    base_club:create(id,msg.name,msg.icon,msg.notice,player)
 	if not id then
 		return {
             result = CLUB_OP_RESULT_FAILED,
@@ -156,11 +163,8 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    -- dump(club)
-
     local games = {}
     local info = channel.query()
-    -- dump(info)
     for id,_ in pairs(info) do
         local id = id:match("service%.(%d+)")
         if id then
@@ -185,14 +189,9 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local tables = {}
-    for gid,tb in pairs(club_table[club_id]) do
-        table.insert(tables,{
-            table_id = gid,
-            owner = tb.owner,
-            table_status = 3,
-            rule = json.encode(tb.rule),
-            game_type = tb.game_type,
-        })
+    for _,priv_tb in pairs(club_table[club_id]) do
+        local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
+        table.insert(tables,tableinfo)
     end
 
     local members = club_memeber[club_id]
@@ -278,35 +277,54 @@ function on_cs_club_edit_game_type(msg,guid)
 end
 
 function on_cs_club_join_req(msg,guid)
-    dump(msg)
     local club_id = msg.club_id
     local club = base_clubs[club_id]
     if not club then
-        log.error("unknown club:%s",club_id)
+        log.warning("unknown club:%s",club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = ERROR_CLUB_NOT_FOUND,
         })
-        return 
+        return
     end
 
     if club_memeber[club_id] and club_memeber[club_id][guid] then
-        log.error("club member:%s join self club:%s",guid,club_id)
+        log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = ERROR_CLUB_OP_JOIN_CHECKED,
         })
         return
     end
 
-    dump(club)
+    local player_reqs = player_request[club.owner]
+    for _,req in pairs(player_reqs) do
+        if req.who == guid and req.type == "join" then
+            onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
+                result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
+            })
+            return
+        end
+    end
 
     club:request_join(guid)
     onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
     })
 
     player_request[club.owner] = nil
+end
 
-    dump(player_request)
+function on_club_create_table(club,player,chair_count,round,rule)
+    local result,global_table_id,tb = club:create_table(player,chair_count,round,rule)
+    if result == enum.GAME_SERVER_RESULT_SUCCESS then
+        local tableinfo = channel.call("game."..def_game_id,"msg","GetTableStatusInfo",tb.table_id_)
+        club:broadcast("S2C_SYNC_TABLES_RES",{
+            club_id = club.id,
+            room_info = tableinfo,
+            sync_table_id = global_table_id,
+            sync_type = enum.SYNC_ADD
+        })
+    end
+    return result,global_table_id,tb
 end
 
 function on_cs_club_invite_join_req(msg,guid)
@@ -341,7 +359,6 @@ end
 
 
 function on_cs_create_table(msg,guid)
-    dump(msg)
     local game_type = msg.game_type
     local club_id = msg.club_id
     local rule = msg.rule
@@ -395,7 +412,6 @@ function on_cs_join_table_req(msg,guid)
 end
 
 function on_cs_club_query_memeber(msg,guid)
-    dump(msg)
     local members = club_memeber[msg.club_id]
     local ms = {}
 
@@ -408,8 +424,6 @@ function on_cs_club_query_memeber(msg,guid)
             role_type = CRT_BOSS,
         })
     end
-
-    dump(ms)
 
     onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
         player_list = ms,
@@ -475,8 +489,6 @@ function on_cs_club_request_list_req(msg,guid)
         })
     end
 
-    dump(reqs)
-
     onlineguid.send(guid,"S2C_CLUB_REQUEST_LIST_RES",{
         result = ERROR_NONE,
         club_id = club_id,
@@ -529,7 +541,6 @@ local function on_cs_club_exit(msg,guid)
 end
 
 local function on_cs_club_agree_request(msg,guid)
-    dump(msg)
     local player = base_players[guid]
     if not player then
         log.error("unknown player when agree request id:%s",msg.request_id)

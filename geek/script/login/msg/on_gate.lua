@@ -1,12 +1,8 @@
 
 local redisopt = require "redisopt"
 local msgopt = require "msgopt"
-local pb = require "pb_files"
-local json = require "cjson"
-local skynet = require "skynet"
+local skynet = require "skynetproto"
 local channel = require "channel"
-require "functions"
-require "login.msg.runtime"
 local onlineguid = require "netguidopt"
 local log = require "log"
 local json = require "cjson"
@@ -14,12 +10,61 @@ local serviceconf = require "serviceconf"
 local base_players = require "game.lobby.base_players"
 local md5 = require "md5.core"
 local enum = require "pb_enums"
+local dbopt = require "dbopt"
+local httpc = require "http.httpc"
+require "functions"
+require "login.msg.runtime"
 
 local reddb = redisopt.default
 
-local default_open_id_icon = 
-    "http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132"
+local function http_get(url)
+    local host,url = string.match("(https?://[^/]+)(.+)")
+    print(host,url)
+    return httpc.get(host,url)
+end
 
+local function wx_auth(msg)
+    local conf = global_conf
+    dump(conf)
+    local authjson = http_get(string.format(conf.wx_auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
+            conf.wx_app_id,conf.wx_secret,msg.code))
+
+    local auth = json.decode(authjson)
+    dump(auth)
+    if auth.errmsg then
+        return enum.LOGIN_RESULT_FAILED,auth.errmsg
+    end
+
+    local userinfojson = http_get(string.format(conf.wx_userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
+
+    local userinfo = json.decode(userinfojson)
+    dump(userinfo)
+    return enum.LOGIN_RESULT_SUCCESS,userinfo
+end
+
+local function cn_auth(msg)
+
+end
+
+local function xl_auth(msg)
+
+end
+
+
+function on_cl_auth(msg)
+    local auth_platforms = {
+        wx = wx_auth,
+        cn = cn_auth,
+        xl = xl_auth,
+    }
+
+    local do_auth = auth_platforms[msg.auth_platform]
+    if not do_auth then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    return do_auth(msg)
+end
 
 function on_s_logout(msg)
 	local account = msg.account
@@ -57,6 +102,8 @@ end
 local function open_id_login(msg,gateid)
     local ip = msg.ip
     local info
+
+    default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     guid = tonumber(guid)
@@ -336,21 +383,25 @@ function on_cl_login(msg,gate)
         }
     end
 
+    info = clone(info)
+
     -- 重连判断
     local game_id = reddb:hget("player:online:guid:"..tostring(info.guid),"server")
     if game_id then
         log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", info.guid, game_id, info.session_id, info.gate_id)
         local game_server_info = serviceconf[game_id]
-        if game_server_info then
-            info.is_reconnect = true
+        if game_server_info and game_server_info.conf.first_game_type ~= 1 then
+            info.result = enum.LOGIN_RESULT_SUCCESS
+            info.reconnect = 1
             reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
             reddb:set("player:online:account:"..account,info.guid)
 
             channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",{
-                player_login_info = info
+                player_login_info = info,
+                guid = info.guid,
             })
 
-            onlineguid.control(info.guid,"goserver",game_id)
+            dump(info)
 
             log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s", 
                 account, game_id, info.session_id, info.gate_id)
@@ -386,9 +437,12 @@ function on_cl_login(msg,gate)
     })
 
     -- dump(info)
-
+    
     -- 存入redis
-    reddb:hset("player:online:guid:"..tostring(info.guid),"gate", gate)
+    reddb:hmset("player:online:guid:"..tostring(info.guid),{
+        gate = gate,
+        login = def_game_id,
+    })
     reddb:set("player:online:account:"..account,info.guid)
 
     channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",{
@@ -399,6 +453,7 @@ function on_cl_login(msg,gate)
     log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
 
     info.result = enum.LOGIN_RESULT_SUCCESS
+ 
     return info,game_id
 end
 
@@ -409,129 +464,39 @@ end
 function on_cl_reg_account(msg,gate)  
     local validatebox_ip = reddb:get("validatebox_feng_ip")
 	local is_validatebox_block = validatebox_ip and tonumber(validatebox_ip) or 0
-	local account = msg.pb_regaccount.account
-	if account then
-		log.warning( "has account" )
+    local account = msg.pb_regaccount.account
+    local imei = msg.pb_regaccount
+	if account and account ~= "" then
+		log.warning("has account")
 		return
-	end
-
-	local sql = 
-		string.format( "CALL create_guest_account('%s','%d','%s','%s','%s','%s','%s','%s','%s',%d,'%s','%s','%d','%d')"
-			,msg.pb_regaccount.phone
-			,msg.pb_regaccount.phone_type
-			,msg.pb_regaccount.version
-			,msg.pb_regaccount.channel_id
-			,msg.pb_regaccount.package_name
-			,msg.pb_regaccount.imei
-			,msg.pb_regaccount.ip
-			,msg.pb_regaccount.deprecated_imei
-			,msg.pb_regaccount.platform_id
-			,is_validatebox_block
-			,msg.pb_regaccount.shared_id
-			,msg.pb_regaccount.promotion_info
-			,msg.pb_regaccount.invite_code
-			,msg.pb_regaccount.invite_type)
-	log.info( sql )
-
-	local reply = dbopt.account:query(sql)
-	if reply then
-		if reply.ret == 998 then
-			log.error( "guest ip[%s] validate failed", msg.pb_regaccount.ip )
-			reply.guest_account_result.ret = enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT
-		elseif reply.ret() == 999 then
-			log.error( "guest ip[%s] failed", msg.pb_regaccount.ip )
-			reply.guest_account_result.ret = enum.LOGIN_RESULT_CREATE_MAX
-		elseif (reply.ret() == enum.LOGIN_RESULT_NEED_INVITE_CODE) then
-			log.error( "reg account,create guest invite_code [%s] failed", msg.pb_regaccount.invite_code )
-			reply.guest_account_result.ret = enum.LOGIN_RESULT_NEED_INVITE_CODE
-		else
-			local inviter_guid = reply.inviter_guid
-			local inviter_account = reply.inviter_account
-
-			reply.guest_account_result = reply
-			reply.phone = msg.pb_regaccount.phone
-			reply.phone_type = msg.pb_regaccount.phone_type
-			reply.version = msg.pb_regaccount.version
-			reply.channel_id = msg.pb_regaccount.channel_id
-			reply.package_name = msg.pb_regaccount.package_name
-			reply.imei = msg.pb_regaccount.imei
-			reply.ip = msg.pb_regaccount.ip
-			reply.ip_area = msg.pb_regaccount.ip_area
-			reply.platform_id = msg.pb_regaccount.platform_id
-
-			if reply.ret == 0 and reply.vip == 100 then
-				local imeitemp = reply.imei
-				local deprecated_imeitemp = msg.pb_regaccount.deprecated_imei
-				if imeitemp ~= msg.pb_regaccount.imei then
-					deprecated_imeitemp = msg.pb_regaccount().imei()
-				end
-
-				sql = string.format( [[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`,
-												`login_version`, `login_channel_id`, `login_package_name`,  `login_imei`, `login_ip`,
-												`channel_id` , `is_guest` , `create_time` , `register_time` , `deprecated_imei` , `platform_id`,`seniorpromoter`) "
-												"VALUES('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ,'%s' ,
-												FROM_UNIXTIME('%s'), if ('%d'>'0', FROM_UNIXTIME('%d'), null), '%s' , '%s' , '%s') ]]
-												,reply.guid
-												,msg.pb_regaccount.phone
-												,msg.pb_regaccount.phone_type
-												,msg.pb_regaccount.version
-												,msg.pb_regaccount.channel_id
-												,msg.pb_regaccount.package_name
-												,imeitemp
-												,msg.pb_regaccount.ip
-												,reply.channel_id
-												,reply.is_guest
-												,reply.create_time
-												,reply.register_time
-												,deprecated_imeitemp
-												,msg.pb_regaccount.platform_id
-												,reply.seniorpromoter
-												)
-				log.info(sql)
-				db.account:query(sql)
-
-				-- 插入代理关系
-				db.account:query(
-					"INSERT INTO proxy.player_proxy_relationship(guid,proxy_guid,proxy_account) VALUES(%d,%d,'%s')"
-					, reply.guid, inviter_guid, inviter_account
-					)
-			else
-				-- 维护中
-				log.info( "game is MaintainStatus" )
-			end
-		end
-	else
-		log.error( "guest imei[%s] failed", msg.pb_regaccount.imei )
-		reply.guest_account_result = enum.LOGIN_RESULT_DB_ERR
-	end
-
-    if msg.ret ~= enum.LOGIN_RESULT_SUCCESS then
-        return {
-            result = msg.ret,
-            account = msg.account,
-            is_guest = msg.is_guest,
-        }
     end
 
-    local info = {}
-    info.account = msg.account
-    info.guid = msg.guid
-    info.nickname = msg.nickname
-    info.deprecated_imei = msg.deprecated_imei
-    info.platform_id = msg.platform_id
-    if msg.is_guest then
-        info.is_guest = true
+    if not imei and imei == "" then
+        log.warning("imei has account")
+        return enum.LOGIN_RESULT_FAILED
     end
-    info.phone = msg.phone
-    info.phone_type = msg.phone_type
-    info.version = msg.version
-    info.channel_id = msg.channel_id
-    info.package_name = msg.package_name
-    info.imei = msg.imei
-    info.ip = msg.ip
-    info.ip_area = msg.ip_area
-    info.using_login_validatebox = msg.using_login_validatebox
     
+    local guid = reddb:get("player:imei:"..tostring(msg.pb_regaccount.imei))
+    if guid then
+        log.warning("has account with imei")
+        return enum.LOGIN_RESULT_FAILED
+    end
+
+    guid = reddb:incr("player:global:guid")
+    local info = msg.pb_regaccount
+    info.guid = guid
+    info.account = "guest_"..tostring(guid)
+    info.nickname = "guest_"..tostring(guid)
+    info.login_time = os.time()
+    info.is_guest = true
+    info.login_ip = info.ip
+    info.register_time = os.time()
+    reddb:hmset("player:info:"..tostring(guid),info)
+    reddb:set("player:account:"..tostring(info.account),guid)
+    if info.inviter_guid then
+        reddb:set("proxy:info:"..tostring(guid),info.inviter_guid)
+    end
+
     log.info("[%s] reg account, guid = %d ,platform_id = %s", info.account, info.guid,info.platform_id)
 
     -- 找一个默认大厅服务器
@@ -544,20 +509,22 @@ function on_cl_reg_account(msg,gate)
     end
 
     -- 存入redis
-    reddb:hmset("player:online:guid:"..tostring(info.guid),{
+    reddb:hmset("player:online:guid"..tostring(info.guid),{
         server = gameid,
         gate = gate,
     })
 
     reddb:set("player:online:account:"..account,info.guid)
 
-    return channel.call("game."..tostring(gameid),"msg","LS_LoginNotify",{
+    channel.publish("game."..tostring(gameid),"msg","LS_LoginNotify",{
         player_login_info = info,
         password = msg.password,
     })
+
+    info.ret = enum.LOGIN_RESULT_SUCCESS
+
+    return info,gameid
 end
-
-
 
 
 function on_cl_login_by_sms(msg,session)
@@ -718,7 +685,7 @@ function on_sd_bank_transfer(msg)
         local game_id = get_gameid_by_guid(info.guid)
         if game_id then
             if has_game_server_info( game_id ) then
-                channel("game."..tostring(self_game_id),"msg","LS_BankTransferSelf",{
+                channel.publish("game."..tostring(self_game_id),"msg","LS_BankTransferSelf",{
                     guid = msg.guid,
                     time = msg.time,
                     target = msg.target,

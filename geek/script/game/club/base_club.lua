@@ -5,18 +5,15 @@ local pb = require "pb_files"
 local base_players = require "game.lobby.base_players"
 local club_member = require "game.club.club_member"
 local private_table = require "game.lobby.base_private_table"
+local onlineguid = require "netguidopt"
 local reddb = redisopt.default
+local enum = require "pb_enums"
 
-local GAME_SERVER_RESULT_SUCCESS = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_SUCCESS")
-
-local ERROR_JOIN_ROOM_NO = pb.enum("ERROR_CODE", "ERROR_JOIN_ROOM_NO")
-
-local ERROR_NOT_IS_CLUB_MEMBER = pb.enum("ERROR_CODE", "ERROR_NOT_IS_CLUB_MEMBER")
+local table_expire_seconds = 60 * 60 * 5
 
 local base_club = {}
 
-function base_club:create(name,icon,notice,owner)
-    local id = reddb:incr("club:global:id")
+function base_club:create(id,name,icon,notice,owner)
     id = tonumber(id)
     local owner_guid = type(owner) == "number" and owner or owner.guid
     local c = {
@@ -26,6 +23,8 @@ function base_club:create(name,icon,notice,owner)
         notice = notice,
         owner = owner_guid,
     }
+
+    dump(c)
 
     reddb:sadd("club:all",id)
     local r = reddb:hmset("club:info:"..tostring(id),c)
@@ -85,18 +84,16 @@ function base_club:agree_request(request)
 		log.error("agree club request,who is unkown,guid:%s",whoee)
 		return
     end
-    
-    dump(request)
 
     if request.type == "join" then
         self:join(who)
-        reddb:spop(string.format("player:request:%s",whoee),request.id)
+        reddb:srem(string.format("player:request:%s",whoee),request.id)
     elseif request.type == "exit" then
         self:exit(who)
-        reddb:spop(string.format("player:request:%s",whoee),request.id)
+        reddb:srem(string.format("player:request:%s",whoee),request.id)
     elseif request.type == "invite" then
         self:join(whoee)
-        reddb:spop(string.format("player:request:%s",who),request.id)
+        reddb:srem(string.format("player:request:%s",who),request.id)
     end
 
     club_member[self.id] = nil
@@ -114,9 +111,9 @@ function base_club:reject_request(request)
     end
  
     if request.type == "invite" then
-        reddb:spop(string.format("player:request:%s",who),request.id)
+        reddb:srem(string.format("player:request:%s",who),request.id)
     else
-        reddb:spop(string.format("player:request:%s",whoee),request.id)
+        reddb:srem(string.format("player:request:%s",whoee),request.id)
     end
     
     reddb:del("request:"..tostring(request.id))
@@ -129,21 +126,33 @@ function base_club:join(guid)
 end
 
 function base_club:exit(guid)
-	reddb:spop(string.format("club:member:%s",self.id),guid)
-	reddb:spop(string.format("player:club:%s",guid),self.id)
+	reddb:srem(string.format("club:member:%s",self.id),guid)
+	reddb:srem(string.format("player:club:%s",guid),self.id)
+end
+
+function base_club:broadcast(msgname,msg,except)
+    if except then
+        except = type(except) == "number" and except or except.guid
+    end
+    for _,p in pairs(club_member[self.id]) do
+        if not except or (except and except ~= p.guid) then
+            onlineguid.send(p.guid,msgname,msg)
+        end
+    end
 end
 
 function base_club:create_table(player,chair_count,round,conf)
     local member = club_member[self.id][player.guid]
     if not member then
         log.error("create club table,but guid [%s] not exists",player.guid)
-        return ERROR_NOT_IS_CLUB_MEMBER
+        return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
     local result,global_tid,tb = g_room:create_private_table(member,chair_count,round,conf)
-    if result == GAME_SERVER_RESULT_SUCCESS then
-        reddb:hset(string.format("table:info:%s",global_tid),"club_id",self.id)
-        reddb:sadd(string.format("club:table:%s",self.id),global_tid)
+    if result == enum.GAME_SERVER_RESULT_SUCCESS then
+        reddb:hset("table:info:"..global_tid,"club_id",self.id)
+        reddb:sadd("club:table:"..self.id,global_tid)
+        reddb:expire("club:table:"..self.id,table_expire_seconds)
     end
     
     return result,global_tid,tb

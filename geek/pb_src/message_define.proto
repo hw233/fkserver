@@ -14,6 +14,19 @@ import "player_define.proto";
 /// 登陆退出，玩家数据相关消息
 //////////////////////////////////////////////////////////////////////////
 
+//其它平台授权登陆
+message CL_Auth{
+	enum MsgID { Nil = 0; ID = 997;}
+	string code = 1;
+	string auth_platform = 2;
+}
+
+message LC_Auth{
+	enum MsgID { Nil = 0; ID = 998;}
+	int32 result = 1;
+	string errmsg = 2;
+}
+
 // 请求公钥
 message C_RequestPublicKey {
 	enum MsgID { Nil = 0; ID = 999; }
@@ -87,6 +100,7 @@ message LC_Login {
 	string  sms_no = 28;
 	string  invite_code = 29;
 	int32   invite_type = 30;
+	int32 	reconnect = 31;
 }
 
 // 申请短信验证
@@ -273,8 +287,6 @@ message SC_JoinPrivateRoom {
 message CS_PrivateRoomInfo {
 	enum MsgID { Nil = 0; ID = 1026; }
 }
-
-
 
 message SC_PrivateRoomInfo {
 	enum MsgID { Nil = 0; ID = 1027; }
@@ -732,7 +744,7 @@ message SC_NotifySitDown {
 	enum MsgID { Nil = 0; ID = 1095; }
 	int32 table_id = 1;
 	PlayerVisualInfo pb_visual_info = 2;	// 坐下玩家
-	bool is_onfline = 4;					// 是重新上线
+	bool is_online = 3;					// 是重新上线
 }
 
 // 站起
@@ -1335,3 +1347,63 @@ message SC_ProxyCashMoneyToBankResult{
 	int64 commission = 4;          //佣金余额
 	int64 commission_max = 5;		//提取上限
 }
+
+//申请解散房间
+message CS_DismissTableReq{
+	enum MsgID{Nil = 0; ID = 1180;}
+	int32 table_id = 1;
+}
+
+message SC_DismissTableReq{
+	enum MsgID{Nil = 0; ID = 1181;}
+	int32 result = 1;
+	int32 request_guid = 2;
+	int32 request_chair_id = 3;
+	int32 datetime = 4;
+	int32 timeout = 5;
+}
+
+message RequestCommitStatus{
+	int32 guid = 1;
+	int32 chair_id = 2;
+	bool  agree = 3;
+}
+
+message SC_DismissTableRequestInfo{
+	enum MsgID { Nil = 0; ID = 1182;}
+	int32 request_guid = 1;
+	int32 request_chair_id = 2;
+	int32 datetime = 3;
+	int32 timeout = 4;
+	repeated RequestCommitStatus status= 5;
+}
+
+//是否同意解散
+message CS_DismissTableCommit{
+	enum MsgID{Nil = 0; ID = 1183;}
+	bool agree = 1;
+}
+
+message SC_DismissTableCommit{
+	enum MsgID { Nil = 0; ID = 1184;}
+	int32 result = 1;
+	int32 chair_id = 2;
+	int32 guid = 3;
+	bool  agree = 4;
+}
+
+//解散桌子结果
+message SC_DismissTable{
+	enum MsgID{Nil = 0; ID = 1185;}
+	bool success = 1;
+}
+
+
+//亲友群 房主变更
+message S2C_TRANSFER_ROOM_OWNER_RES{
+	enum MsgID { Nil = 0; ID = 1186;}
+    int32 table_id = 1;
+    int32 old_owner = 2;
+    int32 new_owner = 3;    //房主ID
+}
+

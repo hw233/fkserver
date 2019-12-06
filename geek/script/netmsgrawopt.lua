@@ -48,15 +48,21 @@ end
 
 function NETMSG.pack(msgid,msgstr,guid)
     msgid = msgidmap[msgid].id
-    return netpack.pack(string.pack(">HHI4",#msgstr + 6,msgid,guid)..msgstr)
+    if guid and type(guid) == "number" then
+        return string.pack("<HHI4",#msgstr + 6,msgid,guid)..msgstr
+    else
+        return string.pack("<HH",#msgstr + 6,msgid)..msgstr
+    end
 end
 
-function NETMSG.unpack(msgstr)
-    local len,msgid,guid = string.unpack(">HHI4",msgstr)
-    if len > #msgstr then
-        log.error("invalid packet,pick:%d,buf len:%d",len,#msgstr)
+function NETMSG.unpack(msgstr,has_guid)
+    local msgid,guid
+    if has_guid then
+        msgid,guid = string.unpack("<HI4",msgstr)
+    else
+        msgid = string.unpack("<H",msgstr)
     end
-    return msgid,string.sub(msgstr,9),guid
+    return msgid,string.sub(msgstr,3),guid
 end
 
 function NETMSG.decode(msgid,msgstr)
@@ -80,8 +86,11 @@ function NETMSG.encode(msgid,msg)
 end
 
 function NETMSG.dispatch(msgid,msg,...)
-    local f = assert(dispatcher[msgid])
-	assert(f, string.format("on_net_msg func:%s", tostring(msgidmap[msgid])))
+    local f = dispatcher[msgid]
+    if not f then
+        log.error("netmsg.dispatch func:%s", msgidmap[msgid].name)
+        return
+    end
 
     return f(msg,...)
 end
@@ -98,7 +107,6 @@ function NETMSG.on_msg(msgstr,...)
     local msg = #buf > 0 and NETMSG.decode(msgid,buf) or {}
 
     log.info("netmsg.on_msg %s,%d,%d",msgname,msgid,#buf)
-	assert(f, string.format("on_net_msg func:%s", msgname))
 
     return f(msg,...)
 end
@@ -131,9 +139,11 @@ end
 function NETMSG.send(fd,msgname,msg,guid)
     local msgstr = NETMSG.encode(msgname,msg)
     local msgid = pb.enum(msgname..".MsgID","ID")
-    assert(msgid,string.format("invalid msgname:%s,%s",msgname,tostring(msgid)))
-    local packstr,sz = NETMSG.pack(msgid,msgstr,guid)
-    
+    if not msgid then
+        log.error("invalid msgname:%s,%s",msgname,msgid)
+    end
+
+    local packstr = NETMSG.pack(msgid,msgstr,guid)
     log.info("NETMSG.send msgname:%s,%s,%d",msgname,msgid,#packstr)
     socketdriver.send(fd,packstr,#packstr)
 end

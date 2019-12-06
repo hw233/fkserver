@@ -1,85 +1,0 @@
-
-ò
-verify_define.proto"E
-VerifyAccount
-account (	Raccount
-password (	Rpassword"Å
-VerifyAccountResult
-ret (Rret
-	phoneType (	R	phoneType
-guid (Rguid(
-no_bank_password (RnoBankPassword
-vip (Rvip
-
-login_time (R	loginTime
-logout_time (R
-logoutTime
-nickname (	Rnickname
-is_guest	 (RisGuest
-password
- (	Rpassword%
-alipay_account (	RalipayAccount
-alipay_name (	R
-alipayName*
-change_alipay_num (RchangeAlipayNum
-risk (Rrisk
-
-channel_id (	R	channelId'
-enable_transfer (RenableTransfer!
-inviter_guid (RinviterGuid
-invite_code (	R
-inviteCode
-create_time (R
-createTime#
-register_time (RregisterTime#
-bank_password (	RbankPassword6
-using_login_validatebox (RusingLoginValidatebox$
-bank_card_name (	RbankCardName"
-bank_card_num (	RbankCardNum.
-change_bankcard_num (RchangeBankcardNum
-	bank_name (	RbankName#
-bank_province (	RbankProvince
-	bank_city (	RbankCity
-bank_branch (	R
-bankBranch&
-seniorpromoter (Rseniorpromoter"≠
-GuestAccount
-ret (Rret
-guid (Rguid
-account (	Raccount(
-no_bank_password (RnoBankPassword
-vip (Rvip
-
-login_time (R	loginTime
-logout_time (R
-logoutTime
-nickname (	Rnickname
-is_guest	 (RisGuest
-password
- (	Rpassword%
-alipay_account (	RalipayAccount
-alipay_name (	R
-alipayName*
-change_alipay_num (RchangeAlipayNum
-risk (Rrisk
-
-channel_id (	R	channelId'
-enable_transfer (RenableTransfer
-is_first (RisFirst
-create_time (R
-createTime#
-register_time (RregisterTime#
-bank_password (	RbankPassword
-imei (	Rimei6
-using_login_validatebox (RusingLoginValidatebox$
-bank_card_name (	RbankCardName"
-bank_card_num (	RbankCardNum.
-change_bankcard_num (RchangeBankcardNum
-	bank_name (	RbankName#
-bank_province (	RbankProvince
-	bank_city (	RbankCity
-bank_branch (	R
-bankBranch&
-seniorpromoter (Rseniorpromoter!
-inviter_guid (RinviterGuid'
-inviter_account  (	RinviterAccountbproto3

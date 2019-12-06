@@ -14,3 +14,5 @@ register_dispatcher("CS_Maajan_Act_Pass",on_cs_act_pass)--过
 register_dispatcher("CS_Maajan_Act_Chi",on_cs_act_chi)--吃
 register_dispatcher("CS_Maajan_Act_Trustee",on_cs_act_trustee)--托管
 register_dispatcher("CS_Maajan_Act_BaoTing",on_cs_act_baoting)--报听
+register_dispatcher("CS_Maajan_Do_Action",on_cs_do_action)
+register_dispatcher("CS_Maajan_Action_Discard",on_cs_act_discard)

@@ -1,18 +1,129 @@
 ﻿syntax = "proto3";
 
+enum HU_TYPE{
+	WEI_HU					= 0;	//未胡
+	TIAN_HU					= 1;	//天胡
+	DI_HU					= 2;	//地胡
+	REN_HU					= 3;	//人胡
+	TIAN_TING				= 4;	//天听
+	QING_YI_SE				= 5;	//清一色
+	QUAN_HUA				= 6;	//全花
+	ZI_YI_SE				= 7;	//字一色
+	MIAO_SHOU_HUI_CHUN		= 8;	//妙手回春
+	HAI_DI_LAO_YUE			= 9;	//海底捞月
+	GANG_SHANG_HUA			= 10;	//杠上开花
+	QUAN_QIU_REN			= 11;	//全求人
+	SHUANG_AN_GANG			= 12;	//双暗杠
+	SHUANG_JIAN_KE			= 13;	//双箭刻
+	HUN_YI_SE				= 14;	//混一色
+	BU_QIU_REN				= 15;	//不求人
+	SHUANG_MING_GANG		= 16;	//双明杠
+	HU_JUE_ZHANG			= 17;	//胡绝张
+	JIAN_KE					= 18;	//箭刻
+	MEN_QING				= 19;	//门前清
+	AN_GANG					= 20;	//暗杠
+	DUAN_YAO				= 21;	//断幺
+	SI_GUI_YI				= 22;	//四归一
+	PING_HU					= 23;	//平胡
+	SHUANG_AN_KE			= 24;	//双暗刻
+	SAN_AN_KE				= 25;	//三暗刻
+	SI_AN_KE				= 26;	//四暗刻
+	BAO_TING				= 27;	//报听
+	MEN_FENG_KE				= 28;	//门风刻
+	QUAN_FENG_KE			= 29;	//圈风刻
+	ZI_MO					= 30;	//自摸
+	DAN_DIAO_JIANG			= 31;	//单钓将
+	YI_BAN_GAO	 			= 32;	//一般高
+	LAO_SHAO_FU	 			= 33;	//老少副
+	LIAN_LIU	 			= 34;	//连六
+	YAO_JIU_KE	 			= 35;	//幺九刻
+	MING_GANG	 			= 36;	//明杠
+	DA_SAN_FENG				= 37;	//大三风
+	XIAO_SAN_FENG			= 38;	//小三风
+	PENG_PENG_HU			= 39;	//碰碰胡
+	SAN_GANG				= 40;	//三杠
+	QUAN_DAI_YAO			= 41;	//全带幺
+	QIANG_GANG_HU			= 42;	//抢杠胡
+	HUA_PAI					= 43;	//花牌
+	DA_QI_XIN				= 44;	//大七星
+	LIAN_QI_DUI 			= 45;	//连七对
+	SAN_YUAN_QI_DUI			= 46;	//三元七对子
+	SI_XI_QI_DUI			= 47;	//四喜七对子
+	QI_DUI 					= 48;	//普通七对
+	DA_YU_WU 				= 49;	//大于五
+	XIAO_YU_WU 				= 50;	//小于五
+	DA_SI_XI				= 51;	//大四喜
+	XIAO_SI_XI				= 52;	//小四喜
+	DA_SAN_YUAN				= 53;	//大三元
+	XIAO_SAN_YUAN			= 54;	//小三元
+	JIU_LIAN_BAO_DENG		= 55;	//九莲宝灯
+	LUO_HAN_18				= 56;	//18罗汉
+	SHUANG_LONG_HUI			= 57;	//一色双龙会
+	YI_SE_SI_TONG_SHUN		= 58;	//一色四同顺
+	YI_SE_SI_JIE_GAO		= 59;	//一色四节高
+	YI_SE_SI_BU_GAO			= 60;	//一色四步高
+	HUN_YAO_JIU				= 61;	//混幺九
+	YI_SE_SAN_JIE_GAO		= 62;	//一色三节高
+	YI_SE_SAN_TONG_SHUN		= 63;	//一色三同顺
+	SI_ZI_KE				= 64;	//四字刻
+	QING_LONG				= 65;	//清龙
+	YI_SE_SAN_BU_GAO		= 66;	//一色三步高
+	DA_DUI_ZI  				= 67;	//大对子
+	LONG_QI_DUI 			= 68;	//龙七对
+	QING_QI_DUI 			= 69;	//清七对
+	QING_LONG_BEI 			= 70;	//清龙背
+	QING_DA_DUI 			= 71;	//清大对
+	QING_DAN_DIAO			= 72;	//清单吊
+
+	NORMAL_JI 				= 73;	//鸡牌
+	FAN_PAI_JI 				= 74;	//翻牌鸡
+	CHONG_FENG_JI 			= 75;	//冲锋鸡
+	ZHE_REN_JI 				= 76;	//责任鸡
+	WU_GU_JI 				= 77;	//乌骨鸡
+	YAO_BAI_JI 				= 78;	//摇摆鸡
+	BEN_JI 					= 79;	//本鸡
+	XING_QI_JI 				= 80;	//星期鸡
+	CHUI_FENG_JI 			= 81;	//吹风鸡
+	BA_GANG					= 82;	//把杠
+	DIAN_PAO				= 83;	//点炮
+	CHA_JIAO 				= 84; 	//查叫
+	JIAO_PAI				= 85;
+}
+
+
 enum ACTION{
-	NIL = 0;
-	TRUSTEE = 0x1;
-	PENG = 0x2;
-	AN_GANG = 0x4;
-	MING_GANG = 0x8;
-	BA_GANG = 0x10;
-	HU = 0x20;
-	PASS = 0x40;
-	LEFT_CHI = 0x80;
-	MID_CHI = 0x100;
-	RIGHT_CHI = 0x200;
-	JIA_BEI = 0x800;
+	ACTION_NIL = 0;
+	ACTION_TRUSTEE = 0x1;
+	ACTION_PENG = 0x2;
+	ACTION_AN_GANG = 0x4;
+	ACTION_MING_GANG = 0x8;
+	ACTION_BA_GANG = 0x10;
+	ACTION_HU = 0x20;
+	ACTION_PASS = 0x40;
+	ACTION_LEFT_CHI = 0x80;
+	ACTION_MID_CHI = 0x100;
+	ACTION_RIGHT_CHI = 0x200;
+	ACTION_TING = 0x400;
+	ACTION_JIA_BEI = 0x800;
+	ACTION_CHU_PAI = 0x1000;
+	ACTION_ZI_MO = 0x2000;
+	ACTION_MEN = 0x4000;
+	ACTION_MO_PAI = 0x8000;
+	ACTION_MEN_ZI_MO = 0x10000;
+}
+
+enum SECTION_TYPE {
+	Four = 0;
+	AnGang = 1;
+	MingGang = 2;
+	BaGang = 3;
+	DuiZi = 4;
+	Three = 5;
+	Peng = 6;
+	Chi = 7;
+	LeftChi = 8;
+	MidChi = 9;
+	RightChi = 10;
 }
 
 enum FSM_STATE {
@@ -29,58 +140,6 @@ enum FSM_STATE {
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 
-
-
-//胡
-message CS_Maajan_Act_Win {
-	enum MsgID { Nil = 0; ID = 23001; }
-}
-
-//加倍
-message CS_Maajan_Act_Double {
-	enum MsgID { Nil = 0; ID = 23002; }
-	int32 tile = 1;					// 牌值
-}
-
-//打牌
-message CS_Maajan_Act_Discard {
-	enum MsgID { Nil = 0; ID = 23003; }
-	int32 tile = 1;					// 牌值
-}
-
-//碰
-message CS_Maajan_Act_Peng {
-	enum MsgID { Nil = 0; ID = 23004; }
-}
-
-//杠
-message CS_Maajan_Act_Gang {
-	enum MsgID { Nil = 0; ID = 23005; }
-	int32 tile = 1;					// 牌值
-}
-
-//过
-message CS_Maajan_Act_Pass {
-	enum MsgID { Nil = 0; ID = 23006; }
-}
-
-//吃
-message CS_Maajan_Act_Chi {
-	enum MsgID { Nil = 0; ID = 23007; }
-	int32 tile = 1;					// 牌值
-	int32 action = 2;					//吃类型
-}
-
-//托管
-message CS_Maajan_Act_Trustee {
-	enum MsgID { Nil = 0; ID = 23008; }
-}
-
-//报听
-message CS_Maajan_Act_BaoTing {
-	enum MsgID { Nil = 0; ID = 23009; }
-}
-
 message Maajan_Tiles {
 	repeated int32 tiles = 1;						// 牌
 }
@@ -89,6 +148,8 @@ message Maajan_MingPai{
 	int32 tile = 1;
 	int32 type = 2;
 }
+
+
 
 message Maajan_Player_Info {
 	repeated Maajan_MingPai pb_ming_pai 	= 1; 	// 明牌
@@ -106,6 +167,9 @@ message Maajan_Player_Info {
 	int32 taxes 		= 11; 			//税收
 	bool finish_task	= 12; 			//完成任务
 	bool is_ting 		= 13;			//是否听
+	int32 total_score 	= 14;
+	int32 round_score 	= 15;
+	repeated int32 men_pai = 16;
 }
 
 message Maajan_Reconnect_Data {
@@ -131,51 +195,7 @@ message SC_Maajan_Desk_Enter {
 	bool is_reconnect = 7;						//reconnect
 	Maajan_Reconnect_Data pb_rec_data = 8;		//断线数据
 	Maajan_Task_Data pb_task_data = 9;			//任务
-}
-
-//胡
-message SC_Maajan_Act_Win {
-	enum MsgID { Nil = 0; ID = 23101; }
-	int32 chair_id		= 1; 		// id
-	int32 tile 		= 2;			// 牌值
-	int32 ba_gang_hu	= 3;		// 是否是巴杠胡 1 为true
-}
-
-//加倍
-message SC_Maajan_Act_Double {
-	enum MsgID { Nil = 0; ID = 23102; }
-	int32 chair_id		= 1; 			// id
-	int32 jiabei_val	= 2; 			// jiabei_val
-}
-
-//打牌
-message SC_Maajan_Act_Discard {
-	enum MsgID { Nil = 0; ID = 23103; }
-	int32 chair_id		= 1; 			// id
-	int32 tile = 2;					// 牌值
-}
-
-//碰
-message SC_Maajan_Act_Peng {
-	enum MsgID { Nil = 0; ID = 23104; }
-	int32 chair_id		= 1; 			// id
-	int32 tile = 2;					// 牌值
-}
-
-//杠
-message SC_Maajan_Act_Gang {
-	enum MsgID { Nil = 0; ID = 23105; }
-	int32 chair_id	 	= 1; 			// id
-	int32 tile = 2;					// 牌值
-	int32 action = 3;					// 类型，1自己手上四张，暗杠， 2自己手上三张，明杠， 3已经碰了，摸了一张，巴杠
-}
-
-//吃
-message SC_Maajan_Act_Chi {
-	enum MsgID { Nil = 0; ID = 23107; }
-	int32 chair_id	 = 1; 		// id
-	int32 tile = 2;					// 牌值，吃进的牌
-	int32 action = 3;				//吃牌类型
+	int32 round = 10;
 }
 
 //剩余多少张公牌
@@ -216,15 +236,86 @@ message SC_Maajan_Act_Trustee {
 	bool is_trustee = 2;				//最終托管狀態 true托管 false 非托管
 }
 
-//报听
-message SC_Maajan_Act_BaoTing {
-	enum MsgID { Nil = 0; ID = 23114; }
-	int32 chair_id	 = 1;	
-	bool is_ting = 2;				//最終报听狀態 true听 false 非听
+message Maajan_Balance_Score{
+	int32 score = 1;
+	int32 type = 2;
+	int32 tile = 3;
+	int32 count = 4;
+}
+
+message Maajan_Balance_Item{
+	enum ItemType{
+		Nil  = 0;
+		Men = 1;
+		Hu = 2;
+	}
+
+	ItemType 			 type = 1;
+	repeated Maajan_Balance_Score typescore = 2;
+}
+
+message Maajan_Blanace_Player{
+	int32 chair_id 			= 1;
+	bool  hu 				= 2;	//是否胡了
+	int32 hu_fan	 		= 3; 	//番数
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	repeated Maajan_Balance_Item  items = 6;
+	repeated Maajan_Balance_Score gang = 7;
+	repeated Maajan_Balance_Score ji = 8;
 }
 
 //结算
 message SC_Maajan_Game_Finish {
 	enum MsgID { Nil = 0; ID = 23115; }
-	repeated Maajan_Player_Info pb_players 	= 1; 		// 玩家
+	repeated Maajan_Player_Info 	players = 1;
+	repeated Maajan_Blanace_Player 	player_balance = 2;
+	int32 	ben_ji = 3;
+}
+
+
+message Action{
+	int32 action = 1;
+	int32 tile = 2;
+}
+
+message SC_WaitingDoActions { 
+	enum MsgID { Nil = 0; ID = 23116;}
+	int32 chair_id = 1;
+	repeated Action actions = 3;
+}
+
+message CS_Maajan_Do_Action{
+	enum MsgID { Nil = 0; ID = 23002;}
+	int32 action = 1;
+	int32 value_tile = 2;
+}
+
+message SC_Maajan_Do_Action{
+	enum MsgID { Nil = 0; ID = 23118;}
+	int32 chair_id = 1;
+	int32 action = 2;
+	int32 value_tile = 3;
+}
+
+message CS_Maajan_Action_Discard{
+	enum MsgID { Nil = 0; ID = 23003;}
+	int32 tile = 1;
+}
+
+message SC_Maajan_Action_Discard{
+	enum MsgID { Nil = 0; ID = 23119;}
+	int32 chair_id = 1;
+	int32 tile = 2;
+}
+
+message Maajan_Player_Score {
+	int32 chair_id = 1;	
+	int32 guid = 2;
+	int32 score = 3;
+}
+
+message SC_Maajan_Final_Game_Over{
+	enum MsgID { Nil = 0; ID = 23120;}
+	repeated Maajan_Player_Score player_scores = 1;
 }

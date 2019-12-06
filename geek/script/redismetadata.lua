@@ -51,11 +51,15 @@ redismetadata.player.online = redismeta:create({
     fields = {
         gate = "number",
         server  = "number",
-        frist_game_type = "number",
+        first_game_type = "number",
         second_game_type = "number",
         room_id = "number",
         table_id = "number",
+        chair_id = "number",
+        table = "number",
+        chair = "number",
         game = "number",
+        global_table = "number",
     },
 })
 
@@ -85,13 +89,11 @@ redismetadata.privatetable.info = redismeta:create({
     fields = {
         club_id = "number",
         table_id = "number",
-        table_status = "number",
-        room_cur_round = "number",
-        locked = "number",
         game_type = "number",
         rule = "json",
         owner = "number",
         real_table_id = "number",
+        room_id = "number",
     }
 })
 

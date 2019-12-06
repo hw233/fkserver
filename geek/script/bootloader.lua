@@ -76,9 +76,13 @@ local function setupcluster(clusterconfs)
         end
     end
 
-    dump(clusters)
-    channel.localprovider(selfname)
     cluster.reload(clusters)
+
+    if bootconf.node.id == clusterid then
+        return
+    end
+
+    channel.localprovider(selfname)
     cluster.open(selfname)
 end
 

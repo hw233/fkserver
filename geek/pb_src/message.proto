@@ -178,6 +178,8 @@ message S2C_ROOM_CREATE_RES
     repeated SEAT_INFO seat_list = 3;
 }
 
+
+
 //（赢三张）DB ==> data bean
 message DB_ZJH_ROOM
 {
@@ -296,6 +298,7 @@ message C2S_JOIN_ROOM_REQ
 {
     enum MsgID {NONE = 0; ID = 10017;}
     int32 table_id = 1;     //房间号
+    int32 reconnect = 2;    //重连
 }
 
 //加入房间回复(本人)

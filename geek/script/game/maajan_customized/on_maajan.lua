@@ -128,3 +128,17 @@ function on_cs_act_baoting(msg,guid)
 		tb:on_cs_act_baoting(player, msg)
 	end
 end
+
+function on_cs_do_action(msg,guid)
+	log.info ("test .................. on_cs_do_action,guid:%s",guid)
+	local player = base_players[guid]
+	if not player then
+		log.error("on_cs_act_win no player,guid:%s",guid)
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:on_cs_do_action(player, msg)
+	end
+end

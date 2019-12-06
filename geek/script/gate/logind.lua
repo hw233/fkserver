@@ -7,6 +7,7 @@ local httpc = require "http.httpc"
 local crypt = require "skynet.crypt"
 local util = require "gate.util"
 local enum = require "pb_enums"
+local serviceconf = require "serviceconf"
 
 require "table_func"
 require "functions"
@@ -154,30 +155,25 @@ function MSG.CL_RegAccount(msg,session)
         return false
     end
 
-    if msg.pb_regaccount.password then
-        local password = util.rsa_decrypt(crypt.hexdecode(tostring(msg.pb_regaccount.password)))
-        if type(password) ~= "string" or password == "" then
-            log.error( "password error %s", msg.pb_regaccount.password )
-            return false
-        end
+    -- if msg.pb_regaccount.password then
+    --     local password = util.rsa_decrypt(crypt.hexdecode(tostring(msg.pb_regaccount.password)))
+    --     if type(password) ~= "string" or password == "" then
+    --         log.error( "password error %s", msg.pb_regaccount.password )
+    --         return false
+    --     end
 
-        msg.pb_regaccount.password = password 
-    end
+    --     msg.pb_regaccount.password = password 
+    -- end
 
-    local password_
-    local account_
-    local imei_
-    local deprecated_imei_
-    local platform_id
-
-    -- 保存账号
-    if msg.pb_regaccount.account then
-        if type(msg.pb_regaccount.account) ~= "string" or msg.pb_regaccount.account == "" then
-            log.error( "no account, CL_RegAccount")
-            return false
-        end
-        account_ = msg.pb_regaccount.account
-    end
+    -- local account_
+    -- -- 保存账号
+    -- if msg.pb_regaccount.account then
+    --     if type(msg.pb_regaccount.account) ~= "string" or msg.pb_regaccount.account == "" then
+    --         log.error( "no account, CL_RegAccount")
+    --         return false
+    --     end
+    --     account_ = msg.pb_regaccount.account
+    -- end
 
     --保存imei
     if msg.pb_regaccount.imei then
@@ -191,16 +187,16 @@ function MSG.CL_RegAccount(msg,session)
         return false
     end
 
-    if msg.pb_regaccount.deprecated_imei then
-        if type(msg.pb_regaccount.deprecated_imei) ~= "string" or msg.pb_regaccount.deprecated_imei == "" then
-            log.error( "no deprecated_imei, CL_RegAccount")
-            return false
-        end
-        deprecated_imei_ = msg.pb_regaccount.deprecated_imei
-    else
-        deprecated_imei_ = ""
-        msg.pb_regaccount.deprecated_imei = ""
-    end
+    -- if msg.pb_regaccount.deprecated_imei then
+    --     if type(msg.pb_regaccount.deprecated_imei) ~= "string" or msg.pb_regaccount.deprecated_imei == "" then
+    --         log.error( "no deprecated_imei, CL_RegAccount")
+    --         return false
+    --     end
+    --     deprecated_imei_ = msg.pb_regaccount.deprecated_imei
+    -- else
+    --     deprecated_imei_ = ""
+    --     msg.pb_regaccount.deprecated_imei = ""
+    -- end
 
     if msg.pb_regaccount.platform_id and msg.pb_regaccount.platform_id ~= "" then
         platform_id = msg.pb_regaccount.platform_id
@@ -211,13 +207,18 @@ function MSG.CL_RegAccount(msg,session)
 
     msg.pb_regaccount.ip_area = util.geo_lookup(session.ip)
     msg.pb_regaccount.ip =  session.ip
-    log.info( "set_ip = %s", msg.pb_regaccount.ip )
-    log.info( "set_ip_area = %s", msg.pb_regaccount.ip_area )
-    local scmsg = channel.call("login.?","msg","CL_RegAccount",msg)
-    log.info( "login step MSG.CL_RegAccount,account=%s, session_id=%d", account_, session.fd )
-    if scmsg.server_id then
-        skynet.call(gate,"lua","login")
+    log.info("set_ip = %s", msg.pb_regaccount.ip)
+    log.info("set_ip_area = %s", msg.pb_regaccount.ip_area)
+    local info,gameid = channel.call("login.?","msg","CL_RegAccount",msg)
+    info.game_id = gameid
+    log.info("login step MSG.CL_RegAccount,account=%s, session_id=%s", info.account, session.fd)
+    if info.ret == enum.LOGIN_RESULT_SUCCESS then
+        skynet.call(gate,"lua","login",session.fd,info.guid,gameid,info)
     end
+
+    dump(info)
+
+    netmsgopt.send(session.fd,"LC_Login",info)
 end
 
 
@@ -298,18 +299,23 @@ local function login_by_openid(msg,session)
 
     msg.ip = session.ip
     local info,server = channel.call("login.?","msg","CL_Login",msg,gateid)
-    if not check_login_session(session.fd) then --已断开连接
-        return
-    end
-
+    local guid = info.guid
     if info.result == enum.LOGIN_RESULT_SUCCESS then
+        if not check_login_session(session.fd) then --已断开连接
+            channel.publish("service."..tostring(server),"lua","afk",guid)
+            return
+        end
+
         skynet.call(gate,"lua","login",session.fd,info.guid,server,info)
     end
+
+    dump(info)
 
     return info
 end
 
 local function login_by_account(msg,session)
+    dump(msg)
     local fd = session.fd
     local ip = session.ip
     if not msg.account and type(msg.account) ~= "string" then
@@ -355,24 +361,56 @@ local function login_by_account(msg,session)
     msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
-    local res = channel.call("login.?","msg","CL_Login",msg,serviceid)
-
-    if not check_login_session(session.fd) then --已断开连接
-        return
-    end
-
-    if res.ret == enum.LOGIN_RESULT_SUCCESS then
-        skynet.call(gate,"lua","login",session.fd,res.guid,res.game_id,res)
+    local info,server = channel.call("login.?","msg","CL_Login",msg,serviceid)
+    local guid = info.guid
+    if info.ret == enum.LOGIN_RESULT_SUCCESS then
+        if not check_login_session(session.fd) then --已断开连接
+            channel.publish("service."..tostring(server),"lua","afk",guid)
+            return
+        end
+        
+        skynet.call(gate,"lua","login",session.fd,info.guid,info.game_id,info)
     end
 
     log.info( "login step gate.CL_Login,account=%s, session_id=%d", msg.account, fd )
-    return res
+    return info
 end
 
+function MSG.CL_Auth(msg,session)
+    local fd = session.fd
+    if logining[fd] then
+        netmsgopt.send(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_LOGIN_QUQUE,
+        })
+        return true
+    end
+
+    if  (not msg.code or msg.code == "") or 
+        (not msg.auth_platform or msg.auth_platform == "") then
+        netmsgopt.send(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
+        })
+        return
+    end
+
+    logining[fd] = true
+
+    local result,info = channel.call("login.?","msg","CL_Auth",msg)
+    if result ~= enum.LOGIN_RESULT_SUCCESS then
+        netmsgopt.send(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_SUCCESS,
+        })
+        logining[fd] = nil
+        return
+    end
+
+    logining[fd] = nil
+
+    MSG.CL_Login(info,session)
+end
 
 function MSG.CL_Login(msg,session)
     local fd = session.fd
-    dump(msg)
     if logining[fd] then
         netmsgopt.send(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_LOGIN_QUQUE,
@@ -403,6 +441,8 @@ function MSG.CL_Login(msg,session)
     end
 
     logining[fd] = nil
+
+    dump(res)
 
 	netmsgopt.send(fd,"LC_Login",res)
 end
@@ -487,14 +527,15 @@ function MSG.C2S_LOGIN_REQ(msg,session)
     logining[session.fd] = coroutine.running()
 
     msg.loginIp = session.ip
-    local inserverid,info = channel.call("login.?","msg","C2S_LOGIN_REQ",msg,gateid)
-
-    if not check_login_session(session.fd) then --已断开连接
-        return
-    end
-
-    if info then
-        skynet.call(gate,"lua","login",session.fd,info.player_id,inserverid,info)
+    local info,server = channel.call("login.?","msg","C2S_LOGIN_REQ",msg,gateid)
+    local guid = info.guid
+    if info.ret == enum.LOGIN_RESULT_SUCCESS then
+        if not check_login_session(session.fd) then --已断开连接
+            channel.publish("service."..tostring(server),"lua","afk",guid)
+            return
+        end
+        
+        skynet.call(gate,"lua","login",session.fd,info.guid,info.game_id,info)
     end
 
     info.roomCard = info.room_card
@@ -512,6 +553,54 @@ function MSG.C2S_HEARTBEAT_REQ(_,session)
     })
 end
 
+function MSG.CS_HEARTBEAT(_,session)
+    netmsgopt.send(session.fd,"SC_HEARTBEAT",{
+        severTime = os.time(),
+    })
+end
+
+
+function MSG.CG_GameServerCfg(msg,session)
+    local player_platform_id = "0"
+    
+    if not msg.platform_id then
+        log.warning( "platform_id empty, CG_GameServerCfg, set platform = [0]")
+    else
+        player_platform_id = msg.platform_id
+    end
+
+    local sconf = channel.list()
+
+    local pbconf = {}
+    for id,_ in pairs(sconf) do
+        local id = string.match(id,"service.(%d+)")
+        if id then
+            local conf = serviceconf[tonumber(id)]
+            if conf.name == "game" then
+                local gameconf = conf.conf
+                local platformids = string.split(gameconf.platform_id,"%d+")
+                for _,pid in pairs(platformids) do
+                    if pid == player_platform_id then
+                        table.insert(pbconf,gameconf)
+                    end
+                end
+            end
+        end
+    end
+
+    dump(pbconf)
+
+
+	for _,p in pairs(pbconf) do
+		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
+    end
+
+	netmsgopt.send(session.fd,"GC_GameServerCfg",{
+        pb_cfg = pbconf,
+    })
+
+	return true
+end
 
 skynet.start(function()
     netmsgopt.register_handle(MSG)
@@ -534,6 +623,8 @@ skynet.start(function()
     }
 
     skynet.dispatch("client",function(_,_,msgstr,...)
-        skynet.retpack(netmsgopt.on_msg(msgstr,...))
+        local msgid,msg = netmsgopt.unpack(msgstr)
+        msg = netmsgopt.decode(msgid,msg)
+        skynet.retpack(netmsgopt.dispatch(msgid,msg,...))
     end)
 end)

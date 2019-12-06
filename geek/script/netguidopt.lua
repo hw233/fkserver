@@ -25,8 +25,8 @@ function onlineguid.send(guids,msgname,msg)
     local function guidsend(player_or_guid,msgname,msg)
         local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
         local s = onlineguid[guid]
-        if not s then 
-            log.warning("send2guid %d not online.",guid)
+        if not s or not s.gate then 
+            -- log.warning("send2guid %d not online.",guid)
             return
         end
   
@@ -46,7 +46,7 @@ end
 function onlineguid.control(player_or_guid,msgname,msg)
     local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
     local s = onlineguid[guid]
-    if not onlineguid[guid] then 
+    if not s or not s.gate then 
         log.warning("control2guid %d not online.",guid)
         return
     end
@@ -59,6 +59,15 @@ end
 function onlineguid.broadcast(msgname,msg)
     for guid,s in pairs(onlineguid) do
         channel.publish("gate."..s.gate,"client",guid,"proxy",msgname,msg)
+    end
+end
+
+function onlineguid.broadcast_except(except,msgname,msg)
+    except = type(except) == "number" and except or except.guid
+    for guid,s in pairs(onlineguid) do
+        if guid ~= except then
+            channel.publish("gate."..s.gate,"client",guid,"proxy",msgname,msg)
+        end
     end
 end
 

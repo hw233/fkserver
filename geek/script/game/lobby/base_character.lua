@@ -1,24 +1,7 @@
 -- 玩家和机器人基类
 local pb = require "pb_files"
-local redisopt = require "redisopt"
-local reddb = redisopt.default
-
---local base_room = require "game.lobby.base_room"
-local room = g_room
-
--- enum GAME_SERVER_RESULT
-local GAME_SERVER_RESULT_SUCCESS = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_SUCCESS")
-local GAME_SERVER_RESULT_IN_GAME = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_GAME")
-local GAME_SERVER_RESULT_IN_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_ROOM")
-local GAME_SERVER_RESULT_OUT_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OUT_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_TABLE = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_TABLE")
-local GAME_SERVER_RESULT_NOT_FIND_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_CHAIR")
-local GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER")
-local GAME_SERVER_RESULT_PLAYER_NO_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_PLAYER_NO_CHAIR")
-local GAME_SERVER_RESULT_OHTER_ON_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OHTER_ON_CHAIR")
-local GAME_SERVER_RESULT_ROOM_LIMIT = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_ROOM_LIMIT")
-
+local log = require "log"
+local enum = require "pb_enums"
 
 local base_character = {}
 -- 创建
@@ -147,24 +130,11 @@ end
 
 -- 强制踢出房间
 function base_character:forced_exit()
-	local ret = 0
-	if room == nil then
-		print("room is nil")
-		if g_room == nil then
-			print("g_room is nil")
-		else
-			local ret = g_room:stand_up(self)
-			print("ret is :"..ret)
-			if ret == GAME_SERVER_RESULT_SUCCESS then
-			   g_room:exit_room(self)
-			end
-		end
-	else
-		local ret = room:stand_up(self)
-		print("ret is :"..ret)
-		if ret == GAME_SERVER_RESULT_SUCCESS then
-		   room:exit_room(self)
-		end
+	log.info("force exit,%s,%s,%s",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
+	local ret = g_room:stand_up(self,enum.STANDUP_REASON_FORCE)
+	log.info("ret is :"..ret)
+	if ret == enum.GAME_SERVER_RESULT_SUCCESS then
+		g_room:exit_room(self)
 	end
 end
 

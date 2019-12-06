@@ -3,6 +3,7 @@
 local pb = require "pb_files"
 local log = require "log"
 require "game.net_func"
+local enum = require "pb_enums"
 local send2client_pb = send2client_pb
 
 local base_players = require "game.lobby.base_players"
@@ -21,11 +22,9 @@ end
 function on_cs_stand_up_and_exit_room(msg,guid)	
 	local player = base_players[guid]
 	log.info ("test .................. on_cs_stand_up_and_exit_room~1")
-	local result_, room_id_, table_id_, chair_id_ = g_room:stand_up_and_exit_room(player)
-	log.info (result_)
+	local result_, room_id_, table_id_, chair_id_ = g_room:stand_up_and_exit_room(player,enum.STANDUP_REASON_NORMAL)
 	player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
 	log.info ("test .................. on_cs_stand_up_and_exit_room~2")
-	log.info (result_)
 	log.info(string.format("result [%d]",result_))
 end
 
@@ -114,16 +113,23 @@ function on_cs_ready(msg,guid)
 		return
 	end
 
+	if not player.table_id then
+		log.warning("on_cs_ready table_id is:%s",player.table_id)
+	end
+
 	if player.chair_id then
-		log.info("on_cs_ready chair_id is :"..player.chair_id)
+		log.info("on_cs_ready chair_id is:%s",player.chair_id)
 	end
 
 	local tb = g_room:find_table_by_player(player)
-	if tb then
-		tb:ready(player)
+	if not tb then
+		log.warning("on_cs_ready not find table,guid:%s",player.guid)
+		return
 	end
 
-	log.info ("test .................. on_cs_ready")
+	tb:ready(player)
+
+	log.info("test .................. on_cs_ready")
 end
 
 function on_cs_change_table(msg,guid)
@@ -181,7 +187,52 @@ function on_cs_reconnection_play_msg( msg,guid )
 	if tb then
 		tb:on_reconnect(player)
 	else
-		send2client_pb(player,  "SC_ReconnectionPlay", {find_table = false})	
+		send2client_pb(player,  "SC_ReconnectionPlay", {find_table = false})
 		log.error("guid[%d] stand up", player.guid)
 	end
+end
+
+--解散房间
+function on_cs_dismiss_table_req(msg,guid)
+	local player = base_players[guid]
+	if not player or not player.online then
+		send2client_pb(guid,"SC_DismissTableReq",{
+			result = enum.ERROR_PLAYER_NOT_EXIST,
+		})
+		return
+	end
+
+	local result = g_room:request_dismiss_private_table(player)
+	if result ~= enum.ERROR_NONE then
+		send2client_pb(guid,"SC_DismissTableReq",{
+			result = result
+		})
+	end
+end
+
+function on_cs_dismiss_table_commit(msg,guid)
+	local player = base_players[guid]
+	if not player or not player.online then
+		send2client_pb(guid,"SC_DismissTableCommit",{
+			result = enum.ERROR_PLAYER_NOT_IN_ROOM,
+		})
+		return
+	end
+
+	local result = g_room:commit_dismiss_private_table(player,msg.agree)
+	if result ~= enum.ERROR_NONE then
+		send2client_pb(guid,"SC_DismissTableCommit",{
+			result = result,
+		})
+	end
+end
+
+function on_s_get_table_status_info(table_id)
+	local tb = g_room:find_table(table_id)
+	if not tb then
+		log.warning("can not find table,%s",table_id)
+		return
+	end
+
+	return tb:global_status_info()
 end

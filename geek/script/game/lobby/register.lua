@@ -27,10 +27,8 @@ skynet.start(function()
 	require "game.lobby.on_room"
 	require "game.lobby.on_chat"
 	require "game.lobby.on_mail"
-	-- require "game.lobby.on_bonus"
 	require "game.lobby.on_recharge_cash"
 	require "game.club.on_club"
-
 
 	local show_log = not (b_register_dispatcher_hide_log or false)
 	b_register_dispatcher_hide_log = true
@@ -60,7 +58,6 @@ skynet.start(function()
 	register_dispatcher("DS_QueryPlayerMsgData",on_ds_QueryPlayerMsgData)
 	register_dispatcher("DS_QueryPlayerMarquee",on_ds_QueryPlayerMarquee)
 	register_dispatcher("DS_CashMoneyType",on_ds_cash_money_type)
-	-- register_dispatcher("DS_CashMoney",on_ds_cash_money)
 	-- 代理提现
 	register_dispatcher("DS_ProxyCashToBank",on_ds_proxy_cash_money_to_bank)
 
@@ -79,13 +76,6 @@ skynet.start(function()
 	register_dispatcher("DS_BandBankcard",on_ds_bandbankcard)
 	register_dispatcher("DS_BandBankcardNum",on_ds_bandbankcardnum)
 	register_dispatcher("DS_Get_Instructor_Weixin",on_ds_instructor_weixin)
-	-- --红包
-	-- register_dispatcher("DS_RepPlayerBonusGameStatistics",on_ds_query_game_statistics)
-	-- register_dispatcher("DS_RepBonusActivity",on_ds_query_bonus_activities)
-	-- register_dispatcher("DS_RepPlayerBonusInfo",on_ds_query_player_bonuses)
-	-- register_dispatcher("DS_RepPickPlayerBonusResult",on_ds_pick_bonus)
-	-- register_dispatcher("DS_PlayerCurrentBonusLimitInfo",on_ds_load_current_bonus_activity_limit_info)
-
 
 	--------------------------------------------------------------------
 	-- 注册Login发过来的消息分派函数
@@ -189,4 +179,9 @@ skynet.start(function()
 	-- register_dispatcher("SS_JoinPrivateRoom",on_SS_JoinPrivateRoom)
 	-- register_dispatcher("LS_CC_ChangeMoney",on_ls_cc_changemoney)
 	register_dispatcher("LG_UpdateBankMoney",on_lg_updatebankmoney)
+
+	register_dispatcher("CS_DismissTableReq",on_cs_dismiss_table_req)
+	register_dispatcher("CS_DismissTableCommit",on_cs_dismiss_table_commit)
+
+	register_dispatcher("GetTableStatusInfo",on_s_get_table_status_info)
 end)

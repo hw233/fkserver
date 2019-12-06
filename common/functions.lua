@@ -51,8 +51,8 @@ local function dump_value_(v)
     return tostring(v)
 end
 
-function dump(value, desciption, nesting)
-    if type(nesting) ~= "number" then nesting = 3 end
+function dump(value,nesting,desciption)
+    if type(nesting) ~= "number" then nesting = 5 end
 
     local lookupTable = {}
     local result = {}
@@ -460,7 +460,7 @@ end
 
 function table.insertto(dest, src, begin)
     begin = checkint(begin)
-    if begin <= 0 then
+    if (not begin) or begin <= 0 then
         begin = #dest + 1
     end
 
@@ -472,14 +472,17 @@ end
 
 function table.indexof(array, value, begin)
     for i = begin or 1, #array do
-        if array[i] == value then return i end
+        local v = array[i]
+        local is = type(value) == "function" and value(v,i) or value == v
+        if is then return i end
     end
     return false
 end
 
 function table.keyof(hashtable, value)
     for k, v in pairs(hashtable) do
-        if v == value then return k end
+        local is = type(value) == "function" and value(v,k) or value == v
+        if is then return k end
     end
     return nil
 end
@@ -564,6 +567,21 @@ function table.push_back(dst,v)
 	table.insert(dst,v)
 end
 
+function table.union(dst,src,agg)
+    local tb = clone(dst)
+    for k,v in pairs(src) do
+        table.insert(tb,agg and agg(v,k) or v)
+    end
+    return tb
+end
+
+function table.unionto(dst,src,agg)
+    for k,v in pairs(src) do
+        table.insert(dst,agg and agg(v,k) or v)
+    end
+    return dst
+end
+
 function table.pop_back(tb)
 	local ret = tb[#tb]
 	table.remove(tb)
@@ -592,7 +610,7 @@ function table.decr(tb,key,v)
 	return value
 end
 
-function table.fill(tb,head,trail,value)
+function table.fill(tb,value,head,trail)
 	head	= head or 1
 	trail	= trail or head
     tb		= tb or {}
@@ -602,8 +620,8 @@ end
 
 function table.sum(tb,agg)
     local value = 0
-    for _,v in pairs(tb) do
-        value = value + (agg and agg(v) or tonumber(v))
+    for k,v in pairs(tb) do
+        value = value + (agg and agg(v,k) or tonumber(v))
     end
 
     return value

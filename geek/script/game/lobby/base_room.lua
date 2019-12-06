@@ -5,6 +5,13 @@ local base_table = require "game.lobby.base_table"
 local base_prize_pool = require "game.lobby.base_prize_pool"
 local base_bonus = require "game.lobby.base_bonus"
 local json = require "cjson"
+local enum = require "pb_enums"
+local base_players = require "game.lobby.base_players"
+local base_private_table = require "game.lobby.base_private_table"
+local onlineguid = require "netguidopt"
+local channel = require "channel"
+local serviceconf = require "serviceconf"
+local nameservice = require "nameservice"
 
 require "game.net_func"
 require "table_func"
@@ -16,30 +23,7 @@ local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
--- enum GAME_SERVER_RESULT
-local GAME_SERVER_RESULT_SUCCESS = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_SUCCESS")
-local GAME_SERVER_RESULT_IN_GAME = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_GAME")
-local GAME_SERVER_RESULT_IN_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_IN_ROOM")
-local GAME_SERVER_RESULT_FREEZEACCOUNT = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_FREEZEACCOUNT")
-local GAME_SERVER_RESULT_PLAYER_ON_CHAIR = pb.enum("GAME_SERVER_RESULT" , "GAME_SERVER_RESULT_PLAYER_ON_CHAIR")
-local GAME_SERVER_RESULT_OUT_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OUT_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_ROOM = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_ROOM")
-local GAME_SERVER_RESULT_NOT_FIND_TABLE = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_TABLE")
-local GAME_SERVER_RESULT_NOT_FIND_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_NOT_FIND_CHAIR")
-local GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER")
-local GAME_SERVER_RESULT_PLAYER_NO_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_PLAYER_NO_CHAIR")
-local GAME_SERVER_RESULT_OHTER_ON_CHAIR = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_OHTER_ON_CHAIR")
-local GAME_SERVER_RESULT_MAINTAIN = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_MAINTAIN")
-local GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND")
-local GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL")
--- enum GAME_READY_MODE
-local GAME_READY_MODE_NONE = pb.enum("GAME_READY_MODE", "GAME_READY_MODE_NONE")
-local GAME_READY_MODE_ALL = pb.enum("GAME_READY_MODE", "GAME_READY_MODE_ALL")
-local GAME_READY_MODE_PART = pb.enum("GAME_READY_MODE", "GAME_READY_MODE_PART")
-
-local PAY_OPTION_AA = pb.enum("PAY_OPTION","AA")
-local PAY_OPTION_BOSS = pb.enum("PAY_OPTION","BOSS")
-local PAY_OPTION_ROOM_OWNER = pb.enum("PAY_OPTION","ROOM_OWNER")
+local table_expire_seconds = 60 * 60 * 5
 
 require "timer"
 local add_timer = add_timer
@@ -62,6 +46,23 @@ local function check_conf(conf)
 	assert(conf.room_cfg)
 end
 
+local function find_default_lobby()
+	local services = channel.list()
+    for sid,_ in pairs(services) do
+        local id = sid:match("service%.(%d+)")
+        if id then
+            id = tonumber(id)
+            local conf = serviceconf[id]
+            if conf and (conf.name == nameservice.TNGAME or conf.type == nameservice.TIDGAME) then
+                local gameconf = conf.conf
+                if gameconf and gameconf.first_game_type and gameconf.first_game_type == 1 then
+                    return tonumber(sid:match("service%.(%d+)"))
+                end
+            end
+        end
+    end
+end
+
 function base_room:new()
 	local o = {}
 	setmetatable(o,{__index = base_room,})
@@ -75,7 +76,7 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.id = 1
 	self.conf = conf
 	self.chair_count = chair_count
-	
+
 	local table_count = conf.table_count
 
 	self.tax_show = conf.tax_show -- 是否显示税收信息
@@ -218,12 +219,12 @@ function base_room:enter_room_and_sit_down(player)
 	log.info("player guid is : %d",player.guid)
 	if player.disable == 1 then
 		log.info("get_table_players_status player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
 	if player.table_id or player.chair_id then
 		log.info("player tableid is [%d] chairid is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
-		return GAME_SERVER_RESULT_PLAYER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
 	log.info("base_room:enter_room_and_sit_down: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d] get_db_status[%d]",def_game_name,def_game_id,self.game_switch_is_open,get_db_status())
@@ -231,7 +232,7 @@ function base_room:enter_room_and_sit_down(player)
 	if self.game_switch_is_open == 1 then --游戏进入维护阶段
 		if player and player.vip ~= 100 then	
 			send2client_pb(player, "SC_GameMaintain", {
-					result = GAME_SERVER_RESULT_MAINTAIN,
+					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 					})
 			player:forced_exit()
 			log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
@@ -239,10 +240,9 @@ function base_room:enter_room_and_sit_down(player)
 		end
 	end
 
-	local ret = GAME_SERVER_RESULT_NOT_FIND_ROOM
+	local ret = enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 	if not player:check_room_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
-		dump(player)
-		ret = GAME_SERVER_RESULT_NOT_FIND_TABLE
+		ret = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		local tb,k,j = self:get_suitable_table(self,player,false)
 		if tb then
 			self:player_enter_room(player)
@@ -266,7 +266,7 @@ function base_room:enter_room_and_sit_down(player)
 				p:on_notify_sit_down(notify)
 			end)
 			tb:player_sit_down(player, k)
-			return GAME_SERVER_RESULT_SUCCESS, j, k, tb
+			return enum.GAME_SERVER_RESULT_SUCCESS, j, k, tb
 		end
 	end
 
@@ -274,36 +274,36 @@ function base_room:enter_room_and_sit_down(player)
 end
 
 -- 站起并离开房间
-function base_room:stand_up_and_exit_room(player)
+function base_room:stand_up_and_exit_room(player,reason)
 	if not player.table_id then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 	
 	if not player.chair_id then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	local tb = self.tables[player.table_id]
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	if tb:is_play(player) then
-		return GAME_SERVER_RESULT_IN_GAME
+		return enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	if chair.guid ~= player.guid then
-		return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 	end
 
 	local tableid = player.table_id
 	local chairid = player.chair_id
-	tb:player_stand_up(player, false)
+	tb:player_stand_up(player, reason)
 	local notify = {
 			table_id = tableid,
 			chair_id = chairid,
@@ -316,20 +316,20 @@ function base_room:stand_up_and_exit_room(player)
 
 	local roomid = player.room_id
 	self:player_exit_room(player)
-	return GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
+	return enum.GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
 end
 
 function base_room:check_private_limit(player,chair_count,conf)
 	local pay_option = conf.pay.option
 	local money_type = conf.pay.money_type
 	
-	if pay_option == PAY_OPTION_AA then
+	if pay_option == enum.PAY_OPTION_AA then
 		local player_limit = math.ceil(self.room_limit / chair_count)
 		
 		return not player:check_room_limit(player_limit,money_type)
 	end
 
-	if pay_option == PAY_OPTION_BOSS then
+	if pay_option == enum.PAY_OPTION_BOSS then
 		return not player:check_room_limit(self.room_limit,money_type)
 	end
 
@@ -340,82 +340,140 @@ function base_room:save_private_table(owner,table_id,chair_id)
 	
 end
 
+function base_room:request_dismiss_private_table(requester)
+	local tb = self:find_table_by_player(requester)
+	if not tb then
+		return enum.ERROR_PLAYER_NOT_IN_ROOM
+	end
+
+	return tb:request_dismiss(requester)
+end
+
+function base_room:commit_dismiss_private_table(player,agree)
+	local tb = self:find_table_by_player(player)
+	if not tb then
+		return enum.ERROR_PLAYER_NOT_IN_ROOM
+	end
+
+	return tb:commit_dismiss(player,agree)
+end
+
+function base_room:dismiss_private_table(global_table_id)
+	local private_table_conf = base_private_table[global_table_id]
+	local table_id = private_table_conf.real_table_id
+	local tb = self.tables[table_id]
+	if not tb then
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+	end
+
+	tb:dismiss()
+	reddb:hdel("table:info:"..tostring(global_table_id))
+	reddb:srem("player:table:"..tostring(private_table_conf.owner),global_table_id)
+end
+
 -- 创建私人房间
 function base_room:create_private_table(player,chair_count,round, conf)
 	if player.table_id or player.chair_id then
-		log.info("player tableid is [%d] chairid is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
-		return GAME_SERVER_RESULT_PLAYER_ON_CHAIR
+		log.info("player table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
+		return enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
-	local ret = GAME_SERVER_RESULT_NOT_FIND_ROOM
-	if self:check_private_limit(player,chair_count,conf)
-		and self.cur_player_count_ < self.player_count_limit 
+	if self:check_private_limit(player,chair_count,conf) and self.cur_player_count_ < self.player_count_limit 
 	then
-		ret = GAME_SERVER_RESULT_NOT_FIND_TABLE
 		local tb,chair_id,table_id = self:get_private_table(player, chair_count,round,conf)
-		if tb then
-			local global_tid = reddb:incr("table:global:id")
-			global_tid = tonumber(global_tid)
-			reddb:hmset("table:info:"..tostring(global_tid),{
-				room_id = def_game_id,
-				table_id = global_tid,
-				real_table_id = table_id,
-				owner = player.guid,
-				rule = json.encode(conf),
-				game_type = def_first_game_type,
-			})
-
-			reddb:sadd("player:table:"..tostring(player.guid),global_tid)
-
-			self:player_enter_room(player)
-			-- 通知消息
-
-			tb:foreach(function(p) 
-				p:on_notify_sit_down({
-					room_id = def_game_id,
-					table_id = global_tid,
-					pb_visual_info = player,
-				})
-			end)
-			
-			tb:player_sit_down(player, chair_id)
-
-			return GAME_SERVER_RESULT_SUCCESS,global_tid,tb
+		if not tb then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 		end
-	end
 
-	return ret
-end
-
--- 加入私人房间
-function base_room:join_private_table(player,private_table,chair_count)
-	if player.table_id or player.chair_id then
-		log.warning("player tableid is [%d] chairid is [%d]",player.table_id,player.chair_id)
-		return GAME_SERVER_RESULT_PLAYER_ON_CHAIR
-	end
-
-	local table_id = private_table.real_table_id
-	
-	local ret = GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	local tb = self.tables[table_id]
-	if not tb then
-		return GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	end
-	
-	if self:check_private_limit(player,chair_count,private_table.rule) 
-		and self.cur_player_count_ < self.player_count_limit then
-		local chair_id = tb:get_free_chair_id()
-		if not chair_id then
-			return GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+		local global_tid = math.random(100000,999999)
+		for _ = 1,1000 do
+			if not base_private_table[global_tid] then break end
+			global_tid = math.random(100000,999999)
 		end
-		
+
+		reddb:hmset("table:info:"..tostring(global_tid),{
+			room_id = def_game_id,
+			table_id = global_tid,
+			real_table_id = table_id,
+			owner = player.guid,
+			rule = json.encode(conf),
+			game_type = def_first_game_type,
+		})
+		reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
+		reddb:sadd("player:table:"..tostring(player.guid),global_tid)
+		reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
+
+		tb.private_id = global_tid
+
 		self:player_enter_room(player)
 		
 		tb:player_sit_down(player, chair_id)
 
+		tb:foreach(function(p)
+			p:on_notify_sit_down({
+				room_id = def_game_id,
+				table_id = tb.table_id_,
+				pb_visual_info = player,
+			})
+		end)
+
+		reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
+
+		return enum.GAME_SERVER_RESULT_SUCCESS,global_tid,tb
+	end
+
+	return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
+end
+
+function base_room:reconnect(player,table_id,chair_id)
+	local tb = self.tables[table_id]
+	if not tb then
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	tb:player_sit_down(player, chair_id)
+
+	local notify = {
+		room_id = def_game_id,
+		table_id = player.table_id,
+		pb_visual_info = player,
+		is_online = true,
+	}
+
+	tb:foreach_except(chair_id,function (p)
+		p:on_notify_sit_down(notify)
+	end)
+
+	return tb:reconnect(player)
+end
+
+-- 加入私人房间
+function base_room:join_private_table(player,private_table_conf,chair_count)
+	if player.table_id or player.chair_id then
+		log.warning("player tableid is [%d] chairid is [%d]",player.table_id,player.chair_id)
+		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
+	end
+
+	local table_id = private_table_conf.real_table_id
+	local tb = self.tables[table_id]
+	if not tb then
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+	end
+
+	if self:check_private_limit(player,chair_count,private_table_conf.rule)
+		and self.cur_player_count_ < self.player_count_limit then
+		local chair_id = tb:get_free_chair_id()
+		if not chair_id then
+			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+		end
+
+		self:player_enter_room(player)
+
+		tb:player_sit_down(player, chair_id)
+
 		local notify = {
 			room_id = def_game_id,
-			table_id = private_table.table_id,
+			table_id = private_table_conf.table_id,
 			pb_visual_info = player,
 		}
 
@@ -423,42 +481,42 @@ function base_room:join_private_table(player,private_table,chair_count)
 			p:on_notify_sit_down(notify)
 		end)
 
-		return GAME_SERVER_RESULT_SUCCESS,tb
-	else
-		return GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL
-	end
+		reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table_conf.table_id)
 
-	return ret
+		return enum.GAME_SERVER_RESULT_SUCCESS,tb
+	else
+		return enum.GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL
+	end
 end
 
 -- 切换座位
 function base_room:change_chair(player)
 	if player.disable == 1 then
 		print("stand_up_and_exit_room player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
 	if not player.table_id then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	if not player.chair_id then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 
 	local tb = self.tables[player.table_id]
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	if chair.guid ~= player.guid then
-		return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 	end
 	
 	local tableid = player.table_id
@@ -491,11 +549,11 @@ function base_room:change_chair(player)
 	end
 
 	if targetid == nil then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	-- 旧桌子站起
-	tb:player_stand_up(player, false)
+	tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL)
 
 	local notify = {
 			table_id = tableid,
@@ -531,21 +589,21 @@ function base_room:change_chair(player)
 
 	targettb:player_sit_down(player, targetid)
 
-	return GAME_SERVER_RESULT_SUCCESS, targettb.table_id_, targetid, targettb
+	return enum.GAME_SERVER_RESULT_SUCCESS, targettb.table_id_, targetid, targettb
 end
 
 -- 快速进入房间
 function base_room:auto_enter_room(player)
 	if player.disable == 1 then
 		print("auto_enter_room player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
 	log.info("base_room:auto_enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d] get_db_status[%d]",def_game_name,def_game_id,self.game_switch_is_open,get_db_status())
 	if  self.game_switch_is_open == 1 or get_db_status() == 0 then --游戏进入维护阶段
 		if player.vip ~= 100 then	
 			send2client_pb(player, "SC_GameMaintain", {
-					result = GAME_SERVER_RESULT_MAINTAIN,
+					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 					})
 			log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
 			return 14
@@ -565,17 +623,17 @@ function base_room:auto_enter_room(player)
 		end
 
 		self:player_enter_room(player)
-		return GAME_SERVER_RESULT_SUCCESS
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
 
-	return GAME_SERVER_RESULT_NOT_FIND_ROOM
+	return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 end
 
 -- 进入房间
 function base_room:enter_room(player)
 	if player.disable == 1 then
 		print("enter_room player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
 	log.info(string.format("base_room:enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%s]",
@@ -583,7 +641,7 @@ function base_room:enter_room(player)
 	if  self.game_switch_is_open == 1 then --游戏进入维护阶段
 		if player.vip ~= 100 then
 			send2client_pb(player, "SC_GameMaintain", {
-					result = GAME_SERVER_RESULT_MAINTAIN,
+					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 					})
 			log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
 			return 14
@@ -611,20 +669,20 @@ function base_room:enter_room(player)
 
 	self:player_enter_room(player)
 
-	return GAME_SERVER_RESULT_SUCCESS
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 function base_room:cs_trusteeship(player)
 	local tb = self:find_table(player.table_id)
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 	tb:set_trusteeship(player,true)
 end
 
 -- 离开房间
 function base_room:exit_room(player,is_logout)
-	print("base_room:exit_room")
+	log.info("base_room:exit_room %s,%s",player.guid,is_logout)
 	
 	self:player_exit_room(player,is_logout)
 	
@@ -633,28 +691,28 @@ function base_room:exit_room(player,is_logout)
 			guid = player.guid,
 		}
 
-	return GAME_SERVER_RESULT_SUCCESS, self.id
+	return enum.GAME_SERVER_RESULT_SUCCESS, self.id
 end
 
 -- 玩家掉线
 function base_room:player_offline(player)
 	local tb = self:find_table(player.table_id)
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	if chair.guid ~= player.guid then
-		return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 	end
 
 	local tableid, chairid = player.table_id, player.chair_id
 
-	if tb:player_stand_up(player, true) then
+	if tb:player_stand_up(player, enum.STANDUP_REASON_OFFLINE) then
 		local notify = {
 			table_id = tableid,
 			chair_id = chairid,
@@ -666,7 +724,7 @@ function base_room:player_offline(player)
 
 		tb:check_start(true)
 
-		return GAME_SERVER_RESULT_SUCCESS, false
+		return enum.GAME_SERVER_RESULT_SUCCESS, false
 	end
 
 	local notify = {
@@ -679,7 +737,7 @@ function base_room:player_offline(player)
 		p:on_notify_stand_up(notify)
 	end)
 
-	return GAME_SERVER_RESULT_SUCCESS, true
+	return enum.GAME_SERVER_RESULT_SUCCESS, true
 end
 
 function base_room:is_play(player)
@@ -699,22 +757,22 @@ end
 -- 玩家上线
 function base_room:player_online(player)
 	if player.room_id and player.table_id and player.chair_id then
-		player:on_enter_room(player.room_id, GAME_SERVER_RESULT_SUCCESS)
+		player:on_enter_room(player.room_id, enum.GAME_SERVER_RESULT_SUCCESS)
 
 		local tb = self:find_table(player.table_id)
 		if not tb then
-			return GAME_SERVER_RESULT_NOT_FIND_TABLE
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 		
 		local chair = tb:get_player(player.chair_id)
 		if not chair then
-			return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+			return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 		end
 
 		if chair.guid ~= player.guid then
 			player.table_id = nil
 			player.chair_id = nil
-			return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+			return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 		end
 
 		player.is_offline = nil
@@ -744,7 +802,7 @@ function base_room:player_online(player)
 		-- 重连
 		tb:reconnect(player)
 
-		return GAME_SERVER_RESULT_SUCCESS
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
 end
 
@@ -754,8 +812,8 @@ function base_room:exit_server(player,is_logout)
 	if player.table_id and player.chair_id then
 		local result_, is_offline_ = self:player_offline(player)
 
-		log.info("guid[%d] player_offline return [%d] is_offline[%s]",player.guid,result_,tostring(is_offline_))
-		if result_ == GAME_SERVER_RESULT_SUCCESS then
+		log.info("guid[%d] player_offline return [%d] is_offline[%s]",player.guid,result_,is_offline_)
+		if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 			if is_offline_ then
 				return true
 			end
@@ -769,15 +827,15 @@ end
 function base_room:auto_sit_down(player)
 	if player.disable == 1 then
 		print("auto_sit_down player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	if not player.room_id then
-		return GAME_SERVER_RESULT_OUT_ROOM
+		return enum.GAME_SERVER_RESULT_OUT_ROOM
 	end
 	
 	local room = self:find_room(player.room_id)
 	if not room then
-		return GAME_SERVER_RESULT_NOT_FIND_ROOM
+		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 	end
 
 	for i,tb in ipairs(self.tables) do
@@ -788,31 +846,31 @@ function base_room:auto_sit_down(player)
 		end
 	end
 
-	return GAME_SERVER_RESULT_NOT_FIND_TABLE
+	return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 end
 
 -- 坐下
 function base_room:sit_down(player, table_id_, chair_id_)
 	if player.disable == 1 then
 		print("sit_down player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	
 	if player.table_id or player.chair_id then
-		log.info("base_room:sit_down error guid [%d] GAME_SERVER_RESULT_PLAYER_ON_CHAIR",player.guid)
-		return GAME_SERVER_RESULT_PLAYER_ON_CHAIR
+		log.info("base_room:sit_down error guid [%d] enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR",player.guid)
+		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 	
 	local tb = self:find_table(table_id_)
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 	
 	local chair = tb:get_player(chair_id_)
 	if chair then
-		return GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER
+		return enum.GAME_SERVER_RESULT_CHAIR_HAVE_PLAYER
 	elseif chair == nil then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 	
 	-- 通知消息
@@ -838,7 +896,7 @@ function base_room:sit_down(player, table_id_, chair_id_)
 
 	tb:player_sit_down(player, chair_id_)
 
-	return GAME_SERVER_RESULT_SUCCESS, table_id_, chair_id_
+	return enum.GAME_SERVER_RESULT_SUCCESS, table_id_, chair_id_
 end
 
 
@@ -846,42 +904,42 @@ end
 function base_room:stand_up_new(player)
 	log.info("base_room:stand_up_new player guid[%d]",player.guid)
 	if not player.room_id then
-		return GAME_SERVER_RESULT_OUT_ROOM
+		return enum.GAME_SERVER_RESULT_OUT_ROOM
 	end
 
 	if not player.table_id then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	if not player.chair_id then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	local room = self:find_room(player.room_id)
 	if not room then
-		return GAME_SERVER_RESULT_NOT_FIND_ROOM
+		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 	end
 
 	local tb = room:find_table(player.table_id)
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	if chair.guid ~= player.guid then
-		return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 	end
 	
 	local tableid = player.table_id
 	local chairid = player.chair_id
-	local ret =  tb:player_stand_up(player, false)
+	local ret =  tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL)
 	if ret == false then
-		log.warning("player guid[%d] stand_up failed, return GAME_SERVER_RESULT_IN_GAME",player.guid)
-		return GAME_SERVER_RESULT_IN_GAME
+		log.warning("player guid[%d] stand_up failed, return enum.GAME_SERVER_RESULT_IN_GAME",player.guid)
+		return enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
 	local notify = {
@@ -895,47 +953,38 @@ function base_room:stand_up_new(player)
 
 	tb:check_start(true)
 
-	return GAME_SERVER_RESULT_SUCCESS, tableid, chairid
+	return enum.GAME_SERVER_RESULT_SUCCESS, tableid, chairid
 end
 
 
 -- 站起
-function base_room:stand_up(player)
-	print("base_room:stand_up")
-	if not player.room_id then
-		return GAME_SERVER_RESULT_OUT_ROOM
-	end
-
+function base_room:stand_up(player,reason)
+	log.info("base_room:stand_up,guid:%s chair_id:%s reasion:%s",player.guid,player.chair_id,reason)
 	if not player.table_id then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	if not player.chair_id then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
-	local room = self:find_room(player.room_id)
-	if not room then
-		return GAME_SERVER_RESULT_NOT_FIND_ROOM
-	end
-
-	local tb = room:find_table(player.table_id)
+	local tb = self:find_table(player.table_id)
 	if not tb then
-		return GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
-		return GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 	end
 
 	if chair.guid ~= player.guid then
-		return GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
 	end
 	
 	local tableid = player.table_id
 	local chairid = player.chair_id
-	tb:player_stand_up(player, false)
+	tb:player_stand_up(player, reason)
 
 	local notify = {
 			table_id = tableid,
@@ -948,7 +997,7 @@ function base_room:stand_up(player)
 
 	tb:check_start(true)
 
-	return GAME_SERVER_RESULT_SUCCESS, tableid, chairid
+	return enum.GAME_SERVER_RESULT_SUCCESS, tableid, chairid
 end
 
 -- 找一个被动机器人位置
@@ -999,7 +1048,8 @@ function base_room:get_private_table(player,chair_count,round,conf)
 			suitable_table = tb
 			chair_id = player_count + 1
 			table_id = j
-			tb.conf = {
+			--初始化私房
+			tb:private_init({
 				round = round,
 				chair_count = chair_count,
 				money_type = conf.pay.money_type,
@@ -1007,9 +1057,9 @@ function base_room:get_private_table(player,chair_count,round,conf)
 				owner = player,
 				owner_guid = player.guid,
 				owner_chair_id = chair_id,
-			}
-			--初始化私房
-			tb:private_init(conf)
+				rule = conf.play,
+				conf = conf,
+			})
 			return suitable_table,chair_id,table_id
 		end
 	end
@@ -1031,22 +1081,23 @@ function base_room:player_enter_room(player)
 	reddb:incr(string.format("game:%s.%s.%s",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:incr(string.format("game:%s.%s.%s.%s:player_num",def_game_name,def_game_id,def_first_game_type,def_second_game_type))
 
-	log.info("base_room:player_enter_room, guid %s, room_id %s",player.guid,player.room_id)
+	log.info("base_room:player_enter_room, guid %s, room_id %s",player.guid,def_game_id)
 
 	local online_key = string.format("player:online:guid:%d",player.guid)
 	reddb:hmset(online_key,{
 		first_game_type = def_first_game_type,
 		second_game_type = def_second_game_type,
-		room_id = def_game_id,
+		server = def_game_id,
 	})
 end
 
 -- 玩家退出房间
 function base_room:player_exit_room(player,is_logout)
 	log.info(string.format("GameInOutLog,base_room:player_exit_room, guid %s, room_id %s",
-	tostring(player.guid),tostring(player.room_id)))
+		player.guid,def_game_id))
 	
-	print("base_room:player_exit_room")	self.players[player.guid] = false
+	log.info("base_room:player_exit_room")	
+	self.players[player.guid] = false
 	self.cur_player_count_ = self.cur_player_count_ - 1
 
 	local str = string.format("game:%s.%d.%d",def_game_name,def_first_game_type,def_second_game_type)
@@ -1067,9 +1118,11 @@ function base_room:player_exit_room(player,is_logout)
 		log.info("player_exit_room not set guid[%d] onlineinfo",player.guid)
 	end
 
-	reddb:hdel("player:online:guid:"..tostring(player.guid),"room")
+	reddb:hdel("player:online:guid:"..tostring(player.guid),"server")
 	
-	player:on_exit_room(0)
+	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
+	onlineguid[player.guid] = nil
+	onlineguid.control(player.guid,"goserver",find_default_lobby())
 end
 
 
@@ -1117,7 +1170,7 @@ function base_room:change_table_new(player)
  	log.info("player guid[%d] change_table_new start..........",player.guid)
  	if player.disable == 1 then
 		print("change_table_new player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	local tb = self:find_table_by_player(player)
 	if tb then		
@@ -1131,7 +1184,7 @@ function base_room:change_table_new(player)
 			--离开当前桌子
 			--local result_, table_id_, chair_id_  = self:stand_up(player)
 			local result_, table_id_, chair_id_  = self:stand_up_new(player)
-			if result_ ~= GAME_SERVER_RESULT_SUCCESS then
+			if result_ ~= enum.GAME_SERVER_RESULT_SUCCESS then
 				log.warning("player guid[%d] stand_up_new failed.",player.guid)
 				return
 			end
@@ -1156,7 +1209,7 @@ function base_room:change_table_new(player)
 			end)
 			--在新桌子坐下
 			tb:player_sit_down(player,k)
-			player:change_table(player.room_id, j, k, GAME_SERVER_RESULT_SUCCESS, tb)
+			player:change_table(def_game_id, j, k, enum.GAME_SERVER_RESULT_SUCCESS, tb)
 			self:get_table_players_status(player)
 			return
 		else
@@ -1171,7 +1224,7 @@ function base_room:change_table(player)
 	print("======================base_room:change_table")
 	if player.disable == 1 then
 		print("change_table player is Freeaz forced_exit")
-		return GAME_SERVER_RESULT_FREEZEACCOUNT
+		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	local tb = self:find_table_by_player(player)
 	if tb then
@@ -1202,7 +1255,7 @@ function base_room:change_table(player)
 			end)
 			--在新桌子坐下
 			tb:player_sit_down(player,k)
-			player:change_table(player.room_id, j, k, GAME_SERVER_RESULT_SUCCESS, tb)
+			player:change_table(player.room_id, j, k, enum.GAME_SERVER_RESULT_SUCCESS, tb)
 			self:get_table_players_status(player)
 			return
 		else
