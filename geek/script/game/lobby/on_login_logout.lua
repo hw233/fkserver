@@ -1158,7 +1158,7 @@ local function find_best_room(first_game_type,second_game_type)
 			if 	gameconf.first_game_type == first_game_type 
 				and (not second_game_type or second_game_type == gameconf.second_game_type) then
 				local player_count = get_room_player_count(id)
-				if player_count < gameconf.player_limit and (not cur_player_count or player_count < room_player_count)   then
+				if player_count < gameconf.player_limit and (not cur_player_count or player_count < gameconf.player_limit)   then
 					room_id = id
 					cur_player_count = player_count
 				end
@@ -1181,6 +1181,15 @@ function on_cs_create_private_room(msg,guid)
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
 		local room_id = find_best_room(game_type)
+		if not room_id then
+			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
+			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+				result = enum.ERROR_CREATE_ROOM_NO,
+				game_type = game_type,
+			})
+			return
+		end
+		
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","C2S_ROOM_CREATE_REQ",msg,guid)
