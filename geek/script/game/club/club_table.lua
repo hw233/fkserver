@@ -11,7 +11,8 @@ setmetatable(club_table,{
         local tbs = {}
         for _,tid in pairs(tids) do
             tid = tonumber(tid)
-            tbs[tid] = private_table[tid]
+            local priv_tb = private_table[tid]
+            tbs[tid] = priv_tb and table.nums(priv_tb) == 0 and nil or priv_tb 
         end
         
         return tbs

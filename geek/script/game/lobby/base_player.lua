@@ -154,7 +154,6 @@ function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, r
 			result = result_,
 			})
 
-		reddb:decr("player:online:count")
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"first_game_type")
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"second_game_type")
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"server")

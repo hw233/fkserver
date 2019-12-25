@@ -17,7 +17,7 @@ local add_timer = add_timer
 
 require "table_func"
 local parse_table = parse_table
-server_start_time =  get_second_time()
+server_start_time =  os.time()
 local server_start_time = server_start_time
 
 local md5 = require "md5"
@@ -115,7 +115,7 @@ function on_SD_Get_Instructor_Weixin(game_id, msg)
 				table.insert(nmsg.instructor_weixin, datainfo.weixin)
 			end
 		else
-			local t1 = get_second_time()
+			local t1 = os.time()
 			local t2 = math.floor(math.abs(server_start_time - t1) / 60)
 			log.info("t2[%d] weixin_sec[%d]  x[%d]", t2, weixin_sec,  x)
 			local sendin = math.floor((math.floor(t2/weixin_sec) * 2) % x + 1)

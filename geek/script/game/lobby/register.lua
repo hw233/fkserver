@@ -8,7 +8,7 @@ require "functions"
 
 function query_many_ox_config_data()
 	send2db_pb("SD_QueryOxConfigData", {
-		cur_time = get_second_time(),
+		cur_time = os.time(),
 	})
 end
 

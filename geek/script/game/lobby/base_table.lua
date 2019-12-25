@@ -119,7 +119,7 @@ end
 
 function base_table:request_dismiss(player)
 	local timer = timer_manager:new_timer(dismiss_timeout,function()
-		self.foreach(function(p)
+		self:foreach(function(p)
 			self:commit_dismiss(p,false)
 		end)
 	end)
@@ -151,6 +151,11 @@ function base_table:request_dismiss(player)
 end
 
 function base_table:commit_dismiss(player,agree)
+	if not self.dismiss_request then
+		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
+		return
+	end
+
 	local commissions = self.dismiss_request.commissions
 	agree = agree and agree == true or false
 
@@ -405,6 +410,21 @@ function base_table:player_sit_down(player, chair_id)
 		chair = chair_id,
 	})
 
+	if self.private_id then
+		local priv_tb = base_private_table[self.private_id]
+		if priv_tb and priv_tb.club_id then
+			local club = base_clubs[priv_tb.club_id]
+			if club then
+				club:broadcast("S2C_SYNC_TABLES_RES",{
+					club_id = club.id,
+					room_info = self:global_status_info(),
+					sync_table_id = self.private_id,
+					sync_type = enum.SYNC_UPDATE,
+				})
+			end
+		end
+	end
+
 	onlineguid[player.guid] = nil
 end
 
@@ -414,8 +434,7 @@ end
 
 --处理掉线玩家
 function base_table:player_offline(player)
-	log.info("base_table:player_offline")
-	log.info("set player[%d] in_game false" ,player.guid)
+	log.info("base_table:player_offline set player[%d] in_game false" ,player.guid)
 	player.in_game = false
 end
 
@@ -427,6 +446,7 @@ function base_table:dismiss()
 
 	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
 	local private_table_conf = base_private_table[self.private_id]
+	dump(private_table_conf)
 	local club_id = private_table_conf.club_id
 	local private_table_id = private_table_conf.table_id
 	local private_table_owner = private_table_conf.owner
@@ -536,6 +556,21 @@ function base_table:player_stand_up(player, reason)
 		self.players[chairid] = nil
 		player.table_id = nil
 		player.chair_id = nil
+
+		if self.private_id then
+			local priv_tb = base_private_table[self.private_id]
+			if priv_tb and priv_tb.club_id then
+				local club = base_clubs[priv_tb.club_id]
+				if club then
+					club:broadcast("S2C_SYNC_TABLES_RES",{
+						club_id = club.id,
+						room_info = self:global_status_info(),
+						sync_table_id = self.private_id,
+						sync_type = enum.SYNC_UPDATE,
+					})
+				end
+			end
+		end
 
 		if self.private_id and table.nums(self.players) == 0 then
 			self:dismiss()

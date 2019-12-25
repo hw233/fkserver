@@ -174,7 +174,7 @@ end
 
 -- 每一帧调用
 function base_passive_android:on_tick()
-	local cur = get_second_time()
+	local cur = os.time()
 
 	for roomid, a in pairs(self.init_passive_android_) do
 		for i, v in pairs(a) do

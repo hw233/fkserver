@@ -17,6 +17,7 @@ redismetadata.player.info = redismeta:create({
         bank = "number",
         is_android = "number",
         level = "number",
+        login_time = "number",
         login_award_day = "number",
         login_award_receive_day = "number",
         online_award_time = "number",

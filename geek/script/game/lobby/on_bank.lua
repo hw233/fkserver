@@ -247,7 +247,7 @@ function on_cs_bank_deposit(msg,guid)
 	--
 	---- 日志
 	--send2db_pb("SD_BankLog", {
-	--	time = get_second_time(),
+	--	time = os.time(),
 	--	guid = player.guid,
 	--	nickname = player.nickname,
 	--	phone = player.phone,
@@ -264,7 +264,7 @@ function on_cs_bank_deposit(msg,guid)
 	--[[send2db_pb("SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			opt = BANK_STATEMENT_OPT_TYPE_DEPOSIT,
 			money = money_,
 			bank_balance = player.bank,
@@ -357,7 +357,7 @@ function on_cs_bank_draw(msg,guid)
 	-- 
 	-- -- 日志
 	-- send2db_pb("SD_BankLog", {
-	-- 	time = get_second_time(),
+	-- 	time = os.time(),
 	-- 	guid = player.guid,
 	-- 	nickname = player.nickname,
 	-- 	phone = player.phone,
@@ -486,7 +486,7 @@ function on_cs_bank_transfer(msg,guid)
 		})
 		--[[local statement_ = {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			opt = BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT,
 			target = msg.account,
 			money = msg.money,
@@ -510,7 +510,7 @@ function on_cs_bank_transfer(msg,guid)
 	else -- 不在该服务器情况
 		send2login_pb("SD_BankTransfer", {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			target = msg.account,
 			money = msg.money,
 			bank_balance = player.bank,

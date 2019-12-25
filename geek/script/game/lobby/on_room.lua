@@ -21,11 +21,10 @@ end
 -- 站起并离开房间
 function on_cs_stand_up_and_exit_room(msg,guid)	
 	local player = base_players[guid]
-	log.info ("test .................. on_cs_stand_up_and_exit_room~1")
+	log.info("test .................. on_cs_stand_up_and_exit_room~1")
 	local result_, room_id_, table_id_, chair_id_ = g_room:stand_up_and_exit_room(player,enum.STANDUP_REASON_NORMAL)
 	player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
-	log.info ("test .................. on_cs_stand_up_and_exit_room~2")
-	log.info(string.format("result [%d]",result_))
+	log.info("test .................. on_cs_stand_up_and_exit_room result [%s]",result_)
 end
 
 -- 切换座位
@@ -56,7 +55,7 @@ function on_cs_exit_room(msg,guid)
 	local result_, room_id_ = g_room:exit_room(player)
 	player:on_exit_room(room_id_, result_)
 	
-	log.info ("test .................. on_cs_exit_room")
+	log.info("test .................. on_cs_exit_room")
 end
 
 -- 快速进入房间

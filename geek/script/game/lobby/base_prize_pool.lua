@@ -26,7 +26,7 @@ end
 function base_prize_pool:prize_pool_init()
 	local str = '{"open":0,"time_start":0,"time_end":0,"pool_origin":1,"pool_prize":10,"pool_max":5,"pool_lucky":0.5,"bet_add":5,"prize_count":100,"prize_limit":47900,"showpool_add":70,"showpool_sub":30,"showpool_add_min":100,"showpool_add_max":5000,"showpool_sub_min":300,"showpool_sub_max":1000,"showpool_led":25,"robot_time":300}'
 	self.prizepool = {pool = 0,show = 0,count = 0,prize = 0}
-	self.prizepool_show_time = get_second_time() + 3
+	self.prizepool_show_time = os.time() + 3
 	self.prizepool_cfg = json.decode(str)
 	self.prizepool.show = random.boost_integer(10000,100000)
 	self.prizepool_led = {}
@@ -51,7 +51,7 @@ end
 --是否开放
 function base_prize_pool:prize_pool_is_open()
 	if self.prizepool_cfg.open == 1 then
-		local now = get_second_time()
+		local now = os.time()
 		--log.info("start[%d] end[%d] now[%d]" , self.prizepool_cfg.time_start , self.prizepool_cfg.time_end  , now)
 		if self.prizepool_cfg.time_start < now and now < self.prizepool_cfg.time_end then
 			self.run_flag = true
@@ -79,10 +79,10 @@ function base_prize_pool:prize_pool_show(room_id ,table_id)
 	if self:prize_pool_is_open() == false then
 		return
 	end
-	if get_second_time() < self.prizepool_show_time then
+	if os.time() < self.prizepool_show_time then
 		return
 	end
-	self.prizepool_show_time = get_second_time() + 3
+	self.prizepool_show_time = os.time() + 3
 	local show_ra = random.boost_integer(1,100)
 	if show_ra < self.prizepool_cfg.showpool_add and self.prizepool.show < 100000000 then
 		self.prizepool.show = self.prizepool.show + random.boost_integer(self.prizepool_cfg.showpool_add_min,self.prizepool_cfg.showpool_add_max)
@@ -164,8 +164,8 @@ function base_prize_pool:prize_pool_game(users,money,gamelog)
 			if money > 100 then
 				local nickname = self.robot_name[random.boost_integer(1,#self.robot_name)]
 				local nickname_time = self.robot_name_time[nickname]
-				if (nickname_time and nickname_time - self.prizepool_cfg.robot_time > get_second_time()) or not nickname_time then
-					self.robot_name_time[nickname] = get_second_time()
+				if (nickname_time and nickname_time - self.prizepool_cfg.robot_time > os.time()) or not nickname_time then
+					self.robot_name_time[nickname] = os.time()
 					table.insert(self.prizepool_led,{ nickname = nickname ,money = money / 100})
 				end
 			end

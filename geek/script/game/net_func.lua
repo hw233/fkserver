@@ -43,7 +43,7 @@ function broadcast_platform_marquee(platform_id,first_game_type_,second_game_typ
 		second_game_type = second_game_type_,
 		number = 1,
 		interval_time = 0,
-		start_time =  get_second_time(),
+		start_time =  os.time(),
 		notice_type = notice_type_,
 		param1 = p1,
 		param2 = p2,

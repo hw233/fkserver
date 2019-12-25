@@ -170,6 +170,7 @@ message Maajan_Player_Info {
 	int32 total_score 	= 14;
 	int32 round_score 	= 15;
 	repeated int32 men_pai = 16;
+	int32 mo_pai 		= 17;
 }
 
 message Maajan_Reconnect_Data {
@@ -318,4 +319,9 @@ message Maajan_Player_Score {
 message SC_Maajan_Final_Game_Over{
 	enum MsgID { Nil = 0; ID = 23120;}
 	repeated Maajan_Player_Score player_scores = 1;
+}
+
+message SC_Maajan_StopAction{
+	enum MsgID { Nil = 0; ID = 23121;}
+	int32 chair_id = 1;
 }

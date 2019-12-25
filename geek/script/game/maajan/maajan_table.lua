@@ -155,9 +155,9 @@ function maajan_table:tick()
             self.timer[v] = nil
         end
     else
-        self.Maintain_time = self.Maintain_time or get_second_time()
-        if get_second_time() - self.Maintain_time > 5 then
-            self.Maintain_time = get_second_time()
+        self.Maintain_time = self.Maintain_time or os.time()
+        if os.time() - self.Maintain_time > 5 then
+            self.Maintain_time = os.time()
             for _,v in ipairs(self.players) do
                 if v then
                     --维护时将准备阶段正在匹配的玩家踢出

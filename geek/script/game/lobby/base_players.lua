@@ -20,7 +20,10 @@ setmetatable(player_manager,{
 		
 		p = redismetadata.player.info:decode(p)
 
-        setmetatable(p,{__index = base_player})
+		p = table.nums(p) > 0 and p or nil
+		if p then
+			setmetatable(p,{__index = base_player})
+		end
 
 		t[guid] = p
 		return p

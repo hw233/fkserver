@@ -82,7 +82,7 @@ function on_cs_receive_reward_login(msg,guid)
 	--[[send2db_pb("SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			opt = BANK_STATEMENT_OPT_TYPE_REWARD_LOGIN,
 			money = award,
 			bank_balance = player.bank,
@@ -125,7 +125,7 @@ function on_cs_receive_reward_online(msg,guid)
 		return
 	end
 	
-	if player.online_award_time + get_second_time() - player.online_award_start_time < award.cd then
+	if player.online_award_time + os.time() - player.online_award_start_time < award.cd then
 		send2client_pb(player, "SC_ReceiveRewardOnline", {
 			result = RECEIVE_REWARD_RESULT_ERR_ONLINE_AWARD_CD,
 		})
@@ -139,7 +139,7 @@ function on_cs_receive_reward_online(msg,guid)
 	
 	player.flag_base_info = true
 	
-	player.online_award_start_time = get_second_time()
+	player.online_award_start_time = os.time()
 	
 	send2client_pb(player, "SC_ReceiveRewardOnline", {
 		result = RECEIVE_REWARD_RESULT_SUCCESS,
@@ -149,7 +149,7 @@ function on_cs_receive_reward_online(msg,guid)
 	--[[send2db_pb("SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			opt = BANK_STATEMENT_OPT_TYPE_REWARD_ONLINE,
 			money = award.money,
 			bank_balance = player.bank,
@@ -204,7 +204,7 @@ function on_cs_receive_relief_payment(msg,guid)
 	--[[send2db_pb("SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
-			time = get_second_time(),
+			time = os.time(),
 			opt = BANK_STATEMENT_OPT_TYPE_RELIEF_PAYMENT,
 			money = relief_payment_money,
 			bank_balance = player.bank,

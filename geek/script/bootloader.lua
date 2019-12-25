@@ -126,6 +126,18 @@ local function setupbootcluster()
     return sid,handle
 end
 
+local function clean_when_start()
+    local reddb = redisopt.default
+    local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*"}
+    for _,pattern in pairs(key_patterns) do
+		local keys = reddb:keys(pattern)
+        for _,key in pairs(keys) do
+            print("redis del",key)
+            reddb:del(key)
+        end
+    end
+end
+
 local function setup()
     setupbootcluster()
     checkbootconf()
@@ -145,6 +157,8 @@ local function setup()
             channel.subscribe("service."..conf.id,clusterid.."@"..serviceid)
         end
     end
+
+    clean_when_start()
 end
 
 skynet.start(function()

@@ -36,17 +36,33 @@ local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.HU_TYPE
 local JI_TILE_TYPE = def.JI_TILE_TYPE
 
+local chair_count_tiles = {
+    [2] = {
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+    },
+    [3] = {
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+    },
+    [4] = {
+        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+    }
+}
+
 local maajan_table = base_table:new()
 
 -- 初始化
 function maajan_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
-	self.tiles = {
-        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29, 31,32,33,34,35,36,37,
-        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29, 31,32,33,34,35,36,37,
-        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29, 31,32,33,34,35,36,37,
-        1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29, 31,32,33,34,35,36,37,
-    }
+	self.tiles = chair_count_tiles[4]
     
     self.dealer = maajan_tile_dealer:new(self.tiles)
     self.cur_state_FSM = nil
@@ -130,51 +146,10 @@ function maajan_table:wait_action_after_mo_pai(actions)
 end
 
 function maajan_table:on_ba_gang_hu_after_mo_pai(event_table)
-    local event_handle = {
-        [ACTION.PASS] = function(self,event_table)
-            self:next_player_index()
-            self:do_mo_pai()
-        end,
-        [ACTION.HU] = function(self,event_table)
-            local act = self.waiting_player_actions
-            if act.hu and (act.chair_id == event_table.chair_id) then
-                act.do_hu = true
-            end
-
-            if self.waiting_player_actions[ACTION.HU] then -- 选择了胡
-                local player = self.players[self.chu_pai_player_index]
-                for _,v in pairs(player.pai.ming_pai) do--取消巴杠
-                    if v[1] == self.last_chu_pai then
-                        v[4],v[5] = nil,nil
-                        break
-                    end
-                end
-
-                local player_hu = self.players[event_table.chair_id]
-                player_hu.hu = true
-                player_hu.hu_time = os.time()
-                player_hu.hu_pai = self.last_chu_pai
-
-                self:broadcast_player_hu(player_hu,ACTION.HU)
-                self:on_game_balance()
-            end
-        end,
-        [ACTION.JIA_BEI] = function(self,event_table)
-            if self.waiting_player_actions.hu and (self.waiting_player_actions.chair_id == event_table.chair_id) then
-                self.waiting_player_actions.do_jiabei = true
-                local player = self.players[event_table.chair_id]
-                self:player_jiabei(player)
-                self:do_mo_pai()
-            end
-        end,
-        [ACTION.AN_GANG] = self.do_action_after_mo_pai,
-        [ACTION.BA_GANG] = self.do_action_after_mo_pai,
-    }
-
     self:do_action_after_mo_pai(event_table)
 end
 
-function maajan_table:start(player_count,is_test)
+function maajan_table:start(player_count)
 	local ret = base_table.start(self,player_count)
 	for _,v in pairs(self.players) do
         v.hu                    = nil
@@ -193,7 +168,6 @@ function maajan_table:start(player_count,is_test)
         v.pai                   = {
             shou_pai = {},
             ming_pai = {},
-            hua_pai = {},
             desk_tiles = {}
         }
         v.ting                  = nil
@@ -244,16 +218,32 @@ function maajan_table:start(player_count,is_test)
         self.cur_round = (self.cur_round or 0) + 1
     end
 
+    local tiles = chair_count_tiles[self.chair_count]
+    if not tiles then
+        log.error("maajan_table:start tiles is nil.check private_table rule.")
+    end
+
+    if self.conf.conf.play.dai_zhong and self.chair_count == 4 then
+        for _ = 1,4 do table.insert(tiles,35) end
+    end
+    
+    self.dealer = maajan_tile_dealer:new(tiles)
+
     self:on_pre_begin()
 end
 
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
-    local pre_tiles = {}
+    local pre_tiles = {
+        
+    }
 
     for i,pretiles in pairs(pre_tiles) do
         local p = self.players[i]
-        dump(p)
+        if not p then
+            log.error("deal tiles got nil player,chair_id:%d",i)
+            break
+        end
         local tiles = {}
         for _,tile in pairs(pretiles) do
             tile = self.dealer:deal_one_on(function(t) return t == tile end)
@@ -281,7 +271,7 @@ end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
-    if p.is_men then
+    if p.men then
         actions[ACTION.PENG] = nil
         actions[ACTION.LEFT_CHI] = nil
         actions[ACTION.MID_CHI] = nil
@@ -350,6 +340,7 @@ end
 
 function maajan_table:do_action_after_chu_pai(do_actions)
     local is_round_over = false
+    local is_men = false
     for _,action in pairs(do_actions) do
         local player = self.players[action.chair_id]
         if not player then
@@ -392,16 +383,13 @@ function maajan_table:do_action_after_chu_pai(do_actions)
                 time = os.time(),
                 tile = tile,
                 types = mj_util.hu(player.pai,tile),
+                whoee = self.chu_pai_player_index,
                 zi_mo = false,
             })
 
-            player.is_men = true
-
             self:log_game_action(player,action.done.action,tile)
             self:broadcast_player_men(player,action.done.action,tile)
-            self:jump_to_player_index(player)
-            self:next_player_index()
-            self:do_mo_pai()
+            is_men = true
         elseif def.is_action_chi(action.done.action) then
             if not action[action.done.action][tile] then
                 return
@@ -427,6 +415,11 @@ function maajan_table:do_action_after_chu_pai(do_actions)
 
     if is_round_over then
         self:on_game_balance()
+    elseif is_men then
+        table.sort(do_actions,function(l,r) return l.chair_id < r.chair_id end)
+        self:jump_to_player_index(self.players[do_actions[1].chair_id])
+        self:next_player_index()
+        self:do_mo_pai()
     end
 end
 
@@ -447,21 +440,9 @@ function maajan_table:do_action_after_mo_pai(event_table)
         return
     end
 
-    if def.is_action_gang(do_action) then
-        if player_actions[ACTION.AN_GANG] and player_actions[ACTION.AN_GANG][tile] then
-            do_action = ACTION.AN_GANG
-        elseif player_actions[ACTION.BA_GANG] and player_actions[ACTION.BA_GANG][tile] then
-            do_action = ACTION.BA_GANG
-        else
-            log.error("no action waiting when on_peng_gang_hu_chi_bei,action:%s,tile:%s",
-                event_table.type,event_table.tile)
-            return
-        end
-    else
-        if not player_actions[do_action] and do_action ~= ACTION.PASS then
-            log.error("do action %s,but action is illigle,%s",do_action)
-            return
-        end
+    if not player_actions[do_action] and do_action ~= ACTION.PASS then
+        log.error("do action %s,but action is illigle,%s",do_action)
+        return
     end
 
     if do_action == ACTION.BA_GANG or do_action == ACTION.AN_GANG then
@@ -482,10 +463,8 @@ function maajan_table:do_action_after_mo_pai(event_table)
         self:log_game_action(player,do_action,tile)
         self:broadcast_player_hu(player,do_action)
         self:on_game_balance()
-        self:jump_to_player_index(player)
-        self:next_player_index()
-    elseif do_action == ACTION.MEN and do_action == ACTION.MEN_ZI_MO then
-        table.pop_back(player.pai.desk_tiles)
+    elseif do_action == ACTION.MEN or do_action == ACTION.MEN_ZI_MO then
+        player.pai.shou_pai[tile] = player.pai.shou_pai[tile] - 1
         player.men = player.men or {}
         table.insert(player.men,{
             time = os.time(),
@@ -494,11 +473,8 @@ function maajan_table:do_action_after_mo_pai(event_table)
             zi_mo = true,
         })
 
-        player.is_men = true
-
         self:log_game_action(player,do_action,tile)
         self:broadcast_player_men(player,do_action,tile)
-        self:on_game_balance()
         self:jump_to_player_index(player)
         self:next_player_index()
         self:do_mo_pai()
@@ -511,6 +487,8 @@ function maajan_table:do_action_after_mo_pai(event_table)
     elseif do_action == ACTION.PASS then
         self:wait_chu_pai()
     end
+
+    self.waiting_player_actions = {}
 end
 
 function maajan_table:on_peng_gang_hu_chi(event_table)
@@ -528,13 +506,9 @@ function maajan_table:on_peng_gang_hu_chi(event_table)
 
     if def.is_action_gang(event_table.type) then
         local tile = event_table.tile
-        local type
-        if actions[ACTION.AN_GANG] and actions[ACTION.AN_GANG][tile] then
-            type = ACTION.AN_GANG
-        elseif actions[ACTION.MING_GANG] and actions[ACTION.MING_GANG][tile] then
-            type = ACTION.MING_GANG
-        elseif actions[ACTION.BA_GANG] and actions[ACTION.BA_GANG][tile] then
-            type = ACTION.BA_GANG
+        local type = event_table.type
+        if actions[event_table.type] and actions[event_table.type][tile] then
+
         else
             log.error("no action waiting when on_peng_gang_hu_chi_bei,action:%s,tile:%s",
                 event_table.type,event_table.tile)
@@ -544,11 +518,6 @@ function maajan_table:on_peng_gang_hu_chi(event_table)
         waiting_action.done = {
             action = type,
             tile = tile,
-        }
-    elseif event_table.type == ACTION.HU then
-        waiting_action.done = {
-            action = event_table.type,
-            tile = self.last_chu_pai,
         }
     else
         waiting_action.done = {
@@ -608,7 +577,6 @@ function maajan_table:on_bu_hua_big(event_table)
     --                     table.insert(bu_hua_table_02[k].tiles,mo_pai)
     --                 end
 
-    --                 table.insert(v.pai.hua_pai,tile)
     --                 log.info(string.format( "bu hua %s %s",mj_util.getPaiStr({tile}),mj_util.getPaiStr({mo_pai})))
     --                 bu_hu_count = bu_hu_count + 1
     --             end
@@ -656,22 +624,9 @@ function maajan_table:do_mo_pai()
 
     player.mo_pai_count = player.mo_pai_count + 1
     local mo_pai = self.dealer:deal_one()
+    player.mo_pai = mo_pai
     local actions = self:get_actions(player,mo_pai)
-    dump(actions)
-    shou_pai[mo_pai] = (shou_pai[mo_pai] or 0) + 1
-    log.info("---------mo pai:  %s ------",mo_pai)
-    self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    for k,v in pairs(self.players) do
-        if v.chair_id == self.chu_pai_player_index and mo_pai then
-            send2client_pb(v,"SC_Maajan_Draw",{tile = mo_pai,chair_id = k})
-            table.insert(self.game_log.action_table,{chair = k,act = "Draw",msg = {tiles = mo_pai}})
-        else
-            send2client_pb(v,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
-        end
-    end
-
     self:wait_chu_pai()
-
     if table.nums(actions) > 0 then
         self:wait_action_after_mo_pai({
             [self.chu_pai_player_index] = {
@@ -681,8 +636,20 @@ function maajan_table:do_mo_pai()
         })
     end
 
-    self:auto_act_if_deposit(player,"hu_mo_pai")
-    self:auto_act_if_deposit(player,"gang_mo_pai")
+    shou_pai[mo_pai] = (shou_pai[mo_pai] or 0) + 1
+    log.info("---------mo pai:  %s ------",mo_pai)
+    self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    for k,v in pairs(self.players) do
+        if v.chair_id == self.chu_pai_player_index and mo_pai then
+            send2client_pb(v,"SC_Maajan_Draw",{tile = mo_pai,chair_id = k})
+            table.insert(self.game_log.action_table,{chair = k,act = "Draw",msg = {tiles = mo_pai}})
+        else
+            send2client_pb(v,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
+            v.mo_pai = nil
+        end
+    end
+
+    self:auto_act_if_deposit(player,actions,mo_pai)
 end
 
 function maajan_table:on_timeout_when_wait_chu_pai(event_table)
@@ -858,7 +825,7 @@ function maajan_table:calculate_men(p,men)
             for j,pj in pairs(self.players) do
                 if p ~= pj and (p.hu or (not p.hu and not pj.ting))then
                     types[j] = types[j] or {}
-                    table.insert(types[j],{type = t.type,score = -t.score,tile = t.tile,count = 1})
+                    table.insert(types[j],{type = t,score = -hu_score,tile = men.tile,count = 1})
                 end
             end
         else
@@ -868,7 +835,7 @@ function maajan_table:calculate_men(p,men)
                 table.insert(types[p.chair_id],{score = hu_score,type = t,tile = men.tile,count = 1})
 
                 types[men.whoee] = types[men.whoee] or {}
-                table.insert(types[men.whoee],{type = t.type,score = -t.score,tile = t.tile,count = 1})
+                table.insert(types[men.whoee],{type = t,score = -hu_score,tile = men.tile,count = 1})
             end
         end
     end
@@ -934,7 +901,7 @@ function maajan_table:calculate_ting(p)
     if p.ting then
         for _,pi in pairs(self.players) do
             if p ~= pi and not pi.ting and not pi.men and not pi.hu then
-                types[p.chair_id] = type[p.chair_id] or {}
+                types[p.chair_id] = types[p.chair_id] or {}
                 table.insert(types[p.chair_id],{type = HU_TYPE.JIAO_PAI,score = 1,whoee = pi.chair_id,count = 1})
                 types[pi.chair_id] = types[pi.chair_id] or {}
                 table.insert(types[pi.chair_id],{type = HU_TYPE.CHA_JIAO,score = -1,count = 1})
@@ -1207,7 +1174,7 @@ function maajan_table:on_game_balance()
         p_log.pai = p.api
         p.win_money = p_score
         p.total_money = p.total_money + p.win_money
-        log.info("player hu",p.score,p.win_money,p.describe)
+        log.info("player hu %s,%s,%s,%s",chair_id,p.score,p.win_money,p.describe)
         p_log.score = p_score
         p_log.describe = p.describe
         p_log.win_money = p.win_money
@@ -1217,7 +1184,6 @@ function maajan_table:on_game_balance()
         table.insert(msg.players,{
             chair_id = chair_id,
             desk_pai = p.pai.desk_tiles,
-            hua_pai = p.pai.hua_pai,
             shou_pai = shou_pai,
             pb_ming_pai = p.pai.ming_pai,
         })
@@ -1261,7 +1227,6 @@ function maajan_table:on_game_over()
     self.do_logic_update = false
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
-    local room_limit = self.room_:get_room_limit()
 
     if self.private_id and self.cur_round and self.cur_round >= self.conf.round then
         local final_scores = {}
@@ -1285,7 +1250,6 @@ function maajan_table:on_game_over()
         for _,v in ipairs(self.players) do
             v.hu = nil
             v.men = nil
-            v.is_men = nil
             v.ting = nil
             v.pai = {
                 ming_pai = {},
@@ -1419,9 +1383,9 @@ function maajan_table:tick()
             self.timer[v] = nil
         end
     else
-        self.Maintain_time = self.Maintain_time or get_second_time()
-        if get_second_time() - self.Maintain_time > 5 then
-            self.Maintain_time = get_second_time()
+        self.Maintain_time = self.Maintain_time or os.time()
+        if os.time() - self.Maintain_time > 5 then
+            self.Maintain_time = os.time()
             for _,v in ipairs(self.players) do
                 if v then
                     --维护时将准备阶段正在匹配的玩家踢出
@@ -1692,46 +1656,8 @@ function maajan_table:adjust_shou_pai(player, action, tile)
 end
 
 --掉线，离开，自动胡牌
-function maajan_table:auto_act_if_deposit(player,type)
-    local delay_seconds = 2
-    if not player.deposit then
-        return
-    end
-
-    if "hu_mo_pai" == type or "hu_ba_gang" == type or "hu_chu_pai" == type then
-        local hu_info = 0
-        if "hu_mo_pai" == type then 
-            hu_info = mj_util.panHu(player.pai) 
-        end
-
-        if "hu_ba_gang" == type or "hu_chu_pai" == type then 
-            hu_info = mj_util.panHu(player.pai,self.last_chu_pai)
-        end
-        
-        if #hu_info > 0 then
-            timer_manager:calllater(delay_seconds,function()
-                self:safe_event({chair_id = player.chair_id,type = ACTION.HU})  
-            end)
-        end
-    elseif "gang_mo_pai" == type then
-        timer_manager:calllater(delay_seconds,function()
-            self:safe_event({chair_id = player.chair_id,type = ACTION.GANG,tile = player.pai.shou_pai[#(player.pai.shou_pai)]})  
-        end)
-    elseif "gang_chu_pai" == type then
-        timer_manager:calllater(delay_seconds,function()
-            self:safe_event({chair_id = player.chair_id,type = ACTION.GANG,tile = self.last_chu_pai})  
-        end)
-    elseif "peng_chu_pai" == type then
-        timer_manager:calllater(delay_seconds,function()
-            self:safe_event({chair_id = player.chair_id,type = ACTION.PENG})  
-        end)
-    elseif "chi_chu_pai" == type then
-        timer_manager:calllater(delay_seconds,function()
-            self:safe_event({chair_id = player.chair_id,type = ACTION.CHI, tiles = {self.last_chu_pai,self.last_chu_pai+1,self.last_chu_pai+2}})
-            self:safe_event({chair_id = player.chair_id,type = ACTION.CHI, tiles = {self.last_chu_pai-1,self.last_chu_pai,self.last_chu_pai+1}})
-            self:safe_event({chair_id = player.chair_id,type = ACTION.CHI, tiles = {self.last_chu_pai-2,self.last_chu_pai-1,self.last_chu_pai}})  
-        end)
-    end
+function maajan_table:auto_act_if_deposit(player,actions)
+    local delay_seconds = 1
 end
 
 function maajan_table:check_ji_tile_when_chu_pai(p,tile)
@@ -1840,10 +1766,11 @@ function maajan_table:do_chu_pai(chu_pai_val)
         if player.chair_id == v.chair_id then return end
 
         local actions = self:get_actions(v,nil,self.last_chu_pai)
-        if actions[ACTION.HU] then
-            -- if not self:hu_fan_match(v) then
-            --     actions[ACTION.HU] = nil
-            -- end
+        if actions[ACTION.HU] or actions[ACTION.MEN] then
+            if not self:can_hu(v,chu_pai_val) then
+                actions[ACTION.HU] = nil
+                actions[ACTION.MEN] = nil
+            end
         end
 
         if table.nums(actions) > 0 then
@@ -1889,13 +1816,13 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     msg.decision_time_limit = def.ACTION_TIME_OUT
     msg.is_reconnect = is_reconnect
     msg.pb_players = {}
-    for _,v in pairs(self.players) do
+    for chair_id,v in pairs(self.players) do
         local tplayer = {}
         tplayer.chair_id = v.chair_id
         if v.pai then
-            tplayer.desk_pai = v.pai.desk_tiles
-            tplayer.pb_ming_pai = v.pai.ming_pai
-            tplayer.hua_pai = v.pai.hua_pai
+            dump(v.pai.desk_tiles)
+            tplayer.desk_pai = table.values(v.pai.desk_tiles)
+            tplayer.pb_ming_pai = table.values(v.pai.ming_pai)
             tplayer.shou_pai = {}
             if v.chair_id == player.chair_id then
                 tplayer.shou_pai = self:tile_count_2_tiles(v.pai.shou_pai)
@@ -1905,14 +1832,27 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         end
         
         tplayer.is_ting = v.baoting
+
+        local men_pai = {}
+        for _,men in pairs(v.men or {}) do
+            table.insert(men_pai,men.tile)
+        end
+        tplayer.men_pai = men_pai
+        if self.chu_pai_player_index == chair_id then
+            tplayer.mo_pai = v.mo_pai
+        end
         table.insert(msg.pb_players,tplayer)
     end
+
+    
 
     if is_reconnect then
         msg.pb_rec_data = {}
         msg.pb_rec_data.chu_pai_player_index = self.chu_pai_player_index
         msg.pb_rec_data.last_chu_pai = self.last_chu_pai
     end
+
+    dump(msg)
 
     send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
 
@@ -1976,7 +1916,10 @@ function maajan_table:can_hu(player,in_pai)
     end
 
     local hu_type = self:max_hu_fan(hu_types)
-    return hu_type.score >= self.mj_min_scale
+    local gang = table.sum(player.pai.ming_pai,function(s) 
+        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or s.type == SECTION_TYPE.BA_GANG) and 1 or 0
+    end)
+    return gang > 0 or hu_type.score > 1
 end
 
 function maajan_table:hu_type_fan(types)
@@ -1992,14 +1935,13 @@ function maajan_table:hu_type_fan(types)
     return hts
 end
 
-function maajan_table:hu_fan_match(player)
-    local hu_type = self:max_hu_score(player)
+function maajan_table:hu_fan_match(hu)
+    local hu_type = self:max_hu_fan(hu.types)
     return hu_type.score >= self.mj_min_scale
 end
 
 function maajan_table:max_hu_fan(hu_types)
     local hts = {}
-    dump(hu_types)
     for _,ht in pairs(hu_types) do
         local types = self:hu_type_fan(ht)
         table.insert(hts,{
@@ -2035,8 +1977,6 @@ function maajan_table:global_status_info()
         rule = self.private_id and json.encode(self.conf.conf) or "",
         game_type = def_first_game_type,
     }
-
-    dump(info,3)
 
     return info
 end

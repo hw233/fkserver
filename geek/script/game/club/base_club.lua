@@ -1,13 +1,13 @@
 local redisopt = require "redisopt"
 local log = require "log"
 require "functions"
-local pb = require "pb_files"
 local base_players = require "game.lobby.base_players"
 local club_member = require "game.club.club_member"
-local private_table = require "game.lobby.base_private_table"
+local base_private_table = require "game.lobby.base_private_table"
 local onlineguid = require "netguidopt"
-local reddb = redisopt.default
 local enum = require "pb_enums"
+
+local reddb = redisopt.default
 
 local table_expire_seconds = 60 * 60 * 5
 
@@ -97,7 +97,7 @@ function base_club:agree_request(request)
     end
 
     club_member[self.id] = nil
-    reddb:del("club:request:"..tostring(request.id))
+    reddb:del(string.format("request:%s",request.id))
     return true
 end
 
@@ -116,7 +116,8 @@ function base_club:reject_request(request)
         reddb:srem(string.format("player:request:%s",whoee),request.id)
     end
     
-    reddb:del("request:"..tostring(request.id))
+    reddb:del(string.format("club:request:%d",request.id))
+    reddb:del(string.format("request:%s",request.id))
     return true
 end
 
@@ -144,7 +145,9 @@ end
 function base_club:create_table(player,chair_count,round,conf)
     local member = club_member[self.id][player.guid]
     if not member then
-        log.error("create club table,but guid [%s] not exists",player.guid)
+        dump(self)
+        dump(club_member[self.id])
+        log.warning("create club table,but guid [%s] not exists",player.guid)
         return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
@@ -153,8 +156,9 @@ function base_club:create_table(player,chair_count,round,conf)
         reddb:hset("table:info:"..global_tid,"club_id",self.id)
         reddb:sadd("club:table:"..self.id,global_tid)
         reddb:expire("club:table:"..self.id,table_expire_seconds)
+        base_private_table[global_tid].club_id = self.id
     end
-    
+
     return result,global_tid,tb
 end
 

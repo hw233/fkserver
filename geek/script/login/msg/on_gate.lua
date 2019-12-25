@@ -646,30 +646,6 @@ function on_L_KickClient(msg)
 	log.info( "login step login[online]->L_KickClient,account=%s,userdata=%d", account_key, userdata )
 end
 
-function on_ss_change_game(msg)  
-	local gameid = find_a_game_id(msg.first_game_type, msg.second_game_type)
-	if not gameid then        
-        sendpb2guids(msg.guid,msg.gate_id,"SC_EnterRoomAndSitDown",{
-            game_id = msg.game_id,
-            first_game_type = msg.first_game_type,
-            second_game_type = msg.second_game_type,
-            result = GAME_SERVER_RESULT_NO_GAME_SERVER,
-        })
-
-        log.error( "gameid=0, (%d,%d)", msg.first_game_type, msg.second_game_type )
-        
-		return {
-            guid = msg.guid,
-        }
-    end
-
-	return {
-        change_msg = msg,
-        guid = msg.guid,
-        success = true,
-        game_id = gameid,
-    }
-end
 
 function on_SL_ChangeGameResult(msg)
     channel("game."..tostring(msg.game_id),msg.change_msg)

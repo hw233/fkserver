@@ -77,7 +77,7 @@ end
 function on_cs_del_mail(player, msg)
 	if player.pb_mail_list and player.pb_mail_list[msg.mail_id] then
 		local mail = player.pb_mail_list[msg.mail_id]
-		if get_second_time() >= mail.expiration_time then
+		if os.time() >= mail.expiration_time then
 			player.pb_mail_list[msg.mail_id] = nil
 			
 			send2client_pb(player, "SC_DelMail", {
@@ -121,7 +121,7 @@ end
 function on_cs_receive_mail_attachment(player, msg)
 	if player.pb_mail_list and player.pb_mail_list[msg.mail_id] then
 		local mail = player.pb_mail_list[msg.mail_id]
-		if get_second_time() >= mail.expiration_time then
+		if os.time() >= mail.expiration_time then
 			player.pb_mail_list[msg.mail_id] = nil
 			
 			send2client_pb(player, "SC_ReceiveMailAttachment", {

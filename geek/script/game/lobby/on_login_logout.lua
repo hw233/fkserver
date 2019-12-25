@@ -25,7 +25,6 @@ local redisopt = require "redisopt"
 local json = require "cjson"
 local onlineguid = require "netguidopt"
 local base_clubs = require "game.club.base_clubs"
-local club_member = require "game.club.club_member"
 local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
@@ -196,7 +195,8 @@ function on_ls_login_notify(msg)
 		server = def_game_id,
 	})
 
-	reddb:incr(string.format("player:online:%s_%s_%s",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	reddb:incr("player:online:count")
 
 	log.info("test .................. on_les_login_notify %s", info.h_bank_password)
@@ -245,14 +245,14 @@ end
 
 -- 玩家退出 
 function logout(guid)
-	log.info("===========logout")
+	log.info("===========logout %d",guid)
 	local player = base_players[guid]
 	if not player then
 		log.error("logout,guid[%s] not find in game= %s", guid, def_game_id)
 		return
 	end
 
-	player.logout_time = get_second_time()
+	player.logout_time = os.time()
 	if g_room:exit_server(player,true) then
 		log.info("logout offlined...")
 		return true -- 掉线处理
@@ -286,6 +286,9 @@ function logout(guid)
 	})
 
 	reddb:del("player:online:guid:"..tostring(player.guid))
+	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	reddb:decr("player:online:count")
 
 	-- 删除玩家
 	base_players[guid] = nil
@@ -312,7 +315,7 @@ local function next_day(player)
 
 	player.flag_base_info = true
 
-	player.online_award_start_time = get_second_time()
+	player.online_award_start_time = os.time()
 end
 
 -- 加载玩家数据
@@ -322,7 +325,7 @@ local function load_player_data_complete(player)
 	end
 
 	log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete" , player.guid,player.account)
-	player.login_time = get_second_time()
+	player.login_time = os.time()
 	player.online_award_start_time = player.login_time
 	
 	if player.is_offline then
@@ -791,7 +794,7 @@ function on_cs_change_game(msg,guid)
 						result = enum.GAME_SERVER_RESULT_MAINTAIN,
 						})
 				player:forced_exit()
-				log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
+				log.warning("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id)
 				return
 			end
 		end
@@ -880,57 +883,6 @@ function on_cs_change_game(msg,guid)
 			log.info("change step this err,account=%s,result [%d]", player.account,result_)
 		end
 	else
-		send2login_pb("SS_ChangeGame", {
-			guid = player.guid,
-			session_id = player.session_id,
-			gate_id = player.gate_id,
-			account = player.account,
-			nickname = player.nickname,
-			vip = player.vip,
-			login_time = player.login_time,
-			logout_time = player.logout_time,
-			h_bank_password = player.has_bank_password,
-			bank_login = player.bank_login,
-			is_guest = player.is_guest,
-			online_award_start_time = player.online_award_start_time,
-			game_id = def_game_id,
-			first_game_type = msg.first_game_type,
-			second_game_type = msg.second_game_type,
-			phone = player.phone,
-			phone_type = player.phone_type,
-			version = player.version,
-			channel_id = player.channel_id,
-			package_name = player.package_name,
-			imei = player.imei,
-			ip = player.ip,
-			ip_area = player.ip_area,
-			risk = player.risk,
-			create_channel_id = player.create_channel_id,
-			enable_transfer = player.enable_transfer,
-			inviter_guid = player.inviter_guid,
-			invite_code = player.invite_code,
-			pb_base_info = player,
-			private_room_opt = msg.private_room_opt,
-			owner_guid = msg.owner_guid,
-			private_room_chair_count = msg.private_room_chair_count,
-			private_room_score_type = msg.private_room_score_type,
-			alipay_account = player.alipay_account,
-			alipay_name = player.alipay_name,
-			change_alipay_num = player.change_alipay_num,
-			bank_password = player.bank_password,
-			deprecated_imei = player.deprecated_imei,
-			platform_id = player.platform_id,
-			bank_card_name = player.bank_card_name,
-			bank_card_num = player.bank_card_num,
-			change_bankcard_num = player.change_bankcard_num,
-			bank_name = player.bank_name,
-			bank_province = player.bank_province,
-			bank_city = player.bank_city,
-			bank_branch = player.bank_branch,
-			seniorpromoter = player.seniorpromoter,
-			identity_type = player.identity_type,
-			identity_param = player.identity_param,
-		})
 		log.info("player[%d] has_bank_password[%s] bankpwd[%s] ",player.guid,tostring(player.has_bank_password),tostring(player.bank_password))
 		log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]",
 			player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
@@ -1063,6 +1015,9 @@ function on_ss_change_game(guid)
 		server = def_game_id,
 	})
 
+	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+
 	dump(player)
 	onlineguid.control(player,"goserver",def_game_id)
 	onlineguid[player.guid] = nil
@@ -1189,8 +1144,10 @@ function on_cs_create_private_room(msg,guid)
 			})
 			return
 		end
-		
+
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
+		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","C2S_ROOM_CREATE_REQ",msg,guid)
 		return
@@ -1368,6 +1325,8 @@ function on_cs_join_private_room(msg,guid)
 		local room_id = find_best_room(game_type)
 		log.info("ss_changegame to %s,%s",guid,room_id)
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
+		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","C2S_JOIN_ROOM_REQ",msg,guid)
 		return

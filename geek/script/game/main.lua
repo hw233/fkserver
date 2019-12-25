@@ -7,6 +7,7 @@ local base_room = require "game.lobby.base_room"
 require "functions"
 local msgopt = require "msgopt"
 local enum = require "pb_enums"
+local redisopt = require "redisopt"
 
 register_dispatcher = msgopt.register
 
@@ -54,6 +55,8 @@ function get_private_room_bank()
     return global_cfg.private_room_bank
 end
 
+
+
 local CMD = {}
 
 function CMD.start(conf)
@@ -89,7 +92,7 @@ function CMD.start(conf)
 
         skynet.timeout(4,on_tick)
     end
-    on_tick()
+	on_tick()
 end
 
 function CMD.afk(guid)

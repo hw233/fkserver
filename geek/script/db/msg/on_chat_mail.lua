@@ -28,7 +28,7 @@ function on_sd_send_mail(game_id, msg)
 		return
 	end
 	
-	mail_.expiration_time = get_second_time()+def_expiration_time
+	mail_.expiration_time = os.time()+def_expiration_time
 	
 	local data = dbopt.game:query("CALL send_mail(%d, %d, %d, '%s', '%s', '%s', '%s');", mail_.expiration_time, mail_.guid,	mail_.send_guid,
 		mail_.send_name, mail_.title, mail_.content, serialize_table(mail_.attachment))

@@ -104,10 +104,6 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.players = {}
 	self.cur_player_count_ = 0 -- 当前玩家人数
 
-	reddb:del(string.format("game:%s.%d.%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:del(string.format("game:%s.%d.%d:player_num",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:del(string.format("game:%s.%d.%d:player_count",def_game_name,def_first_game_type,def_second_game_type))
-
 	self.blacklist_player = setmetatable({},{
 		__index = function(t,guid)
 			local is = reddb:hget("player:black",guid)
@@ -636,21 +632,21 @@ function base_room:enter_room(player)
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
-	log.info(string.format("base_room:enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%s]",
-		def_game_name,def_game_id,self.game_switch_is_open))
+	log.info("base_room:enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%s]",
+		def_game_name,def_game_id,self.game_switch_is_open)
 	if  self.game_switch_is_open == 1 then --游戏进入维护阶段
 		if player.vip ~= 100 then
 			send2client_pb(player, "SC_GameMaintain", {
 					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 					})
-			log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
+			log.warning("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id)
 			return 14
 		end
 	end
 
 	if player:check_room_limit(self:get_room_limit()) then
-		log.warning(string.format("guid[%d] check money limit fail,limit[%d],self[%s]",
-			player.guid, self:get_room_limit(), player.money))
+		log.warning("guid[%d] check money limit fail,limit[%d],self[%s]",
+			player.guid, self:get_room_limit(), player.money)
 		return GAME_SERVER_RESULT_ROOM_LIMIT
 	end
 
@@ -1078,9 +1074,6 @@ function base_room:player_enter_room(player)
 	self.players[player.guid] = player
 	self.cur_player_count_ = self.cur_player_count_ + 1
 
-	reddb:incr(string.format("game:%s.%s.%s",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:incr(string.format("game:%s.%s.%s.%s:player_num",def_game_name,def_game_id,def_first_game_type,def_second_game_type))
-
 	log.info("base_room:player_enter_room, guid %s, room_id %s",player.guid,def_game_id)
 
 	local online_key = string.format("player:online:guid:%d",player.guid)
@@ -1093,22 +1086,10 @@ end
 
 -- 玩家退出房间
 function base_room:player_exit_room(player,is_logout)
-	log.info(string.format("GameInOutLog,base_room:player_exit_room, guid %s, room_id %s",
-		player.guid,def_game_id))
+	log.info("base_room:player_exit_room, guid %s, room_id %s",player.guid,def_game_id)
 	
-	log.info("base_room:player_exit_room")	
-	self.players[player.guid] = false
+	self.players[player.guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
-
-	local str = string.format("game:%s.%d.%d",def_game_name,def_first_game_type,def_second_game_type)
-	reddb:decr(str)
-
-	str = string.format("game:%s.%s.%s.%s:player_num",def_game_name,def_game_id,def_first_game_type,def_second_game_type)
-	reddb:decr(str)
-
-	str = string.format("game:%s.%s.%s.%s:player_count",def_game_name,def_game_id,def_first_game_type,def_second_game_type)
-	reddb:decr(str)
-
 	if not is_logout then
 		log.info("player_exit_room set guid[%d] onlineinfo",player.guid)
 		local online_key = string.format("player:online:guid:%d",player.guid)
@@ -1122,7 +1103,14 @@ function base_room:player_exit_room(player,is_logout)
 	
 	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 	onlineguid[player.guid] = nil
-	onlineguid.control(player.guid,"goserver",find_default_lobby())
+	self:change_room(player,find_default_lobby(),is_logout)
+end
+
+function base_room:change_room(player,room_id,logout)
+	if room_id == def_game_id then return end
+
+	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",player.guid)
+	onlineguid.control(player.guid,"goserver",room_id)
 end
 
 

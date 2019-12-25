@@ -16,6 +16,7 @@ local club_request = require "game.club.club_request"
 local player_request = require "game.club.player_request"
 local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
+local base_private_table = require "game.lobby.base_private_table"
 local json = require "cjson"
 local enum = require "pb_enums"
 require "functions"
@@ -324,6 +325,7 @@ function on_club_create_table(club,player,chair_count,round,rule)
             sync_type = enum.SYNC_ADD
         })
     end
+
     return result,global_table_id,tb
 end
 

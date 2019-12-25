@@ -15,6 +15,7 @@ local tile_names = {
 
 
 local ACTION = def.ACTION
+local SECTION_TYPE = def.SECTION_TYPE
 
 
 function mj_util.printPai(pai)
@@ -58,7 +59,7 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 
 	if mo_pai then
 		for _,s in pairs(pai.ming_pai) do
-			if s.tile == mo_pai and s.type == ACTION.PENG then
+			if s.tile == mo_pai and s.type == SECTION_TYPE.PENG then
 				actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
 				actions[ACTION.BA_GANG][s.tile] = true
 			end
@@ -88,7 +89,7 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		end
 	end
 
-	if in_pai and rule.is_hu(pai,in_pai) then
+	if in_pai and rule.is_hu(pai, in_pai)  then
 		actions[ACTION.HU] = {[in_pai] = true,}
 		actions[ACTION.MEN] = {[in_pai] = true,}
 	end
