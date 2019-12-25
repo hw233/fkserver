@@ -18,53 +18,11 @@ require "login.msg.runtime"
 local reddb = redisopt.default
 
 local function http_get(url)
-    local host,url = string.match("(https?://[^/]+)(.+)")
-    print(host,url)
+    local host,url = string.match(url,"(https?://[^/]+)(.+)")
+    log.info("http.get %s%s",host,url)
     return httpc.get(host,url)
 end
 
-local function wx_auth(msg)
-    local conf = global_conf
-    dump(conf)
-    local authjson = http_get(string.format(conf.wx_auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
-            conf.wx_app_id,conf.wx_secret,msg.code))
-
-    local auth = json.decode(authjson)
-    dump(auth)
-    if auth.errmsg then
-        return enum.LOGIN_RESULT_FAILED,auth.errmsg
-    end
-
-    local userinfojson = http_get(string.format(conf.wx_userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
-
-    local userinfo = json.decode(userinfojson)
-    dump(userinfo)
-    return enum.LOGIN_RESULT_SUCCESS,userinfo
-end
-
-local function cn_auth(msg)
-
-end
-
-local function xl_auth(msg)
-
-end
-
-
-function on_cl_auth(msg)
-    local auth_platforms = {
-        wx = wx_auth,
-        cn = cn_auth,
-        xl = xl_auth,
-    }
-
-    local do_auth = auth_platforms[msg.auth_platform]
-    if not do_auth then
-        return enum.LOGIN_RESULT_TEL_ERR
-    end
-
-    return do_auth(msg)
-end
 
 function on_s_logout(msg)
 	local account = msg.account
@@ -99,30 +57,23 @@ function on_s_logout(msg)
     return true
 end
 
-local function open_id_login(msg,gateid)
+local function open_id_login(msg)
     local ip = msg.ip
-    local info
-
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     guid = tonumber(guid)
-    if guid then
-        info = base_players[guid]
-        if ip then
-            reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
-        end
-    else
+    if not guid then
         guid = reddb:incr("player:global:guid")
-        info = {
+        local info = {
             guid = guid,
-            account = "guest_"..tostring(guid),
+            account = msg.open_id,
             nickname = msg.nickname or ("guest_"..tostring(guid)),
             open_id = msg.open_id,
             sex = msg.sex,
-            open_id_icon = msg.icon or default_open_id_icon,
+            open_id_icon = msg.open_id_icon or default_open_id_icon,
             client_version = msg.version,
-            login_ip = msg.login_ip,
+            login_ip = ip,
             phone = "",
             diamond = 0,
             gold = 0,
@@ -137,12 +88,64 @@ local function open_id_login(msg,gateid)
             is_guest = true,
             login_time = os.time(),
         }
-    
+
         reddb:hmset("player:info:"..tostring(guid),info)
         reddb:set("player:account:"..tostring(msg.open_id),guid)
+
+        return enum.LOGIN_RESULT_SUCCESS,info
+    end
+
+    local info = base_players[guid]
+    if ip then
+        reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
     end
 
     return enum.LOGIN_RESULT_SUCCESS,info
+end
+
+local function wx_auth(msg)
+    dump(msg)
+    local conf = global_conf
+    local _,authjson = http_get(string.format(conf.wx_auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
+            conf.wx_auth_appid,conf.wx_auth_secret,msg.code))
+    local auth = json.decode(authjson)
+    if auth.errcode then
+        log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
+        return enum.LOGIN_RESULT_FAILED,auth.errmsg
+    end
+
+    local _,userinfojson = http_get(string.format(conf.wx_userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
+    local userinfo = json.decode(userinfojson)
+    if userinfo.errcode then
+        log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
+        return enum.LOGIN_RESULT_FAILED,auth.errmsg
+    end
+
+    return enum.LOGIN_RESULT_SUCCESS,userinfo
+end
+
+local function cn_auth(msg)
+
+end
+
+local function xl_auth(msg)
+
+end
+
+
+function on_cl_auth(msg)
+    local auth_platforms = {
+        wx = wx_auth,
+        cn = cn_auth,
+        xl = xl_auth,
+    }
+
+    local do_auth = auth_platforms[msg.auth_platform]
+    if not do_auth then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    return do_auth(msg)
 end
 
 

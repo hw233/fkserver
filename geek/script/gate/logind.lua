@@ -395,18 +395,26 @@ function MSG.CL_Auth(msg,session)
 
     logining[fd] = true
 
-    local result,info = channel.call("login.?","msg","CL_Auth",msg)
+    msg.ip = session.ip
+    local result,userinfo = channel.call("login.?","msg","CL_Auth",msg)
     if result ~= enum.LOGIN_RESULT_SUCCESS then
         netmsgopt.send(fd,"LC_Auth",{
-            result = enum.LOGIN_RESULT_SUCCESS,
+            result = result,
         })
         logining[fd] = nil
         return
     end
-
     logining[fd] = nil
 
-    MSG.CL_Login(info,session)
+    dump(userinfo)
+
+    MSG.CL_Login({
+        ip = msg.ip,
+        open_id = userinfo.openid,
+        nickname = userinfo.nickname,
+        open_id_icon = userinfo.headimgurl,
+        sex = userinfo.sex,
+    },session)
 end
 
 function MSG.CL_Login(msg,session)
@@ -432,11 +440,11 @@ function MSG.CL_Login(msg,session)
     logining[fd] = true
 
     local res
-    if msg.account ~= "" then
+    if msg.account and msg.account ~= "" then
         res = login_by_account(msg,session)
     end
 
-    if msg.open_id ~= "" then
+    if msg.open_id and msg.open_id ~= "" then
         res = login_by_openid(msg,session)
     end
 
