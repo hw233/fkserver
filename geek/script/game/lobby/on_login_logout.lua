@@ -123,28 +123,27 @@ function  on_ls_DelMessage(msg)
 end
 
 -- 玩家登录通知 验证账号成功后会收到
-function on_ls_login_notify(msg)
-	local info = msg.player_login_info
-	log.info("on_ls_login_notify game_id = %d %s", def_game_id, info.is_reconnect)
-	onlineguid[info.guid] = nil
-	local player = base_players[info.guid]
+function on_ls_login_notify(guid,reconnect)
+	log.info("on_ls_login_notify game_id = %d %s", def_game_id, reconnect)
+	onlineguid[guid] = nil
+	local player = base_players[guid]
 	if not player then
-		log.error("on_ls_login_notify game_id = %s,no player",def_game_id)
+		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
 		return
 	end
 
-	log.info("set player.online = true")
+	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
 	player.risk = player.risk or 0
 	player.inviter_guid = player.inviter_guid or player.inviter_guid or 0
 	player.invite_code = player.invite_code or player.invite_code or "0"
-	if info.is_reconnect then
+	if reconnect then
 		-- 重连
-		log.info("login step reconnect game->LC_Login,account=%s", info.account)
+		log.info("login step reconnect game->LC_Login,account=%s", player.account)
 		return
 	end
 
-	log.info("ip_area =%s",info.ip_area)
+	log.info("ip_area =%s",player.ip_area)
 	log.info("player[%s] has_bank_password[%s] bankpwd[%s] platform_id[%s]",player.guid,player.has_bank_password,player.bank_password,player.platform_id)
 	log.info("player[%s] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]",
 		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,player.bank_name,
@@ -169,7 +168,7 @@ function on_ls_login_notify(msg)
 	-- 	}
 	-- end
 	
-	log.info("login step game->LC_Login,account=%s", info.account)
+	log.info("login step game->LC_Login,account=%s", player.account)
 
 	-- 定时存档
 	local guid = player.guid
@@ -199,7 +198,7 @@ function on_ls_login_notify(msg)
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	reddb:incr("player:online:count")
 
-	log.info("test .................. on_les_login_notify %s", info.h_bank_password)
+	log.info("test .................. on_les_login_notify %s", player.h_bank_password)
 end
 
 -- 登录验证框
@@ -1131,7 +1130,26 @@ function on_cs_create_private_room(msg,guid)
 
 	local player = base_players[guid]
 
-	-- dump(msg)
+	if player.in_game then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = enum.GAME_SERVER_RESULT_IN_GAME,
+		})
+		return
+	end
+
+	if player.table_id then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = enum.GAME_SERVER_RESULT_IN_ROOM,
+		})
+		return
+	end
+
+	if player.chair_id then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
+		})
+		return
+	end
 
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
@@ -1139,7 +1157,7 @@ function on_cs_create_private_room(msg,guid)
 		if not room_id then
 			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
 			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
-				result = enum.ERROR_CREATE_ROOM_NO,
+				result = enum.GAME_SERVER_RESULT_NO_GAME_SERVER,
 				game_type = game_type,
 			})
 			return
@@ -1168,7 +1186,7 @@ function on_cs_create_private_room(msg,guid)
 	}
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
-	if result ~= ERROR_NONE  then
+	if result ~= enum.ERROR_NONE  then
 		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
 			result = result,
 			game_type = game_type,
@@ -1176,13 +1194,13 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
-	local result,global_table_id,tb = GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
+	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
 
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == PAY_OPTION_BOSS then
 		if not club then
 			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
-				result = ERROR_CLUB_NOT_FOUND,
+				result = enum.ERROR_CLUB_NOT_FOUND,
 				game_type = game_type,
 			})
 			return
@@ -1318,7 +1336,6 @@ function on_cs_join_private_room(msg,guid)
 			result = ERROR_JOIN_ROOM_NO,
 		})
 	end
-
 
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then

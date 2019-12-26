@@ -367,58 +367,85 @@ function base_room:dismiss_private_table(global_table_id)
 	reddb:srem("player:table:"..tostring(private_table_conf.owner),global_table_id)
 end
 
+function base_room:find_empty_table()
+	for j,tb in ipairs(self.tables) do
+		local player_count = tb:get_player_count()
+		if 0 == player_count then
+			return tb,j
+		end
+	end
+	return nil,nil
+end
+
 -- 创建私人房间
 function base_room:create_private_table(player,chair_count,round, conf)
 	if player.table_id or player.chair_id then
-		log.info("player table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
-		return enum.GAME_SERVER_RESULT_IN_GAME
+		log.info("player already in table, table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
+		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
-	if self:check_private_limit(player,chair_count,conf) and self.cur_player_count_ < self.player_count_limit 
-	then
-		local tb,chair_id,table_id = self:get_private_table(player, chair_count,round,conf)
-		if not tb then
-			return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-		end
+	if not self:check_private_limit(player,chair_count,conf) then
+		log.info("create private table:%s,%d money limit:%d",def_game_name,def_game_id,player.guid)
+		return enum.GAME_SERVER_RESULT_ROOM_LIMIT
+	end
 
-		local global_tid = math.random(100000,999999)
-		for _ = 1,1000 do
-			if not base_private_table[global_tid] then break end
-			global_tid = math.random(100000,999999)
-		end
+	if self.cur_player_count_ >= self.player_count_limit then
+		log.warning("room player is full,%s,%d",def_game_name,def_game_id)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
+	end
 
-		reddb:hmset("table:info:"..tostring(global_tid),{
+	local tb,table_id = self:find_empty_table()
+	if not tb then
+		log.info("create private table:%s,%d no found table",def_game_name,def_game_id,player.guid)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	local global_tid = math.random(100000,999999)
+	for _ = 1,1000 do
+		if not base_private_table[global_tid] then break end
+		global_tid = math.random(100000,999999)
+	end
+
+	local chair_id = 1
+	tb:private_init(global_tid,{
+		round = round,
+		chair_count = chair_count,
+		money_type = conf.pay.money_type,
+		pay_option = conf.pay.option,
+		owner = player,
+		owner_guid = player.guid,
+		owner_chair_id = chair_id,
+		rule = conf.play,
+		conf = conf,
+	})
+
+	reddb:hmset("table:info:"..tostring(global_tid),{
+		room_id = def_game_id,
+		table_id = global_tid,
+		real_table_id = table_id,
+		owner = player.guid,
+		rule = json.encode(conf),
+		game_type = def_first_game_type,
+	})
+	reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
+	reddb:sadd("player:table:"..tostring(player.guid),global_tid)
+	reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
+
+	self:player_enter_room(player)
+	
+	tb:player_sit_down(player, chair_id)
+
+	tb:foreach(function(p)
+		p:on_notify_sit_down({
 			room_id = def_game_id,
-			table_id = global_tid,
-			real_table_id = table_id,
-			owner = player.guid,
-			rule = json.encode(conf),
-			game_type = def_first_game_type,
+			table_id = tb.table_id_,
+			pb_visual_info = player,
 		})
-		reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
-		reddb:sadd("player:table:"..tostring(player.guid),global_tid)
-		reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
+	end)
 
-		tb.private_id = global_tid
+	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
 
-		self:player_enter_room(player)
-		
-		tb:player_sit_down(player, chair_id)
-
-		tb:foreach(function(p)
-			p:on_notify_sit_down({
-				room_id = def_game_id,
-				table_id = tb.table_id_,
-				pb_visual_info = player,
-			})
-		end)
-
-		reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
-
-		return enum.GAME_SERVER_RESULT_SUCCESS,global_tid,tb
-	end
-
-	return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
+	return enum.GAME_SERVER_RESULT_SUCCESS,global_tid,tb
 end
 
 function base_room:reconnect(player,table_id,chair_id)
@@ -453,36 +480,43 @@ function base_room:join_private_table(player,private_table_conf,chair_count)
 	local table_id = private_table_conf.real_table_id
 	local tb = self.tables[table_id]
 	if not tb then
+		log.info("join private table:%d,%d not found",private_table_conf.table_id,table_id)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	if not self:check_private_limit(player,chair_count,private_table_conf.rule) then
+		log.info("join private table:%d,%d money limit:%d",private_table_conf.table_id,table_id,player.guid)
+		return enum.GAME_SERVER_RESULT_ROOM_LIMIT
+	end
+
+	if self.cur_player_count_ > self.player_count_limit then
+		log.warning("join private table,room is full,%s:%d",def_game_name,def_game_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 	end
 
-	if self:check_private_limit(player,chair_count,private_table_conf.rule)
-		and self.cur_player_count_ < self.player_count_limit then
-		local chair_id = tb:get_free_chair_id()
-		if not chair_id then
-			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-		end
-
-		self:player_enter_room(player)
-
-		tb:player_sit_down(player, chair_id)
-
-		local notify = {
-			room_id = def_game_id,
-			table_id = private_table_conf.table_id,
-			pb_visual_info = player,
-		}
-
-		tb:foreach_except(chair_id,function (p)
-			p:on_notify_sit_down(notify)
-		end)
-
-		reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table_conf.table_id)
-
-		return enum.GAME_SERVER_RESULT_SUCCESS,tb
-	else
-		return enum.GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL
+	local chair_id = tb:get_free_chair_id()
+	if not chair_id then
+		log.info("join private table:%d,%d without free chair",private_table_conf.table_id,table_id)
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
 	end
+
+	self:player_enter_room(player)
+
+	tb:player_sit_down(player, chair_id)
+
+	local notify = {
+		room_id = def_game_id,
+		table_id = private_table_conf.table_id,
+		pb_visual_info = player,
+	}
+
+	tb:foreach_except(chair_id,function (p)
+		p:on_notify_sit_down(notify)
+	end)
+
+	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table_conf.table_id)
+
+	return enum.GAME_SERVER_RESULT_SUCCESS,tb
 end
 
 -- 切换座位
@@ -752,54 +786,54 @@ end
 
 -- 玩家上线
 function base_room:player_online(player)
-	if player.room_id and player.table_id and player.chair_id then
-		player:on_enter_room(player.room_id, enum.GAME_SERVER_RESULT_SUCCESS)
+	if not player.table_id or not player.chair_id then return end
 
-		local tb = self:find_table(player.table_id)
-		if not tb then
-			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-		end
-		
-		local chair = tb:get_player(player.chair_id)
-		if not chair then
-			return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-		end
+	player:on_enter_room(def_game_id, enum.GAME_SERVER_RESULT_SUCCESS)
 
-		if chair.guid ~= player.guid then
-			player.table_id = nil
-			player.chair_id = nil
-			return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
-		end
-
-		player.is_offline = nil
-
-		-- 通知消息
-		local notify = {
-			table_id = player.table_id,
-			pb_visual_info = {
-				chair_id = player.chair_id,
-				guid = player.guid,
-				account = player.account,
-				nickname = player.nickname,
-				level = player:get_level(),
-				money = player:get_money(),
-				header_icon = player:get_header_icon(),				
-				ip_area = player.ip_area,
-			},
-			is_onfline = true,
-		}
-
-		print("ip_area--------------------A",  player.ip_area)
-		print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-		tb:foreach_except(player.chair_id, function (p)
-			p:on_notify_sit_down(notify)
-		end)
-
-		-- 重连
-		tb:reconnect(player)
-
-		return enum.GAME_SERVER_RESULT_SUCCESS
+	local tb = self:find_table(player.table_id)
+	if not tb then
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
+	
+	local chair_player = tb:get_player(player.chair_id)
+	if not chair_player then
+		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
+	end
+
+	if chair_player.guid ~= player.guid then
+		player.table_id = nil
+		player.chair_id = nil
+		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
+	end
+
+	player.is_offline = nil
+
+	-- 通知消息
+	local notify = {
+		table_id = player.table_id,
+		pb_visual_info = {
+			chair_id = player.chair_id,
+			guid = player.guid,
+			account = player.account,
+			nickname = player.nickname,
+			level = player:get_level(),
+			money = player:get_money(),
+			header_icon = player:get_header_icon(),				
+			ip_area = player.ip_area,
+		},
+		is_onfline = true,
+	}
+
+	print("ip_area--------------------A",  player.ip_area)
+	print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
+	tb:foreach_except(player.chair_id, function (p)
+		p:on_notify_sit_down(notify)
+	end)
+
+	-- 重连
+	tb:reconnect(player)
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 -- 退出服务器
@@ -1032,34 +1066,6 @@ function base_room:tick()
 	for _,tb in ipairs(self.tables) do
 		tb:tick()
 	end
-end
-
-function base_room:get_private_table(player,chair_count,round,conf)
-	local suitable_table = nil
-	local chair_id = nil
-	local table_id = nil
-	for j,tb in ipairs(self.tables) do
-		local player_count = tb:get_player_count()
-		if 0 == player_count then
-			suitable_table = tb
-			chair_id = player_count + 1
-			table_id = j
-			--初始化私房
-			tb:private_init({
-				round = round,
-				chair_count = chair_count,
-				money_type = conf.pay.money_type,
-				pay_option = conf.pay.option,
-				owner = player,
-				owner_guid = player.guid,
-				owner_chair_id = chair_id,
-				rule = conf.play,
-				conf = conf,
-			})
-			return suitable_table,chair_id,table_id
-		end
-	end
-	return suitable_table,chair_id,table_id
 end
 
 function base_room:get_player_num()

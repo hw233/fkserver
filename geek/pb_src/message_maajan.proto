@@ -86,8 +86,10 @@ enum HU_TYPE{
 	CHUI_FENG_JI 			= 81;	//吹风鸡
 	BA_GANG					= 82;	//把杠
 	DIAN_PAO				= 83;	//点炮
-	CHA_JIAO 				= 84; 	//查叫
-	JIAO_PAI				= 85;
+	WEI_JIAO 				= 84; 	//查叫
+	JIAO_PAI				= 85;	//叫牌
+	MEN 					= 86;	//闷
+	MEN_ZI_MO				= 87; 	//自摸闷
 }
 
 
@@ -247,8 +249,12 @@ message Maajan_Balance_Score{
 message Maajan_Balance_Item{
 	enum ItemType{
 		Nil  = 0;
-		Men = 1;
-		Hu = 2;
+		Hu = 1;
+		ZiMo = 2;
+		Men = 3;
+		MenZiMo = 4;
+		WeiJiao = 5;
+		JiaoPai = 6;
 	}
 
 	ItemType 			 type = 1;
@@ -256,6 +262,14 @@ message Maajan_Balance_Item{
 }
 
 message Maajan_Blanace_Player{
+	enum BalanceStatus{
+		Nil = 0;
+		Hu = 1;
+		ZiMo = 2;
+		Men = 3;
+		JiaoPai = 4;
+		WeiJiao = 5;
+	}
 	int32 chair_id 			= 1;
 	bool  hu 				= 2;	//是否胡了
 	int32 hu_fan	 		= 3; 	//番数
@@ -264,6 +278,7 @@ message Maajan_Blanace_Player{
 	repeated Maajan_Balance_Item  items = 6;
 	repeated Maajan_Balance_Score gang = 7;
 	repeated Maajan_Balance_Score ji = 8;
+	BalanceStatus 			status = 9;
 }
 
 //结算

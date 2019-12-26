@@ -196,7 +196,10 @@ local HU_TYPE = {
 	XING_QI_JI 					= pb.enum("HU_TYPE","XING_QI_JI"),	--星期鸡
 	CHUI_FENG_JI 				= pb.enum("HU_TYPE","CHUI_FENG_JI"),	--吹风鸡
 	JIAO_PAI 					= pb.enum("HU_TYPE","JIAO_PAI"),	--叫牌
-	CHA_JIAO 					= pb.enum("HU_TYPE","CHA_JIAO"),	--查叫
+	WEI_JIAO 					= pb.enum("HU_TYPE","WEI_JIAO"),	--查叫
+	MEN							= pb.enum("HU_TYPE","MEN"), 	--闷
+	MEN_ZI_MO					= pb.enum("HU_TYPE","MEN_ZI_MO"), --自摸闷
+	DIAN_PAO 					= pb.enum("HU_TYPE","DIAN_PAO"), --点炮
 }
 
 define.HU_TYPE = HU_TYPE
@@ -284,6 +287,11 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.ZHE_REN_JI]			= {name = "ZHE_REN_JI",score = 1},				--责任鸡
 	[HU_TYPE.CHONG_FENG_JI]			= {name = "CHONG_FENG_JI",score = 2},				--冲锋鸡
 	[HU_TYPE.XING_QI_JI]			= {name = "XING_QI_JI",score = 1},				--星期鸡
+	[HU_TYPE.DIAN_PAO]				= {name = "DIAN_PAO",score = 0},				--点炮
+	[HU_TYPE.WEI_JIAO]				= {name = "WEI_JIAO",score = 0},				--未叫牌
+	[HU_TYPE.JIAO_PAI]				= {name = "JIAO_PAI",score = 0},				--叫牌
+	[HU_TYPE.MEN]					= {name = "MEN",score = 0},						--闷
+	[HU_TYPE.MEN_ZI_MO]				= {name = "MEN_ZI_MO",score = 0},				--自摸闷
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO

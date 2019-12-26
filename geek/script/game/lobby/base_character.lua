@@ -138,4 +138,8 @@ function base_character:forced_exit()
 	end
 end
 
+function base_character:forced_logout()
+	logout(self.guid)
+end
+
 return base_character

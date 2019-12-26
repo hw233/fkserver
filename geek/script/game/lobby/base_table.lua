@@ -62,7 +62,7 @@ function base_table:can_enter(player)
 end
 
 function base_table:clear()
-	self:clear_private()
+	self:private_clear()
 	self:clear_ready()
 end
 
@@ -796,14 +796,17 @@ function base_table:tick()
 
 end
 
-function base_table:private_init(conf)
+function base_table:private_init(private_id,conf)
+	self.private_id = private_id
 	self.rule = conf.rule
 	self.chair_count = conf.chair_count
 	self.money_type = conf.money_type
 	self.conf = conf
 end
 
-function base_table:clear_private()
+function base_table:private_clear()
+	if not self.private_id then return end
+	
 	self.rule = nil
 	self.conf = nil
 	self.private_id = nil

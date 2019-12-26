@@ -392,24 +392,19 @@ function on_cl_login(msg,gate)
     local game_id = reddb:hget("player:online:guid:"..tostring(info.guid),"server")
     if game_id then
         log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", info.guid, game_id, info.session_id, info.gate_id)
-        local game_server_info = serviceconf[game_id]
-        if game_server_info and game_server_info.conf.first_game_type ~= 1 then
-            info.result = enum.LOGIN_RESULT_SUCCESS
-            info.reconnect = 1
-            reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
-            reddb:set("player:online:account:"..account,info.guid)
+        info.result = enum.LOGIN_RESULT_SUCCESS
+        local reconnect = 1
+        info.reconnect = reconnect
+        reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
+        reddb:set("player:online:account:"..account,info.guid)
 
-            channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",{
-                player_login_info = info,
-                guid = info.guid,
-            })
+        channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,reconnect)
 
-            dump(info)
+        dump(info)
 
-            log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s", 
-                account, game_id, info.session_id, info.gate_id)
-            return info,game_id
-        end
+        log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s", 
+            account, game_id, info.session_id, info.gate_id)
+        return info,game_id
     end
 
     -- 找一个默认大厅服务器
@@ -438,8 +433,6 @@ function on_cl_login(msg,gate)
         sensiorpromoter = info.sensiorpromoter,
         package_name = msg.package_name,
     })
-
-    -- dump(info)
     
     -- 存入redis
     reddb:hmset("player:online:guid:"..tostring(info.guid),{
@@ -448,10 +441,7 @@ function on_cl_login(msg,gate)
     })
     reddb:set("player:online:account:"..account,info.guid)
 
-    channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",{
-        player_login_info = info,
-        guid = info.guid,
-    })
+    channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
 
     log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
 

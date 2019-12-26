@@ -904,7 +904,7 @@ function maajan_table:calculate_ting(p)
                 types[p.chair_id] = types[p.chair_id] or {}
                 table.insert(types[p.chair_id],{type = HU_TYPE.JIAO_PAI,score = 1,whoee = pi.chair_id,count = 1})
                 types[pi.chair_id] = types[pi.chair_id] or {}
-                table.insert(types[pi.chair_id],{type = HU_TYPE.CHA_JIAO,score = -1,count = 1})
+                table.insert(types[pi.chair_id],{type = HU_TYPE.WEI_JIAO,score = -1,count = 1})
             end
         end
     end
