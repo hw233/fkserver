@@ -1760,7 +1760,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
 
         local men_pai = {}
         for _,men in pairs(v.men or {}) do
-            table.insert(men_pai,men.tile)
+            table.insert(men_pai,men.zi_mo and 255 or men.tile)
         end
         tplayer.men_pai = men_pai
         if self.chu_pai_player_index == chair_id then
