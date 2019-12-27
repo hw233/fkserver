@@ -82,6 +82,8 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		if counts[in_pai] and counts[in_pai] == 3 then
 			actions[ACTION.MING_GANG] = actions[ACTION.MING_GANG] or {}
 			actions[ACTION.MING_GANG][in_pai] = true
+			actions[ACTION.PENG] = actions[ACTION.PENG] or {}
+			actions[ACTION.PENG][in_pai] = true
 		end
 	
 		if counts[in_pai] and counts[in_pai] == 2 then
