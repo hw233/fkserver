@@ -114,7 +114,11 @@ function base_table:get_free_chair_id()
 		return nil
 	end
 
-	return #self.players + 1
+	for i = 1, self.chair_count do 
+		if not self.players[i] then return i end
+	end
+
+	return nil
 end
 
 function base_table:request_dismiss(player)
