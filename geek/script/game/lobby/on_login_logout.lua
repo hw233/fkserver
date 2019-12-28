@@ -12,7 +12,6 @@ local send2client_pb = send2client_pb
 local base_player = require "game.lobby.base_player"
 local base_players = require "game.lobby.base_players"
 local base_emails = require "game.lobby.base_emails"
-local club_table = require "game.club.club_table"
 
 require "game.lobby.base_android"
 local base_active_android = base_active_android
@@ -124,8 +123,14 @@ end
 
 -- 玩家登录通知 验证账号成功后会收到
 function on_ls_login_notify(guid,reconnect)
-	log.info("on_ls_login_notify game_id = %d %s", def_game_id, reconnect)
+	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
+	local s = onlineguid[guid]
+	-- if s.server ~= def_game_id then
+	-- 	log.warning("on_ls_login_notify session.server[%s] ~= game_id[%s]",s.server,def_game_id)
+	-- 	return
+	-- end
+
 	local player = base_players[guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
@@ -139,6 +144,9 @@ function on_ls_login_notify(guid,reconnect)
 	player.invite_code = player.invite_code or player.invite_code or "0"
 	if reconnect then
 		-- 重连
+		-- local s = onlineguid[guid]
+		player.table_id = s.table
+		player.chair_id = s.chair
 		log.info("login step reconnect game->LC_Login,account=%s", player.account)
 		return
 	end
@@ -243,8 +251,8 @@ function on_cs_login_validatebox(player, msg)
 end
 
 -- 玩家退出 
-function logout(guid)
-	log.info("===========logout %d",guid)
+function logout(guid,offline)
+	log.info("===========logout %d,offline:%s",guid,offline)
 	local player = base_players[guid]
 	if not player then
 		log.error("logout,guid[%s] not find in game= %s", guid, def_game_id)
@@ -252,7 +260,7 @@ function logout(guid)
 	end
 
 	player.logout_time = os.time()
-	if g_room:exit_server(player,true) then
+	if g_room:exit_server(player,offline) then
 		log.info("logout offlined...")
 		return true -- 掉线处理
 	end
@@ -349,7 +357,6 @@ local function load_player_data_complete(player)
 
 		log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete send have data gate_id[%d]" , player.guid,player.account,player.gate_id)
 		send2client_pb(player,"SC_ReplyPlayerInfoComplete", notify)
-		g_room:player_online(player)
 		return
 	end
 
@@ -891,36 +898,6 @@ function on_cs_change_game(msg,guid)
 	end
 end
 
-function on_LS_ChangeGameResult(msg)
-	if msg.success then
-		local player = base_players[msg.guid]
-		if not player then
-			log.warning("==guid[%d] not find in game=%d", msg.guid, def_game_id)
-			return
-		end
-
-		--避免玩家数据丢失
-		if #msg.change_msg > 0 then
-			msg.change_msg = pb.decode(msg.change_msg[1], msg.change_msg[2])
-			msg.change_msg.pb_base_info = player
-			log.info("player[%d] has_bank_password[%s] bankpwd[%s]",msg.change_msg.guid,msg.change_msg.h_bank_password,msg.change_msg.bank_password)
-		end
-
-		room:exit_server(player)
-		player:save()
-
-		reddb:hset("player:online:guid:"..tostring(msg.guid),"game_id",def_game_id)
-	
-		player:del()
-		
-		send2login_pb("SL_ChangeGameResult", msg)
-		
-		log.info("change step complete,account=%s", player.account)
-	end
-
-	log.info ("on_LS_ChangeGameResult................................", msg.success)
-end
-
 -- 检查是否从Redis中加载完成
 local function check_change_complete(player, msg)
 	local b_private_room = true
@@ -998,6 +975,7 @@ end
 
 function on_ss_change_game(guid)
 	local player = base_players[guid]
+	dump(player)
 	player.online = true
 	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s",
 		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
@@ -1017,7 +995,6 @@ function on_ss_change_game(guid)
 	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 
-	dump(player)
 	onlineguid.control(player,"goserver",def_game_id)
 	onlineguid[player.guid] = nil
 	
@@ -1129,13 +1106,6 @@ function on_cs_create_private_room(msg,guid)
 	local json_rule = msg.rule
 
 	local player = base_players[guid]
-
-	if player.in_game then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
-			result = enum.GAME_SERVER_RESULT_IN_GAME,
-		})
-		return
-	end
 
 	if player.table_id then
 		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
@@ -1249,14 +1219,14 @@ function on_cs_reconnect(guid)
 	local onlineinfo = onlineguid[guid]
 	if not onlineinfo then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 		})
 		return
 	end
 
 	if not onlineinfo.table or not onlineinfo.chair then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR,
 		})
 		return
 	end
@@ -1266,7 +1236,7 @@ function on_cs_reconnect(guid)
 	local private_table = base_private_table[onlineinfo.global_table]
 	if not private_table then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
 		})
 		return
 	end
@@ -1308,7 +1278,7 @@ function on_cs_join_private_room(msg,guid)
 		local onlineinfo = onlineguid[guid]
 		if not onlineinfo then
 			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-				result = ERROR_JOIN_ROOM_NO,
+				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 			})
 			return
 		end

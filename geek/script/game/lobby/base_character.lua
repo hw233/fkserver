@@ -62,14 +62,14 @@ function base_character:on_sit_down(table_id_, chair_id_, result_)
 end
 
 -- 通知坐下
-function base_character:on_notify_sit_down(notify)
+function base_character:notify_sit_down(notify)
 end
 -- 站起
 function base_character:on_stand_up()
 end
 
 -- 通知站起
-function base_character:on_notify_stand_up(notify)
+function base_character:notify_stand_up(who)
 end
 
 -- 通知空位置坐机器人
@@ -130,12 +130,20 @@ end
 
 -- 强制踢出房间
 function base_character:forced_exit()
-	log.info("force exit,%s,%s,%s",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
-	local ret = g_room:stand_up(self,enum.STANDUP_REASON_FORCE)
-	log.info("ret is :"..ret)
-	if ret == enum.GAME_SERVER_RESULT_SUCCESS then
-		g_room:exit_room(self)
+	log.info("force exit,guid:%s,table_id:%s,chair_id:%s",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
+	local tb = g_room:find_table_by_player(player)
+	if not tb then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
+		return
 	end
+
+	if tb:player_stand_up(player,enum.STANDUP_REASON_FORCE) then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
+		return
+	end
+
+	g_room:exit_room(self)
+	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,success",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
 end
 
 function base_character:forced_logout()

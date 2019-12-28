@@ -24,7 +24,6 @@ local addr
 local guid
 local conf
 local rsa_public_key
-local afk = false
 
 
 local function toguid(msgname,msg)
@@ -55,9 +54,12 @@ end
 
 local function afk(...)
     log.warning("afk,guid:%s",guid)
-    if inserverid then
-        channel.publish("service."..tostring(inserverid),"lua","afk",guid)
+    if not inserverid then
+        logout()
+        return
     end
+
+    channel.call("service."..tostring(inserverid),"lua","afk",guid,true)
     logout()
 end
 

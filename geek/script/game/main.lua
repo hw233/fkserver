@@ -95,7 +95,7 @@ function CMD.start(conf)
 	on_tick()
 end
 
-function CMD.afk(guid)
+function CMD.afk(guid,offline)
 	if not guid then
 		return
 	end
@@ -105,7 +105,9 @@ function CMD.afk(guid)
 		return
 	end
 
-	logout(player.guid)
+	log.info("on gate afk,guid:%s,offline:%s",guid,offline)
+
+	return logout(player.guid,offline)
 end
 
 function CMD.get_player_count()

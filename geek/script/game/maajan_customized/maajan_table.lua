@@ -297,10 +297,6 @@ function maajan_table:on_action_when_wait_chu_pai(event_table)
     end
 end
 
-function maajan_table:player_stand_up(player, reason)
-    return base_table.player_stand_up(self,player,reason)
-end
-
 local action_name_str = {
     [ACTION.AN_GANG] = "AnGang",
     [ACTION.PENG] = "Peng",
@@ -1284,8 +1280,8 @@ function maajan_table:notify_offline(player)
 end
 
 -- 检查是否可取消准备
-function maajan_table:check_cancel_ready(player, reason)
-    log.info("maajan_table:check_cancel_ready guid:%s,reason:%s",player.guid,reason)
+function maajan_table:can_stand_up(player, reason)
+    log.info("maajan_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
     if reason == enum.STANDUP_REASON_DISMISS or
         reason == enum.STANDUP_REASON_FORCE then
         return true
@@ -1745,7 +1741,6 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         local tplayer = {}
         tplayer.chair_id = v.chair_id
         if v.pai then
-            dump(v.pai.desk_tiles)
             tplayer.desk_pai = table.values(v.pai.desk_tiles)
             tplayer.pb_ming_pai = table.values(v.pai.ming_pai)
             tplayer.shou_pai = {}

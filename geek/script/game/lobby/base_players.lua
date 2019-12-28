@@ -30,15 +30,14 @@ setmetatable(player_manager,{
 	end,
 })
 
-
-function player_manager:foreach(func)
+function player_manager.foreach(func)
 	for _, player in pairs(player_manager) do
 		func(player)
 	end
 end
 
 -- 广播所有人消息
-function player_manager:broadcast2client_pb(msg_name, pb)
+function player_manager.broadcast2client_pb(msg_name, pb)
 	for guid, player in pairs(player_manager) do
 		if player.online then
 			send2client_pb(player, msg_name, pb)
@@ -46,7 +45,7 @@ function player_manager:broadcast2client_pb(msg_name, pb)
 	end
 end
 
-function player_manager:update_notice_everyone(msg)
+function player_manager.update_notice_everyone(msg)
 	for guid, player in pairs(player_manager) do
 		if player.online then
 			player:update_notice(msg)
@@ -55,7 +54,7 @@ function player_manager:update_notice_everyone(msg)
 end
 
 -- 删除公告
-function player_manager:delete_notice_everyone(msg)
+function player_manager.delete_notice_everyone(msg)
 	for guid,player in pairs(player_manager) do
 		if player.online then
 			player:delete_notice(msg)
@@ -63,7 +62,7 @@ function player_manager:delete_notice_everyone(msg)
 	end
 end
 
-function player_manager:save_all()
+function player_manager.save_all()
 	for guid, player in pairs(player_manager) do
 		if type(guid) == "number" then
 			if player.online then
@@ -74,12 +73,12 @@ function player_manager:save_all()
 end
 
 -- 公告或消息
-function player_manager:update_notice(msg)
+function player_manager.update_notice(msg)
 	--公告或跑马灯要区分平台
 	if msg.msg_type == 2 or msg.msg_type == 3 then
 		local right_plat = false
 		for _,plat_id in ipairs(msg.platforms) do
-			if self.platform_id == plat_id then
+			if platform_id == plat_id then
 				right_plat = true
 				break
 			end
@@ -128,7 +127,7 @@ function player_manager:update_notice(msg)
 end
 
 -- 游戏中奖公告，需要客户端组装消息内容
-function player_manager:update_game_notice_everyone(msg)
+function player_manager.update_game_notice_everyone(msg)
 	for guid,player in pairs(player_manager) do
 		if player.online then
 			local send_to_player = false

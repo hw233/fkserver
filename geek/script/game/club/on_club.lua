@@ -190,7 +190,8 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local tables = {}
-    for _,priv_tb in pairs(club_table[club_id]) do
+    for _,ctb in pairs(club_table[club_id]) do
+        local priv_tb = ctb:get()
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
         table.insert(tables,tableinfo)
     end
@@ -297,7 +298,8 @@ function on_cs_club_join_req(msg,guid)
     end
 
     local player_reqs = player_request[club.owner]
-    for _,req in pairs(player_reqs) do
+    for _,pr in pairs(player_reqs) do
+        local req = pr:get()
         if req.who == guid and req.type == "join" then
             onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
                 result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
@@ -477,7 +479,8 @@ end
 function on_cs_club_request_list_req(msg,guid)
     local club_id = msg.club_id
     local reqs = {}
-    for _,req in pairs(player_request[guid]) do
+    for _,pr in pairs(player_request[guid]) do
+        local req = pr:get()
         local player = base_players[req.who]
         table.insert(reqs,{
             req_id = req.id,

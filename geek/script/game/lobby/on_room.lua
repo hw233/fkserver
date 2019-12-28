@@ -105,6 +105,7 @@ function on_cs_ready(msg,guid)
 		log.error("on_cs_ready not found player,guid:%s",guid)
 		return
 	end
+
 	if player.disable == 1 then
 		log.info("player is Freeaz forced_exit")
 		-- 强行T下线
@@ -114,11 +115,10 @@ function on_cs_ready(msg,guid)
 
 	if not player.table_id then
 		log.warning("on_cs_ready table_id is:%s",player.table_id)
+		return
 	end
 
-	if player.chair_id then
-		log.info("on_cs_ready chair_id is:%s",player.chair_id)
-	end
+	log.info("on_cs_ready guid:%s,table_id:%s,chair_id:%s",guid,player.table_id,player.chair_id)
 
 	local tb = g_room:find_table_by_player(player)
 	if not tb then
@@ -172,7 +172,6 @@ function on_cs_read_game_info(msg,guid)
 			}
 		}
 		send2client_pb(player,  "SC_ReadGameInfo", notify)
-		g_room:player_online(player)
 		return
 	end
 	log.info("--------on_cs_read_game_info========")

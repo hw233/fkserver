@@ -116,12 +116,13 @@ function maajan_table:notify_offline(player)
 end
 
 -- 检查是否可取消准备
-function maajan_table:check_cancel_ready(player, is_offline)
+function maajan_table:can_stand_up(player, is_offline)
 	if self.do_logic_update then
 		return false
 	end
 	return true
 end
+
 function maajan_table:is_play( ... )
 	if self.do_logic_update then
 		return true

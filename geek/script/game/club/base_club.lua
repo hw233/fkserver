@@ -135,9 +135,9 @@ function base_club:broadcast(msgname,msg,except)
     if except then
         except = type(except) == "number" and except or except.guid
     end
-    for _,p in pairs(club_member[self.id]) do
-        if not except or (except and except ~= p.guid) then
-            onlineguid.send(p.guid,msgname,msg)
+    for guid,_ in pairs(club_member[self.id]) do
+        if not except or (except and except ~= guid) then
+            onlineguid.send(guid,msgname,msg)
         end
     end
 end
@@ -145,13 +145,11 @@ end
 function base_club:create_table(player,chair_count,round,conf)
     local member = club_member[self.id][player.guid]
     if not member then
-        dump(self)
-        dump(club_member[self.id])
         log.warning("create club table,but guid [%s] not exists",player.guid)
         return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
-    local result,global_tid,tb = g_room:create_private_table(member,chair_count,round,conf)
+    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,conf)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hset("table:info:"..global_tid,"club_id",self.id)
         reddb:sadd("club:table:"..self.id,global_tid)

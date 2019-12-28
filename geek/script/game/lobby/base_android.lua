@@ -105,8 +105,8 @@ function base_active_android:check_room_limit(score)
 end
 
 -- 通知站起
-function base_active_android:on_notify_stand_up(notify)
-	room:stand_up(self)
+function base_active_android:notify_stand_up(who)
+	room:stand_up(who)
 end
 
 -- 得到钱
@@ -169,7 +169,7 @@ function base_passive_android:sub_android(roomid_, count)
 end
 
 -- 通知站起
-function base_passive_android:on_notify_stand_up(notify)
+function base_passive_android:notify_stand_up(who)
 end
 
 -- 每一帧调用

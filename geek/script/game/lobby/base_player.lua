@@ -254,9 +254,13 @@ function base_player:on_sit_down(table_id_, chair_id_, result_)
 end
 
 -- 通知坐下
-function base_player:on_notify_sit_down(notify)
-	log.info("on_notify_sit_down  player guid[%d] ip_area =%s",self.guid , notify.pb_visual_info.ip_area)
-	send2client_pb(self, "SC_NotifySitDown", notify)
+function base_player:notify_sit_down(player,reconnect)
+	log.info("notify_sit_down  player guid[%d] ip_area =%s",player.guid , player.ip_area)
+	send2client_pb(self, "SC_NotifySitDown", {
+		table_id = player.table_id,
+		pb_visual_info = player,
+		is_online = reconnect,
+	})
 end
 
 -- 站起
@@ -277,8 +281,13 @@ function base_player:on_stand_up(table_id_, chair_id_, result_)
 end
 
 -- 通知站起
-function base_player:on_notify_stand_up(notify)
-	send2client_pb(self, "SC_NotifyStandUp", notify)
+function base_player:notify_stand_up(who,offline)
+	send2client_pb(self, "SC_NotifyStandUp", {
+		table_id = who.table_id,
+		chair_id = who.chair_id,
+		guid = who.guid,
+		offline = offline and true or false,
+	})
 end
 
 -- 通知空位置坐机器人

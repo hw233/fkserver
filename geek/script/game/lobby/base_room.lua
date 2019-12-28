@@ -242,25 +242,6 @@ function base_room:enter_room_and_sit_down(player)
 		local tb,k,j = self:get_suitable_table(self,player,false)
 		if tb then
 			self:player_enter_room(player)
-			-- 通知消息
-			local notify = {
-				table_id = j,
-				pb_visual_info = {
-					chair_id = k,
-					guid = player.guid,
-					account = player.account,
-					nickname = player.nickname,
-					level = player:get_level(),
-					money = player:get_money(),
-					header_icon = player:get_header_icon(),
-					ip_area = player.ip_area,
-				}
-			}
-			print("ip_area--------------------A",  player.ip_area)
-			print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-			tb:foreach(function (p)
-				p:on_notify_sit_down(notify)
-			end)
 			tb:player_sit_down(player, k)
 			return enum.GAME_SERVER_RESULT_SUCCESS, j, k, tb
 		end
@@ -300,15 +281,6 @@ function base_room:stand_up_and_exit_room(player,reason)
 	local tableid = player.table_id
 	local chairid = player.chair_id
 	tb:player_stand_up(player, reason)
-	local notify = {
-			table_id = tableid,
-			chair_id = chairid,
-			guid = player.guid,
-		}
-	tb:foreach(function (p)
-		p:on_notify_stand_up(notify)
-	end)
-	tb:check_start(true)
 
 	local roomid = player.room_id
 	self:player_exit_room(player)
@@ -435,14 +407,6 @@ function base_room:create_private_table(player,chair_count,round, conf)
 	
 	tb:player_sit_down(player, chair_id)
 
-	tb:foreach(function(p)
-		p:on_notify_sit_down({
-			room_id = def_game_id,
-			table_id = tb.table_id_,
-			pb_visual_info = player,
-		})
-	end)
-
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
 
 	return enum.GAME_SERVER_RESULT_SUCCESS,global_tid,tb
@@ -451,21 +415,11 @@ end
 function base_room:reconnect(player,table_id,chair_id)
 	local tb = self.tables[table_id]
 	if not tb then
+		log.warning("base_room:reconnect table %d not found,guid:%d,chair_id:%d",table_id,player.guid,chair_id)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	tb:player_sit_down(player, chair_id)
-
-	local notify = {
-		room_id = def_game_id,
-		table_id = player.table_id,
-		pb_visual_info = player,
-		is_online = true,
-	}
-
-	tb:foreach_except(chair_id,function (p)
-		p:on_notify_sit_down(notify)
-	end)
+	tb:player_sit_down(player, chair_id,true)
 
 	return tb:reconnect(player)
 end
@@ -503,16 +457,6 @@ function base_room:join_private_table(player,private_table_conf,chair_count)
 	self:player_enter_room(player)
 
 	tb:player_sit_down(player, chair_id)
-
-	local notify = {
-		room_id = def_game_id,
-		table_id = private_table_conf.table_id,
-		pb_visual_info = player,
-	}
-
-	tb:foreach_except(chair_id,function (p)
-		p:on_notify_sit_down(notify)
-	end)
 
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table_conf.table_id)
 
@@ -584,17 +528,6 @@ function base_room:change_chair(player)
 
 	-- 旧桌子站起
 	tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL)
-
-	local notify = {
-			table_id = tableid,
-			chair_id = chairid,
-			guid = player.guid,
-		}
-
-	tb:foreach(function (p)
-		p:on_notify_stand_up(notify)
-	end)
-
 	tb:check_start(true)
 
 	-- 通知消息
@@ -613,9 +546,6 @@ function base_room:change_chair(player)
 	}
 	print("ip_area--------------------A",  player.ip_area)
 	print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-	targettb:foreach(function (p)
-		p:on_notify_sit_down(notify)
-	end)
 
 	targettb:player_sit_down(player, targetid)
 
@@ -710,66 +640,6 @@ function base_room:cs_trusteeship(player)
 	tb:set_trusteeship(player,true)
 end
 
--- 离开房间
-function base_room:exit_room(player,is_logout)
-	log.info("base_room:exit_room %s,%s",player.guid,is_logout)
-	
-	self:player_exit_room(player,is_logout)
-	
-	local notify = {
-			room_id = self.id,
-			guid = player.guid,
-		}
-
-	return enum.GAME_SERVER_RESULT_SUCCESS, self.id
-end
-
--- 玩家掉线
-function base_room:player_offline(player)
-	local tb = self:find_table(player.table_id)
-	if not tb then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	local chair = tb:get_player(player.chair_id)
-	if not chair then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	if chair.guid ~= player.guid then
-		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
-	end
-
-	local tableid, chairid = player.table_id, player.chair_id
-
-	if tb:player_stand_up(player, enum.STANDUP_REASON_OFFLINE) then
-		local notify = {
-			table_id = tableid,
-			chair_id = chairid,
-			guid = player.guid,
-		}
-		tb:foreach(function (p)
-			p:on_notify_stand_up(notify)
-		end)
-
-		tb:check_start(true)
-
-		return enum.GAME_SERVER_RESULT_SUCCESS, false
-	end
-
-	local notify = {
-		table_id = tableid,
-		chair_id = chairid,
-		guid = player.guid,
-		is_offline = true,
-	}
-	tb:foreach_except(chairid, function (p)
-		p:on_notify_stand_up(notify)
-	end)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS, true
-end
-
 function base_room:is_play(player)
 	print("=========base_room:is_play")
 	if player.room_id and player.table_id and player.chair_id then
@@ -784,73 +654,31 @@ function base_room:is_play(player)
 	return false
 end
 
--- 玩家上线
-function base_room:player_online(player)
-	if not player.table_id or not player.chair_id then return end
-
-	player:on_enter_room(def_game_id, enum.GAME_SERVER_RESULT_SUCCESS)
-
-	local tb = self:find_table(player.table_id)
-	if not tb then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-	
-	local chair_player = tb:get_player(player.chair_id)
-	if not chair_player then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	if chair_player.guid ~= player.guid then
-		player.table_id = nil
-		player.chair_id = nil
-		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
-	end
-
-	player.is_offline = nil
-
-	-- 通知消息
-	local notify = {
-		table_id = player.table_id,
-		pb_visual_info = {
-			chair_id = player.chair_id,
-			guid = player.guid,
-			account = player.account,
-			nickname = player.nickname,
-			level = player:get_level(),
-			money = player:get_money(),
-			header_icon = player:get_header_icon(),				
-			ip_area = player.ip_area,
-		},
-		is_onfline = true,
-	}
-
-	print("ip_area--------------------A",  player.ip_area)
-	print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-	tb:foreach_except(player.chair_id, function (p)
-		p:on_notify_sit_down(notify)
-	end)
-
-	-- 重连
-	tb:reconnect(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
-end
-
 -- 退出服务器
-function base_room:exit_server(player,is_logout)
-	log.info("base_room:exit_server guid[%d]",player.guid)
-	if player.table_id and player.chair_id then
-		local result_, is_offline_ = self:player_offline(player)
-
-		log.info("guid[%d] player_offline return [%d] is_offline[%s]",player.guid,result_,is_offline_)
-		if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
-			if is_offline_ then
-				return true
-			end
-			self:exit_room(player,is_logout)
-		end
+function base_room:exit_server(player,offline)
+	log.info("base_room:exit_server guid[%d],offline:%s",player.guid,offline)
+	dump(player)
+	if not player.table_id or not player.chair_id then
+		log.info("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
+		self:player_exit_room(player,offline)
+		return true,enum.GAME_SERVER_RESULT_IN_GAME
 	end
-	return false
+
+	local tb = self:find_table_by_player(player)
+	if not tb then
+		log.warning("base_room:exit_server not found table:%s,guid:%s",player.table_id,player.guid)
+		return true,enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	local can_exit = tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or nil)
+	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s]",player.guid,player.table_id,can_exit)
+	if not can_exit then
+		return true,enum.GAME_SERVER_RESULT_SUCCESS
+	end
+
+	self:player_exit_room(player,offline)
+
+	return false,enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 -- 快速坐下
@@ -904,131 +732,13 @@ function base_room:sit_down(player, table_id_, chair_id_)
 	end
 	
 	-- 通知消息
-	local notify = {
-		table_id = table_id_,
-		pb_visual_info = {
-			chair_id = chair_id_,
-			guid = player.guid,
-			account = player.account,
-			nickname = player.nickname,
-			level = player:get_level(),
-			money = player:get_money(),
-			header_icon = player:get_header_icon(),			
-			ip_area = player.ip_area,
-		},
-	}
-
 	print("ip_area--------------------A",  player.ip_area)
-	print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-	tb:foreach(function (p)
-		p:on_notify_sit_down(notify)
-	end)
-
+	print("ip_area--------------------B",  player.ip_area)
 	tb:player_sit_down(player, chair_id_)
 
 	return enum.GAME_SERVER_RESULT_SUCCESS, table_id_, chair_id_
 end
 
-
--- 站起
-function base_room:stand_up_new(player)
-	log.info("base_room:stand_up_new player guid[%d]",player.guid)
-	if not player.room_id then
-		return enum.GAME_SERVER_RESULT_OUT_ROOM
-	end
-
-	if not player.table_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	if not player.chair_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	local room = self:find_room(player.room_id)
-	if not room then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-	end
-
-	local tb = room:find_table(player.table_id)
-	if not tb then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	local chair = tb:get_player(player.chair_id)
-	if not chair then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	if chair.guid ~= player.guid then
-		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
-	end
-	
-	local tableid = player.table_id
-	local chairid = player.chair_id
-	local ret =  tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL)
-	if ret == false then
-		log.warning("player guid[%d] stand_up failed, return enum.GAME_SERVER_RESULT_IN_GAME",player.guid)
-		return enum.GAME_SERVER_RESULT_IN_GAME
-	end
-
-	local notify = {
-			table_id = tableid,
-			chair_id = chairid,
-			guid = player.guid,
-		}
-	tb:foreach(function (p)
-		p:on_notify_stand_up(notify)
-	end)
-
-	tb:check_start(true)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS, tableid, chairid
-end
-
-
--- 站起
-function base_room:stand_up(player,reason)
-	log.info("base_room:stand_up,guid:%s chair_id:%s reasion:%s",player.guid,player.chair_id,reason)
-	if not player.table_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	if not player.chair_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	local tb = self:find_table(player.table_id)
-	if not tb then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	local chair = tb:get_player(player.chair_id)
-	if not chair then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
-
-	if chair.guid ~= player.guid then
-		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
-	end
-	
-	local tableid = player.table_id
-	local chairid = player.chair_id
-	tb:player_stand_up(player, reason)
-
-	local notify = {
-			table_id = tableid,
-			chair_id = chairid,
-			guid = player.guid,
-		}
-	tb:foreach(function (p)
-		p:on_notify_stand_up(notify)
-	end)
-
-	tb:check_start(true)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS, tableid, chairid
-end
 
 -- 找一个被动机器人位置
 function base_room:find_android_pos(room_id)
@@ -1091,12 +801,12 @@ function base_room:player_enter_room(player)
 end
 
 -- 玩家退出房间
-function base_room:player_exit_room(player,is_logout)
+function base_room:player_exit_room(player,offline)
 	log.info("base_room:player_exit_room, guid %s, room_id %s",player.guid,def_game_id)
 	
 	self.players[player.guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
-	if not is_logout then
+	if offline then
 		log.info("player_exit_room set guid[%d] onlineinfo",player.guid)
 		local online_key = string.format("player:online:guid:%d",player.guid)
 		reddb:hdel(online_key,"first_game_type")
@@ -1109,10 +819,11 @@ function base_room:player_exit_room(player,is_logout)
 	
 	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 	onlineguid[player.guid] = nil
-	self:change_room(player,find_default_lobby(),is_logout)
+	
+	-- self:switch_room(player,find_default_lobby())
 end
 
-function base_room:change_room(player,room_id,logout)
+function base_room:switch_room(player,room_id)
 	if room_id == def_game_id then return end
 
 	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",player.guid)
@@ -1155,65 +866,6 @@ function base_room:get_suitable_table(player,bool_change_table)
 	return suitable_table,chair_id,table_id
 end
 
-function base_room:change_table_new(player)
- 	if not player then
- 		log.warning("player is null.")
- 		return
- 	end
-
- 	log.info("player guid[%d] change_table_new start..........",player.guid)
- 	if player.disable == 1 then
-		print("change_table_new player is Freeaz forced_exit")
-		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
-	end
-	local tb = self:find_table_by_player(player)
-	if tb then		
-		if tb:is_play(player) then
-			log.warning("player guid[%d] is playing",player.guid)
-			return
-		end
-
-		local tb,k,j = self:get_suitable_table(self,player,true)
-		if tb then
-			--离开当前桌子
-			--local result_, table_id_, chair_id_  = self:stand_up(player)
-			local result_, table_id_, chair_id_  = self:stand_up_new(player)
-			if result_ ~= enum.GAME_SERVER_RESULT_SUCCESS then
-				log.warning("player guid[%d] stand_up_new failed.",player.guid)
-				return
-			end
-			player:on_stand_up(table_id_, chair_id_, result_)
-			-- 通知消息
-			local notify = {
-				table_id = j,
-				pb_visual_info = {
-				chair_id = k,
-				guid = player.guid,
-				account = player.account,
-				nickname = player.nickname,
-				level = player:get_level(),
-				money = player:get_money(),
-				header_icon = player:get_header_icon(),
-				ip_area = player.ip_area,
-				}
-			}
-				
-			tb:foreach(function (p)
-				p:on_notify_sit_down(notify)
-			end)
-			--在新桌子坐下
-			tb:player_sit_down(player,k)
-			player:change_table(def_game_id, j, k, enum.GAME_SERVER_RESULT_SUCCESS, tb)
-			self:get_table_players_status(player)
-			return
-		else
-			log.warning("not in room")
-		end
-	else
-		log.warning("no find tb")
-	end
- end 
-
 function base_room:change_table(player)
 	print("======================base_room:change_table")
 	if player.disable == 1 then
@@ -1227,26 +879,8 @@ function base_room:change_table(player)
 			--离开当前桌子
 			local result_, table_id_, chair_id_  = self:stand_up(player)
 			player:on_stand_up(table_id_, chair_id_, result_)
-			-- 通知消息
-			local notify = {
-				table_id = j,
-				pb_visual_info = {
-				chair_id = k,
-				guid = player.guid,
-				account = player.account,
-				nickname = player.nickname,
-				level = player:get_level(),
-				money = player:get_money(),
-				header_icon = player:get_header_icon(),
-				ip_area = player.ip_area,
-				}
-			}
-				
 			print("ip_area--------------------A",  player.ip_area)
-			print("ip_area--------------------B",  notify.pb_visual_info.ip_area)
-			tb:foreach(function (p)
-				p:on_notify_sit_down(notify)
-			end)
+			print("ip_area--------------------B",  player.ip_area)
 			--在新桌子坐下
 			tb:player_sit_down(player,k)
 			player:change_table(player.room_id, j, k, enum.GAME_SERVER_RESULT_SUCCESS, tb)
