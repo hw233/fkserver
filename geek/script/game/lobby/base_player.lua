@@ -158,7 +158,7 @@ function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, r
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"second_game_type")
 		reddb:hdel("player:online:guid:"..tostring(self.guid),"server")
 	else
-		log.info("send SC_StandUpAndExitRoom nil"..result_)
+		log.info("send SC_StandUpAndExitRoom nil "..result_)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
 			result = result_,
 			})

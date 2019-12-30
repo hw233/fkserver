@@ -106,6 +106,8 @@ function on_cs_ready(msg,guid)
 		return
 	end
 
+	log.warning("on_cs_ready %s,%s",player.guid,player)
+
 	if player.disable == 1 then
 		log.info("player is Freeaz forced_exit")
 		-- 强行T下线

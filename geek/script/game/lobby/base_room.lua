@@ -657,11 +657,10 @@ end
 -- 退出服务器
 function base_room:exit_server(player,offline)
 	log.info("base_room:exit_server guid[%d],offline:%s",player.guid,offline)
-	dump(player)
 	if not player.table_id or not player.chair_id then
-		log.info("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
+		log.warning("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
 		self:player_exit_room(player,offline)
-		return true,enum.GAME_SERVER_RESULT_IN_GAME
+		return false,enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
 	local tb = self:find_table_by_player(player)

@@ -126,16 +126,14 @@ function on_ls_login_notify(guid,reconnect)
 	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
 	local s = onlineguid[guid]
-	-- if s.server ~= def_game_id then
-	-- 	log.warning("on_ls_login_notify session.server[%s] ~= game_id[%s]",s.server,def_game_id)
-	-- 	return
-	-- end
 
 	local player = base_players[guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
 		return
 	end
+
+	log.warning("on_ls_login_notify %s %s",player.guid,player)
 
 	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
@@ -429,7 +427,7 @@ function on_cs_request_player_info(msg,guid)
 
 	onlineguid.send(guid,"SC_ReplyPlayerInfo",info)
 
-	log.info("test .................. on_ce_request_player_info")
+	log.info("test .................. on_cs_request_player_info")
 end
 
 
@@ -975,7 +973,6 @@ end
 
 function on_ss_change_game(guid)
 	local player = base_players[guid]
-	dump(player)
 	player.online = true
 	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s",
 		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
@@ -995,8 +992,9 @@ function on_ss_change_game(guid)
 	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 
-	onlineguid.control(player,"goserver",def_game_id)
+	-----------
 	onlineguid[player.guid] = nil
+	onlineguid.control(player,"goserver",def_game_id)
 	
 	-- 定时存档
 	local guid = player.guid
@@ -1309,12 +1307,12 @@ function on_cs_join_private_room(msg,guid)
 
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
+		onlineguid[guid] = nil
 		local room_id = find_best_room(game_type)
 		log.info("ss_changegame to %s,%s",guid,room_id)
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
-		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","C2S_JOIN_ROOM_REQ",msg,guid)
 		return
 	end
