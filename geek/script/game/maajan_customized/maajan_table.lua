@@ -223,11 +223,12 @@ function maajan_table:start(player_count)
         log.error("maajan_table:start tiles is nil.check private_table rule.")
     end
 
+    local all_tiles = clone(tiles)
     if self.conf.conf.play.dai_zhong and self.chair_count == 4 then
-        for _ = 1,4 do table.insert(tiles,35) end
+        for _ = 1,4 do table.insert(all_tiles,35) end
     end
     
-    self.dealer = maajan_tile_dealer:new(tiles)
+    self.dealer = maajan_tile_dealer:new(all_tiles)
 
     self:on_pre_begin()
 end
