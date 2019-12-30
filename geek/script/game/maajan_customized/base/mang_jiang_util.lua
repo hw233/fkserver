@@ -145,7 +145,11 @@ function mj_util.panGangWithOutInPai(pai)
 end
 
 function mj_util.is_ting(pai)
-	return rule.ting(pai)	
+	return rule.ting(pai)
+end
+
+function mj_util.is_ting_full(pai)
+	return rule.ting_full(pai)
 end
 
 function mj_util.get_fan_table_res(base_fan_table)

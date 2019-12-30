@@ -400,15 +400,38 @@ function rule.hu(pai,inPai)
 	return alltypes
 end
 
-function rule.ting(pai)
+function rule.ting_tiles(shou_pai)
 	local cache = {}
-	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	for i = 1,50 do cache[i] = shou_pai[i] or 0 end
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
 	local qi_dui_tile = ting_qi_dui(state)
 	local tiles = state.feed_tiles
 	if qi_dui_tile then tiles[qi_dui_tile] = true end
 	return tiles
+end
+
+--未摸牌判听
+function rule.ting(pai)
+	return rule.ting_tiles(pai.shou_pai)
+end
+
+--全部牌判听
+function rule.ting_full(pai)
+	local counts = clone(pai.shou_pai)
+	local discard_then_ting_tiles = {}
+	for tile,c in pairs(counts) do
+		if c > 0 then
+			table.decr(counts,tile)
+			local tiles = rule.ting_tiles(counts)
+			if table.nums(tiles) > 0 then
+				discard_then_ting_tiles[tile] = tiles
+			end
+			table.incr(counts,tile)
+		end
+	end
+
+	return discard_then_ting_tiles
 end
 
 function rule.get_fan_table_res(base_fan_table)

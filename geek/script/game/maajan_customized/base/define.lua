@@ -97,19 +97,18 @@ end
 
 --状态机  状态
 define.FSM_state = {
-    PER_BEGIN       		= pb.enum("FSM_STATE","PER_BEGIN"),	--预开始
-    XI_PAI		    		= pb.enum("FSM_STATE","XI_PAI"),    --洗牌 
-	BU_HUA_BIG				= pb.enum("FSM_STATE","BU_HUA_BIG"),	--补花
-	WAIT_MO_PAI  			= pb.enum("FSM_STATE","WAIT_MO_PAI"),	--等待 摸牌
-	WAIT_CHU_PAI  			= pb.enum("FSM_STATE","WAIT_CHU_PAI"),	--等待 出牌
-	WAIT_PENG_GANG_HU_CHI	= pb.enum("FSM_STATE","WAIT_PENG_GANG_HU_CHI"),	--等待 碰 杠 胡, 用户出牌的时候
-	WAIT_BA_GANG_HU  		= pb.enum("FSM_STATE","WAIT_BA_GANG_HU"),	--等待 胡, 用户巴杠的时候，抢胡
+    PER_BEGIN       			= pb.enum("FSM_STATE","PER_BEGIN"),	--预开始
+    XI_PAI		    			= pb.enum("FSM_STATE","XI_PAI"),    --洗牌 
+	BU_HUA_BIG					= pb.enum("FSM_STATE","BU_HUA_BIG"),	--补花
+	WAIT_MO_PAI  				= pb.enum("FSM_STATE","WAIT_MO_PAI"),	--等待 摸牌
+	WAIT_CHU_PAI  				= pb.enum("FSM_STATE","WAIT_CHU_PAI"),	--等待 出牌
+	WAIT_ACTION_AFTER_CHU_PAI	= pb.enum("FSM_STATE","WAIT_ACTION_AFTER_CHU_PAI"),	--等待 碰 杠 胡, 用户出牌的时候
+	WAIT_ACTION_AFTER_MO_PAI  	= pb.enum("FSM_STATE","WAIT_ACTION_AFTER_MO_PAI"),	--等待 胡, 用户巴杠的时候，抢胡
 
-	GAME_BALANCE			= pb.enum("FSM_STATE","GAME_BALANCE"),	--结算
-	GAME_CLOSE				= pb.enum("FSM_STATE","GAME_CLOSE"),	--关闭游戏
-	GAME_ERR				= pb.enum("FSM_STATE","GAME_ERR"),	--发生错误
+	GAME_BALANCE				= pb.enum("FSM_STATE","GAME_BALANCE"),	--结算
+	GAME_CLOSE					= pb.enum("FSM_STATE","GAME_CLOSE"),	--关闭游戏
 
-	GAME_IDLE_HEAD			= pb.enum("FSM_STATE","GAME_IDLE_HEAD"), --用于客户端播放动画延迟				
+	GAME_IDLE_HEAD				= pb.enum("FSM_STATE","GAME_IDLE_HEAD"), --用于客户端播放动画延迟				
 }
 
 local HU_TYPE = {
