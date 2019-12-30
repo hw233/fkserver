@@ -88,7 +88,7 @@ local TILE_AREA = {
 define.TILE_AREA = TILE_AREA
 
 function define.is_action_gang(action)
-	return action & (0x4 | 0x8 | 0x10) ~= 0
+	return action & (0x4 | 0x8 | 0x10 | 0x20000) ~= 0
 end
 
 function define.is_action_chi(action)

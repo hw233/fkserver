@@ -272,11 +272,46 @@ end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
-    if p.men then
-        actions[ACTION.PENG] = nil
-        actions[ACTION.LEFT_CHI] = nil
-        actions[ACTION.MID_CHI] = nil
-        actions[ACTION.RIGHT_CHI] = nil
+    if not p.men then return actions end
+
+    actions[ACTION.PENG] = nil
+    actions[ACTION.LEFT_CHI] = nil
+    actions[ACTION.MID_CHI] = nil
+    actions[ACTION.RIGHT_CHI] = nil
+    local old_ting_tiles = mj_util.is_ting(p.pai)
+    local function is_ting_equal(ls,rs)
+        for lt,_ in pairs(ls) do
+            if not rs[lt] then return false end
+        end
+
+        return true
+    end
+
+    local shoupai = clone(p.pai.shou_pai)
+
+    if actions[ACTION.AN_GANG]  then
+        table.decr(shoupai,mo_pai,4)
+        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
+            actions[ACTION.AN_GANG] = nil
+        end
+        table.incr(shoupai,mo_pai,4)
+    end
+
+    if actions[ACTION.BA_GANG] or actions[ACTION.FREE_BA_GANG] then
+        table.decr(shoupai,mo_pai,1)
+        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
+            actions[ACTION.BA_GANG] = nil
+            actions[ACTION.FREE_BA_GANG]= nil
+        end
+        table.incr(shoupai,mo_pai,1)
+    end
+
+    if actions[ACTION.MING_GANG] then
+        table.decr(shoupai,in_pai,3)
+        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
+            actions[ACTION.MING_GANG] = nil
+        end
+        table.incr(shoupai,in_pai,3)
     end
 
     return actions
@@ -443,6 +478,8 @@ function maajan_table:do_action_after_mo_pai(event_table)
         return
     end
 
+    self.waiting_player_actions = {}--只能写在此处，do_mo_pai有可能会覆盖此值
+
     if do_action == ACTION.BA_GANG or do_action == ACTION.FREE_BA_GANG or do_action == ACTION.AN_GANG then
         self:adjust_shou_pai(player,do_action,tile)
         self:log_game_action(player,do_action,tile)
@@ -460,7 +497,7 @@ function maajan_table:do_action_after_mo_pai(event_table)
         self:broadcast_player_hu(player,do_action)
         self:on_game_balance()
     elseif do_action == ACTION.MEN_ZI_MO then
-        player.pai.shou_pai[tile] = player.pai.shou_pai[tile] - 1
+        table.decr(player.pai.shou_pai,tile)
         player.men = player.men or {}
         table.insert(player.men,{
             time = os.time(),
@@ -483,8 +520,6 @@ function maajan_table:do_action_after_mo_pai(event_table)
     elseif do_action == ACTION.PASS then
         self:wait_chu_pai()
     end
-
-    self.waiting_player_actions = {}
 end
 
 function maajan_table:on_peng_gang_hu_chi(event_table)
@@ -1578,6 +1613,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
                     whoee = s.whoee,
                 })
                 ming_pai[i] = nil
+                table.decr(shou_pai,tile)
                 break
             end
         end
@@ -1880,6 +1916,7 @@ end
 function maajan_table:can_hu(player,in_pai)
     local hu_types = mj_util.hu(player.pai,in_pai)
     if table.nums(hu_types) == 0 then
+        dump(hu_types)
         return false
     end
 
