@@ -286,7 +286,7 @@ function base_player:notify_stand_up(who,offline)
 		table_id = who.table_id,
 		chair_id = who.chair_id,
 		guid = who.guid,
-		offline = offline and true or false,
+		is_offline = offline and true or false,
 	})
 end
 

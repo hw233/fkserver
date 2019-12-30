@@ -112,6 +112,7 @@ enum ACTION{
 	ACTION_MEN = 0x4000;
 	ACTION_MO_PAI = 0x8000;
 	ACTION_MEN_ZI_MO = 0x10000;
+	ACTION_FREE_BA_GANG = 0x20000;
 }
 
 enum SECTION_TYPE {
@@ -126,6 +127,7 @@ enum SECTION_TYPE {
 	LeftChi = 8;
 	MidChi = 9;
 	RightChi = 10;
+	FreeBaGang = 11;
 }
 
 enum FSM_STATE {
@@ -253,8 +255,6 @@ message Maajan_Balance_Item{
 		ZiMo = 2;
 		Men = 3;
 		MenZiMo = 4;
-		WeiJiao = 5;
-		JiaoPai = 6;
 	}
 
 	ItemType 			 type = 1;
@@ -265,10 +265,8 @@ message Maajan_Blanace_Player{
 	enum BalanceStatus{
 		Nil = 0;
 		Hu = 1;
-		ZiMo = 2;
-		Men = 3;
-		JiaoPai = 4;
-		WeiJiao = 5;
+		JiaoPai = 2;
+		WeiJiao = 3;
 	}
 	int32 chair_id 			= 1;
 	bool  hu 				= 2;	//是否胡了

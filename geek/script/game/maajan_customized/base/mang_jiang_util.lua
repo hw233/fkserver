@@ -65,6 +65,15 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 			end
 		end
 
+		for tile,c in pairs(counts) do
+			for _,s in pairs(pai.ming_pai) do
+				if s.tile == tile and c > 0 and s.type == SECTION_TYPE.PENG then
+					actions[ACTION.FREE_BA_GANG] = actions[ACTION.FREE_BA_GANG] or {}
+					actions[ACTION.FREE_BA_GANG][s.tile] = true
+				end
+			end
+		end
+
 		if counts[mo_pai] and counts[mo_pai] == 3 then
 			actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
 			actions[ACTION.AN_GANG][mo_pai] = true
@@ -82,11 +91,10 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		if counts[in_pai] and counts[in_pai] == 3 then
 			actions[ACTION.MING_GANG] = actions[ACTION.MING_GANG] or {}
 			actions[ACTION.MING_GANG][in_pai] = true
-			actions[ACTION.PENG] = actions[ACTION.PENG] or {}
-			actions[ACTION.PENG][in_pai] = true
 		end
 	
-		if counts[in_pai] and counts[in_pai] == 2 then
+		if counts[in_pai] and counts[in_pai] >= 2 then
+			actions[ACTION.PENG] = actions[ACTION.PENG] or {}
 			actions[ACTION.PENG] = {[in_pai] = true,}
 		end
 	end

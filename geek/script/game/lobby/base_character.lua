@@ -131,13 +131,13 @@ end
 -- 强制踢出房间
 function base_character:forced_exit()
 	log.info("force exit,guid:%s,table_id:%s,chair_id:%s",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
-	local tb = g_room:find_table_by_player(player)
+	local tb = g_room:find_table_by_player(self)
 	if not tb then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
 		return
 	end
 
-	if tb:player_stand_up(player,enum.STANDUP_REASON_FORCE) then
+	if tb:player_stand_up(self,enum.STANDUP_REASON_FORCE) then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
 		return
 	end
