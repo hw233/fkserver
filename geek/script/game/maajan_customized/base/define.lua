@@ -285,7 +285,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.NORMAL_JI]				= {name = "NORMAL_JI",score = 1},				--鸡牌
 	[HU_TYPE.WU_GU_JI]				= {name = "WU_GU_JI",score = 2},				--乌骨鸡
 	[HU_TYPE.FAN_PAI_JI]			= {name = "FAN_PAI_JI",score = 1},				--翻牌鸡
-	[HU_TYPE.CHUI_FENG_JI]			= {name = "CHUI_FENG_JI",score = 1},				--吹风鸡
+	[HU_TYPE.CHUI_FENG_JI]			= {name = "CHUI_FENG_JI",score = 0},			--吹风鸡
 	[HU_TYPE.ZHE_REN_JI]			= {name = "ZHE_REN_JI",score = 1},				--责任鸡
 	[HU_TYPE.CHONG_FENG_JI]			= {name = "CHONG_FENG_JI",score = 2},				--冲锋鸡
 	[HU_TYPE.XING_QI_JI]			= {name = "XING_QI_JI",score = 1},				--星期鸡

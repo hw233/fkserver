@@ -335,7 +335,8 @@ end
 
 function maajan_table:do_action_after_chu_pai(do_actions)
     local is_round_over = false
-    local is_men = false
+    local hu_tile
+    local men_tile 
     local chu_pai_player = self:chu_pai_player()
     for _,action in pairs(do_actions) do
         local player = self.players[action.chair_id]
@@ -361,7 +362,7 @@ function maajan_table:do_action_after_chu_pai(do_actions)
             self:jump_to_player_index(player)
             self:do_mo_pai()
         elseif action.done.action == ACTION.HU then
-            table.pop_back(chu_pai_player.pai.desk_tiles)
+            hu_tile = tile
             player.hu = {
                 time = os.time(),
                 tile = tile,
@@ -369,11 +370,10 @@ function maajan_table:do_action_after_chu_pai(do_actions)
                 zi_mo = false,
                 whoee = self.chu_pai_player_index,
             }
-            is_round_over = true
             self:log_game_action(player,action.done.action,tile)
             self:broadcast_player_hu(player,action.done.action)
-        elseif action.done.action == ACTION.MEN or action.done.action == ACTION.MEN_ZI_MO then
-            table.pop_back(chu_pai_player.pai.desk_tiles)
+        elseif action.done.action == ACTION.MEN then
+            men_tile = tile
             player.men = player.men or {}
             table.insert(player.men,{
                 time = os.time(),
@@ -385,7 +385,6 @@ function maajan_table:do_action_after_chu_pai(do_actions)
 
             self:log_game_action(player,action.done.action,tile)
             self:broadcast_player_men(player,action.done.action,tile)
-            is_men = true
         elseif def.is_action_chi(action.done.action) then
             if not action[action.done.action][tile] then
                 return
@@ -409,9 +408,11 @@ function maajan_table:do_action_after_chu_pai(do_actions)
         end
     end
 
-    if is_round_over then
+    if hu_tile then
+        table.pop_back(chu_pai_player.pai.desk_tiles)
         self:on_game_balance()
-    elseif is_men then
+    elseif men_tile then
+        table.pop_back(chu_pai_player.pai.desk_tiles)
         table.sort(do_actions,function(l,r) return l.chair_id < r.chair_id end)
         self:jump_to_player_index(self.players[do_actions[1].chair_id])
         self:next_player_index()
@@ -571,7 +572,6 @@ function maajan_table:do_mo_pai()
     local mo_pai = self.dealer:deal_one()
     player.mo_pai = mo_pai
     local actions = self:get_actions(player,mo_pai)
-    dump(actions)
     self:wait_chu_pai()
     if table.nums(actions) > 0 then
         self:wait_action_after_mo_pai({
@@ -963,12 +963,14 @@ function maajan_table:gen_ji_tiles()
             ben_ji_tile = self.dealer:deal_one()
         end
         
-        if ben_ji_tile == 15 and is_chui_fen_ji then
-             return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
-        end
+        
 
         local ben_ji_value = ben_ji_tile % 10
         local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
+
+        if fan_pai_ji == 15 and is_chui_fen_ji then
+            return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
+        end
         
         ji_tiles[fan_pai_ji] = ji_tiles[fan_pai_ji] or {}
         ji_tiles[fan_pai_ji][HU_TYPE.FAN_PAI_JI] = 1
@@ -976,6 +978,9 @@ function maajan_table:gen_ji_tiles()
             local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 9 - 1) % 9 + 1
             ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
             ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
+            if yao_bai_ji == 15 and is_chui_fen_ji then
+                return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
+            end
         end
 
         if self.conf.rule.ben_ji then
@@ -1103,9 +1108,9 @@ function maajan_table:game_balance(ji_tiles)
 end
 
 local BalanceStatus = {
-    Hu = pb.enum("Maajan_Balance_Item.ItemType","Hu"),
-    JiaoPai = pb.enum("Maajan_Balance_Item.ItemType","JiaoPai"),
-    WeiJiao = pb.enum("Maajan_Balance_Item.ItemType","WeiJiao"),
+    Hu = pb.enum("Maajan_Blanace_Player.BalanceStatus","Hu"),
+    JiaoPai = pb.enum("Maajan_Blanace_Player.BalanceStatus","JiaoPai"),
+    WeiJiao = pb.enum("Maajan_Blanace_Player.BalanceStatus","WeiJiao"),
 }
 
 local function player_balance_status(p)
@@ -1185,6 +1190,8 @@ function maajan_table:on_game_balance()
             status = player_balance_status(p),
         })
     end
+
+    dump(msg)
 
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
@@ -1877,8 +1884,10 @@ function maajan_table:can_hu(player,in_pai)
 
     local hu_type = self:max_hu_fan(hu_types)
     local gang = table.sum(player.pai.ming_pai,function(s) 
-        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or s.type == SECTION_TYPE.BA_GANG) and 1 or 0
+        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
+                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG) and 1 or 0
     end)
+    dump(gang)
     return gang > 0 or hu_type.score > 1
 end
 
