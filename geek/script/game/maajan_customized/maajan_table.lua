@@ -230,10 +230,7 @@ end
 
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
-    local pre_tiles = {
-        [1] = {1,1,1,2,2,2,3,3,3,4,4,4,5},
-        [2] = {6,6,21,21,21,22,22,22,23,23,23,24,24},
-    }
+    local pre_tiles = {}
 
     for i,pretiles in pairs(pre_tiles) do
         local p = self.players[i]
@@ -579,7 +576,7 @@ function maajan_table:check_action_before_do(event)
     local tile = event.tile
     local waiting_action = self.waiting_player_actions[chair_id]
     if not waiting_action then
-        log.error("no action waiting when on_peng_gang_hu_chi_bei,action:%s",action)
+        log.error("no action waiting when check_action_before_do,chair_id,action:%s,tile:",chair_id,action,tile)
         return
     end
 
@@ -595,7 +592,7 @@ function maajan_table:check_action_before_do(event)
 
     if action & (ACTION.PENG | ACTION.MING_GANG | ACTION.BA_GANG | ACTION.AN_GANG | ACTION.FREE_BA_GANG) > 0 then
         if not actions[action] or not actions[action][tile] then
-            log.error("no action waiting when on_peng_gang_hu_chi_bei,action:%s,tile:%s",action,tile)
+            log.error("no action waiting when check_action_before_do,chair_id,action:%s,tile:%s",chair_id,action,tile)
             return
         end
     end
@@ -935,7 +932,7 @@ function maajan_table:calculate_men(p,men)
                 if p ~= pj and (p.hu or (not p.hu and not pj.ting))then
                     types[j] = types[j] or {}
                     table.insert(types[j],{
-                        type = BalanceItemType.ZiMo,
+                        type = BalanceItemType.MenZiMo,
                         typescore = {type = t,score = -hu_score,tile = men.tile,count = 1}
                     })
                 end
