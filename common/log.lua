@@ -9,7 +9,9 @@ local function debuginfo()
 end
 
 local function strtime()
-    return os.date("[%Y-%m-%d %H:%M:%S]")
+    local time = skynet.time()
+    local ms = math.ceil((time % 1) * 1000)
+    return string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),ms)
 end
 
 local log = {}
