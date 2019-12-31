@@ -993,6 +993,7 @@ function on_ss_change_game(guid)
 	-----------
 	onlineguid[player.guid] = nil
 	onlineguid.control(player,"goserver",def_game_id)
+	onlineguid[player.guid] = nil
 	
 	-- 定时存档
 	local guid = player.guid

@@ -140,7 +140,7 @@ function base_character:forced_exit()
 	local table_id = self.table_id
 	local chair_id = self.chair_id
 
-	if tb:player_stand_up(self,enum.STANDUP_REASON_FORCE) then
+	if not tb:player_stand_up(self,enum.STANDUP_REASON_FORCE) then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,enum.STANDUP_REASON_FORCE)
 		return
 	end
