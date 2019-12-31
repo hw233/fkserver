@@ -191,9 +191,10 @@ function maajan_table:start(player_count)
     }
 
     self.cur_state_FSM             = FSM_S.PER_BEGIN
-    local zhuang =  math.random(1,player_count)
-    self.zhuang = zhuang
-	self.chu_pai_player_index      = zhuang --出牌人的索引
+    if not self.zhuang then 
+        self.zhuang = self.private_id and self.conf.owner.chair_id or math.random(1,self.chair_count)
+    end
+	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
     self.waiting_player_actions    = {}
 	self:update_state(FSM_S.PER_BEGIN)
@@ -1364,7 +1365,72 @@ function maajan_table:on_game_balance()
     self:on_game_over()
 end
 
+function maajan_table:do_ding_zhuang(next_zhuang)
+    for chair_id,p in pairs(self.players) do
+        if chair_id ~= next_zhuang then
+            p.lian_zhuang_count = 0
+        else
+            p.lian_zhuang_count = (p.lian_zhuang_count or 0) + 1
+        end
+    end
+    self.zhuang = next_zhuang
+end
+
+function maajan_table:ding_zhuang()
+    local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+    if hu_count == 0 then
+        local jiao_count = table.sum(self.players,function(p) return p.ting and 1 or 0 end)
+        if jiao_count == 0 or jiao_count == self.chair_count then
+            self:do_ding_zhuang(self.zhuang)
+            return
+        end
+
+        if self.chair_count > 2 and jiao_count == self.chair_count - 1 then
+            for chair_id,p in pairs(self.players) do
+                if not p.ting then
+                    self:do_ding_zhuang(chair_id)
+                end
+            end
+            return
+        end
+
+        local zhuang_p = self.players[self.zhuang]
+        if zhuang_p.ting then 
+            self:do_ding_zhuang(self.zhuang)
+            return
+        end
+
+        local next_zhuang = (self.zhuang + 1) % self.chair_count + 1
+        self:do_ding_zhuang(next_zhuang)
+        return
+    end
+
+    if self.chair_count > 2 and hu_count == self.chair_count - 1 then
+        for chair_id,p in pairs(self.players) do
+            if not p.hu then
+                self:do_ding_zhuang(chair_id)
+            end
+        end
+        return
+    end
+
+    local max_chair_id = 0
+    for chair_id,p in pairs(self.players) do
+        if chair_id > chair_id and p.hu then
+            max_chair_id = chair_id
+        end
+    end
+
+    if max_chair_id > 0 then
+        self:do_ding_zhuang(max_chair_id)
+    end
+
+    self:do_ding_zhuang(self.zhuang)
+end
+
 function maajan_table:on_game_over()
+    self:ding_zhuang()
+
     self.do_logic_update = false
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
@@ -1404,7 +1470,6 @@ function maajan_table:on_game_over()
             end
         end
     end
-
     base_table.on_game_over(self)
 end
 
