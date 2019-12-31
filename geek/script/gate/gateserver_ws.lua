@@ -48,7 +48,6 @@ local function read(fd,sz)
     end
 
 	if sz == nil then
-		-- read some bytes
 		local ret = socketdriver.readall(c.buffer, buffer_pool)
 		if ret ~= "" then
 			return ret
@@ -102,14 +101,17 @@ local function writefunc(fd)
 end
 
 function gateserver.openclient(fd)
+    log.info("openclient %d",fd)
 	if connection[fd] then
 		socketdriver.start(fd)
 	end
 end
 
 function gateserver.closeclient(fd)
+    log.warning("closeclient %d",fd)
 	local c = connection[fd]
-	if c then
+    if c then
+        log.warning("forgtive close socket %d",fd)
         socketdriver.close(fd)
         connection[fd] = nil
 	end
@@ -156,20 +158,21 @@ function gateserver.start(handler)
     local function close_fd(fd)
 		local c = connection[fd]
         if c then
-            log.warning("close_fd,fd:%d,addr:%s",fd,c.addr)
+            log.warning("close_fd,fd:%d,addr:%s",fd,c.addr)            
             if c.co then
                 wakeup(c)
             end
-			connection[fd] = nil
+            connection[fd] = nil
+            if handler.disconnect then
+				handler.disconnect(fd)
+            end
+
 			client_number = client_number - 1
 		end
 	end
 
     local function close(fd)
         if fd ~= socket then
-			if handler.disconnect then
-				handler.disconnect(fd)
-			end
 			close_fd(fd)
         else
             log.warning("listen fd: %d closed...",socket)
@@ -204,8 +207,8 @@ function gateserver.start(handler)
     end
 
     local function ws_close(fd,code,reason)
+        log.warning("websocket close,%d code:%s,reason:%s",fd,code,reason)
         close(fd)
-        log.warning("websocket close,code:%s,reason:%s",code,reason)
     end
     
     local ws_frame_dispatch = {
@@ -257,7 +260,7 @@ function gateserver.start(handler)
     local function dispatch_queue(fd)
         local framecode,msg,reason = ws_pick_msg(fd)
         if not framecode then
-            log.error("websocket parse frame error:%s",msg)
+            log.warning("websocket parse frame error:%s",msg)
             close(fd)
             return
         end
@@ -291,8 +294,9 @@ function gateserver.start(handler)
         skynet.fork(dispatch_queue,fd)
     end
 
-    local function fake_close(...)
-
+    local function socket_close(fd,...)
+        log.warning("socket close %d",fd)
+        close_fd(fd)
     end
     
     local socket_message = {
@@ -301,7 +305,7 @@ function gateserver.start(handler)
         -- SKYNET_SOCKET_TYPE_CONNECT = 2
         [2] = function(fd, _ , addr) end,
         -- SKYNET_SOCKET_TYPE_CLOSE = 3
-        [3] = fake_close,
+        [3] = socket_close,
         -- SKYNET_SOCKET_TYPE_ACCEPT = 4
         [4] = open,
         -- SKYNET_SOCKET_TYPE_ERROR = 5
