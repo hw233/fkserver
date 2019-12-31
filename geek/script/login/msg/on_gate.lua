@@ -402,7 +402,7 @@ function on_cl_login(msg,gate)
 
         dump(info)
 
-        log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s", 
+        log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s",
             account, game_id, info.session_id, info.gate_id)
         return info,game_id
     end
@@ -415,6 +415,8 @@ function on_cl_login(msg,gate)
             result = enum.LOGIN_RESULT_NO_DEFAULT_LOBBY,
         }
     end
+
+    channel.call("db.?","msg","SD_RegAccount",info)
 
     channel.publish("db.?","msg","LD_LogLogin",{
         guid = info.guid,

@@ -108,7 +108,7 @@ function on_SD_LogProxyCostPlayerMoney(msg)
 end
 
 function on_ld_log_login(msg)
-    log.info( "login step db.DL_VerifyAccountResult ok,guid=%d", msg.guid )
+    log.info( "login step db.DL_VerifyAccountResult ok,guid=%d", msg.guid)
 end
 
 

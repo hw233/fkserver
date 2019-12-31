@@ -16,7 +16,6 @@ require "timer"
 local add_timer = add_timer
 
 require "table_func"
-local parse_table = parse_table
 server_start_time =  os.time()
 local server_start_time = server_start_time
 
@@ -133,9 +132,8 @@ function on_SD_Get_Instructor_Weixin(game_id, msg)
 		})
 	end
 	print("---------------------end")
-	-----------------------------------------
-
 end
+
 -- 玩家退出
 function on_s_logout(msg)
 	-- 上次在线时间
@@ -2704,4 +2702,14 @@ function get_binding_bankcard_num(msg)
 		guid = guid,
 		bank_card_num = tonumber(data[1])
 	}
+end
+
+function on_reg_account(msg)
+	dump(msg)
+	local sql = string.format(
+			[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,register_time,ip)
+			values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+			msg.guid,msg.account,msg.nickname,msg.level,msg.login_ip,msg.open_id,msg.open_id_icon,msg.login_ip)
+	local res = dbopt.account:query(sql)
+	dump(res)
 end
