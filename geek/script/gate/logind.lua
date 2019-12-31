@@ -414,10 +414,13 @@ function MSG.CL_Auth(msg,session)
         nickname = userinfo.nickname,
         open_id_icon = userinfo.headimgurl,
         sex = userinfo.sex,
+        package_name = msg.package_name,
+        phone_type = msg.phone_type,
     },session)
 end
 
 function MSG.CL_Login(msg,session)
+    dump(msg)
     local fd = session.fd
     if logining[fd] then
         netmsgopt.send(fd,"LC_Login",{

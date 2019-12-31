@@ -248,7 +248,7 @@ end
 
 -- 玩家退出 
 function logout(guid,offline)
-	log.info("===========logout %d,offline:%s",guid,offline)
+	log.info("===========logout %s,offline:%s",guid,offline)
 	local player = base_players[guid]
 	if not player then
 		log.error("logout,guid[%s] not find in game= %s", guid, def_game_id)
