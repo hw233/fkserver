@@ -19,6 +19,8 @@ message CL_Auth{
 	enum MsgID { Nil = 0; ID = 997;}
 	string code = 1;
 	string auth_platform = 2;
+	string phone_type = 3;
+	string package_name = 4;
 }
 
 message LC_Auth{

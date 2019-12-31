@@ -132,7 +132,7 @@ local function clean_when_start()
     for _,pattern in pairs(key_patterns) do
 		local keys = reddb:keys(pattern)
         for _,key in pairs(keys) do
-            print("redis del",key)
+            log.info("redis del %s",key)
             reddb:del(key)
         end
     end

@@ -109,6 +109,27 @@ end
 
 function on_ld_log_login(msg)
     log.info( "login step db.DL_VerifyAccountResult ok,guid=%d", msg.guid)
+    local res = dbopt.account:query(
+        "update t_account set login_time = NOW(),login_count = login_count + 1,last_login_ip = '%s' WHERE guid = %d;",
+        msg.ip,msg.guid)
+    if res.errno then
+        log.error("on_ld_log_login update t_account info throw exception.[%d],[%s]",res.errno,res.err)
+        return
+    end
+
+    res = dbopt.log:query(
+        [[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,platform_id)
+            values(%d,'%s','%s','%s',NOW(),NOW(),'%s');]],
+        msg.guid,
+        msg.version,
+        msg.phone_type or "unkown",
+        msg.ip,
+        msg.platform_id or "")
+
+    if res.errno then
+        log.error("on_ld_log_login insert into t_log_login info throw exception.[%d],[%s]",res.errno,res.err)
+        return
+    end
 end
 
 

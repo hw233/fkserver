@@ -57,7 +57,7 @@ function on_s_logout(msg)
     return true
 end
 
-local function open_id_login(msg)
+local function open_id_login(msg,gate)
     local ip = msg.ip
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
@@ -72,7 +72,7 @@ local function open_id_login(msg)
             open_id = msg.open_id,
             sex = msg.sex,
             open_id_icon = msg.open_id_icon or default_open_id_icon,
-            client_version = msg.version,
+            version = msg.version,
             login_ip = ip,
             phone = "",
             diamond = 0,
@@ -87,10 +87,14 @@ local function open_id_login(msg)
             imei = "",
             is_guest = true,
             login_time = os.time(),
+            package_name = msg.package_name,
+            phone_type = msg.phone_type,
         }
 
         reddb:hmset("player:info:"..tostring(guid),info)
         reddb:set("player:account:"..tostring(msg.open_id),guid)
+
+        channel.call("db.?","msg","LD_RegAccount",info)
 
         return enum.LOGIN_RESULT_SUCCESS,info
     end
@@ -416,8 +420,6 @@ function on_cl_login(msg,gate)
         }
     end
 
-    channel.call("db.?","msg","SD_RegAccount",info)
-
     channel.publish("db.?","msg","LD_LogLogin",{
         guid = info.guid,
         phone = msg.phone,
@@ -450,10 +452,6 @@ function on_cl_login(msg,gate)
     info.result = enum.LOGIN_RESULT_SUCCESS
  
     return info,game_id
-end
-
-function create_guest_account(msg)
-
 end
 
 function on_cl_reg_account(msg,gate)  

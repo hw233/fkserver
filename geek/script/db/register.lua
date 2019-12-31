@@ -96,5 +96,4 @@ register_dispatcher("SD_ReqPickPlayerBonus",on_sd_pick_bonus_hongbao)
 register_dispatcher("SD_ReqQueryPlayerBonus",on_sd_query_bonus_hongbao)
 register_dispatcher("SD_QueryPlayerCurrentBonusLimitInfo",on_sd_query_bonus_activity_limit_info)
 register_dispatcher("SD_UpdatePlayerCurrentBonusLimitInfo",on_sd_update_bonus_activity_limit_info)
-register_dispatcher("SD_RegAccount",on_reg_account)
 

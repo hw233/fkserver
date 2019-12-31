@@ -133,8 +133,6 @@ function on_ls_login_notify(guid,reconnect)
 		return
 	end
 
-	log.warning("on_ls_login_notify %s %s",player.guid,player)
-
 	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
 	player.risk = player.risk or 0

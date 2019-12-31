@@ -1758,105 +1758,108 @@ function on_ld_verify_account(msg)
 end
 
 function on_ld_reg_account(msg)
-	local validatebox_ip = reddb:get("validatebox_feng_ip")
-	local is_validatebox_block = validatebox_ip and tonumber(validatebox_ip) or 0
-	local account = msg.pb_regaccount.account
+	-- local validatebox_ip = reddb:get("validatebox_feng_ip")
+	-- local is_validatebox_block = validatebox_ip and tonumber(validatebox_ip) or 0
+	-- local account = msg.account
 
-	if account then
-		log.warning( "has account" )
+	local res = dbopt.account:query(
+					[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
+						register_time,ip,version,phone_type,package_name) 
+					values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
+					msg.guid,
+					msg.account,
+					msg.nickname,
+					msg.level,
+					msg.login_ip,
+					msg.open_id,
+					msg.open_id_icon,
+					msg.login_ip,
+					msg.version,
+					msg.phone_type or "unkown",
+					msg.package_name or ""
+				)
+	if res.errno then
+		log.error("on_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
 		return
 	end
 
-	local sql = 
-		string.format( "CALL create_guest_account('%s','%d','%s','%s','%s','%s','%s','%s','%s',%d,'%s','%s','%d','%d')"
-			,msg.pb_regaccount.phone
-			,msg.pb_regaccount.phone_type
-			,msg.pb_regaccount.version
-			,msg.pb_regaccount.channel_id
-			,msg.pb_regaccount.package_name
-			,msg.pb_regaccount.imei
-			,msg.pb_regaccount.ip
-			,msg.pb_regaccount.deprecated_imei
-			,msg.pb_regaccount.platform_id
-			,is_validatebox_block
-			,msg.pb_regaccount.shared_id
-			,msg.pb_regaccount.promotion_info
-			,msg.pb_regaccount.invite_code
-			,msg.pb_regaccount.invite_type)
-	log.info( sql )
+	res = dbopt.log:query(
+		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
+			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+		msg.guid,
+		msg.version,
+		msg.phone_type or "unkown",
+		msg.ip,
+		msg.platform_id or ""
+	)
 
-	local reply = dbopt.account:query(sql)
-	if reply then
-		if reply.ret == 998 then
-			log.error( "guest ip[%s] validate failed", msg.pb_regaccount.ip )
-			reply.guest_account_result.ret = LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT
-		elseif reply.ret() == 999 then
-			log.error( "guest ip[%s] failed", msg.pb_regaccount.ip )
-			reply.guest_account_result.ret = LOGIN_RESULT_CREATE_MAX
-		elseif (reply.ret() == LOGIN_RESULT_NEED_INVITE_CODE) then
-			log.error( "reg account,create guest invite_code [%s] failed", msg.pb_regaccount.invite_code )
-			reply.guest_account_result.ret = LOGIN_RESULT_NEED_INVITE_CODE
-		else
-			local inviter_guid = reply.inviter_guid
-			local inviter_account = reply.inviter_account
-
-			reply.guest_account_result = reply
-			reply.phone = msg.pb_regaccount.phone
-			reply.phone_type = msg.pb_regaccount.phone_type
-			reply.version = msg.pb_regaccount.version
-			reply.channel_id = msg.pb_regaccount.channel_id
-			reply.package_name = msg.pb_regaccount.package_name
-			reply.imei = msg.pb_regaccount.imei
-			reply.ip = msg.pb_regaccount.ip
-			reply.ip_area = msg.pb_regaccount.ip_area
-			reply.platform_id = msg.pb_regaccount.platform_id
-
-			if reply.ret == 0 and reply.vip == 100 then
-				local imeitemp = reply.imei
-				local deprecated_imeitemp = msg.pb_regaccount.deprecated_imei
-				if imeitemp ~= msg.pb_regaccount.imei then
-					deprecated_imeitemp = msg.pb_regaccount().imei()
-				end
-
-				sql = string.format( [[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`,
-												`login_version`, `login_channel_id`, `login_package_name`,  `login_imei`, `login_ip`,
-												`channel_id` , `is_guest` , `create_time` , `register_time` , `deprecated_imei` , `platform_id`,`seniorpromoter`) "
-												"VALUES('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ,'%s' ,
-												FROM_UNIXTIME('%s'), if ('%d'>'0', FROM_UNIXTIME('%d'), null), '%s' , '%s' , '%s') ]]
-												,reply.guid
-												,msg.pb_regaccount.phone
-												,msg.pb_regaccount.phone_type
-												,msg.pb_regaccount.version
-												,msg.pb_regaccount.channel_id
-												,msg.pb_regaccount.package_name
-												,imeitemp
-												,msg.pb_regaccount.ip
-												,reply.channel_id
-												,reply.is_guest
-												,reply.create_time
-												,reply.register_time
-												,deprecated_imeitemp
-												,msg.pb_regaccount.platform_id
-												,reply.seniorpromoter
-												)
-				log.info(sql)
-				db.account:query(sql)
-
-				-- 插入代理关系
-				db.account:query(
-					"INSERT INTO proxy.player_proxy_relationship(guid,proxy_guid,proxy_account) VALUES(%d,%d,'%s')"
-					, reply.guid, inviter_guid, inviter_account
-					)
-			else
-				-- 维护中
-				log.info( "game is MaintainStatus" )
-			end
-		end
-	else
-		log.error( "guest imei[%s] failed", msg.pb_regaccount.imei )
-		reply.guest_account_result = LOGIN_RESULT_DB_ERR
+	if res.errno then
+		log.error("on_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
+		return
 	end
-	return reply
+
+	-- local reply = dbopt.account:query(sql)
+	-- if reply then
+	-- 		local inviter_guid = reply.inviter_guid
+	-- 		local inviter_account = reply.inviter_account
+
+	-- 		reply.guest_account_result = reply
+	-- 		reply.phone = msg.phone
+	-- 		reply.phone_type = msg.phone_type
+	-- 		reply.version = msg.version
+	-- 		reply.channel_id = msg.channel_id
+	-- 		reply.package_name = msg.package_name
+	-- 		reply.imei = msg.imei
+	-- 		reply.ip = msg.ip
+	-- 		reply.ip_area = msg.ip_area
+	-- 		reply.platform_id = msg.platform_id
+
+	-- 		if reply.ret == 0 and reply.vip == 100 then
+	-- 			local imeitemp = reply.imei
+	-- 			local deprecated_imeitemp = msg.deprecated_imei
+	-- 			if imeitemp ~= msg.imei then
+	-- 				deprecated_imeitemp = msg().imei()
+	-- 			end
+
+	-- 			sql = string.format( [[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`,
+	-- 											`login_version`, `login_channel_id`, `login_package_name`,  `login_imei`, `login_ip`,
+	-- 											`channel_id` , `is_guest` , `create_time` , `register_time` , `deprecated_imei` , `platform_id`,`seniorpromoter`) "
+	-- 											"VALUES('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ,'%s' ,
+	-- 											FROM_UNIXTIME('%s'), if ('%d'>'0', FROM_UNIXTIME('%d'), null), '%s' , '%s' , '%s') ]]
+	-- 											,reply.guid
+	-- 											,msg.phone
+	-- 											,msg.phone_type
+	-- 											,msg.version
+	-- 											,msg.channel_id
+	-- 											,msg.package_name
+	-- 											,imeitemp
+	-- 											,msg.ip
+	-- 											,reply.channel_id
+	-- 											,reply.is_guest
+	-- 											,reply.create_time
+	-- 											,reply.register_time
+	-- 											,deprecated_imeitemp
+	-- 											,msg.platform_id
+	-- 											,reply.seniorpromoter
+	-- 											)
+	-- 			log.info(sql)
+	-- 			db.account:query(sql)
+
+	-- 			-- 插入代理关系
+	-- 			db.account:query(
+	-- 				"INSERT INTO proxy.player_proxy_relationship(guid,proxy_guid,proxy_account) VALUES(%d,%d,'%s')"
+	-- 				, reply.guid, inviter_guid, inviter_account
+	-- 				)
+	-- 		else
+	-- 			-- 维护中
+	-- 			log.info( "game is MaintainStatus" )
+	-- 		end
+	-- 	end
+	-- else
+	-- 	log.error( "guest imei[%s] failed", msg.imei )
+	-- 	reply.guest_account_result = LOGIN_RESULT_DB_ERR
+	-- end
+	-- return reply
 end
 
 
@@ -2706,10 +2709,39 @@ end
 
 function on_reg_account(msg)
 	dump(msg)
-	local sql = string.format(
-			[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,register_time,ip)
-			values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
-			msg.guid,msg.account,msg.nickname,msg.level,msg.login_ip,msg.open_id,msg.open_id_icon,msg.login_ip)
-	local res = dbopt.account:query(sql)
-	dump(res)
+	local res = dbopt.account:query(
+					[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
+						register_time,ip,version,phone_type,package_name) 
+					values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
+					msg.guid,
+					msg.account,
+					msg.nickname,
+					msg.level,
+					msg.login_ip,
+					msg.open_id,
+					msg.open_id_icon,
+					msg.login_ip,
+					msg.version,
+					msg.phone_type or "unkown",
+					msg.package_name or ""
+				)
+	if res.errno then
+		log.error("on_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
+
+	res = dbopt.log:query(
+		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
+			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+		msg.guid,
+		msg.version,
+		msg.phone_type or "unkown",
+		msg.ip,
+		msg.platform_id or ""
+	)
+
+	if res.errno then
+		log.error("on_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
 end
