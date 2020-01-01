@@ -111,7 +111,7 @@ function gateserver.closeclient(fd)
     log.warning("closeclient %d",fd)
 	local c = connection[fd]
     if c then
-        log.warning("forgtive close socket %d",fd)
+        log.warning("positive close socket %d",fd)
         socketdriver.close(fd)
         connection[fd] = nil
 	end

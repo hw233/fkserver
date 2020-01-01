@@ -57,6 +57,48 @@ function on_s_logout(msg)
     return true
 end
 
+local function reg_account(msg)
+    local guid = reddb:get("player:account:"..tostring(msg.open_id))
+    if guid then
+        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC
+    end
+
+    guid = reddb:incr("player:global:guid")
+    guid = tonumber(guid)
+    local info = {
+        guid = guid,
+        account = msg.open_id,
+        nickname = msg.nickname or ("guest_"..tostring(guid)),
+        open_id = msg.open_id,
+        sex = msg.sex,
+        open_id_icon = msg.open_id_icon or default_open_id_icon,
+        version = msg.version,
+        login_ip = msg.ip,
+        phone = msg.phone or "",
+        diamond = 0,
+        gold = 0,
+        status = 0,
+        room_card = 0,
+        user_type = 1,
+        tickets = 0,
+        money = 0,
+        level = 0,
+        bank = 0,
+        imei = "",
+        is_guest = true,
+        login_time = os.time(),
+        package_name = msg.package_name,
+        phone_type = msg.phone_type,
+    }
+
+    reddb:hmset("player:info:"..tostring(guid),info)
+    reddb:set("player:account:"..tostring(msg.open_id),guid)
+
+    channel.call("db.?","msg","LD_RegAccount",info)
+
+    return enum.LOGIN_RESULT_SUCCESS,info
+end
+
 local function open_id_login(msg,gate)
     local ip = msg.ip
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
@@ -64,39 +106,7 @@ local function open_id_login(msg,gate)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     guid = tonumber(guid)
     if not guid then
-        guid = reddb:incr("player:global:guid")
-        local info = {
-            guid = guid,
-            account = msg.open_id,
-            nickname = msg.nickname or ("guest_"..tostring(guid)),
-            open_id = msg.open_id,
-            sex = msg.sex,
-            open_id_icon = msg.open_id_icon or default_open_id_icon,
-            version = msg.version,
-            login_ip = ip,
-            phone = "",
-            diamond = 0,
-            gold = 0,
-            status = 0,
-            room_card = 0,
-            user_type = 1,
-            tickets = 0,
-            money = 0,
-            level = 0,
-            bank = 0,
-            imei = "",
-            is_guest = true,
-            login_time = os.time(),
-            package_name = msg.package_name,
-            phone_type = msg.phone_type,
-        }
-
-        reddb:hmset("player:info:"..tostring(guid),info)
-        reddb:set("player:account:"..tostring(msg.open_id),guid)
-
-        channel.call("db.?","msg","LD_RegAccount",info)
-
-        return enum.LOGIN_RESULT_SUCCESS,info
+        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
     end
 
     local info = base_players[guid]
@@ -115,17 +125,17 @@ local function wx_auth(msg)
     local auth = json.decode(authjson)
     if auth.errcode then
         log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
-        return enum.LOGIN_RESULT_FAILED,auth.errmsg
+        return tonumber(auth.errcode),auth.errmsg
     end
 
     local _,userinfojson = http_get(string.format(conf.wx_userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
     local userinfo = json.decode(userinfojson)
     if userinfo.errcode then
         log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
-        return enum.LOGIN_RESULT_FAILED,auth.errmsg
+        return tonumber(auth.errcode),auth.errmsg
     end
 
-    return enum.LOGIN_RESULT_SUCCESS,userinfo
+    return nil,userinfo
 end
 
 local function cn_auth(msg)
@@ -135,7 +145,6 @@ end
 local function xl_auth(msg)
 
 end
-
 
 function on_cl_auth(msg)
     local auth_platforms = {
@@ -149,7 +158,21 @@ function on_cl_auth(msg)
         return enum.LOGIN_RESULT_TEL_ERR
     end
 
-    return do_auth(msg)
+    local errcode,auth = do_auth(msg)
+    if errcode then
+        return enum.LOGIN_RESULT_FAILED,auth
+    end
+
+    return reg_account({
+        ip = msg.ip,
+        open_id = auth.openid,
+        nickname = auth.nickname,
+        open_id_icon = auth.headimgurl,
+        sex = auth.sex,
+        package_name = msg.package_name,
+        phone_type = msg.phone_type,
+        version = msg.version,
+    })
 end
 
 
@@ -372,11 +395,30 @@ local function account_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,player
 end
 
+local function h5_login(msg,gate)
+    local guid = reddb:get("player:account:"..tostring(msg.open_id))
+    if not guid then
+        return reg_account({
+            open_id = msg.open_id,
+            version = msg.version,
+            phone_type = msg.phone_type,
+            package_name = msg.package_name,
+            ip = msg.ip,
+        })
+    end
+
+    local info = base_players[tonumber(guid)]
+
+    return enum.LOGIN_RESULT_SUCCESS,info
+end
+
 function on_cl_login(msg,gate)
     local account = (msg.account and msg.account ~= "") and msg.account or msg.open_id
 
     local ret,info
-    if msg.open_id and msg.open_id ~= "" then
+    if msg.phone_type == "H5" then
+        ret,info = h5_login(msg,gate)
+    elseif msg.open_id and msg.open_id ~= "" then
         ret,info = open_id_login(msg,gate)
     elseif msg.sms_no and msg.sms_no ~= "" then
         ret,info = sms_login(msg,gate)

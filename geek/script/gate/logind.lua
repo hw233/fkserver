@@ -385,7 +385,7 @@ function MSG.CL_Auth(msg,session)
         return true
     end
 
-    if  (not msg.code or msg.code == "") or 
+    if  (not msg.code or msg.code == "") or
         (not msg.auth_platform or msg.auth_platform == "") then
         netmsgopt.send(fd,"LC_Auth",{
             result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
@@ -411,11 +411,9 @@ function MSG.CL_Auth(msg,session)
     MSG.CL_Login({
         ip = msg.ip,
         open_id = userinfo.openid,
-        nickname = userinfo.nickname,
-        open_id_icon = userinfo.headimgurl,
-        sex = userinfo.sex,
         package_name = msg.package_name,
         phone_type = msg.phone_type,
+        version = msg.version,
     },session)
 end
 

@@ -21,6 +21,7 @@ message CL_Auth{
 	string auth_platform = 2;
 	string phone_type = 3;
 	string package_name = 4;
+	string version = 5;
 }
 
 message LC_Auth{
@@ -60,7 +61,7 @@ message CL_Login {
 	string package_name = 9;				// 安装包名字
 	string ip_area = 10;					// 客户端ip地区
 	string platform_id = 12;				// 客户端 平台id
-	string open_id = 13;                 //	open_id 授权服务器，玩家id唯一开放id
+	string open_id = 13;                 	//	open_id 授权服务器，玩家id唯一开放id
 }
 
 // 登录验证框

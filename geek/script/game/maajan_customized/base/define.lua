@@ -98,8 +98,8 @@ end
 --状态机  状态
 define.FSM_state = {
     PER_BEGIN       			= pb.enum("FSM_STATE","PER_BEGIN"),	--预开始
-    XI_PAI		    			= pb.enum("FSM_STATE","XI_PAI"),    --洗牌 
-	BU_HUA_BIG					= pb.enum("FSM_STATE","BU_HUA_BIG"),	--补花
+	XI_PAI		    			= pb.enum("FSM_STATE","XI_PAI"),    --洗牌 
+	CHECK_TING 					= pb.enum("FSM_STATE","CHECK_TING"),	--天听
 	WAIT_MO_PAI  				= pb.enum("FSM_STATE","WAIT_MO_PAI"),	--等待 摸牌
 	WAIT_CHU_PAI  				= pb.enum("FSM_STATE","WAIT_CHU_PAI"),	--等待 出牌
 	WAIT_ACTION_AFTER_CHU_PAI	= pb.enum("FSM_STATE","WAIT_ACTION_AFTER_CHU_PAI"),	--等待 碰 杠 胡, 用户出牌的时候
@@ -201,6 +201,7 @@ local HU_TYPE = {
 	MEN							= pb.enum("HU_TYPE","MEN"), 	--闷
 	MEN_ZI_MO					= pb.enum("HU_TYPE","MEN_ZI_MO"), --自摸闷
 	DIAN_PAO 					= pb.enum("HU_TYPE","DIAN_PAO"), --点炮
+	LIAN_ZHUANG					= pb.enum("HU_TYPE","LIAN_ZHUANG"), --连庄
 }
 
 define.HU_TYPE = HU_TYPE
@@ -293,6 +294,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.JIAO_PAI]				= {name = "JIAO_PAI",score = 0},				--叫牌
 	[HU_TYPE.MEN]					= {name = "MEN",score = 0},						--闷
 	[HU_TYPE.MEN_ZI_MO]				= {name = "MEN_ZI_MO",score = 0},				--自摸闷
+	[HU_TYPE.LIAN_ZHUANG]			= {name = "LIAN_ZHUANG",score = 1},				--连庄
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO

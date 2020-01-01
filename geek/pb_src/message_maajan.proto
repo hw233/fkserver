@@ -90,6 +90,7 @@ enum HU_TYPE{
 	JIAO_PAI				= 85;	//叫牌
 	MEN 					= 86;	//闷
 	MEN_ZI_MO				= 87; 	//自摸闷
+	LIAN_ZHUANG				= 88; 	//连庄
 }
 
 
@@ -133,14 +134,13 @@ enum SECTION_TYPE {
 enum FSM_STATE {
     PER_BEGIN       		= 0;	//预开始
     XI_PAI		    		= 1;    //洗牌 
-	BU_HUA_BIG				= 2;	//补花
+	CHECK_TING				= 2;	//补花
 	WAIT_MO_PAI  			= 4;	//等待 摸牌
 	WAIT_CHU_PAI  			= 5;	//等待 出牌
 	WAIT_ACTION_AFTER_CHU_PAI	= 6;	//等待 碰 杠 胡 用户出牌的时候
 	WAIT_ACTION_AFTER_MO_PAI 	= 7;	//等待 胡 用户巴杠的时候，抢胡
 	GAME_BALANCE			= 15;	//结算
 	GAME_CLOSE				= 16;	//关闭游戏
-	GAME_ERR				= 17;	//发生错误
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 

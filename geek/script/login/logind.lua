@@ -26,7 +26,7 @@ function CMD.start(conf)
 end
 
 skynet.start(function() 
-    skynet.dispatch("lua",function(_,_,cmd,...) 
+    skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
         if not f then
             log.error("unknow cmd:%s",cmd)

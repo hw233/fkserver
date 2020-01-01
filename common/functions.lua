@@ -599,12 +599,14 @@ function table.slice(tb,head,trail)
 end
 
 function table.incr(tb,key,v)
+    tb[key] = tb[key] or 0
     local value = tb[key] + (v or 1)
 	tb[key] = value
 	return value
 end
 
 function table.decr(tb,key,v)
+    tb[key] = tb[key] or 0
     local value = tb[key] - (v or 1)
 	tb[key] = value
 	return value
@@ -625,6 +627,18 @@ function table.sum(tb,agg)
     end
 
     return value
+end
+
+function table.max(tb,agg)
+    local maxi,maxv
+    for i,v in pairs(tb) do
+        local aggv = agg and agg(v) or v
+        if not maxv or aggv > maxv then
+            maxv = aggv
+            maxi = i
+        end
+    end
+    return maxi,maxv
 end
 
 function table.logic_and(tb,agg)
