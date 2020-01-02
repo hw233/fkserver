@@ -82,6 +82,15 @@ function maajan_table:clear()
     self.cur_state_FSM = nil
 end
 
+function maajan_table:do_ding_zhuang(next_zhuang)
+    for chair_id,_ in pairs(self.players) do
+        if chair_id ~= next_zhuang then
+            self.lian_zhuang[chair_id] = 0
+        end
+    end
+    self.zhuang = next_zhuang
+    self.lian_zhuang[next_zhuang] = self.lian_zhuang[next_zhuang] + 1
+end
 
 function maajan_table:start(player_count)
 	local ret = base_table.start(self,player_count)
@@ -125,7 +134,7 @@ function maajan_table:start(player_count)
     end
 
     self.lian_zhuang = self.lian_zhuang or table.fill(nil,0,1,self.chair_count)
-    self.lian_zhuang[self.zhuang] = self.lian_zhuang[self.zhuang] + 1
+    self:do_ding_zhuang(self.zhuang)
 
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
@@ -199,7 +208,7 @@ function maajan_table:on_action_when_check_ting(event)
     end
 
     local w_act = self.waiting_player_actions[chair_id]
-    if not w_act or not w_act.actions or not w_act.actions[action] then
+    if (not w_act or not w_act.actions or not w_act.actions[action]) and action ~= ACTION.PASS then
         log.error("not action is wating,chair_id:%s,action:%s,tile:%s",chair_id,action,tile)
         return
     end
@@ -222,6 +231,11 @@ function maajan_table:on_action_when_check_ting(event)
             self:do_mo_pai()
         end
 
+        return
+    end
+
+    if action == ACTION.PASS then
+        self:do_mo_pai()
         return
     end
 
@@ -967,7 +981,7 @@ function maajan_table:calculate_hu(p,hu)
             })
         end
 
-        local lian_zhuang_count = table.max({self.lian_zhuang[p.chair_id],self.lian_zhuang[hu.whoee]})
+        local _,lian_zhuang_count = table.max({self.lian_zhuang[p.chair_id],self.lian_zhuang[hu.whoee]})
         if self.lian_zhuang[p.chair_id] > 0 or self.lian_zhuang[hu.whoee] > 0 then
             table.insert(types[p.chair_id].typescore,{
                 score = lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
@@ -1341,7 +1355,7 @@ end
 
 function maajan_table:game_balance(ji_tiles)
     for _,p in pairs(self.players) do
-        if not p.hu and not p.men then
+        if not p.hu and not p.men and not p.ting then
             local ting_tiles = mj_util.is_ting(p.pai)
             if #ting_tiles > 0 then
                 p.jiao = p.jiao or {}
@@ -1481,16 +1495,7 @@ function maajan_table:on_game_balance()
     self:on_game_over()
 end
 
-function maajan_table:do_ding_zhuang(next_zhuang)
-    for chair_id,p in pairs(self.players) do
-        if chair_id ~= next_zhuang then
-            p.lian_zhuang_count = 0
-        else
-            p.lian_zhuang_count = (p.lian_zhuang_count or 0) + 1
-        end
-    end
-    self.zhuang = next_zhuang
-end
+
 
 function maajan_table:ding_zhuang()
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
@@ -1529,7 +1534,7 @@ function maajan_table:ding_zhuang()
 
     local max_chair_id = 0
     for chair_id,p in pairs(self.players) do
-        if chair_id > chair_id and p.hu then
+        if chair_id > max_chair_id and p.hu then
             max_chair_id = chair_id
         end
     end
