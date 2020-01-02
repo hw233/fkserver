@@ -1231,6 +1231,7 @@ function maajan_table:calculate_ting(p)
     end
 
     if not p.hu then return {} end
+    dump(p.hu)
 
     local typescores = {}
     if p.ting then
@@ -1239,12 +1240,14 @@ function maajan_table:calculate_ting(p)
         if p.hu.zi_mo then
             table.insert(typescores[p.chair_id],{type = ptp,score = pscore,count = self.chair_count - 1,})
             for _,pi in pairs(self.players) do
-                typescores[pi.chair_id] = typescores[pi.chair_id] or {}
-                table.insert(typescores[pi.chair_id],{type = ptp,score = pscore,count = 1,})
-                if pi.ting then
-                    local _,piscore = get_ting_info(pi.ting)
-                    table.insert(typescores[pi.chair_id],{type = HU_TYPE.SHA_BAO,score = - piscore,count = 1})
-                    table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = piscore,count = 1})
+                if p ~= pi then
+                    typescores[pi.chair_id] = typescores[pi.chair_id] or {}
+                    table.insert(typescores[pi.chair_id],{type = ptp,score = -pscore,count = 1,})
+                    if pi.ting then
+                        local _,piscore = get_ting_info(pi.ting)
+                        table.insert(typescores[pi.chair_id],{type = HU_TYPE.SHA_BAO,score = - piscore,count = 1})
+                        table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = piscore,count = 1})
+                    end
                 end
             end
         else
@@ -1268,7 +1271,7 @@ function maajan_table:calculate_ting(p)
                     typescores[pi.chair_id] = typescores[pi.chair_id] or {}
         
                     table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = score,count = 1})
-                    table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = - score,count = 1})
+                    table.insert(typescores[pi.chair_id],{type = HU_TYPE.SHA_BAO,score = - score,count = 1})
                 end
             end
         else
@@ -1285,6 +1288,8 @@ function maajan_table:calculate_ting(p)
             table.insert(typescores[whoee.chair_id],{type = HU_TYPE.SHA_BAO,score = - score,count = 1})
         end
     end
+
+    dump(typescores)
     return typescores
 end
 
