@@ -219,6 +219,7 @@ function maajan_table:on_action_when_check_ting(event)
         local ting_tiles = actions[ACTION.TING]
         player.ting = {
             tiles = ting_tiles,
+            ying_bao = true,
         }
         
         self:broadcast2client("SC_Maajan_Do_Action",{
@@ -293,36 +294,32 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [1] = {1,1,1,2,2,2,3,3,3,4,4,4,5},
+        [1] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
         [2] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
     }
 
     for i,pretiles in pairs(pre_tiles) do
         local p = self.players[i]
         if not p then
-            log.error("deal tiles got nil player,chair_id:%d",i)
+            log.error("prepare_tiles got nil player,chair_id:%d",i)
             break
         end
-        local tiles = {}
         for _,tile in pairs(pretiles) do
-            tile = self.dealer:deal_one_on(function(t) return t == tile end)
-            if tile > 0 then
-                table.insert(tiles,tile)
+            local is = self.dealer:deal_one_on(function(t) return t == tile end)
+            if is > 0 then
+                table.incr(p.pai.shou_pai,tile)
+            else
+                log.error("prepare_tiles deal tile is 0")
             end
-        end
-        for _,t in pairs(tiles) do
-            local c = p.pai.shou_pai[t]
-            p.pai.shou_pai[t] = (c or 0) + 1
         end
     end
 
     for i = 1,self.chair_count do
-        local p = self.players[i]
         if not pre_tiles[i] then
+            local p = self.players[i]
             local tiles = self.dealer:deal_tiles(13)
             for _,t in pairs(tiles) do
-                local c = p.pai.shou_pai[t]
-                p.pai.shou_pai[t] = (c or 0) + 1
+                table.incr(p.pai.shou_pai,t)
             end
         end
     end
@@ -374,12 +371,9 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
     end
 
     actions[ACTION.PENG] = nil
-    actions[ACTION.LEFT_CHI] = nil
-    actions[ACTION.MID_CHI] = nil
-    actions[ACTION.RIGHT_CHI] = nil
     local old_ting_tiles = p.men.tiles
     local function is_ting_equal(ls,rs)
-        for lt,_ in pairs(ls) do
+        for lt,_ in pairs(ls or {}) do
             if not rs[lt] then return false end
         end
 
@@ -389,20 +383,15 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
     local shoupai = clone(p.pai.shou_pai)
 
     if actions[ACTION.AN_GANG]  then
-        table.decr(shoupai,mo_pai,4)
+        table.decr(shoupai,mo_pai,3)
         if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
             actions[ACTION.AN_GANG] = nil
         end
-        table.incr(shoupai,mo_pai,4)
+        table.incr(shoupai,mo_pai,3)
     end
 
-    if actions[ACTION.BA_GANG] or actions[ACTION.FREE_BA_GANG] then
-        table.decr(shoupai,mo_pai,1)
-        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
-            actions[ACTION.BA_GANG] = nil
-            actions[ACTION.FREE_BA_GANG]= nil
-        end
-        table.incr(shoupai,mo_pai,1)
+    if actions[ACTION.FREE_BA_GANG] then
+        actions[ACTION.FREE_BA_GANG]= nil
     end
 
     if actions[ACTION.MING_GANG] then
@@ -629,6 +618,12 @@ function maajan_table:on_action_after_mo_pai(evt)
             gang_hua = def.is_action_gang(player.last_action or 0),
         }
 
+        if self.zhuang == chair_id and player.chu_pai_count == 0 then
+            player.ting = {
+                ying_bao = true,
+            }
+        end
+
         self:log_game_action(player,do_action,tile)
         self:broadcast_player_hu(player,do_action)
         self:on_game_balance()
@@ -657,7 +652,8 @@ function maajan_table:on_action_after_mo_pai(evt)
     if do_action == ACTION.TING then
         local ting_tiles = player_actions[ACTION.TING]
         player.ting = {
-            tiles = ting_tiles[tile]
+            tiles = ting_tiles[tile],
+            ruan_bao = true,
         }
 
         self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action,})
@@ -956,19 +952,132 @@ local BalanceItemType = {
     MenZiMo = pb.enum("Maajan_Balance_Item.ItemType","MenZiMo"),
 }
 
+function maajan_table:calculate_yi_kou_er(p,hu)
+    local typescores = {}
+    local yi_kou_er_score = HU_TYPE_INFO[HU_TYPE.ZHUANG].score
+    if not hu.zi_mo then
+        typescores[p.chair_id] = {}
+        typescores[hu.whoee] = {}
+
+        if p.chair_id == self.zhuang then
+            table.insert(typescores[p.chair_id],{
+                score = yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+            })
+
+            table.insert(typescores[hu.whoee],{
+                score = -yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+            })
+        elseif self.zhuang == hu.whoee then
+            table.insert(typescores[p.chair_id],{
+                score = yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+            })
+
+            table.insert(typescores[hu.whoee],{
+                score = -yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+            })
+        end
+    else
+        for chair_id,_ in pairs(self.players) do
+            typescores[chair_id] = {}
+        end
+
+        if self.zhuang == p.chair_id then
+            for _,pj in pairs(self.players) do
+                if p == pj then
+                    table.insert(typescores[p.chair_id],{
+                        score = yi_kou_er_score ,type = HU_TYPE.ZHUANG,count = (self.chair_count - 1),
+                    })
+                else
+                    table.insert(typescores[pj.chair_id],{
+                        score =  - yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+                    })
+                end
+            end
+        else
+            table.insert(typescores[p.chair_id],{
+                score = yi_kou_er_score ,type = HU_TYPE.ZHUANG,count = 1,
+            })
+            table.insert(typescores[self.zhuang],{
+                score =  - yi_kou_er_score,type = HU_TYPE.ZHUANG,count = 1,
+            })
+        end
+    end
+    return typescores
+end
+
+function maajan_table:calculate_lian_zhuang(p,hu)
+    local typescores = {}
+    if not hu.zi_mo then
+        typescores[p.chair_id] = {}
+        typescores[hu.whoee] = {}
+
+        local _,lian_zhuang_count = table.max({self.lian_zhuang[p.chair_id],self.lian_zhuang[hu.whoee]})
+        if self.lian_zhuang[p.chair_id] > 0 or self.lian_zhuang[hu.whoee] > 0 then
+            table.insert(typescores[p.chair_id],{
+                score = lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
+            })
+
+            table.insert(typescores[hu.whoee],{
+                score = -lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
+            })
+        end
+    else
+        for chair_id,_ in pairs(self.players) do
+            typescores[chair_id] = {}
+        end
+
+        local max_chair_id,lian_zhuang_count = table.max(self.lian_zhuang)
+        local lian_zhuang_score = lian_zhuang_count * HU_TYPE_INFO[HU_TYPE.LIAN_ZHUANG].score
+        if max_chair_id == p.chair_id then
+            for _,pj in pairs(self.players) do
+                if p == pj then
+                    table.insert(typescores[p.chair_id],{
+                        score = lian_zhuang_score ,type = HU_TYPE.LIAN_ZHUANG,count = (self.chair_count - 1),
+                    })
+                else
+                    table.insert(typescores[pj.chair_id],{
+                        score =  - lian_zhuang_score,type = HU_TYPE.LIAN_ZHUANG,count = 1,
+                    })
+                end
+            end
+        else
+            table.insert(typescores[p.chair_id],{
+                score = lian_zhuang_score ,type = HU_TYPE.LIAN_ZHUANG,count = 1,
+            })
+            table.insert(typescores[max_chair_id],{
+                score =  - lian_zhuang_score,type = HU_TYPE.LIAN_ZHUANG,count = 1,
+            })
+        end
+    end
+    return typescores
+end
+
+function maajan_table:calculate_zhuang(p,hu)
+    if self.conf.rule.yi_kou_er then
+        return self:calculate_yi_kou_er(p,hu)
+    elseif self.conf.rule.lian_zhuang then
+        return self:calculate_lian_zhuang(p,hu)
+    end
+
+    return {}
+end
+
+function maajan_table:calculate_zhuang_gang_hu(p,hu)
+    
+end
+
 function maajan_table:calculate_hu(p,hu)
-    local player_count = table.nums(self.players)
     local types = {}
     local hu_score,ts = self:get_hu_items(hu)
     if not hu.zi_mo then
-        types[p.chair_id] = types[p.chair_id] or {
+        types[p.chair_id] = {
             type = BalanceItemType.Hu,
-            typescore = {}
+            typescore = {},
         }
 
-        types[hu.whoee] = types[hu.whoee] or {
+        types[hu.whoee] = {
             type = BalanceItemType.Hu,
-            typescore = {}
+            typescore = {},
         }
 
         for _,t in pairs(ts) do
@@ -980,52 +1089,19 @@ function maajan_table:calculate_hu(p,hu)
                 score = -hu_score,type = t,tile = hu.tile,count = 1,
             })
         end
-
-        local _,lian_zhuang_count = table.max({self.lian_zhuang[p.chair_id],self.lian_zhuang[hu.whoee]})
-        if self.lian_zhuang[p.chair_id] > 0 or self.lian_zhuang[hu.whoee] > 0 then
-            table.insert(types[p.chair_id].typescore,{
-                score = lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
-            })
-
-            table.insert(types[hu.whoee].typescore,{
-                score = -lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
-            })
-        end
     else
-        for chair_id,pj in pairs(self.players) do
-            types[chair_id] = types[chair_id] or {
+        for chair_id,_ in pairs(self.players) do
+            types[chair_id] = {
                 type = BalanceItemType.ZiMo,
-                typescore = {}
+                typescore = {},
             }
-        end
-
-        local max_chair_id,lian_zhuang_count = table.max(self.lian_zhuang)
-        if max_chair_id == p.chair_id then
-            for _,pj in pairs(self.players) do
-                if p == pj then
-                    table.insert(types[p.chair_id].typescore,{
-                        score = lian_zhuang_count ,type = HU_TYPE.LIAN_ZHUANG,count = (player_count - 1),
-                    })
-                else
-                    table.insert(types[pj.chair_id].typescore,{
-                        score =  - lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
-                    })
-                end
-            end
-        else
-            table.insert(types[p.chair_id].typescore,{
-                score = lian_zhuang_count ,type = HU_TYPE.LIAN_ZHUANG,count = 1,
-            })
-            table.insert(types[max_chair_id].typescore,{
-                score =  - lian_zhuang_count,type = HU_TYPE.LIAN_ZHUANG,count = 1,
-            })
         end
 
         for _,t in pairs(ts) do
             for chair_id,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(types[chair_id].typescore,{
-                        score = 3,type = t,tile = hu.tile,count = 1,
+                        score = hu_score,type = t,tile = hu.tile,count = self.chair_count - 1,
                     })
                 else
                     table.insert(types[chair_id].typescore,{
@@ -1035,6 +1111,25 @@ function maajan_table:calculate_hu(p,hu)
             end
         end
     end
+
+    local zhuang_typescores = self:calculate_zhuang(p,hu)
+    for c,typescore in pairs(zhuang_typescores) do
+        types[c] = types[c] or {
+            type = hu.zi_mo and BalanceItemType.ZiMo or BalanceItemType.Hu,
+            typescore = {}
+        }
+        table.unionto(types[c].typescore,typescore)
+    end
+
+    local ting_typescores = self:calculate_ting(p)
+    for c,typescore in pairs(ting_typescores) do
+        types[c] = types[c] or {
+            type = hu.zi_mo and BalanceItemType.ZiMo or BalanceItemType.Hu,
+            typescore = {}
+        }
+        table.unionto(types[c].typescore,typescore)
+    end
+
     return types
 end
 
@@ -1132,6 +1227,71 @@ function maajan_table:calculate_gang(p)
 end
 
 function maajan_table:calculate_ting(p)
+    local function get_ting_info(ting)
+        local tp = ting.ruan_bao and HU_TYPE.RUAN_BAO or HU_TYPE.YING_BAO
+        local score = HU_TYPE_INFO[tp].score
+        return tp,score
+    end
+
+    if not p.hu then return {} end
+
+    local typescores = {}
+    if p.ting then
+        local ptp,pscore = get_ting_info(p.ting)
+        typescores[p.chair_id] = typescores[p.chair_id] or {}
+        if p.hu.zi_mo then
+            table.insert(typescores[p.chair_id],{type = ptp,score = pscore,count = self.chair_count - 1,})
+            for _,pi in pairs(self.players) do
+                typescores[pi.chair_id] = typescores[pi.chair_id] or {}
+                table.insert(typescores[pi.chair_id],{type = ptp,score = pscore,count = 1,})
+                if pi.ting then
+                    local pitp,piscore = get_ting_info(pi.ting)
+                    table.insert(typescores[pi.chair_id],{type = pitp,score = - piscore,count = 1})
+                    table.insert(typescores[p.chair_id],{type = pitp,score = piscore,count = 1})
+                end
+            end
+        else
+            table.insert(typescores[p.chair_id],{type = ptp,score = pscore,count = 1})
+            local whoee = self.players[p.hu.whoee]
+            typescores[whoee.chair_id] = typescores[whoee.chair_id] or {}
+            table.insert(typescores[whoee.chair_id],{type = ptp,score = -pscore,count = 1})
+
+            if whoee.ting then
+                local whoeetp,whoeescore = get_ting_info(whoee.ting)
+                table.insert(typescores[whoee.chair_id],{type = whoeetp,score = - whoeescore,count = 1})
+                table.insert(typescores[p.chair_id],{type = whoeetp,score = whoeescore,count = 1})
+            end
+        end
+    else
+        if p.hu.zi_mo then
+            typescores[p.chair_id] = typescores[p.chair_id] or {}
+            for _,pi in pairs(self.players) do
+                if p ~= pi and pi.ting then
+                    local tp,score = get_ting_info(pi.ting)
+                    typescores[pi.chair_id] = typescores[pi.chair_id] or {}
+        
+                    table.insert(typescores[p.chair_id],{type = tp,score = score,count = 1})
+                    table.insert(typescores[p.chair_id],{type = tp,score = - score,count = 1})
+                end
+            end
+        else
+            local whoee = self.players[p.hu.whoee]
+            if not whoee.ting then 
+                return {}
+            end
+
+            local tp,score = get_ting_info(whoee.ting)
+            typescores[p.chair_id] = typescores[p.chair_id] or {}
+            typescores[whoee.chair_id] = typescores[whoee.chair_id] or {}
+
+            table.insert(typescores[p.chair_id],{type = tp,score = score,count = 1})
+            table.insert(typescores[p.chair_id],{type = tp,score = - score,count = 1})
+        end
+    end
+    return typescores
+end
+
+function maajan_table:calculate_wei_hu(p)
     local types = {}
     
     if p.jiao or p.ting then
@@ -1327,7 +1487,7 @@ function maajan_table:balance_player(p,ji_tiles)
             end
 
             if p.ting or p.jiao then
-                local ting_res = self:calculate_ting(p)
+                local ting_res = self:calculate_wei_hu(p)
                 for chair_id,item in pairs(ting_res) do
                     items[chair_id] = items[chair_id] or {}
                     items[chair_id].hu = item

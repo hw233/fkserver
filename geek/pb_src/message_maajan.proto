@@ -91,6 +91,9 @@ enum HU_TYPE{
 	MEN 					= 86;	//闷
 	MEN_ZI_MO				= 87; 	//自摸闷
 	LIAN_ZHUANG				= 88; 	//连庄
+	ZHUANG					= 89;	//庄家
+	YING_BAO 				= 90;	//天听硬报
+	RUAN_BAO				= 91;	//天听软报
 }
 
 

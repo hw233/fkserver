@@ -202,6 +202,10 @@ local HU_TYPE = {
 	MEN_ZI_MO					= pb.enum("HU_TYPE","MEN_ZI_MO"), --自摸闷
 	DIAN_PAO 					= pb.enum("HU_TYPE","DIAN_PAO"), --点炮
 	LIAN_ZHUANG					= pb.enum("HU_TYPE","LIAN_ZHUANG"), --连庄
+	ZHUANG						= pb.enum("HU_TYPE","ZHUANG"), --庄
+	YING_BAO					= pb.enum("HU_TYPE","YING_BAO"), --硬报
+	RUAN_BAO					= pb.enum("HU_TYPE","RUAN_BAO"), --软报
+	SHA_BAO						= pb.enum("HU_TYPE","SHA_BAO"),	--杀报
 }
 
 define.HU_TYPE = HU_TYPE
@@ -295,6 +299,9 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.MEN]					= {name = "MEN",score = 0},						--闷
 	[HU_TYPE.MEN_ZI_MO]				= {name = "MEN_ZI_MO",score = 0},				--自摸闷
 	[HU_TYPE.LIAN_ZHUANG]			= {name = "LIAN_ZHUANG",score = 1},				--连庄
+	[HU_TYPE.ZHUANG]				= {name = "ZHUANG",score = 1},				--庄家
+	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 20},		--硬报
+	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 10},		--软报
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
