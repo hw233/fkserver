@@ -94,6 +94,7 @@ enum HU_TYPE{
 	ZHUANG					= 89;	//庄家
 	YING_BAO 				= 90;	//天听硬报
 	RUAN_BAO				= 91;	//天听软报
+	SHA_BAO					= 92; 	//杀报
 }
 
 
