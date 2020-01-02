@@ -818,8 +818,6 @@ function base_room:player_exit_room(player,offline)
 	
 	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 	onlineguid[player.guid] = nil
-	
-	-- self:switch_room(player,find_default_lobby())
 end
 
 function base_room:switch_room(player,room_id)
