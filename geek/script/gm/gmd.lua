@@ -327,10 +327,14 @@ function gmd.ServerCmd(data)
     return result_code(msg.result)
 end
 
+function gmd.recharge(data)
+    dump(data)
+    return
+end
+
 gmd["info"] = gmd.RequestGameServerInfo
 gmd["GMCommand"] = gmd.RequestGmCommand
 gmd["cash"] = gmd.RequestCashFalse
-gmd["recharge"] = gmd.RequestRcharge
 gmd["changetax"] = gmd.ChangeTax
 gmd["update-game-cfg"] = gmd.ChangeGameCfg
 gmd["lua"] = gmd.GmCommandChangeMoney

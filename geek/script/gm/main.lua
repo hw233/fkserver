@@ -3,6 +3,7 @@ local httpd = require "gm.httpd"
 require "table_func"
 local log = require "log"
 local msgopt = require "msgopt"
+require "functions"
 
 local sconf
 local agentcount
@@ -23,12 +24,9 @@ local function checkgmconf(conf)
 end
 
 local function dispatch(fd,addr)
+    balance = (balance + 1) % #agents + 1
     log.info("%s connected, pass it to agent :%08x", addr, agents[balance])
     skynet.send(agents[balance],"lua",fd,addr)
-    balance = balance + 1
-    if balance > #agents then
-        balance = 1
-    end
 end
 
 function CMD.start(conf)

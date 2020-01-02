@@ -614,7 +614,7 @@ skynet.start(function()
 
     skynet.dispatch("proxy",function (_,_,msgname,msg)
         log.info("agent toclient msgname:%s,%s",guid,msgname)
-        -- dump(msg,3)
+        -- dump(msg)
         netmsgopt.send(fd,msgname,msg)
     end)
 end)
