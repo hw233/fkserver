@@ -294,8 +294,8 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [1] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
-        [2] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
+        -- [1] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
+        -- [2] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -1108,6 +1108,8 @@ function maajan_table:calculate_hu(p,hu)
         end
     end
 
+    dump(types)
+
     local zhuang_typescores = self:calculate_zhuang(p,hu)
     for c,typescore in pairs(zhuang_typescores) do
         types[c] = types[c] or {
@@ -1231,7 +1233,6 @@ function maajan_table:calculate_ting(p)
     end
 
     if not p.hu then return {} end
-    dump(p.hu)
 
     local typescores = {}
     if p.ting then
@@ -1289,7 +1290,6 @@ function maajan_table:calculate_ting(p)
         end
     end
 
-    dump(typescores)
     return typescores
 end
 
