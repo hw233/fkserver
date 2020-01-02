@@ -241,7 +241,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.BAO_TING]				= {name = "BAO_TING",score = 2},				--报听
 	[HU_TYPE.MEN_FENG_KE]			= {name = "MEN_FENG_KE",score = 2},			--门风刻
 	[HU_TYPE.QUAN_FENG_KE]			= {name = "QUAN_FENG_KE",score = 2},			--圈风刻
-	[HU_TYPE.ZI_MO]					= {name = "ZI_MO",score = 1},					--自摸
+	[HU_TYPE.ZI_MO]					= {name = "ZI_MO",fan = 1,score = 1},		--自摸
 	[HU_TYPE.DAN_DIAO_JIANG]		= {name = "DAN_DIAO_JIANG",score = 10},		--单钓将
 	[HU_TYPE.YI_BAN_GAO]	 		= {name = "YI_BAN_GAO",score = 1},			--一般高
 	[HU_TYPE.LAO_SHAO_FU]	 		= {name = "LAO_SHAO_FU",score = 1},			--老少副

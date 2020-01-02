@@ -936,13 +936,7 @@ function maajan_table:can_ting(player)
 end
 
 function maajan_table:get_hu_items(hu)
-    local hu_type = self:max_hu_fan(hu.types)
-    local hu_score = hu_type.score
-    if hu.zi_mo then
-        return self.cell_score * hu_score * 2,table.keys(hu_type.types)
-    end
-
-    return self.cell_score * hu_score,table.keys(hu_type.types)
+    return self:max_hu_score(hu.types).types
 end
 
 local BalanceItemType = {
@@ -1068,7 +1062,7 @@ end
 
 function maajan_table:calculate_hu(p,hu)
     local types = {}
-    local hu_score,ts = self:get_hu_items(hu)
+    local ts = self:get_hu_items(hu)
     if not hu.zi_mo then
         types[p.chair_id] = {
             type = BalanceItemType.Hu,
@@ -1080,13 +1074,15 @@ function maajan_table:calculate_hu(p,hu)
             typescore = {},
         }
 
+        local hu_fan = 2 ^ HU_TYPE_INFO[HU_TYPE.ZI_MO].fan
+
         for _,t in pairs(ts) do
             table.insert(types[p.chair_id].typescore,{
-                score = hu_score,type = t,tile = hu.tile,count = 1,
+                score = t.score * hu_fan,type = t.type,tile = hu.tile,count = 1,
             })
 
             table.insert(types[hu.whoee].typescore,{
-                score = -hu_score,type = t,tile = hu.tile,count = 1,
+                score = -t.score * hu_fan,type = t.type,tile = hu.tile,count = 1,
             })
         end
     else
@@ -1101,11 +1097,11 @@ function maajan_table:calculate_hu(p,hu)
             for chair_id,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(types[chair_id].typescore,{
-                        score = hu_score,type = t,tile = hu.tile,count = self.chair_count - 1,
+                        score = t.score,type = t.type,tile = hu.tile,count = self.chair_count - 1,
                     })
                 else
                     table.insert(types[chair_id].typescore,{
-                        score = - 1,type = t,tile = hu.tile,count = 1,
+                        score = -t.score,type = t.type,tile = hu.tile,count = 1,
                     })
                 end
             end
@@ -1134,39 +1130,40 @@ function maajan_table:calculate_hu(p,hu)
 end
 
 function maajan_table:calculate_men(p,men)
-    local player_count = table.nums(self.players)
     local types = {}
-    local hu_score,ts = self:get_hu_items(men)
+    local ts = self:get_hu_items(men)
     for _,t in pairs(ts) do
         if men.zi_mo then
-            types[p.chair_id] = types[p.chair_id] or {}
-            table.insert(types[p.chair_id],{
+            types[p.chair_id] = types[p.chair_id] or { 
                 type = BalanceItemType.MenZiMo,
-                typescore = {score = (player_count - 1) * hu_score,type = t,tile = men.tile,count = 1},
-            })
+                typescore = {}
+            }
+
+            local hu_fan = 2 ^ HU_TYPE_INFO[HU_TYPE.ZI_MO].fan
+            table.insert(types[p.chair_id].typescore,{score = t.score * hu_fan,type = t.type,tile = men.tile,count = self.chair_count - 1})
             for j,pj in pairs(self.players) do
                 if p ~= pj and (p.hu or (not p.hu and not pj.ting))then
-                    types[j] = types[j] or {}
-                    table.insert(types[j],{
+                    types[j] = types[j] or { 
                         type = BalanceItemType.MenZiMo,
-                        typescore = {type = t,score = -hu_score,tile = men.tile,count = 1}
-                    })
+                        typescore = {}
+                    }
+                    table.insert(types[j].typescore,{type = t.type,score = - t.score * hu_fan,tile = men.tile,count = 1})
                 end
             end
         else
             local pj = self.players[men.whoee]
             if p.hu or (not p.hu and not pj.ting) then
-                types[p.chair_id] = types[p.chair_id] or {}
-                table.insert(types[p.chair_id],{
+                types[p.chair_id] = types[p.chair_id] or { 
                     type = BalanceItemType.Men,
-                    typescore = {score = hu_score,type = t,tile = men.tile,count = 1},
-                })
+                    typescore = {}
+                }
+                table.insert(types[p.chair_id].typescore,{type = t.type,score = t.score,tile = men.tile,count = 1})
 
-                types[men.whoee] = types[men.whoee] or {}
-                table.insert(types[men.whoee],{
+                types[men.whoee] = types[men.whoee] or { 
                     type = BalanceItemType.Men,
-                    typescore = {type = t,score = -hu_score,tile = men.tile,count = 1},
-                })
+                    typescore = {}
+                }
+                table.insert(types[men.whoee].typescore,{type = t.type,score = -t.score,tile = men.tile,count = 1})
             end
         end
     end
@@ -1267,7 +1264,7 @@ function maajan_table:calculate_ting(p)
             typescores[p.chair_id] = typescores[p.chair_id] or {}
             for _,pi in pairs(self.players) do
                 if p ~= pi and pi.ting then
-                    local tp,score = get_ting_info(pi.ting)
+                    local _,score = get_ting_info(pi.ting)
                     typescores[pi.chair_id] = typescores[pi.chair_id] or {}
         
                     table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = score,count = 1})
@@ -1280,12 +1277,12 @@ function maajan_table:calculate_ting(p)
                 return {}
             end
 
-            local tp,score = get_ting_info(whoee.ting)
+            local _,score = get_ting_info(whoee.ting)
             typescores[p.chair_id] = typescores[p.chair_id] or {}
             typescores[whoee.chair_id] = typescores[whoee.chair_id] or {}
 
             table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = score,count = 1})
-            table.insert(typescores[p.chair_id],{type = HU_TYPE.SHA_BAO,score = - score,count = 1})
+            table.insert(typescores[whoee.chair_id],{type = HU_TYPE.SHA_BAO,score = - score,count = 1})
         end
     end
     return typescores
@@ -1568,16 +1565,15 @@ end
 function maajan_table:on_game_balance()
     local fan_pai_tile,ji_tiles = self:gen_ji_tiles()
     local items = self:game_balance(ji_tiles)
+    dump(items,9)
     local scores = {}
     for chair_id,item in pairs(items) do
         scores[chair_id] =
             table.sum(item.hu,function(t)
                 return table.sum(t.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
             end) +
-            table.sum(item.men,function(it)
-                return table.sum(it,function(t)
-                    return table.sum(t.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
-                end)
+            table.sum(item.men,function(men)
+                return table.sum(men.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
             end) +
             table.sum(item.ji,function(t) return (t.score or 0) * (t.count or 0) end) +
             table.sum(item.gang,function(t) return (t.score or 0) * (t.count or 0) end)
@@ -1619,17 +1615,11 @@ function maajan_table:on_game_balance()
 
         local hu_men = {}
         if balance_item and balance_item.hu then
-            for _,hu in pairs(balance_item.hu) do
-                table.insert(hu_men,hu)
-            end
+            table.unionto(hu_men,balance_item.hu)
         end
 
         if balance_item and balance_item.men then
-            for _,men in pairs(balance_item and balance_item.men or {}) do
-                for _,item in pairs(men) do
-                    table.insert(hu_men,item)
-                end
-            end
+            table.unionto(hu_men,balance_item.men)
         end
 
         table.insert(msg.player_balance,{
@@ -1777,7 +1767,7 @@ function maajan_table:FSM_event(evt)
             log.info("cur state is " .. states[self.cur_state_FSM])
             for _,p in pairs(self.players) do
                 if p and p.pai then 
-                    mj_util.printPai(self:tile_count_2_tiles(p.pai.shou_pai))
+                    log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai)))
                 end
             end
             self.last_act = self.cur_state_FSM
@@ -2230,11 +2220,10 @@ end
 function maajan_table:can_hu(player,in_pai)
     local hu_types = mj_util.hu(player.pai,in_pai)
     if table.nums(hu_types) == 0 then
-        dump(hu_types)
         return false
     end
 
-    local hu_type = self:max_hu_fan(hu_types)
+    local hu_type = self:max_hu_score(hu_types)
     local gang = table.sum(player.pai.ming_pai,function(s) 
         return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
                 s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG) and 1 or 0
@@ -2242,13 +2231,12 @@ function maajan_table:can_hu(player,in_pai)
     return gang > 0 or hu_type.score > 1
 end
 
-function maajan_table:hu_type_fan(types)
+function maajan_table:hu_type_score(types)
     local hts = {}
-    for t,_ in pairs(types) do
-        hts[t] = hts[t] or {}
-        table.insert(hts[t],{
-            score = HU_TYPE_INFO[t].score,
-            type = t,
+    for type,_ in pairs(types) do
+        table.insert(hts,{
+            score = HU_TYPE_INFO[type].score,
+            type = type,
         })
     end
 
@@ -2256,25 +2244,23 @@ function maajan_table:hu_type_fan(types)
 end
 
 function maajan_table:hu_fan_match(hu)
-    local hu_type = self:max_hu_fan(hu.types)
+    local hu_type = self:max_hu_score(hu.types)
     return hu_type.score >= self.mj_min_scale
 end
 
-function maajan_table:max_hu_fan(hu_types)
-    local hts = {}
+function maajan_table:max_hu_score(hu_types)
+    local typescores = {}
     for _,ht in pairs(hu_types) do
-        local types = self:hu_type_fan(ht)
-        table.insert(hts,{
+        local types = self:hu_type_score(ht)
+        table.insert(typescores,{
             types = types,
-            score = table.sum(types,function(v) return table.sum(v,function(t) return t.score end) end)
+            score = table.sum(types,function(t) return t.score end)
         })
     end
 
-    table.sort(hts,function(l,r)
-        return l.score > r.score
-    end)
+    table.sort(typescores,function(l,r) return l.score > r.score end)
 
-    return hts[1]
+    return typescores[1]
 end
 
 function maajan_table:global_status_info()
