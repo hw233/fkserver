@@ -1951,8 +1951,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
     end
 
     if action == ACTION.BA_GANG or action == ACTION.FREE_BA_GANG then  --巴杠
-        for i = 1,#ming_pai do
-            local s = ming_pai[i]
+        for k,s in pairs(ming_pai) do
             if s.tile == tile and s.type == SECTION_TYPE.PENG then
                 table.insert(ming_pai,{
                     type = (action == ACTION.BA_GANG and SECTION_TYPE.BA_GANG or SECTION_TYPE.FREE_BA_GANG),
@@ -1960,7 +1959,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
                     area = TILE_AREA.MING_TILE,
                     whoee = s.whoee,
                 })
-                ming_pai[i] = nil
+                ming_pai[k] = nil
                 table.decr(shou_pai,tile)
                 break
             end
