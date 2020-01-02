@@ -410,7 +410,7 @@ function MSG.CL_Auth(msg,session)
 
     MSG.CL_Login({
         ip = msg.ip,
-        open_id = userinfo.openid,
+        open_id = userinfo.open_id,
         package_name = msg.package_name,
         phone_type = msg.phone_type,
         version = msg.version,
