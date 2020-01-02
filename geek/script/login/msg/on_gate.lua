@@ -100,6 +100,7 @@ local function reg_account(msg)
 end
 
 local function open_id_login(msg,gate)
+    dump(msg)
     local ip = msg.ip
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
