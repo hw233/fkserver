@@ -558,7 +558,7 @@ end
 
 function MSG.C2S_HEARTBEAT_REQ(_,session)
     netmsgopt.send(session.fd,"S2C_HEARTBEAT_RES",{
-        dateTime = os.time(),
+        dataTime = os.time(),
     })
 end
 

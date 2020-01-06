@@ -70,7 +70,7 @@ function maajan_table:init(room, table_id, chair_count)
         [FSM_S.CHECK_TING] = self.on_action_when_check_ting,
         [FSM_S.WAIT_ACTION_AFTER_CHU_PAI] = self.on_action_after_chu_pai,
         [FSM_S.WAIT_ACTION_AFTER_MO_PAI] = self.on_action_after_mo_pai,
-        [FSM_S.GAME_CLOSE] = self.on_game_over,
+        [FSM_S.GAME_CLOSE] = self.game_over,
     }
 end
 
@@ -103,17 +103,14 @@ function maajan_table:on_private_dismissed()
     self.cur_state_FSM = nil
 end
 
-function maajan_table:start(player_count)
-	local ret = base_table.start(self,player_count)
+function maajan_table:on_started()
+    base_table.on_started(self)
 	for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
         v.last_action           = nil
-        v.tian_ting             = false
-        v.baoting               = false
         v.mo_pai_count          = 0
         v.chu_pai_count         = 0
-        v.jiabei				= 0
         v.pai                   = {
             shou_pai = {},
             ming_pai = {},
@@ -160,13 +157,9 @@ function maajan_table:start(player_count)
         start_game_time = os.time(),
         zhuang = self.zhuang,
         mj_min_scale = self.mj_min_scale,
-        action_table = {},
         players = game_log_players,
+        action_table = {},
     }
-
-    if self.private_id then
-        self.cur_round = (self.cur_round or 0) + 1
-    end
 
     local tiles = chair_count_tiles[self.chair_count]
     if not tiles then
@@ -231,13 +224,15 @@ function maajan_table:on_action_when_check_ting(event)
             tiles = ting_tiles,
             ying_bao = true,
         }
-        
+
         self:broadcast2client("SC_Maajan_Do_Action",{
             chair_id = chair_id,
             action = ACTION.TING,
         })
 
-        if table.logic_and(self.waiting_player_actions,function(act) return act.done end) then
+        dump(self.waiting_player_actions)
+
+        if table.logic_and(self.waiting_player_actions,function(act) return act.done ~= nil end) then
             self.waiting_player_actions = {}
             self:do_mo_pai()
         end
@@ -1239,7 +1234,7 @@ end
 
 function maajan_table:calculate_ting(p)
     local function get_ting_info(ting)
-        local tp = ting.ruan_bao and HU_TYPE.RUAN_BAO or HU_TYPE.YING_BAO
+        local tp = ting.ying_bao and HU_TYPE.YING_BAO or HU_TYPE.RUAN_BAO
         local score = HU_TYPE_INFO[tp].score
         return tp,score
     end
@@ -1639,10 +1634,8 @@ function maajan_table:on_game_balance()
     log.info(s_log)
     self:save_game_log(self.table_game_id,self.def_game_name,s_log,self.game_log.start_game_time,self.game_log.end_game_time)
 
-    self:on_game_over()
+    self:game_over()
 end
-
-
 
 function maajan_table:ding_zhuang()
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
@@ -1691,7 +1684,7 @@ function maajan_table:ding_zhuang()
     end
 end
 
-function maajan_table:on_game_over()
+function maajan_table:on_game_overed()
     self:ding_zhuang()
 
     self.do_logic_update = false
@@ -1712,12 +1705,8 @@ function maajan_table:on_game_over()
             player_scores = final_scores,
         })
 
-        for _,p in pairs(self.players) do
-            p:forced_exit()
-        end
-
         self.lian_zhuang = nil
-        self.cur_round = 0
+        self.cur_round = nil
     else
         for _,v in ipairs(self.players) do
             v.hu = nil
@@ -1736,7 +1725,7 @@ function maajan_table:on_game_over()
             end
         end
     end
-    base_table.on_game_over(self)
+    base_table.on_game_overed(self)
 end
 
 function maajan_table:FSM_event(evt)

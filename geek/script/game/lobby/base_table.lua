@@ -58,6 +58,7 @@ function base_table:can_enter(player)
 end
 
 function base_table:clear()
+	self:clear_dismiss_request()
 	self:private_clear()
 	self:clear_ready()
 end
@@ -148,6 +149,14 @@ function base_table:request_dismiss(player)
 	return enum.ERROR_NONE
 end
 
+function base_table:clear_dismiss_request()
+	if not self.dismiss_request then return end
+
+	self.dismiss_request.timer:kill()
+	self.dismiss_request.timer = nil
+	self.dismiss_request = nil
+end
+
 function base_table:commit_dismiss(player,agree)
 	if not self.dismiss_request then
 		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
@@ -194,8 +203,18 @@ function base_table:commit_dismiss(player,agree)
 	return enum.ERROR_NONE
 end
 
-function base_table:on_game_over()
+function base_table:game_over()
 	self:check_game_maintain()
+
+	self:on_game_overed()
+end
+
+function base_table:on_game_overed()
+	if self.private_id and self.cur_round and self.cur_round >= self.conf.round then
+		for _,p in pairs(self.players) do
+            p:forced_exit()
+        end
+	end
 end
 
 -- 得到玩家
@@ -476,6 +495,7 @@ function base_table:dismiss()
 	self:broadcast2client("SC_DismissTable",{success = true,})
 	self:clear()
 
+	
 	self:on_private_dismissed()
 
 	self.private_id = nil
@@ -737,6 +757,27 @@ function base_table:send_info_to_player(player)
 	
 end
 
+function base_table:on_pre_start(player_count)
+
+end
+
+function base_table:cost_private_fee()
+	local player = base_players[self.private_room_owner_guid]
+	if player  then
+		player:change_money(self.private_room_chair_count * self.private_room_score_type, enum.LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
+	end
+end
+
+function base_table:on_started()
+	if not self.private_id then return end
+
+	self.cur_round = (self.cur_round or 0) + 1
+
+	if self.cur_round == 1 then
+		self:cost_private_fee()
+	end
+end
+
 -- 开始游戏
 function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
@@ -745,6 +786,8 @@ function base_table:start(player_count)
 		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
 		return nil
 	end
+
+	self:on_pre_start(player_count)
 
 	local ret = false
 	if self.config_id ~= self.room_.config_id then
@@ -773,6 +816,8 @@ function base_table:start(player_count)
 	end
 
 	self:broadcast2client("SC_ShowTax", self.notify_msg)
+
+	self:on_started()
 	return ret
 end
 
@@ -820,7 +865,7 @@ function base_table:tick()
 end
 
 function base_table:on_private_inited()
-
+	
 end
 
 function base_table:private_init(private_id,conf)
@@ -838,16 +883,6 @@ function base_table:private_clear()
 	
 	self.rule = nil
 	self.conf = nil
-	self.private_id = nil
-end
-
-function base_table:destroy_private_room(b)
-	if b and self.private_id then
-		local player = base_players[self.private_room_owner_guid]
-		if player  then
-			player:change_money(self.private_room_chair_count * self.private_room_score_type, LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
-		end
-	end
 	self.private_id = nil
 end
 
