@@ -60,6 +60,7 @@ end
 local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
+        log.warning("reg_account repeated.open_id:%s,guid:%s",msg.open_id,guid)
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[guid]
     end
 
@@ -135,6 +136,8 @@ local function wx_auth(msg)
         log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
         return tonumber(auth.errcode),auth.errmsg
     end
+
+    dump(userinfo)
 
     return nil,userinfo
 end
