@@ -397,7 +397,8 @@ function MSG.CL_Auth(msg,session)
 
     msg.ip = session.ip
     local result,userinfo = channel.call("login.?","msg","CL_Auth",msg)
-    if result ~= enum.LOGIN_RESULT_SUCCESS then
+    if  result ~= enum.LOGIN_RESULT_SUCCESS and 
+        result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
         netmsgopt.send(fd,"LC_Auth",{
             result = result,
         })
@@ -407,6 +408,7 @@ function MSG.CL_Auth(msg,session)
     logining[fd] = nil
 
     dump(userinfo)
+
 
     MSG.CL_Login({
         ip = msg.ip,

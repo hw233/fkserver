@@ -60,7 +60,7 @@ end
 local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
-        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC
+        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[guid]
     end
 
     guid = reddb:incr("player:global:guid")
@@ -156,12 +156,12 @@ function on_cl_auth(msg)
 
     local do_auth = auth_platforms[msg.auth_platform]
     if not do_auth then
-        return enum.LOGIN_RESULT_TEL_ERR
+        return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
     end
 
     local errcode,auth = do_auth(msg)
     if errcode then
-        return enum.LOGIN_RESULT_FAILED,auth
+        return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
     end
 
     return reg_account({
