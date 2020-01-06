@@ -61,7 +61,7 @@ local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
         log.warning("reg_account repeated.open_id:%s,guid:%s",msg.open_id,guid)
-        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[guid]
+        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
     end
 
     guid = reddb:incr("player:global:guid")
