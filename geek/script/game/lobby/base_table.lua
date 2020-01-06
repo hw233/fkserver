@@ -762,10 +762,7 @@ function base_table:on_pre_start(player_count)
 end
 
 function base_table:cost_private_fee()
-	local player = base_players[self.private_room_owner_guid]
-	if player  then
-		player:change_money(self.private_room_chair_count * self.private_room_score_type, enum.LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
-	end
+
 end
 
 function base_table:on_started()

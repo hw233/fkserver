@@ -299,8 +299,8 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [1] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
-        [2] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
+        [2] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
+        [3] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -1704,9 +1704,6 @@ function maajan_table:on_game_overed()
         self:broadcast2client("SC_Maajan_Final_Game_Over",{
             player_scores = final_scores,
         })
-
-        self.lian_zhuang = nil
-        self.cur_round = nil
     else
         for _,v in ipairs(self.players) do
             v.hu = nil
