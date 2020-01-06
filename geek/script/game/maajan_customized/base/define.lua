@@ -308,75 +308,74 @@ define.HU_TYPE_INFO = HU_TYPE_INFO
 
 
 local UNIQUE_HU_TYPE = {
-	--大四喜----圈风刻,门风刻,大三风,小三风,碰碰胡
-	[HU_TYPE.DA_SI_XI] 				= {[HU_TYPE.QUAN_FENG_KE] = true,[HU_TYPE.MEN_FENG_KE] = true,[HU_TYPE.DA_SAN_FENG] = true,[HU_TYPE.XIAO_SAN_FENG] = true,[HU_TYPE.PENG_PENG_HU] = true},
-	--大三元----双箭刻,箭刻
-	[HU_TYPE.DA_SAN_YUAN]			= {[HU_TYPE.SHUANG_JIAN_KE] = true,[HU_TYPE.JIAN_KE] = true},
-	--九莲宝灯----清一色		
-	[HU_TYPE.JIU_LIAN_BAO_DENG]		= {[HU_TYPE.QING_YI_SE] = true,},	
-	--18罗汉----三杠，双明杠，明杠，单钓将
-	[HU_TYPE.LUO_HAN_18]			= {[HU_TYPE.SAN_GANG] = true,[HU_TYPE.SHUANG_MING_GANG] = true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.DAN_DIAO_JIANG] = true},	
-	--连7对----清一色、单钓，门前清，自摸。
-	[HU_TYPE.LIAN_QI_DUI]			= {[HU_TYPE.QING_YI_SE] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.MEN_QING] = true,[HU_TYPE.ZI_MO] = true},	
-	--大七星--全带幺，单钓将，门前清，自摸，字一色
-	[HU_TYPE.DA_QI_XIN]				= {[HU_TYPE.QUAN_DAI_YAO] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.ZI_MO] = true,[HU_TYPE.ZI_YI_SE] = true},	
-	--天胡--单钓将，不求人，自摸。
-	[HU_TYPE.TIAN_HU]				= {[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.BU_QIU_REN] = true,[HU_TYPE.ZI_MO] = true},
-	--小四喜 不计大三风，小三风，圈风刻，门风刻。
-	[HU_TYPE.XIAO_SI_XI]			= {[HU_TYPE.DA_SAN_FENG] = true,[HU_TYPE.XIAO_SAN_FENG] = true,[HU_TYPE.QUAN_FENG_KE] = true,[HU_TYPE.MEN_FENG_KE] = true},
-	--小三元	不计双箭刻，箭刻
-	[HU_TYPE.XIAO_SAN_YUAN]			= {[HU_TYPE.SHUANG_JIAN_KE] = true,[HU_TYPE.JIAN_KE] = true},
-	--字一色 不计碰碰和。
-	[HU_TYPE.ZI_YI_SE]				= {[HU_TYPE.PENG_PENG_HU] = true},
-	--四暗刻	不计三暗刻，双暗刻，门前清，碰碰和，自摸
-	[HU_TYPE.SI_AN_KE] 				= {[HU_TYPE.SAN_AN_KE] = true,[HU_TYPE.SHUANG_AN_KE]=true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.ZI_MO] = true},
-	--一色双龙会 不计平和，清一色，一般高
-	[HU_TYPE.SHUANG_LONG_HUI]		= {[HU_TYPE.PING_HU] = true,[HU_TYPE.QING_YI_SE] = true,[HU_TYPE.YI_BAN_GAO] = true},
-	--一色四同顺 不计一色三节高、一色三同顺，四归一，一般高
-	[HU_TYPE.YI_SE_SI_TONG_SHUN]	= {[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.SI_GUI_YI] = true,[HU_TYPE.YI_BAN_GAO] = true},
-	--一色四节高 不计一色三同顺，一色三节高，碰碰和，一般高
-	[HU_TYPE.YI_SE_SI_JIE_GAO]		= {[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.YI_BAN_GAO] = true},
-	--三元七对子 不计门前清，单钓将，自摸。
-	[HU_TYPE.SAN_YUAN_QI_DUI]		= {[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
-	--四喜七对子 不计 门前清，单调将，自摸。
-	[HU_TYPE.SI_XI_QI_DUI]			= {[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
-	--一色四步高 不计三步高，连六，老少副
-	[HU_TYPE.YI_SE_SI_BU_GAO]		= {[HU_TYPE.YI_SE_SAN_BU_GAO] = true,[HU_TYPE.LIAN_LIU] = true,[HU_TYPE.LAO_SHAO_FU] = true},
-	--三杠  不计双明刚，明杠
-	[HU_TYPE.SAN_GANG]				= {[HU_TYPE.SHUANG_MING_GANG] = true,[HU_TYPE.MING_GANG] = true},
-	--混幺九 不计碰碰和。全带幺。
-	[HU_TYPE.HUN_YAO_JIU]			= {[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.QUAN_DAI_YAO] = true},
-	--七对 不计不求人，门前清，单钓将，自摸。
-	[HU_TYPE.QI_DUI]				= {[HU_TYPE.BU_QIU_REN] = true,[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
-	--一色三节高 不计一色三同顺，一般高。
-	[HU_TYPE.YI_SE_SAN_JIE_GAO]		= {[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.YI_BAN_GAO] = true},
-	--一色三同顺 不计一色三节高，一般高。
-	[HU_TYPE.YI_SE_SAN_TONG_SHUN]	= {[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.YI_BAN_GAO] = true},
-	--四字刻 	不计碰碰胡。
-	[HU_TYPE.SI_ZI_KE]				= {[HU_TYPE.PENG_PENG_HU] = true},
-	--大三风 	不计小三风
-	[HU_TYPE.DA_SAN_FENG]			= {[HU_TYPE.XIAO_SAN_FENG] = true},
-	--清龙 不计连六，老少副。
-	[HU_TYPE.QING_LONG]				= {[HU_TYPE.LIAN_LIU] = true,[HU_TYPE.LAO_SHAO_FU] = true},
-	--三暗刻 不计双暗刻
-	[HU_TYPE.SAN_AN_KE]				= {[HU_TYPE.SHUANG_AN_KE] = true},
-	--妙手回春 不计自摸
-	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {[HU_TYPE.ZI_MO] = true},
-	--杠上开花 	不计自摸。
-	[HU_TYPE.GANG_SHANG_HUA]		= {[HU_TYPE.ZI_MO] = true},
-	--抢杠胡 不计胡绝张
-	[HU_TYPE.QIANG_GANG_HU]			= {[HU_TYPE.HU_JUE_ZHANG] = true},
-	--全求人 不计单钓
-	[HU_TYPE.QUAN_QIU_REN]			= {[HU_TYPE.DAN_DIAO_JIANG] = true},
-	--双暗杠 	不计双暗刻，暗杠。
-	[HU_TYPE.SHUANG_AN_GANG]		= {[HU_TYPE.SHUANG_AN_KE] = true},
-	--双箭刻 	不计双暗刻，暗杠
-	[HU_TYPE.SHUANG_JIAN_KE]		= {[HU_TYPE.SHUANG_AN_KE] = true},
+	-- --大四喜----圈风刻,门风刻,大三风,小三风,碰碰胡
+	-- [HU_TYPE.DA_SI_XI] 				= {[HU_TYPE.QUAN_FENG_KE] = true,[HU_TYPE.MEN_FENG_KE] = true,[HU_TYPE.DA_SAN_FENG] = true,[HU_TYPE.XIAO_SAN_FENG] = true,[HU_TYPE.PENG_PENG_HU] = true},
+	-- --大三元----双箭刻,箭刻
+	-- [HU_TYPE.DA_SAN_YUAN]			= {[HU_TYPE.SHUANG_JIAN_KE] = true,[HU_TYPE.JIAN_KE] = true},
+	-- --九莲宝灯----清一色		
+	-- [HU_TYPE.JIU_LIAN_BAO_DENG]		= {[HU_TYPE.QING_YI_SE] = true,},	
+	-- --18罗汉----三杠，双明杠，明杠，单钓将
+	-- [HU_TYPE.LUO_HAN_18]			= {[HU_TYPE.SAN_GANG] = true,[HU_TYPE.SHUANG_MING_GANG] = true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.DAN_DIAO_JIANG] = true},	
+	-- --连7对----清一色、单钓，门前清，自摸。
+	-- [HU_TYPE.LIAN_QI_DUI]			= {[HU_TYPE.QING_YI_SE] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.MEN_QING] = true,[HU_TYPE.ZI_MO] = true},	
+	-- --大七星--全带幺，单钓将，门前清，自摸，字一色
+	-- [HU_TYPE.DA_QI_XIN]				= {[HU_TYPE.QUAN_DAI_YAO] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.ZI_MO] = true,[HU_TYPE.ZI_YI_SE] = true},	
+	-- --天胡--单钓将，不求人，自摸。
+	-- [HU_TYPE.TIAN_HU]				= {[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.BU_QIU_REN] = true,[HU_TYPE.ZI_MO] = true},
+	-- --小四喜 不计大三风，小三风，圈风刻，门风刻。
+	-- [HU_TYPE.XIAO_SI_XI]			= {[HU_TYPE.DA_SAN_FENG] = true,[HU_TYPE.XIAO_SAN_FENG] = true,[HU_TYPE.QUAN_FENG_KE] = true,[HU_TYPE.MEN_FENG_KE] = true},
+	-- --小三元	不计双箭刻，箭刻
+	-- [HU_TYPE.XIAO_SAN_YUAN]			= {[HU_TYPE.SHUANG_JIAN_KE] = true,[HU_TYPE.JIAN_KE] = true},
+	-- --字一色 不计碰碰和。
+	-- [HU_TYPE.ZI_YI_SE]				= {[HU_TYPE.PENG_PENG_HU] = true},
+	-- --四暗刻	不计三暗刻，双暗刻，门前清，碰碰和，自摸
+	-- [HU_TYPE.SI_AN_KE] 				= {[HU_TYPE.SAN_AN_KE] = true,[HU_TYPE.SHUANG_AN_KE]=true,[HU_TYPE.MING_GANG] = true,[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.ZI_MO] = true},
+	-- --一色双龙会 不计平和，清一色，一般高
+	-- [HU_TYPE.SHUANG_LONG_HUI]		= {[HU_TYPE.PING_HU] = true,[HU_TYPE.QING_YI_SE] = true,[HU_TYPE.YI_BAN_GAO] = true},
+	-- --一色四同顺 不计一色三节高、一色三同顺，四归一，一般高
+	-- [HU_TYPE.YI_SE_SI_TONG_SHUN]	= {[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.SI_GUI_YI] = true,[HU_TYPE.YI_BAN_GAO] = true},
+	-- --一色四节高 不计一色三同顺，一色三节高，碰碰和，一般高
+	-- [HU_TYPE.YI_SE_SI_JIE_GAO]		= {[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.YI_BAN_GAO] = true},
+	-- --三元七对子 不计门前清，单钓将，自摸。
+	-- [HU_TYPE.SAN_YUAN_QI_DUI]		= {[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
+	-- --四喜七对子 不计 门前清，单调将，自摸。
+	-- [HU_TYPE.SI_XI_QI_DUI]			= {[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
+	-- --一色四步高 不计三步高，连六，老少副
+	-- [HU_TYPE.YI_SE_SI_BU_GAO]		= {[HU_TYPE.YI_SE_SAN_BU_GAO] = true,[HU_TYPE.LIAN_LIU] = true,[HU_TYPE.LAO_SHAO_FU] = true},
+	-- --三杠  不计双明刚，明杠
+	-- [HU_TYPE.SAN_GANG]				= {[HU_TYPE.SHUANG_MING_GANG] = true,[HU_TYPE.MING_GANG] = true},
+	-- --混幺九 不计碰碰和。全带幺。
+	-- [HU_TYPE.HUN_YAO_JIU]			= {[HU_TYPE.PENG_PENG_HU] = true,[HU_TYPE.QUAN_DAI_YAO] = true},
+	-- --七对 不计不求人，门前清，单钓将，自摸。
+	-- [HU_TYPE.QI_DUI]				= {[HU_TYPE.BU_QIU_REN] = true,[HU_TYPE.MEN_QING] = true,[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.ZI_MO] = true},
+	-- --一色三节高 不计一色三同顺，一般高。
+	-- [HU_TYPE.YI_SE_SAN_JIE_GAO]		= {[HU_TYPE.YI_SE_SAN_TONG_SHUN] = true,[HU_TYPE.YI_BAN_GAO] = true},
+	-- --一色三同顺 不计一色三节高，一般高。
+	-- [HU_TYPE.YI_SE_SAN_TONG_SHUN]	= {[HU_TYPE.YI_SE_SAN_JIE_GAO] = true,[HU_TYPE.YI_BAN_GAO] = true},
+	-- --四字刻 	不计碰碰胡。
+	-- [HU_TYPE.SI_ZI_KE]				= {[HU_TYPE.PENG_PENG_HU] = true},
+	-- --大三风 	不计小三风
+	-- [HU_TYPE.DA_SAN_FENG]			= {[HU_TYPE.XIAO_SAN_FENG] = true},
+	-- --清龙 不计连六，老少副。
+	-- [HU_TYPE.QING_LONG]				= {[HU_TYPE.LIAN_LIU] = true,[HU_TYPE.LAO_SHAO_FU] = true},
+	-- --三暗刻 不计双暗刻
+	-- [HU_TYPE.SAN_AN_KE]				= {[HU_TYPE.SHUANG_AN_KE] = true},
+	-- --妙手回春 不计自摸
+	-- [HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {[HU_TYPE.ZI_MO] = true},
+	-- --杠上开花 	不计自摸。
+	-- [HU_TYPE.GANG_SHANG_HUA]		= {[HU_TYPE.ZI_MO] = true},
+	-- --抢杠胡 不计胡绝张
+	-- [HU_TYPE.QIANG_GANG_HU]			= {[HU_TYPE.HU_JUE_ZHANG] = true},
+	-- --全求人 不计单钓
+	-- [HU_TYPE.QUAN_QIU_REN]			= {[HU_TYPE.DAN_DIAO_JIANG] = true},
+	-- --双暗杠 	不计双暗刻，暗杠。
+	-- [HU_TYPE.SHUANG_AN_GANG]		= {[HU_TYPE.SHUANG_AN_KE] = true},
+	-- --双箭刻 	不计双暗刻，暗杠
+	-- [HU_TYPE.SHUANG_JIAN_KE]		= {[HU_TYPE.SHUANG_AN_KE] = true},
 
 	[HU_TYPE.QING_QI_DUI]			= {[HU_TYPE.QI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
 	[HU_TYPE.QING_LONG_BEI] 		= {[HU_TYPE.LONG_QI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
 	[HU_TYPE.QING_DA_DUI]			= {[HU_TYPE.DA_DUI_ZI] = true,[HU_TYPE.QING_YI_SE]=true},
-	[HU_TYPE.QING_DAN_DIAO]			= {[HU_TYPE.DAN_DIAO_JIANG] = true,[HU_TYPE.QING_YI_SE] = true},
 }
 
 

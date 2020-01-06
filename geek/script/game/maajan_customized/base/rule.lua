@@ -283,22 +283,18 @@ end
 local function unique_hu_types(base_hu_types)
 	local types = {}
 	for unique_t,s in pairs(UNIQUE_HU_TYPE) do
-		if table.logic_and(s,function(v) return base_hu_types[v] ~= nil end) then
+		if table.logic_and(s,function(_,k) return base_hu_types[k] end) then
+			for t,_ in pairs(s) do base_hu_types[t] = nil end
 			types[unique_t] = true
 		end
 	end
 
-	return types
+	return table.merge(types,base_hu_types,function(l,r) return (l or r) and true or nil end)
 end
 
-local function calculate_hu_types(pai,cache,sections)
+local function get_hu_types(pai,cache,sections)
 	local base_types = {}
 
-	if table.sum(cache) == 2 then
-		base_types[HU_TYPE.DAN_DIAO_JIANG] = true
-	end
-
-	local shou_counts = clone(cache)
 	local ming_counts = table.fill(nil,0,1,50)
 	local ming_men_counts = table.fill(nil,0,0,5)
 	local shou_men_counts = table.fill(nil,0,0,5)
@@ -315,7 +311,6 @@ local function calculate_hu_types(pai,cache,sections)
 		end
 	end
 
-	local tile_counts = table.merge(ming_counts,shou_counts,function(l,r) return l + r end)
 	local men_counts = table.merge(ming_men_counts,shou_men_counts,function(l,r) return l + r end)
 
 	local four_tong_list = {}
@@ -351,14 +346,73 @@ local function calculate_hu_types(pai,cache,sections)
 	return base_types
 end
 
-local function unique_types_id(ts)
-	return table.concat(table.keys(ts),",")
+local function is_qing_yi_se(pai,cache) 
+	local ming_men_counts = table.fill(nil,0,0,5)
+	local shou_men_counts = table.fill(nil,0,0,5)
+
+	for tile,c in pairs(cache) do
+		table.incr(shou_men_counts,rule.tile_men(tile),c)
+	end
+
+	for _,s in pairs(pai.ming_pai) do
+		local tiles = SECTION_TILES[s.type](s)
+		for _,tile in pairs(tiles) do
+			table.incr(ming_men_counts,rule.tile_men(tile))
+		end
+	end
+
+	local men_counts = table.merge(ming_men_counts,shou_men_counts,function(l,r) return l + r end)
+
+	local total_mens = table.sum(men_counts,function(c,men) 
+		if c > 0 and men < 3 then return 1
+		else return 0 end
+	end)
+
+	return total_mens == 1
+end
+
+local function get_qi_dui_types(pai,cache)
+	local ming_men_counts = table.fill(nil,0,0,5)
+	local shou_men_counts = table.fill(nil,0,0,5)
+
+	for tile,c in pairs(cache) do
+		table.incr(shou_men_counts,rule.tile_men(tile),c)
+	end
+
+	for _,s in pairs(pai.ming_pai) do
+		local tiles = SECTION_TILES[s.type](s)
+		for _,tile in pairs(tiles) do
+			table.incr(ming_men_counts,rule.tile_men(tile))
+		end
+	end
+
+	local men_counts = table.merge(ming_men_counts,shou_men_counts,function(l,r) return l + r end)
+
+	local total_mens = table.sum(men_counts,function(c,men) 
+		if c > 0 and men < 3 then return 1
+		else return 0 end
+	end)
+
+	local base_types = {}
+	if total_mens == 1 then
+		base_types[HU_TYPE.QING_YI_SE] = true
+	end
+
+	return base_types
+end
+
+
+local function table_entire_key(tb)
+	table.sort(tb)
+	return table.concat(tb,",")
 end
 
 local function merge_same_type(alltypes)
 	local types = {}
+
 	for _,ts in pairs(alltypes) do
-		types[unique_types_id(ts)] = ts
+		local key = table_entire_key(table.keys(ts))
+		types[key] = ts
 	end
 
 	return table.values(types)
@@ -388,19 +442,29 @@ function rule.hu(pai,inPai)
 	if qi_dui then
 		if cache[inPai] == 4 then
 			base_types[HU_TYPE.LONG_QI_DUI] = true
-			table.insert(alltypes,base_types)
 		else
 			base_types[HU_TYPE.QI_DUI] = true
-			table.insert(alltypes,base_types)
 		end
+
+		if is_qing_yi_se(pai,cache) then
+			base_types[HU_TYPE.QING_YI_SE] = true
+		end
+
+		table.insert(alltypes,base_types)
 	end
 
 	for _,sections in pairs(state.hu) do
-		local types = calculate_hu_types(pai,cache,sections)
+		local types = get_hu_types(pai,cache,sections)
 		table.insert(alltypes,types)
 	end
 
+	for i = 1,#alltypes do
+		alltypes[i] = unique_hu_types(alltypes[i])
+	end
+
+	dump(alltypes)
 	alltypes = merge_same_type(alltypes)
+	dump(alltypes)
 
 	return alltypes
 end
@@ -498,20 +562,20 @@ function rule.is_chi(pai,tile)
 end
 
 
-local tiles = {21,22,23,24,24,25,25,25,26,28,29,29,28}
-local counts = table.fill(nil,0,1,30)
-for _,tile in pairs(tiles) do
-	counts[tile] = counts[tile] + 1
-end
+-- local tiles = {21,22,23,24,24,25,25,25,26,28,29,29,28}
+-- local counts = table.fill(nil,0,1,30)
+-- for _,tile in pairs(tiles) do
+-- 	counts[tile] = counts[tile] + 1
+-- end
 
-local test = rule.is_hu({
-	shou_pai = counts,
-	ming_pai = {{
-		type = SECTION_TYPE.MING_GANG,
-		tile = 24,
-	}},
-},1)
+-- local test = rule.is_hu({
+-- 	shou_pai = counts,
+-- 	ming_pai = {{
+-- 		type = SECTION_TYPE.MING_GANG,
+-- 		tile = 24,
+-- 	}},
+-- },1)
 
-dump(test)
+-- dump(test)
 
 return rule

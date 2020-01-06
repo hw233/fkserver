@@ -292,8 +292,6 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [2] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
-        [3] = {21,21,21,22,22,22,27,27,27,26,28,25,27},
     }
 
     for i,pretiles in pairs(pre_tiles) do
