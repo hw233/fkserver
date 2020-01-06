@@ -127,6 +127,10 @@ local function feed_hu_tile(tiles)
 		if tile1 == tile2 then
 			feed_tiles[tile1] = true
 		else
+			if rule.tile_men(tile1) ~= rule.tile_men(tile2) then 
+				return feed_tiles
+			end
+
 			local min,max
 			if tile1 > tile2 then min,max = tile2,tile1
 			else min,max = tile1,tile2
@@ -493,20 +497,18 @@ function rule.is_chi(pai,tile)
 end
 
 
-local tiles = {1,1,2,3,4,5,6,7,8,9}
-local counts = table.fill(nil,0,1,30)
-for _,tile in pairs(tiles) do
-	counts[tile] = counts[tile] + 1
-end
+-- local tiles = {13,14,15,19,21,22,23,23,23,24,24,25,26,15}
+-- local counts = table.fill(nil,0,1,30)
+-- for _,tile in pairs(tiles) do
+-- 	counts[tile] = counts[tile] + 1
+-- end
 
--- local test = rule.hu({
+-- local test = rule.ting_full({
 -- 	shou_pai = counts,
 -- 	ming_pai = {{
 -- 		type = SECTION_TYPE.PENG,
 -- 		tile = 3,
 -- 	}},
 -- },1)
-
--- dump(test)
 
 return rule

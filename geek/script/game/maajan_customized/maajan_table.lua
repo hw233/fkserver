@@ -292,9 +292,9 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [1] = {26,26,26,27,27,27,16,16,16,25,17,17,25},
+
         [2] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
-        [3] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
+        [3] = {21,21,21,22,22,22,27,27,27,24,24,25,25},
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -795,15 +795,23 @@ function maajan_table:do_mo_pai()
         return
     end
 
-    local mo_pai = self.dealer:deal_one()
+    local mo_pai
+    if not self.mo_pai_count or self.mo_pai_count == 0 then
+        mo_pai = self.dealer:deal_one_on(function(tile) return tile == 15 end)
+    else
+        mo_pai = self.dealer:deal_one()
+    end
     if not mo_pai then
         self:on_game_balance()
         return
     end
 
+    self.mo_pai_count = (self.mo_pai_count or 0) + 1
+
     player.mo_pai = mo_pai
     player.mo_pai_count = player.mo_pai_count + 1
     local actions = self:get_actions(player,mo_pai)
+    dump(actions)
     table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
