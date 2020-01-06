@@ -101,6 +101,9 @@ function maajan_table:on_private_dismissed()
     self.lian_zhuang = nil
     self.tiles = nil
     self.cur_state_FSM = nil
+    for _,p in pairs(self.players) do
+        p.total_money = nil
+    end
 end
 
 function maajan_table:on_started()
@@ -1559,7 +1562,7 @@ local BalanceStatus = {
 
 local function player_balance_status(p)
     if p.hu then return BalanceStatus.Hu end
-    if p.ting or p.men then return BalanceStatus.JiaoPai end
+    if p.ting or p.men or p.jiao then return BalanceStatus.JiaoPai end
     return BalanceStatus.WeiJiao
 end
 
@@ -2223,6 +2226,7 @@ function maajan_table:can_hu(player,in_pai)
 
     local chu_pai_player = self:chu_pai_player()
     return  chu_pai_player.ting or
+            player.men or
             def.is_action_gang(chu_pai_player.last_action or 0) or
             player.ting or
             gang > 0 or
