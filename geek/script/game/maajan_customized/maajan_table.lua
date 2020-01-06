@@ -231,21 +231,14 @@ function maajan_table:on_action_when_check_ting(event)
         })
 
         dump(self.waiting_player_actions)
+    end
 
-        if table.logic_and(self.waiting_player_actions,function(act) return act.done ~= nil end) then
-            self.waiting_player_actions = {}
-            self:do_mo_pai()
-        end
-
+    if not table.logic_and(self.waiting_player_actions,function(act) return act.done ~= nil end) then
         return
     end
 
-    if action == ACTION.PASS then
-        self:do_mo_pai()
-        return
-    end
-
-    log.error("no action waiting but do,when check ting,chair_id:%s,action:%s",chair_id,action)
+    self.waiting_player_actions = {}
+    self:do_mo_pai()
 end
 
 function maajan_table:wait_chu_pai()
@@ -299,6 +292,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
+        [1] = {26,26,26,27,27,27,16,16,16,25,17,17,25},
         [2] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
         [3] = {21,21,21,22,22,22,23,23,23,24,24,24,25},
     }
