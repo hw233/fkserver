@@ -292,9 +292,8 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-
         [2] = {11,11,11,12,12,12,13,13,13,14,14,14,15},
-        [3] = {21,21,21,22,22,22,27,27,27,24,24,25,25},
+        [3] = {21,21,21,22,22,22,27,27,27,26,28,25,27},
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -713,7 +712,21 @@ function maajan_table:on_action_after_chu_pai(evt)
         return
     end
 
-    local all_actions = table.values(self.waiting_player_actions)
+    local all_actions = {}
+
+    for _,action in pairs(self.waiting_player_actions) do
+        if action.done.action ~= ACTION.PASS then
+            table.insert(all_actions,action)
+        end
+    end
+
+    if table.nums(all_actions) == 0 then
+        self.waiting_player_actions = {}
+        self:next_player_index()
+        self:do_mo_pai()
+        return
+    end
+
     table.sort(all_actions,function(l,r)
         local l_priority = ACTION_PRIORITY[l.done.action]
         local r_priority = ACTION_PRIORITY[l.done.action]
@@ -796,11 +809,7 @@ function maajan_table:do_mo_pai()
     end
 
     local mo_pai
-    if not self.mo_pai_count or self.mo_pai_count == 0 then
-        mo_pai = self.dealer:deal_one_on(function(tile) return tile == 15 end)
-    else
-        mo_pai = self.dealer:deal_one()
-    end
+    mo_pai = self.dealer:deal_one()
     if not mo_pai then
         self:on_game_balance()
         return
