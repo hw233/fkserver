@@ -60,6 +60,7 @@ local SECTION_TILES = {
 	[SECTION_TYPE.AN_GANG] = section_tiles_gang,
 	[SECTION_TYPE.MING_GANG] = section_tiles_gang,
 	[SECTION_TYPE.BA_GANG] = section_tiles_gang,
+	[SECTION_TYPE.FREE_BA_GANG] = section_tiles_gang,
 	[SECTION_TYPE.DUIZI] = section_tiles_dui,
 	[SECTION_TYPE.THREE] = section_tiles_peng,
 	[SECTION_TYPE.PENG] = section_tiles_peng,
@@ -497,18 +498,20 @@ function rule.is_chi(pai,tile)
 end
 
 
--- local tiles = {13,14,15,19,21,22,23,23,23,24,24,25,26,15}
--- local counts = table.fill(nil,0,1,30)
--- for _,tile in pairs(tiles) do
--- 	counts[tile] = counts[tile] + 1
--- end
+local tiles = {21,22,23,24,24,25,25,25,26,28,29,29,28}
+local counts = table.fill(nil,0,1,30)
+for _,tile in pairs(tiles) do
+	counts[tile] = counts[tile] + 1
+end
 
--- local test = rule.ting_full({
--- 	shou_pai = counts,
--- 	ming_pai = {{
--- 		type = SECTION_TYPE.PENG,
--- 		tile = 3,
--- 	}},
--- },1)
+local test = rule.is_hu({
+	shou_pai = counts,
+	ming_pai = {{
+		type = SECTION_TYPE.MING_GANG,
+		tile = 24,
+	}},
+},1)
+
+dump(test)
 
 return rule
