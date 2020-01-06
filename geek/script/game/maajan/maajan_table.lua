@@ -89,8 +89,7 @@ function maajan_table:start(player_count,is_test)
 	self.do_logic_update = true
     self.quan_feng = self.quan_feng + 1 
     if self.quan_feng > 13 then self.quan_feng = 10 end
-    self.table_game_id = self:get_now_game_id()
-    self:next_game()
+    self.table_game_id = self:get_next_game_id()
     self.game_log = {
         table_game_id = self.table_game_id,
         start_game_time = os.time(),

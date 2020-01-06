@@ -33,16 +33,12 @@ function base_table:new()
 end
 
 -- 获取当前游戏ID
-function base_table:get_now_game_id()
-	local guid = string.format([[%03d%03d%04d%s%07d]], def_game_id, self.room_.id, self.table_id_, self.ID_date_,self.table_gameid)
+function base_table:get_next_game_id()
+	self.table_gameid = (self.table_gameid or 0) + 1
+	local id_date = os.date("%y%m%d%H%M")
+	local guid = string.format([[%03d%03d%04d%s%07d]], def_game_id, self.room_.id, self.table_id_, id_date,self.table_gameid)
 	log.info(guid)
 	return guid
-end
-
--- 刷新游戏ID到下一个
-function base_table:next_game()
-	self.ID_date_ = os.date("%y%m%d%H%M")
-	self.table_gameid = self.table_gameid + 1
 end
 
 function base_table:start_save_info()
@@ -68,7 +64,6 @@ end
 
 -- 初始化
 function base_table:init(room, table_id, chair_count)
-	self.table_gameid = 1
 	self.room_ = room
 	self.table_id_ = table_id
 	self.chair_count = chair_count
@@ -76,7 +71,6 @@ function base_table:init(room, table_id, chair_count)
 	self.def_game_id = def_game_id
 	self.game_end_event = {}
 	self.players = {}
-	self.ID_date_ = os.date("%y%m%d%H%M")
 	self.config_id = room.config_id
 	self.tax_show_ = room.tax_show -- 是否显示税收信息
 	self.tax_open_ = room.tax_open -- 是否开启税收
@@ -440,11 +434,21 @@ function base_table:player_sit_down_finished(player)
 	return
 end
 
+function base_table:on_private_pre_dismiss()
+
+end
+
+function base_table:on_private_dismissed()
+
+end
+
 function base_table:dismiss()
 	if not self.conf or not self.private_id then
 		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 	end
+
+	self:on_private_pre_dismiss()
 
 	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
 	local private_table_conf = base_private_table[self.private_id]
@@ -471,6 +475,8 @@ function base_table:dismiss()
 	base_private_table[self.private_id] = nil
 	self:broadcast2client("SC_DismissTable",{success = true,})
 	self:clear()
+
+	self:on_private_dismissed()
 
 	self.private_id = nil
 	self.conf = nil
@@ -813,12 +819,18 @@ function base_table:tick()
 
 end
 
+function base_table:on_private_inited()
+
+end
+
 function base_table:private_init(private_id,conf)
 	self.private_id = private_id
 	self.rule = conf.rule
 	self.chair_count = conf.chair_count
 	self.money_type = conf.money_type
 	self.conf = conf
+
+	self:on_private_inited()
 end
 
 function base_table:private_clear()
