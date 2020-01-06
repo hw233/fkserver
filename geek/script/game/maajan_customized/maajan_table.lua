@@ -17,17 +17,17 @@ local FSM_S  = def.FSM_state
 local ACTION = def.ACTION
 
 local ACTION_PRIORITY = {
-    [ACTION.PASS] = 7,
-    [ACTION.JIA_BEI] = 6,
-    [ACTION.LEFT_CHI] = 5,
-    [ACTION.MID_CHI] = 5,
-    [ACTION.RIGHT_CHI] = 5,
+    [ACTION.PASS] = 5,
     [ACTION.PENG] = 4,
     [ACTION.AN_GANG] = 3,
     [ACTION.MING_GANG] = 3,
     [ACTION.BA_GANG] = 3,
+    [ACTION.FREE_BA_GANG] = 3,
     [ACTION.MEN] = 2,
+    [ACTION.MEN_ZI_MO] = 2,
+    [ACTION.TING] = 2,
     [ACTION.HU] = 1,
+    [ACTION.ZI_MO] = 1,
 }
 
 local SECTION_TYPE = def.SECTION_TYPE
@@ -427,6 +427,7 @@ local action_name_str = {
     [ACTION.PENG] = "Peng",
     [ACTION.MING_GANG] = "MingGang",
     [ACTION.BA_GANG] = "BaGang",
+    [ACTION.FREE_BA_GANG] = "FreeBaGang",
     [ACTION.ZI_MO] = "ZiMo",
     [ACTION.LEFT_CHI] = "LeftChi",
     [ACTION.MID_CHI] = "MidChi",
@@ -731,11 +732,7 @@ function maajan_table:on_action_after_chu_pai(evt)
     table.sort(all_actions,function(l,r)
         local l_priority = ACTION_PRIORITY[l.done.action]
         local r_priority = ACTION_PRIORITY[l.done.action]
-        if l_priority ~= r_priority then
-            return l_priority < r_priority
-        end
-
-        return l.chair_id < r.chair_id
+        return l_priority < r_priority
     end)
 
     self.waiting_player_actions = {}
