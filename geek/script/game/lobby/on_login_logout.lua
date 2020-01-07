@@ -33,29 +33,7 @@ local timer = require "timer"
 
 local reddb = redisopt.default
 
-
-local ERROR_NONE = pb.enum("ERROR_CODE","ERROR_NONE")
-local ERROR_CLUB_NOT_FOUND = pb.enum("ERROR_CODE", "ERROR_CLUB_NOT_FOUND")
-local ERROR_NOT_IS_CLUB_BOSS = pb.enum("ERROR_CODE", "ERROR_NOT_IS_CLUB_BOSS")
-local ERROR_NOT_IS_CLUB_MEMBER = pb.enum("ERROR_CODE", "ERROR_NOT_IS_CLUB_MEMBER")
-local ERROR_CLUB_UNKONW = pb.enum("ERROR_CODE", "ERROR_CLUB_UNKONW")
-local ERROR_JOIN_ROOM_NO = pb.enum("ERROR_CODE", "ERROR_JOIN_ROOM_NO")
-
 --local base_room = require "game.lobby.base_room"
-
--- enum GM_ANDROID_OPT
-local GM_ANDROID_ADD_ACTIVE = pb.enum("GM_ANDROID_OPT", "GM_ANDROID_ADD_ACTIVE")
-local GM_ANDROID_SUB_ACTIVE = pb.enum("GM_ANDROID_OPT", "GM_ANDROID_SUB_ACTIVE")
-local GM_ANDROID_ADD_PASSIVE = pb.enum("GM_ANDROID_OPT", "GM_ANDROID_ADD_PASSIVE")
-local GM_ANDROID_SUB_PASSIVE = pb.enum("GM_ANDROID_OPT", "GM_ANDROID_SUB_PASSIVE")
-local GM_ANDROID_CLEAR = pb.enum("GM_ANDROID_OPT", "GM_ANDROID_CLEAR")
-
-local PAY_OPTION_AA = pb.enum("PAY_OPTION","AA")
-local PAY_OPTION_BOSS = pb.enum("PAY_OPTION","BOSS")
-local PAY_OPTION_ROOM_OWNER = pb.enum("PAY_OPTION","ROOM_OWNER")
-
-local ChangMoney_Success = pb.enum("ChangeMoneyRecode", "ChangMoney_Success")
-local ChangMoney_NotEnoughMoney = pb.enum("ChangeMoneyRecode", "ChangMoney_NotEnoughMoney")
 
 local def_register_money = get_register_money()
 local def_private_room_bank = get_private_room_bank()
@@ -1016,9 +994,9 @@ end
 
 local function check_pay_option(option)
 	local pay_option_all = {
-		[PAY_OPTION_BOSS] = true,
-		[PAY_OPTION_AA] = true,
-		[PAY_OPTION_ROOM_OWNER] = true,
+		[enum.PAY_OPTION_BOSS] = true,
+		[enum.PAY_OPTION_AA] = true,
+		[enum.PAY_OPTION_ROOM_OWNER] = true,
 	}
 
 	return option ~= nil and pay_option_all[option]
@@ -1048,25 +1026,25 @@ end
 local function check_rule(rule)
 	local chair_count = get_chair_count(rule.room.player_count_option + 1)
 	if not chair_count then
-		return ERROR_CLUB_UNKONW
+		return enum.ERROR_CLUB_UNKONW
 	end
 
 	local play_round = get_play_round(rule.round.option + 1)
 	if not play_round then
-		return ERROR_CLUB_UNKONW
+		return enum.ERROR_CLUB_UNKONW
 	end
 
 	local pay_option = rule.pay.option
 	if not check_pay_option(pay_option) then
-		return ERROR_CLUB_UNKONW
+		return enum.ERROR_CLUB_UNKONW
 	end
 
 	local money_type = rule.pay.money_type
 	if not check_money_type(money_type) then
-		return ERROR_CLUB_UNKONW
+		return enum.ERROR_CLUB_UNKONW
 	end
 
-	return ERROR_NONE,play_round,chair_count,pay_option,money_type
+	return enum.ERROR_NONE,play_round,chair_count,pay_option,money_type
 end
 
 local function get_room_player_count(room_id)
@@ -1076,8 +1054,7 @@ end
 local function find_best_room(first_game_type,second_game_type)
 	local room_id 
 	local cur_player_count
-	local ids = channel.query()
-	for id,_ in pairs(ids) do
+	for id,_ in pairs(channel.query()) do
 		id = tonumber(id:match("game%.(%d+)"))
 		if id then
 			local gameconf = serviceconf[id].conf
@@ -1162,23 +1139,23 @@ function on_cs_create_private_room(msg,guid)
 	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
 
 	local club = club_id and base_clubs[club_id] or nil
-	if pay_option == PAY_OPTION_BOSS then
+	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
 			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
-				result = enum.ERROR_CLUB_NOT_FOUND,
+				result = enum.enum.ERROR_CLUB_NOT_FOUND,
 				game_type = game_type,
 			})
 			return
 		end
 
 		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
-	elseif pay_option == PAY_OPTION_AA then
+	elseif pay_option == enum.PAY_OPTION_AA then
 		if club then
 			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
 		else
 			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
 		end
-	elseif pay_option == PAY_OPTION_ROOM_OWNER then
+	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		
 	end
 
@@ -1256,7 +1233,7 @@ function on_cs_reconnect(guid)
 			club_id = private_table.club_id,
 			table_id = private_table.table_id,
 			rule = json.encode(private_table.rule),
-			owner = guid,
+			owner = private_table.owner,
 		},
 		seat_list = seats,
 	})
@@ -1282,7 +1259,7 @@ function on_cs_join_private_room(msg,guid)
 
 	if not global_table_id then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
 	end
@@ -1290,7 +1267,7 @@ function on_cs_join_private_room(msg,guid)
 	local private_table = base_private_table[global_table_id]
 	if not private_table then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
 	end
@@ -1298,7 +1275,7 @@ function on_cs_join_private_room(msg,guid)
 	local game_type = private_table.game_type
 	if not game_type then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-			result = ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 	end
 
@@ -1306,6 +1283,13 @@ function on_cs_join_private_room(msg,guid)
 	if room_cfg.first_game_type ~= game_type then
 		onlineguid[guid] = nil
 		local room_id = find_best_room(game_type)
+		if not room_id then 
+			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+				result = enum.ERROR_JOIN_ROOM_NO,
+			})
+			return 
+		end
+
 		log.info("ss_changegame to %s,%s",guid,room_id)
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
@@ -1334,7 +1318,7 @@ function on_cs_join_private_room(msg,guid)
 	}
 
 	local result,_,chair_count,pay_option,_ = check_rule(rule)
-	if result ~= ERROR_NONE  then
+	if result ~= enum.ERROR_NONE  then
 		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
 			result = result,
 		})
@@ -1344,22 +1328,22 @@ function on_cs_join_private_room(msg,guid)
 	local tb
 	local club_id = private_table.club_id
 	local club = club_id and base_clubs[club_id] or nil
-	if pay_option == PAY_OPTION_BOSS then
+	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
 			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
-				result = ERROR_CLUB_NOT_FOUND,
+				result = enum.ERROR_CLUB_NOT_FOUND,
 			})
 			return
 		end
 
 		result,tb = club:join_table(player,private_table,chair_count)
-	elseif pay_option == PAY_OPTION_AA then
+	elseif pay_option == enum.PAY_OPTION_AA then
 		if club then
 			result,tb = club:join_table(player,private_table,chair_count)
 		else
 			result,tb = g_room:join_private_table(player,private_table,chair_count)
 		end
-	elseif pay_option == PAY_OPTION_ROOM_OWNER then
+	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		
 	end
 
@@ -1720,12 +1704,12 @@ end
 
 -- 添加机器人
 local function add_android(opt_type, room_id, android_list)
-	if opt_type == GM_ANDROID_ADD_ACTIVE then
+	if opt_type == enum.GM_ANDROID_ADD_ACTIVE then
 		for _, v in ipairs(android_list) do
 			local a = base_active_android:new()
 			a:init(room_id, v.guid, v.account, v.nickname)
 		end
-	elseif opt_type == GM_ANDROID_ADD_PASSIVE then
+	elseif opt_type == enum.GM_ANDROID_ADD_PASSIVE then
 		for _, v in ipairs(android_list) do
 			local a = base_passive_android:new()
 			a:init(room_id, v.guid, v.account, v.nickname)
@@ -1742,7 +1726,7 @@ function on_gm_android_opt(opt_type_, roomid_, num_)
 		return
 	end
 
-	if opt_type_ == GM_ANDROID_ADD_ACTIVE or opt_type_ == GM_ANDROID_ADD_PASSIVE then
+	if opt_type_ == enum.GM_ANDROID_ADD_ACTIVE or opt_type_ == enum.GM_ANDROID_ADD_PASSIVE then
 		local a = android_manager:create_android(def_game_id, num_)
 		local n = #a
 		if n > 0 then
@@ -1757,9 +1741,9 @@ function on_gm_android_opt(opt_type_, roomid_, num_)
 				count = num_ - n,
 				})
 		end
-	elseif opt_type_ == GM_ANDROID_SUB_ACTIVE then
+	elseif opt_type_ == enum.GM_ANDROID_SUB_ACTIVE then
 		base_active_android:sub_android(roomid_, num_)
-	elseif opt_type_ == GM_ANDROID_SUB_PASSIVE then
+	elseif opt_type_ == enum.GM_ANDROID_SUB_PASSIVE then
 		base_passive_android:sub_android(roomid_, num_)
 	end
 end
@@ -1941,7 +1925,7 @@ function on_ls_cc_changemoney(msg)
 	end
 	log.info("on_ls_cc_changemoney : guid [%d] transfer_id[%s]  retcode:[%d]",msg.player_guid,msg.transfer_id,retcode)
 
-	if tonumber(retcode) == ChangMoney_Success then -- success
+	if tonumber(retcode) == enum.ChangMoney_Success then -- success
 		send2db_pb("LS_CC_ChangeMoney",notify)
 		log.info(string.format("on_ls_cc_changemoney changeBankMoney success : proxy_guid [%d] player_guid [%d] transfer_id[%s] transfer_money[%d] retcode [%d] oldmoney[%s] newmoney[%s]",
 			notify.proxy_guid,notify.player_guid,notify.transfer_id,notify.transfer_money,retcode,tostring(notify.player_oldmoney),tostring(notify.player_newmoney)))
