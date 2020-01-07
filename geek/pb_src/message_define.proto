@@ -1410,3 +1410,12 @@ message S2C_TRANSFER_ROOM_OWNER_RES{
     int32 new_owner = 3;    //房主ID
 }
 
+
+message SC_GameServerCfg {
+	enum MsgID { Nil = 0; ID = 1187; }
+	repeated int32 game_sever_info = 1;
+}
+
+message CS_GameServerCfg {
+	enum MsgID { Nil = 0; ID = 1188; }
+}

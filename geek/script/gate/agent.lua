@@ -7,6 +7,7 @@ local httpc = require "http.httpc"
 local datacenter = require "skynet.datacenter"
 local netmsgopt = require "netmsgopt"
 local cluster = require "cluster"
+local serviceconf = require "serviceconf"
 local json = require "cjson"
 local enum = require "pb_enums"
 require "table_func"
@@ -163,6 +164,32 @@ function MSG.CS_RequestSms(msg)
 	return true
 end
 
+function MSG.CS_GameServerCfg(msg)
+    local pb_cfg = {}
+    for item,_ in pairs(channel.query()) do
+        local type,id = string.match(item,"([^.]+).(%d+)")
+        if type == "game" then
+            id = tonumber(id)
+            local sconf = serviceconf[id]
+            if sconf.conf.private_conf then
+                local gconf = sconf.conf
+                log.info("GameName[%s] GameID[%d] first_game_type [%d].", gconf.gamename, id,gconf.first_game_type)
+                table.insert(pb_cfg,sconf.first_game_type)
+            end
+        end
+	end
+
+	for _,p in pairs(pb_cfg) do
+		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
+    end
+
+    toguid("SC_GameServerCfg",{
+        game_sever_info  = pb_cfg,
+    })
+
+	return true
+end
+
 function MSG.CG_GameServerCfg(msg)
     local player_platform_id = "0"
     
@@ -173,15 +200,14 @@ function MSG.CG_GameServerCfg(msg)
     end
 
     local pb_cfg = {}
-	for _,item in pairs(online_server) do
-		if item.platform_id and game_cfg[item.game_id].is_open then
-            log.error( "GameName[%s] GameID[%d] platform[%s] error.", item.game_name, item.game_id, item.platform_id )
-			for _,it in pairs(string.split(item.platform_id,"[^,]+")) do
-				if player_platform_id == it then
-					table.insert(pb_cfg,item)
-					break
-                end
-			end
+    for item,_ in pairs(channel.query()) do
+        local type,id = string.match("([^.]+).(%d+)")
+        if type == "game" then
+            local sconf = serviceconf[tonumber(id)]
+            if sconf.conf.private_conf then
+                log.info("GameName[%s] GameID[%d] platform[%s] error.", item.game_name, item.game_id, item.platform_id)
+
+            end
         end
 	end
 
@@ -189,7 +215,7 @@ function MSG.CG_GameServerCfg(msg)
 		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
     end
 
-	toguid("GC_GameServerCfg",{
+    toguid("S2C_GameServerCfg",{
         pb_cfg = pb_cfg,
     })
 

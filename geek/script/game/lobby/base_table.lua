@@ -119,9 +119,12 @@ end
 function base_table:request_dismiss(player)
 	local timer = timer_manager:new_timer(dismiss_timeout,function()
 		self:foreach(function(p)
-			self:commit_dismiss(p,false)
+			if self.dismiss_request.commissions[p.chair_id] == nil then
+				self:commit_dismiss(p,false)
+			end
 		end)
 	end)
+
 	self.dismiss_request = {
 		commissions = {},
 		requester = player,
@@ -495,7 +498,6 @@ function base_table:dismiss()
 	self:broadcast2client("SC_DismissTable",{success = true,})
 	self:clear()
 
-	
 	self:on_private_dismissed()
 
 	self.private_id = nil
