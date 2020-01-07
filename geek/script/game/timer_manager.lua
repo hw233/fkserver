@@ -1,7 +1,7 @@
 require "functions"
 local log = require "log"
 
-timer_manager = timer_manager or {
+local timer_manager = {
 	last_tick = os.clock(),
 	timers = {},
 	pool_timers = {},

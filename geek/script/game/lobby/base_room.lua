@@ -15,7 +15,7 @@ local nameservice = require "nameservice"
 
 require "game.net_func"
 require "table_func"
-require "game.timer_manager"
+local timer_manager = require "game.timer_manager"
 
 require "msgopt"
 local log = require "log"
@@ -399,9 +399,10 @@ function base_room:create_private_table(player,chair_count,round, conf)
 		rule = json.encode(conf),
 		game_type = def_first_game_type,
 	})
-	reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
+
+	-- reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
 	reddb:sadd("player:table:"..tostring(player.guid),global_tid)
-	reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
+	-- reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
 
 	self:player_enter_room(player)
 	

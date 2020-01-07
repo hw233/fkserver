@@ -79,7 +79,7 @@ function CMD.start(conf)
 	require "hotfix"
 	require "game.lobby.base_android"
 	require "game.lobby.gm_cmd"
-	require "game.timer_manager"
+	local timer_manager = require "game.timer_manager"
 	
 	local base_passive_android = base_passive_android
 	local room = g_room
