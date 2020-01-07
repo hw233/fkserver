@@ -1490,34 +1490,35 @@ function maajan_table:gen_ji_tiles()
     local ben_ji_tile
     local is_chui_fen_ji = self.conf.rule.chui_feng_ji
     if self.dealer.remain_count > 0 then
-        ben_ji_tile = self.dealer:deal_one()
-        for _ = 1,100 do
-            if ben_ji_tile < 30 then break end
+        repeat 
             ben_ji_tile = self.dealer:deal_one()
-        end
+            if ben_ji_tile == 35 then
+                break
+            end
 
-        local ben_ji_value = ben_ji_tile % 10
-        local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
+            local ben_ji_value = ben_ji_tile % 10
+            local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
 
-        if fan_pai_ji == 15 and is_chui_fen_ji then
-            return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
-        end
-        
-        ji_tiles[fan_pai_ji] = ji_tiles[fan_pai_ji] or {}
-        ji_tiles[fan_pai_ji][HU_TYPE.FAN_PAI_JI] = 1
-        if self.conf.rule.yao_bai_ji then
-            local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 9 - 1) % 9 + 1
-            ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
-            ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
-            if yao_bai_ji == 15 and is_chui_fen_ji then
+            if fan_pai_ji == 15 and is_chui_fen_ji then
                 return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
             end
-        end
+            
+            ji_tiles[fan_pai_ji] = ji_tiles[fan_pai_ji] or {}
+            ji_tiles[fan_pai_ji][HU_TYPE.FAN_PAI_JI] = 1
+            if self.conf.rule.yao_bai_ji then
+                local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 9 - 1) % 9 + 1
+                ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
+                ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
+                if yao_bai_ji == 15 and is_chui_fen_ji then
+                    return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
+                end
+            end
 
-        if self.conf.rule.ben_ji then
-            ji_tiles[ben_ji_tile] = ji_tiles[ben_ji_tile] or {}
-            ji_tiles[ben_ji_tile][HU_TYPE.FAN_PAI_JI] = 1
-        end
+            if self.conf.rule.ben_ji then
+                ji_tiles[ben_ji_tile] = ji_tiles[ben_ji_tile] or {}
+                ji_tiles[ben_ji_tile][HU_TYPE.FAN_PAI_JI] = 1
+            end
+        until true
     end
 
     if self.conf.rule.xing_qi_ji then
