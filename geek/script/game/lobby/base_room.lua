@@ -397,6 +397,7 @@ function base_room:create_private_table(player,chair_count,round, conf)
 		owner = player.guid,
 		rule = json.encode(conf),
 		game_type = def_first_game_type,
+		create_time = os.time(),
 	})
 
 	-- reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
