@@ -731,7 +731,7 @@ function maajan_table:on_action_after_chu_pai(evt)
 
     table.sort(all_actions,function(l,r)
         local l_priority = ACTION_PRIORITY[l.done.action]
-        local r_priority = ACTION_PRIORITY[l.done.action]
+        local r_priority = ACTION_PRIORITY[r.done.action]
         return l_priority < r_priority
     end)
 
