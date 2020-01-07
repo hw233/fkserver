@@ -614,7 +614,7 @@ function maajan_table:on_action_after_mo_pai(evt)
         player.hu = {
             time = os.time(),
             tile = tile,
-            types = mj_util.hu(player.pai,tile),
+            types = mj_util.hu(player.pai),
             zi_mo = true,
             gang_hua = def.is_action_gang(player.last_action or 0),
         }
@@ -1516,7 +1516,7 @@ function maajan_table:game_balance(ji_tiles)
     for _,p in pairs(self.players) do
         if not p.hu and not p.men and not p.ting then
             local ting_tiles = mj_util.is_ting(p.pai)
-            if #ting_tiles > 0 then
+            if table.nums(ting_tiles) > 0 then
                 p.jiao = p.jiao or {}
                 p.jiao.tiles = ting_tiles
             end
