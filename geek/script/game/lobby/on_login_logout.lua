@@ -1077,6 +1077,8 @@ function on_cs_create_private_room(msg,guid)
     local club_id = msg.club_id
 	local json_rule = msg.rule
 
+	dump(msg)
+
 	local player = base_players[guid]
 
 	if player.table_id then
@@ -1142,7 +1144,7 @@ function on_cs_create_private_room(msg,guid)
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
 			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
-				result = enum.enum.ERROR_CLUB_NOT_FOUND,
+				result = enum.ERROR_CLUB_NOT_FOUND,
 				game_type = game_type,
 			})
 			return

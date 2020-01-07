@@ -206,6 +206,7 @@ local HU_TYPE = {
 	YING_BAO					= pb.enum("HU_TYPE","YING_BAO"), --硬报
 	RUAN_BAO					= pb.enum("HU_TYPE","RUAN_BAO"), --软报
 	SHA_BAO						= pb.enum("HU_TYPE","SHA_BAO"),	--杀报
+	HONG_ZHONG					= pb.enum("HU_TYPE","HONG_ZHONG"), --红中
 }
 
 define.HU_TYPE = HU_TYPE
@@ -302,6 +303,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.ZHUANG]				= {name = "ZHUANG",score = 1},				--庄家
 	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 20},		--硬报
 	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 10},		--软报
+	[HU_TYPE.HONG_ZHONG]			= {name = "HONG_ZHONG",score = 1},		--红中
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
