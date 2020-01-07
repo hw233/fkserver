@@ -25,8 +25,7 @@ local reddb = redisopt.default
 
 local table_expire_seconds = 60 * 60 * 5
 
-require "timer"
-local add_timer = add_timer
+local timer = require "timer"
 
 -- 房间
 local base_room = {}

@@ -28,10 +28,8 @@ local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
 require "functions"
-
-require "timer"
-local add_timer = add_timer
 local def_save_db_time = 60 -- 1分钟存次档
+local timer = require "timer"
 
 local reddb = redisopt.default
 
@@ -188,7 +186,7 @@ function on_ls_login_notify(guid,reconnect)
 
 		p:save()
 
-		add_timer(def_save_db_time, save_db_timer)
+		timer.add_timer(def_save_db_time, save_db_timer)
 	end
 	save_db_timer()
 
@@ -1009,7 +1007,7 @@ function on_ss_change_game(guid)
 
 		p:save()
 
-		add_timer(def_save_db_time, save_db_timer)
+		timer.add_timer(def_save_db_time, save_db_timer)
 	end
 	save_db_timer()
 

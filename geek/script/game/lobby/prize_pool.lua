@@ -1,8 +1,7 @@
 -- 奖池
 local redisopt = require "redisopt"
 local log = require "log"
-require "timer"
-local add_timer = add_timer
+local timer = require "timer"
 local def_get_redis_bonus = 10 + math.random(1,5) -- 定时获取一次奖池
 local def_wirte_db_bonus  = 60 + math.random(1,10)-- 定时写数据库
 local MAX_BONUS = 999999
@@ -29,7 +28,7 @@ function prize_pool:init(game_name)
           bonus_pool_name = self:get_redis_key()
         })
     end
-    add_timer(3, get_db_bonus)
+    timer.add_timer(3, get_db_bonus)
 
     -- 定时更新
     local function get_redis_bonus()
@@ -40,9 +39,9 @@ function prize_pool:init(game_name)
             -- log.info("get_redis_bonus total_bonus_money [%d]",self.total_bonus_money_)
         end 
 
-        add_timer(def_get_redis_bonus, get_redis_bonus)
+        timer.add_timer(def_get_redis_bonus, get_redis_bonus)
     end
-    add_timer(5, get_redis_bonus)
+    timer.add_timer(5, get_redis_bonus)
 
     -- 定时写数据库
     local function write_db_bonus()
@@ -51,9 +50,9 @@ function prize_pool:init(game_name)
             money = self.total_bonus_money_
             })
 
-        add_timer(def_wirte_db_bonus, write_db_bonus)
+            timer.add_timer(def_wirte_db_bonus, write_db_bonus)
     end
-    add_timer(def_wirte_db_bonus, write_db_bonus)
+    timer.add_timer(def_wirte_db_bonus, write_db_bonus)
 end
 
 function prize_pool:get_redis_key()

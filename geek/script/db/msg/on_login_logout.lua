@@ -12,8 +12,7 @@ local json = require "cjson"
 local channel = require "channel"
 local reddb = redisopt.default
 
-require "timer"
-local add_timer = add_timer
+local timer = require "timer"
 
 require "table_func"
 server_start_time =  os.time()
