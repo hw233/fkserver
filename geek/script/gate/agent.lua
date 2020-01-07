@@ -27,13 +27,6 @@ local conf
 local rsa_public_key
 
 
-local function toguid(msgname,msg)
-    assert(fd,"toguid,fd ~= nil")
-    assert(guid,"toguid,guid ~= nil")
-    
-	netmsgopt.send(fd,guid,msgname,msg)
-end
-
 local CMD = {}
 
 function CMD.login(source, u)
@@ -96,7 +89,7 @@ end
 function MSG.CS_RequestSms(msg)
 	if not util.request_sms(guid) then
 		log.info( "RequestSms guid [%d]",guid)
-		toguid("SC_RequestSms",{
+		netmsgopt.send(fd,"SC_RequestSms",{
             result = enum.LOGIN_RESULT_SMS_REPEATED,
         })
 	else
@@ -152,7 +145,7 @@ function MSG.CS_RequestSms(msg)
         --         msg.guid =  guid
         --         msg.gate_id( static_cast<GateServer*>(BaseServer::instance()).get_gate_id() )
         --         log.info( "gateid[%d] guid[%d] sessiong[%d]", static_cast<GateServer*>(BaseServer::instance()).get_gate_id(), get_guid(), get_id() )
-        --         session.toguid( &msg )
+        --         session.netmsgopt.send(fd, &msg )
         --     else
         --         log.warning( "login server disconnect" )
         --     end
@@ -167,23 +160,19 @@ end
 function MSG.CS_GameServerCfg(msg)
     local pb_cfg = {}
     for item,_ in pairs(channel.query()) do
-        local type,id = string.match(item,"([^.]+).(%d+)")
-        if type == "game" then
+        local id = string.match(item,"game.(%d+)")
+        if id then
             id = tonumber(id)
             local sconf = serviceconf[id]
             if sconf.conf.private_conf then
                 local gconf = sconf.conf
                 log.info("GameName[%s] GameID[%d] first_game_type [%d].", gconf.gamename, id,gconf.first_game_type)
-                table.insert(pb_cfg,sconf.first_game_type)
+                table.insert(pb_cfg,gconf.first_game_type)
             end
         end
 	end
 
-	for _,p in pairs(pb_cfg) do
-		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
-    end
-
-    toguid("SC_GameServerCfg",{
+    netmsgopt.send(fd,"SC_GameServerCfg",{
         game_sever_info  = pb_cfg,
     })
 
@@ -191,12 +180,9 @@ function MSG.CS_GameServerCfg(msg)
 end
 
 function MSG.CG_GameServerCfg(msg)
-    local player_platform_id = "0"
-    
     if not msg.platform_id then
         log.warning( "platform_id empty, CG_GameServerCfg, set platform = [0]")
-    else
-        player_platform_id = msg.platform_id
+        msg.platform_id = "0"
     end
 
     local pb_cfg = {}
@@ -206,7 +192,6 @@ function MSG.CG_GameServerCfg(msg)
             local sconf = serviceconf[tonumber(id)]
             if sconf.conf.private_conf then
                 log.info("GameName[%s] GameID[%d] platform[%s] error.", item.game_name, item.game_id, item.platform_id)
-
             end
         end
 	end
@@ -215,7 +200,7 @@ function MSG.CG_GameServerCfg(msg)
 		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
     end
 
-    toguid("S2C_GameServerCfg",{
+    netmsgopt.send(fd,"S2C_GameServerCfg",{
         pb_cfg = pb_cfg,
     })
 
@@ -233,12 +218,12 @@ function MSG.CL_GetInviterInfo(msg)
         guid = guid,
     })
 
-    toguid("LC_GetInviterInfo",scmsg)
+    netmsgopt.send(fd,"LC_GetInviterInfo",scmsg)
 end
 
 function MSG.CS_SetNickname(msg) 
     if not msg.nickname then
-        toguid("SC_SetNickname",{
+        netmsgopt.send(fd,"SC_SetNickname",{
             result = enum.LOGIN_RESULT_NICKNAME_EMPTY,
         })
         return true
@@ -250,14 +235,14 @@ function MSG.CS_SetNickname(msg)
     local gbknickname = gbk.fromutf8(msg.nickname)
     local nicknamelen = gbk.len(gbknickname)
     if nicknamelen < 4 or nicknamelen > 14 then
-        toguid("SC_SetNickname",{
+        netmsgopt.send(fd,"SC_SetNickname",{
             result = enum.LOGIN_RESULT_NICKNAME_LIMIT,
         })
         return true
     end
 
     local scmsg = channel.call(":.game.?","msg","CS_SetNickname",msg)
-    toguid("SC_SetNickname",scmsg)
+    netmsgopt.send(fd,"SC_SetNickname",scmsg)
 
 	return true
 end
@@ -275,13 +260,13 @@ function MSG.CS_ResetAccount(msg)
 
     if not msg.nickname then
         reset_account_reply.result = enum.LOGIN_RESULT_NICKNAME_EMPTY
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     if not msg.password then
         reset_account_reply.result = enum.LOGIN_RESULT_SET_ACCOUNT_OR_PASSWORD_EMPTY
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         log.error( "password empty" )
         return true
     end
@@ -290,21 +275,21 @@ function MSG.CS_ResetAccount(msg)
     local nickname_len = gbk.len(gbk_nickname)
     if nickname_len < 4 or nickname_len > 14 then
         reset_account_reply.result = enum.LOGIN_RESULT_NICKNAME_LIMIT
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     local password = util.rsa_decrypt(crypt.hexdecode(msg.password))
     if type(password) ~= "string" then
         reset_account_reply.result = enum.LOGIN_RESULT_SET_ACCOUNT_OR_PASSWORD_EMPTY
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         log.error( "password error %s", msg.password() )
         return true
     end
 
     if not msg.account then
         reset_account_reply.result = enum.LOGIN_RESULT_SET_ACCOUNT_OR_PASSWORD_EMPTY
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         log.error( "CE_ResetAccount account empty" )
         return true
     end
@@ -347,7 +332,7 @@ function MSG.CS_ResetAccount(msg)
                 nickname = potato_reset_nickname,
             })
 
-            toguid("SC_ResetAccount",scmsg)
+            netmsgopt.send(fd,"SC_ResetAccount",scmsg)
         else
             if code then
                 log.error( "potato login is error : code[%d] message[%s]", code, rep.message )
@@ -357,13 +342,13 @@ function MSG.CS_ResetAccount(msg)
         end
 
         reset_account_reply.result = code and tonumber(code) or enum.LOGIN_RESULT_POTATO_CHECK_ERROR
-        toguid("SC_ResetAccount", reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount", reset_account_reply)
         return
     end
 
     if not msg.account or type(msg.account) ~= "string" then
         reset_account_reply.result = enum.LOGIN_RESULT_SET_ACCOUNT_OR_PASSWORD_EMPTY
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         log.error( "CE_ResetAccount account empty" )
         return true
     end
@@ -372,32 +357,32 @@ function MSG.CS_ResetAccount(msg)
 
     if string.len(msg.account) > 18 or string.len(msg.account < 7) then
         reset_account_reply.result = enum.LOGIN_RESULT_ACCOUNT_SIZE_LIMIT
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     if string.find(msg.account,"$[^\\d]+^") then
         reset_account_reply.result = enum.LOGIN_RESULT_ACCOUNT_CHAR_LIMIT
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     if not util.verify_sms(guid,msg.account,msg.key) then
         reset_account_reply.result = enum.LOGIN_RESULT_SMS_FAILED
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     if not msg.key or not string.find(msg.key,"$[^\\d]+^") or string.len(msg.key) ~= 6 then
         reset_account_reply.result = enum.LOGIN_RESULT_SMS_ERR
-        toguid("SC_ResetAccount",reset_account_reply)
+        netmsgopt.send(fd,"SC_ResetAccount",reset_account_reply)
         return true
     end
 
     msg.password = password
     msg.guid = guid
     local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_ResetAccount",msg)
-    toguid("SC_ResetAccount",scmsg)
+    netmsgopt.send(fd,"SC_ResetAccount",scmsg)
 
 	return true
 end
@@ -427,7 +412,7 @@ function MSG.CS_SetPassword(guid,msg)
     end
 
     if old_password == password then
-        toguid("SC_SetPassword",{
+        netmsgopt.send(fd,"SC_SetPassword",{
             result = enum.LOGIN_RESULT_SAME_PASSWORD,
         } )
         return true
@@ -438,7 +423,7 @@ function MSG.CS_SetPassword(guid,msg)
     msg.guid = guid
     
     local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_SetPassword",msg)
-    toguid("SC_SetPassword",scmsg)
+    netmsgopt.send(fd,"SC_SetPassword",scmsg)
 
 	return true
 end
@@ -456,7 +441,7 @@ function MSG.CS_SetPasswordBySms(guid,msg)
     msg.guid = guid
 
     if not util.verify_sms(guid,msg.tel,msg.sms_no) then
-        toguid("SC_SetPassword",{
+        netmsgopt.send(fd,"SC_SetPassword",{
             result = enum.LOGIN_RESULT_SMS_FAILED,
         })
         return true
@@ -464,7 +449,7 @@ function MSG.CS_SetPasswordBySms(guid,msg)
 
     msg.password = util.rsa_decrypt(crypt.hexdecode(msg.password))
     local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_SetPasswordBySms",msg)
-    toguid("SC_SetPasswordBySms",scmsg)
+    netmsgopt.send(fd,"SC_SetPasswordBySms",scmsg)
 
 	return true
 end
@@ -479,7 +464,7 @@ function MSG.CS_BankSetPassword(guid,msg)
         msg.guid = guid
         msg.password = util.rsa_decrypt(crypt.hexdecode(msg.password))
         local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_BankSetPassword",msg)
-        toguid("SC_BankSetPassword",scmsg)
+        netmsgopt.send(fd,"SC_BankSetPassword",scmsg)
     else
         log.error( "CS_BankSetPassword password empty" )
     end
@@ -498,7 +483,7 @@ function MSG.CS_BankChangePassword(guid,msg)
         msg.old_password = util.rsa_decrypt(crypt.hexdecode(msg.old_password))
         msg.password = util.rsa_decrypt(crypt.hexdecode(msg.password))
         local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_BankChangePassword",msg)
-        toguid("SC_BankChangePassword",scmsg)
+        netmsgopt.send(fd,"SC_BankChangePassword",scmsg)
     else
         log.error( "CS_BankChangePassword password or old password empty" )
     end
@@ -513,7 +498,7 @@ end
 --     end
 
 --     if not util.verify_sms(guid,msg.tel,msg.bank_pw_sms) then
---         toguid("SC_ResetBankPW",{
+--         netmsgopt.send(fd,"SC_ResetBankPW",{
 --             guid = msg.guid,
 --             result = LOGIN_RESULT_SMS_FAILED,
 --         } )
@@ -521,7 +506,7 @@ end
 --         msg.bank_password_new = util.rsa_decrypt(crypt.hexdecode(msg.bank_password_new))
 --         msg.guid = guid
 --         local scmsg = channel.call("game."..tostring(inserverid),"CS_BankReSetPassWD",msg)
---         toguid("SC_BankChangePassword",scmsg)
+--         netmsgopt.send(fd,"SC_BankChangePassword",scmsg)
 --     end
 
 -- 	return true
@@ -539,7 +524,7 @@ function MSG.CS_BankDraw(guid,msg)
     end
 
     local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_BankDraw",msg)
-    toguid("SC_BankDraw",scmsg)
+    netmsgopt.send(fd,"SC_BankDraw",scmsg)
 
 	return true
 end
@@ -553,7 +538,7 @@ function MSG.CS_BankLogin(guid,msg)
     if msg.password then
         msg.password = util.rsa_decrypt(crypt.hexdecode(msg.password))
         local scmsg = channel.call("game."..tostring(inserverid),"msg","CS_BankLogin",msg)
-        toguid("SC_BankDraw",scmsg)
+        netmsgopt.send(fd,"SC_BankDraw",scmsg)
     else
         log.error( "CS_BankLogin password empty" )
     end
@@ -575,7 +560,7 @@ function MSG.C2S_LOGOUT_REQ(msg)
         skynet.exit()
     else
         local res = channel.call("service."..tostring(inserverid),"msg","C2S_LOGOUT_REQ",guid,msg)
-        toguid("S2C_LOGOUT_RES",res)
+        netmsgopt.send(fd,"S2C_LOGOUT_RES",res)
         if res.logoutType then
             skynet.call(gate,"lua","logout",guid)
             skynet.exit()
