@@ -1,13 +1,16 @@
 local skynet = require "skynetproto"
-local pb = require "pb_files"
 local log = require "log"
 local channel = require "channel"
 local base_players  = require "game.lobby.base_players"
 local base_room = require "game.lobby.base_room"
+local base_private_table = require "game.lobby.base_private_table"
 require "functions"
 local msgopt = require "msgopt"
 local enum = require "pb_enums"
 local redisopt = require "redisopt"
+local reddb = redisopt.default
+
+local private_table_elapsed_seconds = 60 * 60 * 5
 
 register_dispatcher = msgopt.register
 
@@ -55,6 +58,22 @@ function get_private_room_bank()
     return global_cfg.private_room_bank
 end
 
+local function clean_private_table()
+	local table_keys = reddb:keys("table:info:*")
+	for _,tk in pairs(table_keys) do
+		local tid = string.match(tk,"table:info:(%d+)")
+		tid = tonumber(tid)
+		local ptconf = base_private_table[tid]
+		if ptconf.create_time + private_table_elapsed_seconds >= os.time() then
+			local tb = base_room:find_table(ptconf.reald_table_id)
+			if tb then
+				log.warning("private table %s,%s timeout,clean.",ptconf.table_id,ptconf.reald_table_id)
+				tb:dismiss()
+			end
+		end
+	end
+	skynet.timeout(60 * 100,clean_private_table)
+end
 
 
 local CMD = {}
@@ -93,6 +112,8 @@ function CMD.start(conf)
         skynet.timeout(4,on_tick)
     end
 	on_tick()
+
+	clean_private_table()
 end
 
 function CMD.afk(guid,offline)
