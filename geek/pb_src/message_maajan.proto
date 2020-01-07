@@ -281,6 +281,7 @@ message Maajan_Blanace_Player{
 	repeated Maajan_Balance_Score gang = 7;
 	repeated Maajan_Balance_Score ji = 8;
 	BalanceStatus 			status = 9;
+	int32 hu_tile 			= 10;
 }
 
 //结算
