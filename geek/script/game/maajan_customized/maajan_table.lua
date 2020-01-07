@@ -1372,6 +1372,83 @@ function maajan_table:get_ji_items(p,ji_tiles)
     return types
 end
 
+function maajan_table:get_hong_zhong_items(p)
+    local types = {}
+  
+
+    local ming_pai = p.pai.ming_pai
+    for _,s in pairs(ming_pai) do
+        repeat 
+            if s.tile == 35 then
+                local count = 0
+                local whoee = nil
+                if s.type == SECTION_TYPE.PENG then
+                    count = 3
+                    whoee = s.whoee
+                elseif s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or 
+                    s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG then
+                    count = 4
+                    whoee = s.whoee
+                else
+                    break
+                end
+
+                table.insert(types,{
+                    type = HU_TYPE.HONG_ZHONG, tile = 35, score = HU_TYPE_INFO[HU_TYPE.HONG_ZHONG].score *count,count = 1,whoee = whoee
+                })
+            end
+        until true
+    end
+
+    local count = 0
+    local shou_pai = p.pai.shou_pai
+
+    count = count + (shou_pai[35] or 0)
+    local desk_tiles = p.pai.desk_tiles
+    for _,tile in pairs(desk_tiles) do
+        if tile == 35 then count = count + 1 end
+    end
+
+    if count > 0 then
+        table.insert(types,{ 
+            type = HU_TYPE.HONG_ZHONG, tile = 35, score = HU_TYPE_INFO[HU_TYPE.HONG_ZHONG].score * count,count = 1
+        })
+    end
+
+    return types
+end
+
+function maajan_table:calculate_hong_zhong(p)
+    local player_count = table.nums(self.players)
+    local types = {}
+
+    local ts = self:get_hong_zhong_items(p)
+    dump(ts)
+    for _,t in pairs(ts) do
+        if t.whoee then
+            types[p.chair_id] = types[p.chair_id] or {}
+            table.insert(types[p.chair_id],t)
+            if (p.hu or p.men or p.ting or p.jiao) then
+                types[t.whoee] = types[t.whoee] or {}
+                table.insert(types[t.whoee],{type = t.type,score = -t.score,tile = t.tile,count = t.count})
+            end
+        else
+            types[p.chair_id] = types[p.chair_id] or {}
+            table.insert(types[p.chair_id],{type = t.type,score = t.score * (player_count - 1),tile = t.tile,count = t.count})
+            for _,pj in pairs(self.players) do
+                if p ~= pj and (p.hu or p.men or p.ting or p.jiao) then
+                    types[pj.chair_id] = types[pj.chair_id] or {}
+                    table.insert(types[pj.chair_id],{type = t.type,score = -t.score,tile = t.tile,count = t.count})
+                end
+            end
+        end
+    end
+
+    dump(types)
+
+    return types
+end
+
 function maajan_table:calculate_ji(p,ji_tiles)
     local player_count = table.nums(self.players)
     local types = {}
@@ -1397,6 +1474,8 @@ function maajan_table:calculate_ji(p,ji_tiles)
         end
     end
 
+    table.unionto(types,self:calculate_hong_zhong(p))
+
     return types
 end
 
@@ -1416,8 +1495,6 @@ function maajan_table:gen_ji_tiles()
             if ben_ji_tile < 30 then break end
             ben_ji_tile = self.dealer:deal_one()
         end
-        
-        
 
         local ben_ji_value = ben_ji_tile % 10
         local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
@@ -1632,6 +1709,7 @@ function maajan_table:on_game_balance()
             ji = balance_item and balance_item.ji or {},
             items = hu_men,
             status = player_balance_status(p),
+            hu_tile = p.hu and p.hu.tile or nil,
         })
     end
 
