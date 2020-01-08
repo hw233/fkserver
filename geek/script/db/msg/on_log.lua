@@ -2,17 +2,10 @@
 
 local pb = require "pb_files"
 local log = require "log"
-
+local json = require "cjson"
 require "db.net_func"
-local send2center_pb = send2center_pb
-local send2game_pb = send2game_pb
-
 local dbopt = require "dbopt"
-local db_execute = db_execute
-local db_execute_query = db_execute_query
-local db_fmt_query = db_fmt_query
-
-local LOG_MONEY_OPT_TYPE_RESET_ACCOUNT = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_RESET_ACCOUNT")
+local enum = require "pb_enums"
 
 -- 钱日志
 function on_ld_log_money(login_id,msg)
@@ -22,11 +15,11 @@ end
 -- 钱日志
 function on_sd_log_money( msg)
 	dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$;", msg)
-	if msg.opt_type == LOG_MONEY_OPT_TYPE_RESET_ACCOUNT then
+	if msg.opt_type == enum.LOG_MONEY_OPT_TYPE_RESET_ACCOUNT then
         local sql = string.format("update t_player set bind_gold = %d , bind_time = current_timestamp where guid = %d", msg.new_money - msg.old_money ,msg.guid )
         dbopt.game:query(sql)
     end
-	--print ("...................... on_sd_log_money")
+	log.info("...................... on_sd_log_money")
 end
 
 --下注流水日志
@@ -75,15 +68,23 @@ function on_sl_log_money( msg)
 end
 
 function on_sl_log_Game(msg)
-    --print ("...................... on_sl_log_Game")
+    log.info("...................... on_sl_log_Game")
     dbopt.log:query([[
-        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `start_time`,`end_time`)
-        VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d))]],
-        msg.playid,msg.type,msg.log,msg.starttime,msg.endtime)
+        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `start_time`,`end_time`,`create_time`)
+        VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d), NOW());
+        ]],
+        msg.playid,msg.type,json.encode(msg.log),msg.starttime,msg.endtime)
+
+    local players_sql = {}
+    for _,p in pairs(msg.log.players) do
+        table.insert(players_sql,string.format("('%s',%d)",msg.playid,p.guid))
+    end
+
+    dbopt.log:query("INSERT INTO `t_log_round`(round,guid) VALUES"..table.concat(players_sql,",")..";")
 end
 
 function on_sl_robot_log_money(msg)
-	--print ("...................... on_sl_robot_log_money")
+	log.info("...................... on_sl_robot_log_money")
     dbopt.log:query([[
         INSERT INTO `log`.`t_log_robot_money_tj` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `id`)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, %d, '%s')]],

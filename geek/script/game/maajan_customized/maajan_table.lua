@@ -162,6 +162,7 @@ function maajan_table:on_started()
         mj_min_scale = self.mj_min_scale,
         players = game_log_players,
         action_table = {},
+        rule = self.private_id and self.conf.conf or nil,
     }
 
     local tiles = chair_count_tiles[self.chair_count]
@@ -196,8 +197,6 @@ function maajan_table:on_xi_pai(evt)
     for k,v in pairs(self.players) do
         self.game_log.players[k].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
     end
-
-    self.game_log.start_gong_pai = self.dealer:remain_tiles()
 
     self:on_check_ting()
 end
@@ -1727,10 +1726,9 @@ function maajan_table:on_game_balance()
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         p.total_money = p.total_money or 0
         local p_log = self.game_log.players[chair_id]
-        if p.hu then
-            p_log.hu = p.hu
-            p_log.hu.types = table.keys(p.hu.types)
-        end
+        p_log.nickname = p.nickname
+        p_log.head_url = p.open_id_icon
+        p_log.guid = p.guid
         p_log.pai = p.api
         p.win_money = p_score
         p.total_money = p.total_money + p.win_money
@@ -1776,10 +1774,10 @@ function maajan_table:on_game_balance()
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self.game_log.end_game_time = os.time()
-    local s_log = json.encode(self.game_log)
-    log.info(s_log)
-    self:save_game_log(self.table_game_id,self.def_game_name,s_log,self.game_log.start_game_time,self.game_log.end_game_time)
 
+    dump(self.game_log)
+    self:save_game_log(self.table_game_id,self.def_game_name,self.game_log,self.game_log.start_game_time,self.game_log.end_game_time)
+    
     self:game_over()
 end
 
@@ -1831,6 +1829,7 @@ function maajan_table:ding_zhuang()
 end
 
 function maajan_table:on_game_overed()
+    self.game_log = {}
     self:ding_zhuang()
 
     self.do_logic_update = false
