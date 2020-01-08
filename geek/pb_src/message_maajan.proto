@@ -96,6 +96,14 @@ enum HU_TYPE{
 	RUAN_BAO				= 91;	//天听软报
 	SHA_BAO					= 92; 	//杀报
 	HONG_ZHONG				= 93;	//红中
+	CHONG_FENG_WU_GU		= 94;	//冲锋乌骨鸡
+	ZHE_REN_WU_GU			= 95;	//责任乌骨鸡
+	JING_JI					= 96;	//金鸡
+	JING_WU_GU_JI			= 97;	//金乌骨鸡
+	CHONG_FENG_JING_JI		= 98;	//冲锋金鸡
+	CHONG_FENG_JING_WU_GU	= 99;	//冲锋金乌骨鸡
+	ZHE_REN_JING_JI			= 100;	//责任金鸡
+	ZHE_REN_JING_WU_GU		= 101;	//责任金乌骨
 }
 
 

@@ -1328,54 +1328,9 @@ function maajan_table:calculate_wei_hu(p)
 end
 
 
-function maajan_table:get_ji_items(p,ji_tiles)
-    if not p.hu and not p.men and not p.ting then return {} end
-
-    local types = {}
-
-    for tile,c in pairs(p.pai.shou_pai) do
-        if c > 0 then
-            for t,_ in pairs(ji_tiles[tile] or {}) do
-                table.insert(types,{ type = t, tile = tile, score = HU_TYPE_INFO[t].score,count = c})
-            end
-        end
-    end
-
-    for _,s in pairs(p.pai.ming_pai) do
-        local tile = s.tile
-        if (tile == 21 and p.ji.zhe_ren.normal) or (tile == 18 and p.ji.zhe_ren.wu_gu) then
-            table.insert(types,{
-                type = HU_TYPE.ZHE_REN_JI,
-                tile = tile,score = HU_TYPE_INFO[HU_TYPE.ZHE_REN_JI].score,
-                whoee = s.whoee,
-                count = s.type == SECTION_TYPE.PENG and 3 or 4
-            })
-        else
-            for t,_ in pairs(ji_tiles[tile] or {}) do
-                table.insert(types,{type = t, tile = tile, score = HU_TYPE_INFO[t].score,whoee = s.whoee,count = 4 })
-            end
-        end
-    end
-
-    for _,tile in pairs(p.pai.desk_tiles) do
-        if (tile == 21 and p.ji.chong_feng.normal) or (tile == 18 and p.ji.chong_feng.wu_gu) then
-            p.ji.chong_feng.normal = tile == 21 and false or p.ji.chong_feng.normal
-            p.ji.chong_feng.wu_gu = tile == 18 and false or p.ji.chong_feng.wu_gu
-            table.insert(types,{type = HU_TYPE.CHONG_FENG_JI,tile = tile,score = HU_TYPE_INFO[HU_TYPE.CHONG_FENG_JI].score,count = 1})
-        else
-            for t,_ in pairs(ji_tiles[tile] or {}) do
-                table.insert(types,{ type = t, tile = tile, score = HU_TYPE_INFO[t].score,count = 1,})
-            end
-        end
-    end
-
-    return types
-end
-
 function maajan_table:get_hong_zhong_items(p)
     local types = {}
   
-
     local ming_pai = p.pai.ming_pai
     for _,s in pairs(ming_pai) do
         repeat 
@@ -1423,7 +1378,6 @@ function maajan_table:calculate_hong_zhong(p)
     local types = {}
 
     local ts = self:get_hong_zhong_items(p)
-    dump(ts)
     for _,t in pairs(ts) do
         if t.whoee then
             types[p.chair_id] = types[p.chair_id] or {}
@@ -1444,31 +1398,117 @@ function maajan_table:calculate_hong_zhong(p)
         end
     end
 
-    dump(types)
-
     return types
+end
+
+
+
+
+function maajan_table:get_ji_items(p,ji_tiles)
+    local p_ji_tiles = {}
+    for tile,c in pairs(p.pai.shou_pai) do
+        if c > 0 then
+            for t,_ in pairs(ji_tiles[tile] or {}) do
+                p_ji_tiles[t] = p_ji_tiles[t] or {}
+                p_ji_tiles[t][tile] = {count = c}
+            end
+        end
+    end
+
+    for _,s in pairs(p.pai.ming_pai) do
+        local tile = s.tile
+        local c = (s.type == SECTION_TYPE.PENG and 3 or 4)
+        if tile == 21 and p.ji.zhe_ren.normal then
+            local t = HU_TYPE.ZHE_REN_JI
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+        elseif tile == 18 and p.ji.zhe_ren.wu_gu then
+            local t = HU_TYPE.ZHE_REN_WU_GU
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+        end
+
+        for t,_ in pairs(ji_tiles[tile] or {}) do
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+        end
+    end
+
+    for _,tile in pairs(p.pai.desk_tiles) do
+        if (tile == 21 and p.ji.chong_feng.normal) then
+            local t = HU_TYPE.CHONG_FENG_JI
+            if ji_tiles[21][HU_TYPE.JING_JI] then
+                t = HU_TYPE.CHONG_FENG_JING_JI
+            end
+
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = 1}
+        elseif (tile == 18 and p.ji.chong_feng.wu_gu) then
+            local t = HU_TYPE.CHONG_FENG_WU_GU
+            if ji_tiles[18] and ji_tiles[18][HU_TYPE.JING_WU_GU_JI] then
+                t = HU_TYPE.CHONG_FENG_JING_WU_GU
+            end
+
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = 1}
+        else
+            for t,_ in pairs(ji_tiles[tile] or {}) do
+                p_ji_tiles[t] = p_ji_tiles[t] or {}
+                p_ji_tiles[t][tile] = {count = 1}
+            end
+        end
+    end
+
+    return p_ji_tiles
 end
 
 function maajan_table:calculate_ji(p,ji_tiles)
     local player_count = table.nums(self.players)
     local types = {}
 
-    local ts = self:get_ji_items(p,ji_tiles)
-    for _,t in pairs(ts) do
-        if t.whoee then
-            types[p.chair_id] = types[p.chair_id] or {}
-            table.insert(types[p.chair_id],t)
-            if (p.hu or p.men or p.ting or p.jiao) then
-                types[t.whoee] = types[t.whoee] or {}
-                table.insert(types[t.whoee],{type = t.type,score = -t.score,tile = t.tile,count = t.count})
-            end
-        else
-            types[p.chair_id] = types[p.chair_id] or {}
-            table.insert(types[p.chair_id],{type = t.type,score = t.score * (player_count - 1),tile = t.tile,count = t.count})
-            for _,pj in pairs(self.players) do
-                if p ~= pj and (p.hu or p.men or p.ting or p.jiao) then
-                    types[pj.chair_id] = types[pj.chair_id] or {}
-                    table.insert(types[pj.chair_id],{type = t.type,score = -t.score,tile = t.tile,count = t.count})
+    local typetiles = self:get_ji_items(p,ji_tiles)
+
+    for t,tiles in pairs(typetiles) do
+        local tscore = HU_TYPE_INFO[t].score
+        for tile,c in pairs(tiles) do
+            if c.whoee then
+                local who,whoee = p,self.players[c.whoee]
+                if not (p.hu or p.men or p.ting or p.jiao) then
+                    if whoee.hu or whoee.men or whoee.ting or whoee.jiao then
+                        who,whoee = whoee,who
+                    else
+                        who,whoee = nil,nil
+                    end
+                end
+
+                if who and whoee then
+                    types[who.chair_id] = types[who.chair_id] or {}
+                    table.insert(types[who.chair_id],{type = t,score = tscore * c.count,tile = tile,count = 1})
+                    types[whoee.chair_id] = types[whoee.chair_id] or {}
+                    table.insert(types[whoee.chair_id],{type = t,score = -tscore * c.count,tile = tile,count = 1})
+                end
+            else
+                if p.hu or p.men or p.ting or p.jiao then
+                    types[p.chair_id] = types[p.chair_id] or {}
+                    table.insert(types[p.chair_id],{type = t,score = tscore * c.count,tile = tile,count = player_count - 1})
+                    for _,pj in pairs(self.players) do
+                        if p ~= pj then
+                            types[pj.chair_id] = types[pj.chair_id] or {}
+                            table.insert(types[pj.chair_id],{type = t,score = -tscore * c.count,tile = tile,count = 1})
+                        end
+                    end
+                else
+                    if t ~= HU_TYPE.XING_QI_JI and t ~= HU_TYPE.FAN_PAI_JI then
+                        local jiao_count = table.sum(self.players,function(pi) return (pi.hu or pi.ting or pi.men or pi.jiao) and 1 or 0 end)
+                        types[p.chair_id] = types[p.chair_id] or {}
+                        table.insert(types[p.chair_id],{type = t,score = - tscore * c.count,tile = tile,count = jiao_count})
+                        for _,pj in pairs(self.players) do
+                            if p ~= pj and (pj.hu or pj.men or pj.ting or pj.jiao) then
+                                types[pj.chair_id] = types[pj.chair_id] or {}
+                                table.insert(types[pj.chair_id],{type = t,score = tscore * c.count ,tile = tile,count = 1})
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -1482,19 +1522,15 @@ end
 
 function maajan_table:gen_ji_tiles()
     local ji_tiles = {}
-    ji_tiles[21] = {[HU_TYPE.NORMAL_JI] = 1}
-    if self.conf.rule.wu_gu_ji then
-        ji_tiles[18] = {[HU_TYPE.WU_GU_JI] = 1}
-    end
-
     local ben_ji_tile
     local is_chui_fen_ji = self.conf.rule.chui_feng_ji
     if self.dealer.remain_count > 0 then
         repeat 
-            ben_ji_tile = self.dealer:deal_one()
-            if ben_ji_tile == 35 then
-                break
-            end
+            ben_ji_tile = 29
+            -- ben_ji_tile = self.dealer:deal_one()
+            -- if ben_ji_tile == 35 then
+            --     break
+            -- end
 
             local ben_ji_value = ben_ji_tile % 10
             local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
@@ -1509,6 +1545,7 @@ function maajan_table:gen_ji_tiles()
                 local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 9 - 1) % 9 + 1
                 ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
                 ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
+
                 if yao_bai_ji == 15 and is_chui_fen_ji then
                     return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
                 end
@@ -1519,6 +1556,14 @@ function maajan_table:gen_ji_tiles()
                 ji_tiles[ben_ji_tile][HU_TYPE.FAN_PAI_JI] = 1
             end
         until true
+    end
+
+    ji_tiles[21] = ji_tiles[21] or {}
+    ji_tiles[21][HU_TYPE.NORMAL_JI] = 1
+
+    if self.conf.rule.wu_gu_ji then
+        ji_tiles[18] = ji_tiles[18] or {}
+        ji_tiles[18][HU_TYPE.WU_GU_JI] = 1
     end
 
     if self.conf.rule.xing_qi_ji then
@@ -1537,6 +1582,18 @@ function maajan_table:gen_ji_tiles()
             ji_tiles[20 + today] = ji_tiles[20 + today] or  {}
             ji_tiles[20 + today][HU_TYPE.XING_QI_JI ] = 1
         end
+    end
+
+    if ji_tiles[21][HU_TYPE.FAN_PAI_JI] then
+        ji_tiles[21][HU_TYPE.NORMAL_JI] = nil
+        ji_tiles[21][HU_TYPE.FAN_PAI_JI] = nil
+        ji_tiles[21][HU_TYPE.JING_JI] = 1
+    end
+
+    if ji_tiles[18] and ji_tiles[18][HU_TYPE.FAN_PAI_JI] then
+        ji_tiles[18][HU_TYPE.WU_GU_JI] = nil
+        ji_tiles[18][HU_TYPE.FAN_PAI_JI] = nil
+        ji_tiles[18][HU_TYPE.JING_WU_GU_JI] = 1
     end
 
     return ben_ji_tile,ji_tiles
@@ -1686,9 +1743,9 @@ function maajan_table:on_game_balance()
 
         table.insert(msg.players,{
             chair_id = chair_id,
-            desk_pai = p.pai.desk_tiles,
+            desk_pai = table.values(p.pai.desk_tiles),
             shou_pai = shou_pai,
-            pb_ming_pai = p.pai.ming_pai,
+            pb_ming_pai = table.values(p.pai.ming_pai),
         })
 
         local balance_item = items[chair_id]

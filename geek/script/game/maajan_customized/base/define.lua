@@ -207,6 +207,14 @@ local HU_TYPE = {
 	RUAN_BAO					= pb.enum("HU_TYPE","RUAN_BAO"), --软报
 	SHA_BAO						= pb.enum("HU_TYPE","SHA_BAO"),	--杀报
 	HONG_ZHONG					= pb.enum("HU_TYPE","HONG_ZHONG"), --红中
+	CHONG_FENG_WU_GU 			= pb.enum("HU_TYPE","CHONG_FENG_WU_GU"), --冲锋乌骨鸡
+	ZHE_REN_WU_GU 				= pb.enum("HU_TYPE","ZHE_REN_WU_GU"), --责任乌骨鸡
+	JING_JI						= pb.enum("HU_TYPE","JING_JI"),	--金鸡
+	JING_WU_GU_JI				= pb.enum("HU_TYPE","JING_WU_GU_JI"),--金乌骨鸡
+	CHONG_FENG_JING_JI			= pb.enum("HU_TYPE","CHONG_FENG_JING_JI"), --冲锋金鸡
+	CHONG_FENG_JING_WU_GU		= pb.enum("HU_TYPE","CHONG_FENG_JING_WU_GU"),--冲锋金乌骨
+	ZHE_REN_JING_JI				= pb.enum("HU_TYPE","ZHE_REN_JING_JI"), --责任金鸡
+	ZHE_REN_JING_WU_GU			= pb.enum("HU_TYPE","ZHE_REN_JING_WU_GU"),--责任金乌骨鸡
 }
 
 define.HU_TYPE = HU_TYPE
@@ -304,6 +312,14 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 20},		--硬报
 	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 10},		--软报
 	[HU_TYPE.HONG_ZHONG]			= {name = "HONG_ZHONG",score = 1},		--红中
+	[HU_TYPE.CHONG_FENG_WU_GU]		= {name = "CHONG_FENG_WU_GU",score = 4}, --冲锋乌骨鸡
+	[HU_TYPE.ZHE_REN_WU_GU]			= {name = "ZHE_REN_WU_GU",score = 4}, --责任乌骨鸡
+	[HU_TYPE.JING_JI]				= {name = "JING_JI",fan = 1,score = 2}, --金鸡
+	[HU_TYPE.JING_WU_GU_JI]			= {name = "JING_WU_GU_JI",score = 4},	--金乌骨鸡
+	[HU_TYPE.CHONG_FENG_JING_JI]	= {name = "CHONG_FENG_JING_JI",fan = 1,score = 4}, -- 冲锋金鸡
+	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 1,score = 8}, -- 冲锋金乌骨鸡
+	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 2},	--责任金鸡
+	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 4}, --责任金乌骨
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
