@@ -70,8 +70,8 @@ end
 function on_sl_log_Game(msg)
     log.info("...................... on_sl_log_Game")
     dbopt.log:query([[
-        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `start_time`,`end_time`,`create_time`)
-        VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d), NOW());
+        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `start_time`,`end_time`)
+        VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
         ]],
         msg.playid,msg.type,json.encode(msg.log),msg.starttime,msg.endtime)
 
