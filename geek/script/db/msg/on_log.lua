@@ -81,10 +81,10 @@ function on_sl_log_Game(msg)
 
     local players_sql = {}
     for _,p in pairs(msg.log.players) do
-        table.insert(players_sql,string.format("('%s',%d)",msg.playid,p.guid))
+        table.insert(players_sql,string.format("('%s',%d,%d)",msg.playid,msg.log.table_id,p.guid))
     end
 
-    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,guid) VALUES"..table.concat(players_sql,",")..";")
+    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid) VALUES"..table.concat(players_sql,",")..";")
     if ret.errno then
         log.error(ret.err)
     end

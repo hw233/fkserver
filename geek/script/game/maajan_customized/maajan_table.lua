@@ -162,6 +162,7 @@ function maajan_table:on_started()
         players = game_log_players,
         action_table = {},
         rule = self.private_id and self.conf.conf or nil,
+        table_id = self.private_id or nil,
     }
 
     local tiles = chair_count_tiles[self.chair_count]
