@@ -294,7 +294,6 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -1088,7 +1087,7 @@ function maajan_table:calculate_hu(p,hu)
             typescore = {},
         }
 
-        local hu_fan = 2 ^ HU_TYPE_INFO[HU_TYPE.ZI_MO].fan
+        local hu_fan = 2 ^ 0
 
         for _,t in pairs(ts) do
             table.insert(types[p.chair_id].typescore,{
@@ -1100,6 +1099,7 @@ function maajan_table:calculate_hu(p,hu)
             })
         end
     else
+        local hu_fan = 2 ^ (HU_TYPE_INFO[HU_TYPE.ZI_MO].fan or 0)
         for chair_id,_ in pairs(self.players) do
             types[chair_id] = {
                 type = BalanceItemType.ZiMo,
@@ -1111,11 +1111,11 @@ function maajan_table:calculate_hu(p,hu)
             for chair_id,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(types[chair_id].typescore,{
-                        score = t.score,type = t.type,tile = hu.tile,count = self.chair_count - 1,
+                        score = t.score * hu_fan,type = t.type,tile = hu.tile,count = self.chair_count - 1,
                     })
                 else
                     table.insert(types[chair_id].typescore,{
-                        score = -t.score,type = t.type,tile = hu.tile,count = 1,
+                        score = -t.score * hu_fan,type = t.type,tile = hu.tile,count = 1,
                     })
                 end
             end
