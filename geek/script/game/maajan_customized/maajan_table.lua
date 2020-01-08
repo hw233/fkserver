@@ -2398,7 +2398,6 @@ function maajan_table:can_hu(player,in_pai)
 
     local chu_pai_player = self:chu_pai_player()
     return  chu_pai_player.ting or
-            player.men or
             def.is_action_gang(chu_pai_player.last_action or 0) or
             player.ting or
             gang > 0 or
