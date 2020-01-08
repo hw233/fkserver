@@ -14,6 +14,7 @@ local club_table = require "game.club.club_table"
 local base_clubs = require "game.club.base_clubs"
 local timer_manager = require "game.timer_manager"
 local onlineguid = require "netguidopt"
+local skynet = require "skynetproto"
 
 local reddb = redisopt.default
 
@@ -34,11 +35,18 @@ end
 
 -- 获取当前游戏ID
 function base_table:get_next_game_id()
-	self.table_gameid = (self.table_gameid or 0) + 1
-	local id_date = os.date("%y%m%d%H%M")
-	local guid = string.format([[%03d%03d%04d%s%07d]], def_game_id, self.room_.id, self.table_id_, id_date,self.table_gameid)
-	log.info(guid)
-	return guid
+	local sround_id = string.format(
+		[[%03d-%03d-%04d-%s-%03d]], def_game_id, self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),math.floor((skynet.time() % 1) * 1000)
+	)
+	log.info(sround_id)
+	return sround_id
+end
+
+function base_table:get_ext_game_id()
+	self.ext_round_id = self.ext_round_id or math.random(1,100000)
+	local sext_round_id = string.format("%03d-%03d-%04d-%s-%06d",def_game_id,self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),self.ext_round_id)
+	log.info(sext_round_id)
+	return sext_round_id
 end
 
 function base_table:start_save_info()
@@ -61,6 +69,8 @@ function base_table:clear()
 	self:clear_dismiss_request()
 	self:private_clear()
 	self:clear_ready()
+	self.round_id = nil
+	self.ext_round_id = nil
 end
 
 -- 初始化
@@ -262,7 +272,7 @@ function base_table:foreach_except(except, func)
 	end
 end
 
-function  base_table:save_game_log(s_playid,s_playType,s_log,s_starttime,s_endtime)
+function  base_table:save_game_log(s_playid,s_playType,s_log,ext_id,s_starttime,s_endtime)
 	log.info("==============================base_table:save_game_log")
 	local nMsg = {
 		playid = s_playid,
@@ -270,6 +280,7 @@ function  base_table:save_game_log(s_playid,s_playType,s_log,s_starttime,s_endti
 		log = s_log,
 		starttime = s_starttime,
 		endtime = s_endtime,
+		ext_id = ext_id,
 	}
 	send2db_pb("SL_Log_Game",nMsg)
 end

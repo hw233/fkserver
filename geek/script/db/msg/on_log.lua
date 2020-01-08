@@ -69,18 +69,25 @@ end
 
 function on_sl_log_Game(msg)
     log.info("...................... on_sl_log_Game")
-    dbopt.log:query([[
-        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `start_time`,`end_time`)
-        VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
+    local sql = string.format([[
+        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `ext_id`, `start_time`,`end_time`)
+        VALUES ('%s', '%s', '%s','%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
         ]],
-        msg.playid,msg.type,json.encode(msg.log),msg.starttime,msg.endtime)
+        msg.playid,msg.type,json.encode(msg.log),msg.ext_id,msg.starttime,msg.endtime)
+    local ret = dbopt.log:query(sql)
+    if ret.errno then
+        log.error(ret.err)
+    end
 
     local players_sql = {}
     for _,p in pairs(msg.log.players) do
         table.insert(players_sql,string.format("('%s',%d)",msg.playid,p.guid))
     end
 
-    dbopt.log:query("INSERT INTO `t_log_round`(round,guid) VALUES"..table.concat(players_sql,",")..";")
+    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,guid) VALUES"..table.concat(players_sql,",")..";")
+    if ret.errno then
+        log.error(ret.err)
+    end
 end
 
 function on_sl_robot_log_money(msg)

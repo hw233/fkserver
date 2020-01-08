@@ -156,7 +156,6 @@ function maajan_table:on_started()
     local game_log_players = {}
     for i = 1,self.chair_count do game_log_players[i] = {} end
     self.game_log = {
-        table_game_id = self.table_game_id,
         start_game_time = os.time(),
         zhuang = self.zhuang,
         mj_min_scale = self.mj_min_scale,
@@ -1775,8 +1774,10 @@ function maajan_table:on_game_balance()
 
     self.game_log.end_game_time = os.time()
 
-    dump(self.game_log)
-    self:save_game_log(self.table_game_id,self.def_game_name,self.game_log,self.game_log.start_game_time,self.game_log.end_game_time)
+    self:save_game_log(
+        self:get_next_game_id(),self.def_game_name,self.game_log,self:get_ext_game_id(),
+        self.game_log.start_game_time,self.game_log.end_game_time
+    )
     
     self:game_over()
 end
