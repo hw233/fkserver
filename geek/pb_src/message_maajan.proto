@@ -104,6 +104,7 @@ enum HU_TYPE{
 	CHONG_FENG_JING_WU_GU	= 99;	//冲锋金乌骨鸡
 	ZHE_REN_JING_JI			= 100;	//责任金鸡
 	ZHE_REN_JING_WU_GU		= 101;	//责任金乌骨
+	GANG_SHANG_PAO			= 102;	//杠上炮
 }
 
 
@@ -152,6 +153,7 @@ enum FSM_STATE {
 	WAIT_CHU_PAI  			= 5;	//等待 出牌
 	WAIT_ACTION_AFTER_CHU_PAI	= 6;	//等待 碰 杠 胡 用户出牌的时候
 	WAIT_ACTION_AFTER_MO_PAI 	= 7;	//等待 胡 用户巴杠的时候，抢胡
+	WAIT_QIANG_GANG_HU			= 8;
 	GAME_BALANCE			= 15;	//结算
 	GAME_CLOSE				= 16;	//关闭游戏
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟

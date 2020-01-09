@@ -104,7 +104,7 @@ define.FSM_state = {
 	WAIT_CHU_PAI  				= pb.enum("FSM_STATE","WAIT_CHU_PAI"),	--等待 出牌
 	WAIT_ACTION_AFTER_CHU_PAI	= pb.enum("FSM_STATE","WAIT_ACTION_AFTER_CHU_PAI"),	--等待 碰 杠 胡, 用户出牌的时候
 	WAIT_ACTION_AFTER_MO_PAI  	= pb.enum("FSM_STATE","WAIT_ACTION_AFTER_MO_PAI"),	--等待 胡, 用户巴杠的时候，抢胡
-
+	WAIT_QIANG_GANG_HU			= pb.enum("FSM_STATE","WAIT_QIANG_GANG_HU"), --等待抢杠胡
 	GAME_BALANCE				= pb.enum("FSM_STATE","GAME_BALANCE"),	--结算
 	GAME_CLOSE					= pb.enum("FSM_STATE","GAME_CLOSE"),	--关闭游戏
 
@@ -215,6 +215,7 @@ local HU_TYPE = {
 	CHONG_FENG_JING_WU_GU		= pb.enum("HU_TYPE","CHONG_FENG_JING_WU_GU"),--冲锋金乌骨
 	ZHE_REN_JING_JI				= pb.enum("HU_TYPE","ZHE_REN_JING_JI"), --责任金鸡
 	ZHE_REN_JING_WU_GU			= pb.enum("HU_TYPE","ZHE_REN_JING_WU_GU"),--责任金乌骨鸡
+	GANG_SHANG_PAO				= pb.enum("HU_TYPE","GANG_SHANG_PAO"),--杠上炮
 }
 
 define.HU_TYPE = HU_TYPE
@@ -230,7 +231,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.ZI_YI_SE]				= {name = "ZI_YI_SE",score = 64},				--字一色
 	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {name = "MIAO_SHOU_HUI_CHUN",score = 8},	--妙手回春
 	[HU_TYPE.HAI_DI_LAO_YUE]		= {name = "HAI_DI_LAO_YUE",score = 8},		--海底捞月
-	[HU_TYPE.GANG_SHANG_HUA]		= {name = "GANG_SHANG_HUA",score = 8},		--杠上开花
+	[HU_TYPE.GANG_SHANG_HUA]		= {name = "GANG_SHANG_HUA",score = 1},		--杠上开花
 	[HU_TYPE.QUAN_QIU_REN]			= {name = "QUAN_QIU_REN",score = 8},			--全求人
 	[HU_TYPE.SHUANG_AN_GANG]		= {name = "SHUANG_AN_GANG",score = 6},		--双暗杠
 	[HU_TYPE.SHUANG_JIAN_KE]		= {name = "SHUANG_JIAN_KE",score = 6},		--双箭刻
@@ -320,6 +321,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 1,score = 8}, -- 冲锋金乌骨鸡
 	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 2},	--责任金鸡
 	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 4}, --责任金乌骨
+	[HU_TYPE.GANG_SHANG_PAO]		= {name = "GANG_SHANG_PAO",score = 1}, --杠上炮
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
