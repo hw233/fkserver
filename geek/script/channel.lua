@@ -38,6 +38,14 @@ function channel.query(id)
     return skynet.call(channeld,"lua","query",id)
 end
 
+function channel.kill(id)
+    return skynet.call(channeld,"lua","kill",id)
+end
+
+function channel.warmdead(id)
+    return skynet.call(channeld,"lua","warmdead",id)
+end
+
 skynet.init(function()
     channeld = skynet.uniqueservice("service.channeld")
 end)
