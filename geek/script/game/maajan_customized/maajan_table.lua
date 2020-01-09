@@ -1774,6 +1774,7 @@ function maajan_table:on_game_balance()
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self.game_log.end_game_time = os.time()
+    self.game_log.cur_round = self.cur_round
 
     self:save_game_log(
         self:get_next_game_id(),self.def_game_name,self.game_log,self:get_ext_game_id(),
