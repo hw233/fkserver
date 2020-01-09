@@ -11,32 +11,6 @@ require "functions"
 local protocol = ...
 protocol = protocol or "http"
 
-local h2b = {
-    ["0"] = 0,
-    ["1"] = 1,
-    ["2"] = 2,
-    ["3"] = 3,
-    ["4"] = 4,
-    ["5"] = 5,
-    ["6"] = 6,
-    ["7"] = 7,
-    ["8"] = 8,
-    ["9"] = 9,
-    ["a"] = 10,
-    ["b"] = 11,
-    ["c"] = 12,
-    ["d"] = 13,
-    ["e"] = 14,
-    ["f"] = 15,
-}
-
-local function f_hex2bin( hexstr )
-    local s = string.gsub(hexstr, "(.)(.)", function ( h, l )
-         return string.char(h2b[h]*16+h2b[l])
-    end)
-    return s
-end
-
 local appkey = nil
 
 local function check_sign_code(sign,data)
@@ -49,9 +23,8 @@ local function check_sign_code(sign,data)
         table.insert(source,k.."="..v)
     end
     table.insert(source,"appkey="..appkey)
-
     local s = table.concat(source,"&")
-    md5.crypt(s,appkey)
+    return sign:upper() == md5.sumhexa(s):upper()
 end
 
 skynet.start(function()
@@ -86,16 +59,28 @@ skynet.start(function()
             response:write(404,nil,json.encode({
                 errcode = error.DATA_ERROR,
             }))
+            return
         end
 
-        if not check_sign_code(data) then
+        local sign = request.header.sign
+        if not sign then
             response:write(404,nil,json.encode({
                 errcode = error.SIGNATURE_ERROR,
             }))
             return
         end
 
-        local rep = gmd[cmd](json.decode(body))
+        dump(sign)
+        dump(data)
+
+        if not check_sign_code(sign,data) then
+            response:write(404,nil,json.encode({
+                errcode = error.SIGNATURE_ERROR,
+            }))
+            return
+        end
+
+        local rep = gmd[cmd](data)
         response:write(200,nil,json.encode(rep or {errcode = error.SUCCESS}))
         response:close()
     end)

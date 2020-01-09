@@ -1,9 +1,14 @@
 
-local skynet = require "skynet"
 local channel = require "channel"
 local pb = require "pb_files"
 require "table_func"
 local md5 = require "md5"
+local base_players = require "game.lobby.base_players"
+local onlineguid = require "netguidopt"
+local redisopt = require "redisopt"
+local error = require "gm.errorcode"
+
+local reddb = redisopt.default
 
 
 local GMmessageRetCode_GmParamMiss = pb.enum("GMmessageRetCode","GMmessageRetCode_GmParamMiss")
@@ -328,8 +333,23 @@ function gmd.ServerCmd(data)
 end
 
 function gmd.recharge(data)
-    dump(data)
-    return
+    local guid = tonumber(data.uid)
+    if not guid then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "player guid can not be nil."
+        }
+    end
+
+    local os = onlineguid[guid]
+    if os then
+        return channel.call("service."..os.server,"msg","GM_NotifyRecharge",guid)
+    end
+
+    reddb.hincrby("player:info:"..data.guid,data.type == 1 and "diamond" or "room_card",tonumber(data.number))
+    return {
+        errcode = error.SUCCESS,
+    }
 end
 
 gmd["info"] = gmd.RequestGameServerInfo
