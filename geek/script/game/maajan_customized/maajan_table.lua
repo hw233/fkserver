@@ -1405,14 +1405,20 @@ end
 
 function maajan_table:calculate_wei_hu(p)
     local types = {}
-    
-    if p.jiao or p.ting then
+
+    if p.jiao or p.ting or p.men then
+        types[p.chair_id] = {
+            type = BalanceItemType.JiaoPai,
+            typescore = {}
+        }
         for _,pi in pairs(self.players) do
             if p ~= pi and not pi.jiao and not pi.ting and not pi.men and not pi.hu then
-                types[p.chair_id] = types[p.chair_id] or {}
-                table.insert(types[p.chair_id],{type = HU_TYPE.JIAO_PAI,score = 1,whoee = pi.chair_id,count = 1})
-                types[pi.chair_id] = types[pi.chair_id] or {}
-                table.insert(types[pi.chair_id],{type = HU_TYPE.WEI_JIAO,score = -1,count = 1})
+                table.insert(types[p.chair_id].typescore,{type = HU_TYPE.JIAO_PAI,score = 1,whoee = pi.chair_id,count = 1})
+                types[pi.chair_id] = types[pi.chair_id] or {
+                    type = BalanceItemType.WeiJiao,
+                    typescore = {}
+                }
+                table.insert(types[pi.chair_id].typescore,{type = HU_TYPE.WEI_JIAO,score = -1,count = 1})
             end
         end
     end
