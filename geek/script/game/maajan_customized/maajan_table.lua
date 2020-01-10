@@ -312,6 +312,8 @@ function maajan_table:on_action_when_check_ting(event)
             action = ACTION.TING,
         })
 
+        self:log_game_action(player,ACTION.TING,tile)
+
         dump(self.waiting_player_actions)
     end
 
@@ -524,6 +526,7 @@ local action_name_str = {
     [ACTION.MO_PAI] = "Draw",
     [ACTION.MEN_ZI_MO] = "ZiMoMen",
 }
+
 function maajan_table:log_game_action(player,action,tile)
     table.insert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[action],msg = {tile = tile}})
 end
@@ -914,7 +917,7 @@ function maajan_table:do_mo_pai()
     table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tiles = mo_pai}})
+    table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
     self:on_mo_pai(mo_pai)
 
     if table.nums(actions) > 0 then
