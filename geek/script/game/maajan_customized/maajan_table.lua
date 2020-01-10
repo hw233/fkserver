@@ -1836,6 +1836,7 @@ function maajan_table:on_game_balance()
         p_log.nickname = p.nickname
         p_log.head_url = p.open_id_icon
         p_log.guid = p.guid
+        p_log.sex = p.sex
         p_log.pai = p.api
         p.win_money = p_score
         p.total_money = p.total_money + p.win_money
@@ -1875,6 +1876,8 @@ function maajan_table:on_game_balance()
             hu_tile = p.hu and p.hu.tile or nil,
         })
     end
+
+    self.game_log.balance = msg.player_balance
 
     dump(msg,9)
 
