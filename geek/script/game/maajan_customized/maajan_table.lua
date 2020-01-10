@@ -1876,12 +1876,12 @@ function maajan_table:on_game_balance()
         })
     end
 
-    self.game_log.balance = msg.player_balance
-
     dump(msg,9)
 
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
+    self.game_log.balance = msg.player_balance
+    self.game_log.ben_ji = msg.ben_ji
     self.game_log.end_game_time = os.time()
     self.game_log.cur_round = self.cur_round
 
