@@ -1836,7 +1836,7 @@ function maajan_table:on_game_balance()
         p_log.head_url = p.open_id_icon
         p_log.guid = p.guid
         p_log.sex = p.sex
-        p_log.pai = p.api
+        p_log.pai = p.pai
         p.win_money = p_score
         p.total_money = p.total_money + p.win_money
         log.info("player hu %s,%s,%s,%s",chair_id,p.score,p.win_money,p.describe)
