@@ -71,7 +71,7 @@ local function reg_account(msg)
         account = msg.open_id,
         nickname = msg.nickname or ("guest_"..tostring(guid)),
         open_id = msg.open_id,
-        sex = msg.sex,
+        sex = msg.sex or false,
         open_id_icon = msg.open_id_icon or default_open_id_icon,
         version = msg.version,
         login_ip = msg.ip,
@@ -408,6 +408,7 @@ local function h5_login(msg,gate)
             phone_type = msg.phone_type,
             package_name = msg.package_name,
             ip = msg.ip,
+            sex = msg.sex or false,
         })
     end
 
