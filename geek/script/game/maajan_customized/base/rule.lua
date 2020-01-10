@@ -560,20 +560,20 @@ function rule.is_chi(pai,tile)
 end
 
 
-local tiles = {11,12,12,13,15,15,15,16,18,24,25,25,25}
-local counts = table.fill(nil,0,1,30)
-for _,tile in pairs(tiles) do
-	counts[tile] = counts[tile] + 1
-end
+-- local tiles = {11,12,12,13,15,15,15,16,18,24,25,25,25}
+-- local counts = table.fill(nil,0,1,30)
+-- for _,tile in pairs(tiles) do
+-- 	counts[tile] = counts[tile] + 1
+-- end
 
-local test = rule.is_hu({
-	shou_pai = counts,
-	ming_pai = {{
-		type = SECTION_TYPE.MING_GANG,
-		tile = 24,
-	}},
-},1)
+-- local test = rule.is_hu({
+-- 	shou_pai = counts,
+-- 	ming_pai = {{
+-- 		type = SECTION_TYPE.MING_GANG,
+-- 		tile = 24,
+-- 	}},
+-- },1)
 
-dump(test)
+-- dump(test)
 
 return rule

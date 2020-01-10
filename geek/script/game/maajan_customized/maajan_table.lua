@@ -1510,11 +1510,11 @@ function maajan_table:get_ji_items(p,ji_tiles)
         if tile == 21 and p.ji.zhe_ren.normal then
             local t = HU_TYPE.ZHE_REN_JI
             p_ji_tiles[t] = p_ji_tiles[t] or {}
-            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+            p_ji_tiles[t][tile] = {count = 1,whoee = s.whoee,}
         elseif tile == 18 and p.ji.zhe_ren.wu_gu then
             local t = HU_TYPE.ZHE_REN_WU_GU
             p_ji_tiles[t] = p_ji_tiles[t] or {}
-            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+            p_ji_tiles[t][tile] = {count = 1,whoee = s.whoee,}
         end
 
         for t,_ in pairs(ji_tiles[tile] or {}) do
@@ -1523,6 +1523,7 @@ function maajan_table:get_ji_items(p,ji_tiles)
         end
     end
 
+    local desk_ji_tiles = {}
     for _,tile in pairs(p.pai.desk_tiles) do
         if (tile == 21 and p.ji.chong_feng.normal) then
             local t = HU_TYPE.CHONG_FENG_JI
@@ -1540,11 +1541,15 @@ function maajan_table:get_ji_items(p,ji_tiles)
 
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1}
-        else
-            for t,_ in pairs(ji_tiles[tile] or {}) do
-                p_ji_tiles[t] = p_ji_tiles[t] or {}
-                p_ji_tiles[t][tile] = {count = 1}
-            end
+        end
+
+        table.incr(desk_ji_tiles,tile)
+    end
+
+    for tile,c in pairs(desk_ji_tiles) do
+        for t,_ in pairs(ji_tiles[tile] or {}) do
+            p_ji_tiles[t] = p_ji_tiles[t] or {}
+            p_ji_tiles[t][tile] = {count = c}
         end
     end
 
@@ -1632,28 +1637,25 @@ function maajan_table:gen_ji_tiles()
     local is_chui_fen_ji = self.conf.rule.chui_feng_ji
     if self.dealer.remain_count > 0 then
         repeat
-            -- ben_ji_tile = 29
             ben_ji_tile = self.dealer:deal_one()
             if ben_ji_tile == 35 then
                 break
             end
 
+            if ben_ji_tile == 15 and is_chui_fen_ji then
+                return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
+            end
+
             local ben_ji_value = ben_ji_tile % 10
             local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
 
-            if fan_pai_ji == 15 and is_chui_fen_ji then
-                return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
-            end
             ji_tiles[fan_pai_ji] = ji_tiles[fan_pai_ji] or {}
             ji_tiles[fan_pai_ji][HU_TYPE.FAN_PAI_JI] = 1
             if self.conf.rule.yao_bai_ji then
-                local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 9 - 1) % 9 + 1
+                local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 2) % 9 + 1
+                dump(yao_bai_ji)
                 ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
                 ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
-
-                if yao_bai_ji == 15 and is_chui_fen_ji then
-                    return ben_ji_tile,{[15] = {[HU_TYPE.CHUI_FENG_JI] = 1}}
-                end
             end
 
             if self.conf.rule.ben_ji then
@@ -1830,13 +1832,19 @@ function maajan_table:on_game_balance()
     for chair_id,p in pairs(self.players) do
         local p_score = scores[chair_id] or 0
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
+        local ming_pai = table.values(p.pai.ming_pai)
+        local desk_pai = table.values(p.pai.desk_tiles)
         p.total_money = p.total_money or 0
         local p_log = self.game_log.players[chair_id]
         p_log.nickname = p.nickname
         p_log.head_url = p.open_id_icon
         p_log.guid = p.guid
         p_log.sex = p.sex
-        p_log.pai = p.pai
+        p_log.pai = {
+            desk_pai = desk_pai,
+            shou_pai = shou_pai,
+            ming_pai = ming_pai,
+        }
         p.win_money = p_score
         p.total_money = p.total_money + p.win_money
         log.info("player hu %s,%s,%s,%s",chair_id,p.score,p.win_money,p.describe)
@@ -1848,9 +1856,9 @@ function maajan_table:on_game_balance()
 
         table.insert(msg.players,{
             chair_id = chair_id,
-            desk_pai = table.values(p.pai.desk_tiles),
+            desk_pai = desk_pai,
             shou_pai = shou_pai,
-            pb_ming_pai = table.values(p.pai.ming_pai),
+            pb_ming_pai = ming_pai,
         })
 
         local balance_item = items[chair_id]
