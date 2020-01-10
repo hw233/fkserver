@@ -618,7 +618,6 @@ function maajan_table:do_action_after_chu_pai(do_actions)
                 types = mj_util.hu(p.pai,tile),
                 whoee = self.chu_pai_player_index,
                 zi_mo = false,
-                gang_pao = def.is_action_gang(chu_pai_player.last_action or 0),
             })
 
             self:log_game_action(p,act.done.action,tile)
@@ -736,7 +735,6 @@ function maajan_table:on_action_after_mo_pai(evt)
             tile = tile,
             types = mj_util.hu(player.pai,tile),
             zi_mo = true,
-            gang_hua = def.is_action_gang(player.last_action or 0),
         })
 
         self:log_game_action(player,do_action,tile)
@@ -1185,10 +1183,16 @@ function maajan_table:calculate_hu(p,hu)
         end
 
         if hu.gang_hua then
-            table.insert(ts,{score = HU_TYPE_INFO[HU_TYPE.GANG_SHANG_HUA].score,type = HU_TYPE.GANG_SHANG_HUA,})
+            local t = HU_TYPE.GANG_SHANG_HUA
+            local gang_hua_score = HU_TYPE_INFO[t].score
+            for chair_id,pj in pairs(self.players) do
+                if pj ~= p then
+                    table.insert(types[chair_id].typescore,{score = - gang_hua_score,type = t,count = 1})
+                else
+                    table.insert(types[chair_id].typescore,{score = gang_hua_score,type = t,count = self.chair_count - 1})
+                end
+            end
         end
-
-        
 
         for _,t in pairs(ts) do
             for chair_id,pj in pairs(self.players) do
