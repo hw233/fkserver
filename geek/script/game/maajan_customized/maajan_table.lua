@@ -1813,14 +1813,14 @@ function maajan_table:on_game_balance()
     local scores = {}
     for chair_id,item in pairs(items) do
         scores[chair_id] =
-            table.sum(item.hu,function(t)
+            table.sum(item.hu or {},function(t)
                 return table.sum(t.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
             end) +
-            table.sum(item.men,function(men)
+            table.sum(item.men or {},function(men)
                 return table.sum(men.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
             end) +
-            table.sum(item.ji,function(t) return (t.score or 0) * (t.count or 0) end) +
-            table.sum(item.gang,function(t) return (t.score or 0) * (t.count or 0) end)
+            table.sum(item.ji or {},function(t) return (t.score or 0) * (t.count or 0) end) +
+            table.sum(item.gang or {},function(t) return (t.score or 0) * (t.count or 0) end)
     end
 
     local msg = {
