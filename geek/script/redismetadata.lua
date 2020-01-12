@@ -101,8 +101,12 @@ redismetadata.privatetable.info = redismeta:create({
 
 redismetadata.privatetable.template = redismeta:create({
     fields = {
+        template_id = "number",
         game_type = "number",
         rule = "string",
+        description = "string",
+        game_id = "number",
+        club_id = "number",
     }
 })
 

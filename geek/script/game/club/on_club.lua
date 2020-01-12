@@ -12,11 +12,13 @@ local serviceconf = require "serviceconf"
 local private_table = require "game.lobby.base_private_table"
 local onlineguid = require "netguidopt"
 local club_table = require "game.club.club_table"
+local club_table_template = require "game.club.club_table_template"
 local club_request = require "game.club.club_request"
 local player_request = require "game.club.player_request"
 local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
 local base_private_table = require "game.lobby.base_private_table"
+local table_template = require "game.club.table_template"
 local json = require "cjson"
 local enum = require "pb_enums"
 require "functions"
@@ -221,6 +223,7 @@ function on_cs_club_detail_info_req(msg,guid)
         table_list = tables,
         role_type = (guid == club.owner) and CRT_BOSS or CRT_PLAYER,
         gamelist = real_games,
+        table_templates = table.values(club_table_template[club_id]),
     }
 
     -- dump(info)
@@ -270,7 +273,7 @@ function on_cs_club_edit_game_type(msg,guid)
     end
 
     
-    reddb:sadd("club:"..tostring(club_id)..":game",table.unpack(msg.game_types))
+    reddb:sadd("club:game:"..tostring(club_id),table.unpack(msg.game_types))
     club_game_type[club_id] = nil
 
     onlineguid.send(guid,"S2C_EDIT_CLUB_GAME_TYPE_RES",{
@@ -436,40 +439,159 @@ end
 
 function on_cs_club_publish_notice(msg,guid)
 
-end 
-
-function on_cs_club_create_table_template(msg,guid)
-    local club_id = msg.club_id
-    local id = reddb:incr("tabletemplate:global:id")
-    reddb:hmset("tabletemplate:"..tostring(id),{
-        game_type = msg.game_type,
-        rule = msg.rule,
-        club_id = club_id,
-    })
-
-    reddb:sadd(string.format("club:template:%s",club_id),id)
-
-    return {
-        result = ERROR_NONE,
-        template_id = id,
-    }
 end
 
-function on_cs_club_remove_table_tempalte(msg,guid)
-    local club_id = msg.club_id
-    if not msg.template_id then
-        onlineguid.send(guid,"S2C_TABLE_TEMPLATE_EDIT_RES",{
-            result = ERROR_CLUB_NOT_FOUND
+function on_cs_create_table_template(msg,guid)
+    local template = msg.template
+    if not template or not template.club_id then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local club = base_clubs[template.club_id]
+    if not club then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
         })
     end
+
+    if not club_memeber[template.club_id][guid] then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        })
+        return
+    end
+
+    local ret,info = club:create_table_template(template.game_id,template.description,template.rule)
+    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+        result = ret,
+        template = info,
+    })
+end
+
+function on_cs_remove_table_template(msg,guid)
+    if not msg.template then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local template_id = msg.template.template_id
+    if not template_id then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local template = table_template[template_id]
+    if not template then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_TABLE_TEMPLATE_NOT_FOUND
+        })
+        return
+    end
+
+    local club = base_clubs[template.club_id]
+    if not club then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    if not club_memeber[template.club_id][guid] then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        })
+        return
+    end
+
+    local ret = club:remove_table_template(template_id)
+    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+        result = ret,
+    })
+end
+
+function on_cs_modify_table_template(msg,guid)
+    local template = msg.template
+    if not template then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local template_id = template.template_id
+    if not template_id then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local origin_template = table_template[template_id]
+    if not origin_template then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_TABLE_TEMPLATE_NOT_FOUND,
+        })
+        return
+    end
+
+    if template.club_id ~= origin_template.club_id then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR,
+        })
+        return
+    end
+
+    local club = base_clubs[template.club_id]
+    if not club then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    if not club_memeber[template.club_id][guid] then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        })
+        return
+    end
+
+    local ret,info = club:modify_table_template(template_id,template.game_id,template.description,template.rule)
+    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+        result = ret,
+        template = info,
+    })
 end
 
 function on_cs_club_edit_table_template(msg,guid)
+    local edit_operator = {
+        [enum.OPERATION_ADD] = on_cs_create_table_template,
+        [enum.OPERATION_DEL] = on_cs_remove_table_template,
+        [enum.OPERATION_MODIFY] = on_cs_modify_table_template,
+    }
 
-end
+    local template = msg.template
+    if not template then
+        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+    
+    local op = edit_operator[msg.edit_op]
+    if not op then
+        log.error("edit table template unknown operator,%s",msg.edit_op)
+        return
+    end
 
-function on_cs_club_history_record(msg,guid)
-
+    op(msg,guid)
 end
 
 function on_cs_club_exit_req(msg,guid)
@@ -661,7 +783,7 @@ function on_cs_club_operation(msg,guid)
 end
 
 function on_cs_club_kickout(msg,guid)
-    
+
 end
 
 function on_cs_club_dismiss_table(msg,guid)

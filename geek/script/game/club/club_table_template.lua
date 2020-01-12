@@ -9,7 +9,7 @@ local club_table_template = {}
 
 setmetatable(club_table_template,{
     __index = function(t,club_id)
-        local ids = reddb:smembers("club:"..tostring(club_id).."table:template")
+        local ids = reddb:smembers(string.format("club:table_template:%d",club_id))
         local templates = {}
         for _,id in pairs(ids) do
             id = tonumber(id)

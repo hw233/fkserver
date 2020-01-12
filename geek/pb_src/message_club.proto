@@ -316,3 +316,21 @@ message S2C_SYNC_ADMIN_RES{
     int32 guid=2;
     bool is_admin=3;
 }
+
+message C2S_EDIT_TABLE_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14061;}
+    TABLE_TEMPLATE  template = 1;
+    int32           edit_op = 2;
+}
+
+message S2C_EDIT_TABLE_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14062;}
+    int32           result = 1;
+    TABLE_TEMPLATE  template = 2;
+}
+
+message S2C_NOTIFY_TABLE_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14063;}
+    SYNC_TYPE       sync = 1;
+    TABLE_TEMPLATE  template = 2;
+}

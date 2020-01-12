@@ -8,7 +8,7 @@ local table_template = {}
 
 setmetatable(table_template,{
     __index = function(t,ttid)
-        local temp = reddb:hgetall("club:tabletemplate:"..tostring(ttid))
+        local temp = reddb:hgetall("table:template:"..tostring(ttid))
         if not temp then
             return nil
         end

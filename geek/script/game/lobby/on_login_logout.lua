@@ -26,6 +26,7 @@ local onlineguid = require "netguidopt"
 local base_clubs = require "game.club.base_clubs"
 local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
+local table_template = require "game.club.table_template"
 local enum = require "pb_enums"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
@@ -1075,7 +1076,8 @@ end
 function on_cs_create_private_room(msg,guid)
 	local game_type = msg.game_type
     local club_id = msg.club_id
-	local json_rule = msg.rule
+	local rule_str = msg.rule
+	local template_id = msg.template_id
 
 	dump(msg)
 
@@ -1091,6 +1093,13 @@ function on_cs_create_private_room(msg,guid)
 	if player.chair_id then
 		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
 			result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
+		})
+		return
+	end
+
+	if not rule_str and not template_id then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = enum.ERORR_PARAMETER_ERROR,
 		})
 		return
 	end
@@ -1114,20 +1123,21 @@ function on_cs_create_private_room(msg,guid)
 		channel.publish("game."..tostring(room_id),"msg","C2S_ROOM_CREATE_REQ",msg,guid)
 		return
 	end
-	
-	local rule = json_rule and json.decode(json_rule) or {
-		round = {
-			option = 0,
-		},
-		pay = {
-			money_type = 0,
-			option = 0,
-		},
-		room = {
-			player_count_option = 0,
-		},
-		play = {}
-	}
+
+	if template_id and template_id ~= 0 then
+		local template = table_template[template_id]
+		club_id = template.club_id
+		rule_str = template.rule
+		game_type = template.game_id
+	end
+
+	local ok,rule = pcall(json.decode,rule_str)
+	if not ok then
+		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			result = enum.ERORR_PARAMETER_ERROR,
+		})
+		return
+	end
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then

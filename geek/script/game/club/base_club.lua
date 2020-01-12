@@ -4,8 +4,11 @@ require "functions"
 local base_players = require "game.lobby.base_players"
 local club_member = require "game.club.club_member"
 local base_private_table = require "game.lobby.base_private_table"
+local table_template = require "game.club.table_template"
+local club_table_template = require "game.club.club_table_template"
 local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
+local json = require "cjson"
 
 local reddb = redisopt.default
 
@@ -136,7 +139,7 @@ function base_club:broadcast(msgname,msg,except)
         except = type(except) == "number" and except or except.guid
     end
     for guid,_ in pairs(club_member[self.id]) do
-        if not except or (except and except ~= guid) then
+        if not except or except ~= guid then
             onlineguid.send(guid,msgname,msg)
         end
     end
@@ -162,6 +165,97 @@ end
 
 function base_club:join_table(player,private_table,chair_count)
     return g_room:join_private_table(player,private_table,chair_count)
+end
+
+function base_club:create_table_template(game_id,desc,rule)
+    local ok,ruletb = pcall(json.decode,rule) 
+    if not ok or not ruletb then
+        return enum.ERORR_PARAMETER_ERROR
+    end
+    local id = tonumber(reddb:incr("table:template:globalid"))
+
+    local info = {
+        template_id = id,
+        club_id = self.id,
+        game_id = game_id,
+        description = desc,
+        rule = rule,
+    }
+
+    reddb:hmset(string.format("table:template:%d",id),info)
+    reddb:sadd(string.format("club:table_template:%d",self.id),id)
+
+    club_table_template[self.id] = nil
+    local x = table_template[id]
+
+    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+        sync = enum.SYNC_ADD,
+        template = info,
+    })
+
+    return enum.ERROR_NONE,info
+end
+
+function base_club:remove_table_template(template_id)
+    if not template_id then
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    template_id = tonumber(template_id)
+    reddb:del(string.format("table:template:%d",template_id))
+    reddb:srem(string.format("club:table_template:%d",self.id),template_id)
+    table_template[template_id] = nil
+    club_table_template[self.id][template_id] = nil
+
+    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+        sync = enum.SYNC_DEL,
+        template = {
+            template_id = template_id,
+        },
+    })
+
+    return enum.ERROR_NONE
+end
+
+function base_club:modify_table_template(template_id,game_id,desc,rule)
+    if not template_id then
+        log.error("modify_table_template template_id is nil.")
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    template_id = tonumber(template_id)
+
+    local ok,ruletb = pcall(json.decode,rule)
+    if not ok or not ruletb then
+        log.error("modify_table_template rule is illegel.")
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    local template = table_template[template_id]
+    if not template then
+        log.error("modify_table_template template not exists.")
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    local info = {
+        template_id = template_id,
+        club_id = self.id,
+        game_id = game_id,
+        description = desc,
+        rule = rule,
+    }
+
+    reddb:hmset(string.format("table:template:%d",template_id),info)
+
+    table_template[template_id] = nil
+    club_table_template[self.id][template_id] = nil 
+
+    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+        sync = enum.SYNC_UPDATE,
+        template = info,
+    })
+
+    return enum.ERROR_NONE,info
 end
 
 return base_club

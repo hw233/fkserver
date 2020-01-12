@@ -110,4 +110,8 @@ enum ERROR_CODE {
     ERROR_UN_READY_PLAYER_LEAVE = 249;//玩家没有准备，有人离开
 
     ERROR_DO_REQ_MATCH_NO_TIPS = 250;//玩家请求准备，服务器提示重新匹配
+
+    ERORR_PARAMETER_ERROR = 251;//参数非法
+
+    ERROR_TABLE_TEMPLATE_NOT_FOUND = 252;//桌子模板不存在
 }
