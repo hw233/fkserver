@@ -2476,7 +2476,10 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
 
     send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
     if is_reconnect then
-        send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+        if self.dealer then
+            send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+        end
+
         if self.chu_pai_player_index == player.chair_id then
             send2client_pb(player,"SC_Maajan_Draw",{
                 chair_id = player.chair_id,

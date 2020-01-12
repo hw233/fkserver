@@ -26,7 +26,7 @@ function onlineguid.send(guids,msgname,msg)
         local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
         local s = onlineguid[guid]
         if not s or not s.gate then 
-            -- log.warning("send2guid %d not online.",guid)
+            log.warning("send2guid %d not online.",guid)
             return
         end
   

@@ -138,7 +138,7 @@ function base_club:broadcast(msgname,msg,except)
     if except then
         except = type(except) == "number" and except or except.guid
     end
-    for guid,_ in pairs(club_member[self.id]) do
+    for guid,_ in pairs(club_member[self.id] or {}) do
         if not except or except ~= guid then
             onlineguid.send(guid,msgname,msg)
         end
