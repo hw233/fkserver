@@ -26,7 +26,7 @@ local onlineguid = require "netguidopt"
 local base_clubs = require "game.club.base_clubs"
 local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
-local table_template = require "game.club.table_template"
+local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档

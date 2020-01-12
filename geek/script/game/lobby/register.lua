@@ -29,6 +29,7 @@ skynet.start(function()
 	require "game.lobby.on_mail"
 	require "game.lobby.on_recharge_cash"
 	require "game.club.on_club"
+	require "game.lobby.on_template"
 
 	local show_log = not (b_register_dispatcher_hide_log or false)
 	b_register_dispatcher_hide_log = true
@@ -185,4 +186,5 @@ skynet.start(function()
 
 	register_dispatcher("GetTableStatusInfo",on_s_get_table_status_info)
 	register_dispatcher("GM_NotifyRecharge",on_s_notify_recharge)
+	register_dispatcher("C2S_EDIT_TABLE_TEMPLATE",on_cs_edit_table_template)
 end)

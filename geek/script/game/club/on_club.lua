@@ -9,16 +9,13 @@ local club_memeber = require "game.club.club_member"
 local player_club = require "game.club.player_club"
 local channel = require "channel"
 local serviceconf = require "serviceconf"
-local private_table = require "game.lobby.base_private_table"
 local onlineguid = require "netguidopt"
 local club_table = require "game.club.club_table"
 local club_table_template = require "game.club.club_table_template"
-local club_request = require "game.club.club_request"
 local player_request = require "game.club.player_request"
 local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
 local base_private_table = require "game.lobby.base_private_table"
-local table_template = require "game.club.table_template"
 local json = require "cjson"
 local enum = require "pb_enums"
 require "functions"
@@ -45,17 +42,6 @@ local CLUB_OP_RESULT_FAILED = pb.enum("CLUB_OP_RESULT", "CLUB_OP_RESULT_FAILED")
 local CLUB_OP_RESULT_NO_RIGHTS = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_NO_RIGHTS")
 local CLUB_OP_RESULT_INTERNAL_ERROR = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_INTERNAL_ERROR")
 local CLUB_OP_RESULT_NO_CLUB = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_NO_CLUB")
-
-local ERROR_CLUB_UNKONW = pb.enum("ERROR_CODE","ERROR_CLUB_UNKONW")
-local ERROR_NONE = pb.enum("ERROR_CODE", "ERROR_NONE")
-local ERROR_CLUB_NOT_FOUND = pb.enum("ERROR_CODE", "ERROR_CLUB_NOT_FOUND")
-local ERROR_NOT_IS_CLUB_MEMBER = pb.enum("ERROR_CODE","ERROR_NOT_IS_CLUB_MEMBER")
-local ERROR_JOIN_ROOM_NO = pb.enum("ERROR_CODE","ERROR_JOIN_ROOM_NO")
-local ERROR_PLAYER_NOT_EXIST = pb.enum("ERROR_CODE", "ERROR_PLAYER_NOT_EXIST")
-local ERROR_CLUB_OP_EXPIRE = pb.enum("ERROR_CODE", "ERROR_CLUB_OP_EXPIRE")
-local ERROR_CLUB_OP_JOIN_CHECKED = pb.enum("ERROR_CODE", "ERROR_CLUB_OP_JOIN_CHECKED")
-local ERROR_NOT_IS_CLUB_BOSS = pb.enum("ERROR_CODE", "ERROR_NOT_IS_CLUB_BOSS")
-local ERROR_NOT_IS_CLUB_ADMIN = pb.enum("ERROR_CODE", "ERROR_NOT_IS_CLUB_ADMIN") 
 
 local CRT_BOSS = pb.enum("CLUB_ROLE_TYPE","CRT_BOSS")
 local CRT_PLAYER = pb.enum("CLUB_ROLE_TYPE","CRT_PLAYER")
@@ -152,7 +138,7 @@ function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     if not club_id then
         onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
 
         return
@@ -161,7 +147,7 @@ function on_cs_club_detail_info_req(msg,guid)
     local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -212,7 +198,7 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local info = {
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
         club_id = club_id,
         club_name = club.name,
         note = club.note,
@@ -260,14 +246,14 @@ function on_cs_club_edit_game_type(msg,guid)
     local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"S2C_EDIT_CLUB_GAME_TYPE_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
 
     if club.owner ~= guid then
         onlineguid.send(guid,"S2C_EDIT_CLUB_GAME_TYPE_RES",{
-            result = ERROR_NOT_IS_CLUB_BOSS,
+            result = enum.ERROR_NOT_IS_CLUB_BOSS,
         })
         return
     end
@@ -277,7 +263,7 @@ function on_cs_club_edit_game_type(msg,guid)
     club_game_type[club_id] = nil
 
     onlineguid.send(guid,"S2C_EDIT_CLUB_GAME_TYPE_RES",{
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
     })
 end
 
@@ -287,7 +273,7 @@ function on_cs_club_join_req(msg,guid)
     if not club then
         log.warning("unknown club:%s",club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -295,7 +281,7 @@ function on_cs_club_join_req(msg,guid)
     if club_memeber[club_id] and club_memeber[club_id][guid] then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = ERROR_CLUB_OP_JOIN_CHECKED,
+            result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
         })
         return
     end
@@ -340,14 +326,14 @@ function on_cs_club_invite_join_req(msg,guid)
     if not player then
         log.error("internal error,recv msg but guid not online.")
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = ERROR_PLAYER_NOT_EXIST,
+            result = enum.ERROR_PLAYER_NOT_EXIST,
         })
         return
     end
 
     if not player:has_club_rights() then
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -355,7 +341,7 @@ function on_cs_club_invite_join_req(msg,guid)
     local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -372,7 +358,7 @@ function on_cs_create_table(msg,guid)
 
     if not club_id then
         onlineguid.send(guid,"S2C_ROOM_CREATE_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -380,7 +366,7 @@ function on_cs_create_table(msg,guid)
     local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"S2C_ROOM_CREATE_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
@@ -398,12 +384,12 @@ end
 function on_cs_join_table_req(msg,guid)
     local player = base_players[guid]
     if not player then
-        return ERROR_NOT_IS_CLUB_MEMBER
+        return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
-    local tb = private_table[msg.table_id]
+    local tb = base_private_table[msg.table_id]
     if not tb then
-        return ERROR_JOIN_ROOM_NO
+        return enum.ERROR_JOIN_ROOM_NO
     end
 
     if not msg.club_id then
@@ -412,7 +398,7 @@ function on_cs_join_table_req(msg,guid)
 
     local club = player_club[guid][msg.club_id]
     if not club then
-        return ERROR_NOT_IS_CLUB_MEMBER
+        return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
     return g_room:join_table(player,msg.table_id)
@@ -441,158 +427,6 @@ function on_cs_club_publish_notice(msg,guid)
 
 end
 
-function on_cs_create_table_template(msg,guid)
-    local template = msg.template
-    if not template or not template.club_id then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local club = base_clubs[template.club_id]
-    if not club then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_CLUB_NOT_FOUND
-        })
-    end
-
-    if not club_memeber[template.club_id][guid] then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
-        })
-        return
-    end
-
-    local ret,info = club:create_table_template(template.game_id,template.description,template.rule)
-    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-        result = ret,
-        template = info,
-    })
-end
-
-function on_cs_remove_table_template(msg,guid)
-    if not msg.template then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local template_id = msg.template.template_id
-    if not template_id then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local template = table_template[template_id]
-    if not template then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_TABLE_TEMPLATE_NOT_FOUND
-        })
-        return
-    end
-
-    local club = base_clubs[template.club_id]
-    if not club then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_CLUB_NOT_FOUND
-        })
-        return
-    end
-
-    if not club_memeber[template.club_id][guid] then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
-        })
-        return
-    end
-
-    local ret = club:remove_table_template(template_id)
-    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-        result = ret,
-    })
-end
-
-function on_cs_modify_table_template(msg,guid)
-    local template = msg.template
-    if not template then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local template_id = template.template_id
-    if not template_id then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local origin_template = table_template[template_id]
-    if not origin_template then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_TABLE_TEMPLATE_NOT_FOUND,
-        })
-        return
-    end
-
-    if template.club_id ~= origin_template.club_id then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR,
-        })
-        return
-    end
-
-    local club = base_clubs[template.club_id]
-    if not club then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_CLUB_NOT_FOUND
-        })
-        return
-    end
-
-    if not club_memeber[template.club_id][guid] then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
-        })
-        return
-    end
-
-    local ret,info = club:modify_table_template(template_id,template.game_id,template.description,template.rule)
-    send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-        result = ret,
-        template = info,
-    })
-end
-
-function on_cs_club_edit_table_template(msg,guid)
-    local edit_operator = {
-        [enum.OPERATION_ADD] = on_cs_create_table_template,
-        [enum.OPERATION_DEL] = on_cs_remove_table_template,
-        [enum.OPERATION_MODIFY] = on_cs_modify_table_template,
-    }
-
-    local template = msg.template
-    if not template then
-        send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-    
-    local op = edit_operator[msg.edit_op]
-    if not op then
-        log.error("edit table template unknown operator,%s",msg.edit_op)
-        return
-    end
-
-    op(msg,guid)
-end
 
 function on_cs_club_exit_req(msg,guid)
     
@@ -617,7 +451,7 @@ function on_cs_club_request_list_req(msg,guid)
     end
 
     onlineguid.send(guid,"S2C_CLUB_REQUEST_LIST_RES",{
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
         club_id = club_id,
         reqs = reqs,
     })
@@ -673,7 +507,7 @@ local function on_cs_club_agree_request(msg,guid)
         log.error("unknown player when agree request id:%s",msg.request_id)
         
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_PLAYER_NOT_EXIST,
+            result = enum.ERROR_PLAYER_NOT_EXIST,
             op_type = msg.op,
         })
         return
@@ -683,7 +517,7 @@ local function on_cs_club_agree_request(msg,guid)
     if not request then
         log.error("unknown player when agree request id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_CLUB_OP_EXPIRE,
             op_type = msg.op,
         })
         return
@@ -692,7 +526,7 @@ local function on_cs_club_agree_request(msg,guid)
     if not request:agree() then
         log.error("agree request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_CLUB_OP_EXPIRE,
             op_type = msg.op,
         })
 
@@ -705,7 +539,7 @@ local function on_cs_club_agree_request(msg,guid)
     club_memeber[request.club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
         op_type = msg.op,
     })
 end
@@ -716,7 +550,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not player then
         log.error("unknown player when reject request request_id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_PLAYER_NOT_EXIST,
+            result = enum.ERROR_PLAYER_NOT_EXIST,
             op = msg.op,
         })
         return
@@ -726,7 +560,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not request then
         log.error("unknown request when reject request request_id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_CLUB_OP_EXPIRE,
             op = msg.op,
         })
         return
@@ -736,7 +570,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not club then
         log.error("unkonw club_id when reject request,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_CLUB_NOT_FOUND,
+            result = enum.ERROR_CLUB_NOT_FOUND,
             request_id = msg.request_id,
         })
         return
@@ -745,7 +579,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not club:reject_request(request) then
         log.error("reject request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_CLUB_OP_EXPIRE,
             request_id = msg.request_id,
         })
 
@@ -757,7 +591,7 @@ local function on_cs_club_reject_request(msg,guid)
     club_memeber[request.club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-        result = ERROR_NONE,
+        result = enum.ERROR_NONE,
         request_id = msg.request_id,
     })
 end

@@ -4,7 +4,7 @@ require "functions"
 local base_players = require "game.lobby.base_players"
 local club_member = require "game.club.club_member"
 local base_private_table = require "game.lobby.base_private_table"
-local table_template = require "game.club.table_template"
+local table_template = require "game.lobby.table_template"
 local club_table_template = require "game.club.club_table_template"
 local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
@@ -168,6 +168,8 @@ function base_club:join_table(player,private_table,chair_count)
 end
 
 function base_club:create_table_template(game_id,desc,rule)
+    
+
     local ok,ruletb = pcall(json.decode,rule) 
     if not ok or not ruletb then
         return enum.ERORR_PARAMETER_ERROR
@@ -211,6 +213,7 @@ function base_club:remove_table_template(template_id)
         sync = enum.SYNC_DEL,
         template = {
             template_id = template_id,
+            club_id = self.id,
         },
     })
 
@@ -240,10 +243,12 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
     local info = {
         template_id = template_id,
         club_id = self.id,
-        game_id = game_id,
-        description = desc,
-        rule = rule,
+        game_id = (game_id and game_id ~= 0) and game_id or template.game_id,
+        description = (desc and desc ~= "") and desc or template.description,
+        rule = (rule and rule ~= "") and rule or template.rule,
     }
+
+    dump(info)
 
     reddb:hmset(string.format("table:template:%d",template_id),info)
 

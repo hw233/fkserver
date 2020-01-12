@@ -1,5 +1,5 @@
 local redisopt = require "redisopt"
-local table_template = require "game.club.table_template"
+local table_template = require "game.lobby.table_template"
 
 local reddb = redisopt.default
 
