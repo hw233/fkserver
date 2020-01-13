@@ -479,7 +479,7 @@ end
 local old_player_money_log = base_table.player_money_log
 function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
 	dump("base_table:player_money_log")
-	if not player.is_android and player.guid > 0  then
+	if not player:is_android()  then
 		player:increase_play_info(s_change_money)
 	end
 	old_player_money_log(self,player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
@@ -489,7 +489,7 @@ end
 local player_money_log_when_gaming = base_table.player_money_log_when_gaming
 function base_table:player_money_log_when_gaming(player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
 	dump("base_table:player_money_log_when_gaming")
-	if not player.is_android and player.guid > 0 then
+	if not player:is_android() then
 		player:increase_play_info(s_change_money)
 	end
 

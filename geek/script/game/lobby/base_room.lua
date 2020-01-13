@@ -577,7 +577,7 @@ function base_room:auto_enter_room(player)
 			room_id = self.id,
 			guid = player.guid,
 		}
-		if player.is_player then
+		if not player:is_android() then
 			self:foreach_by_player(function (p)
 				p:on_notify_enter_room(notify)
 			end)
@@ -620,7 +620,7 @@ function base_room:enter_room(player)
 		room_id = self.id,
 		guid = player.guid,
 	}
-	if player.is_player then
+	if not player:is_android() then
 		self:foreach_by_player(function (p)
 			if p then
 				p:on_notify_enter_room(notify)
@@ -759,7 +759,7 @@ function base_room:find_android_pos(room_id)
 					tableid = i
 					chairid = j
 				end
-			elseif chair.is_player then
+			elseif not chair:is_android() then
 				if tableid and chairid then
 					return tableid, chairid
 				end

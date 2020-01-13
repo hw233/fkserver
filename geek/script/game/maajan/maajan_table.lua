@@ -271,7 +271,7 @@ function maajan_table:player_jiabei(player)
 end
 
 function maajan_table:player_is_activity(player)
-	return not player.is_android
+	return not player:is_android()
 end
 
 function maajan_table:update_state(new_state)
@@ -1421,7 +1421,7 @@ function maajan_table:FSM_event(event_table)
                         v:forced_exit()
                     else
                         v:check_forced_exit(room_limit)
-                        if v.is_android then
+                        if v:is_android() then
                             self:ready(v)
                         end
                     end
@@ -1430,7 +1430,7 @@ function maajan_table:FSM_event(event_table)
 
             for i,v in pairs (self.players) do
                 if game_switch == 1 then--游戏将进入维护阶段
-                    if  v and v.is_player == true then 
+                    if  v and not v:is_android() then 
                         send2client_pb(v, "SC_GameMaintain", {
                         result = GAME_SERVER_RESULT_MAINTAIN,
                         })

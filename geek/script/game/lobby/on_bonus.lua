@@ -109,7 +109,7 @@ function on_cs_request_player_info(msg,guid)
 	local player = base_players[guid]
 	old_on_cs_request_player_info(player,msg)
 	dump(player.platform_id)
-	if not player.is_android then
+	if not player:is_android() then
 		player:send_unelasped_activities()
 		player:load_bonus_hongbao()
 		player:load_bonus_game_statisticss()
@@ -122,7 +122,7 @@ function on_ss_change_game(msg)
 	old_on_ss_change_game(msg)
 
 	local player = base_players[msg.guid]
-	if not player or player.is_android then return end
+	if not player or player:is_android() then return end
 
 	player:send_unelasped_activities()
 	player:load_bonus_hongbao()

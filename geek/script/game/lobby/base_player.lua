@@ -40,7 +40,6 @@ local base_player = setmetatable({
 function base_player:init(guid_, account_, nickname_)
 	base_character.init(self,guid_,account_,nickname_)
 	self.online = true
-	self.is_player = true
 	self.in_game = true
 	self.game_end_event = {}
 	log.info("set player[%d] in_game true" ,self.guid)
@@ -49,6 +48,10 @@ end
 
 function base_player:has_club_rights()
 	return self.rights and self.rights.club ~= nil
+end
+
+function base_player:is_android()
+	return self.guid < 0
 end
 
 -- 删除
@@ -390,12 +393,12 @@ function base_player:log_money(money_type,why,old,now,old_bank,now_bank)
 end
 
 function base_player:incrby(field,value)
-	local v = reddb:hincrby("player:info:"..tostring(self.guid),field,value)
+	local v = reddb:hincrby("player:info:"..tostring(self.guid),field,string.format("%d",value))
 	return tonumber(v)
 end
 
 function base_player:decrby(field,value)
-	local v = reddb:hdecrby("player:info:"..tostring(self.guid),field,value)
+	local v = reddb:hincrby("player:info:"..tostring(self.guid),field,string.format("%d",- value))
 	return tonumber(v)
 end
 
@@ -416,7 +419,7 @@ function base_player:decr_diamond(p,why)
 
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_DIAMOND)
 	
-	if self.is_player and not self.is_android then
+	if self.guid > 0 then
 		local newmoney = self:decrby("diamond",p.money)
 		if newmoney ~= self.diamond then
 			log.error("change diamond db ~= runtime")
@@ -445,7 +448,7 @@ function base_player:decr_room_card(p,why)
 
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_ROOM_CARD)
 	
-	if self.is_player and not self.is_android then
+	if not self:is_android() then
 		local newmoney = self:decrby("room_card",p.money)
 		if newmoney ~= self.room_card then
 			log.error("change room_card db ~= runtime")
@@ -474,7 +477,7 @@ function base_player:decr_gold(p,why)
 
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
 
-	if self.is_player and not self.is_android then
+	if not self:is_android() then
 		local newmoney = self:decrby("money",p.money)
 		if newmoney ~= self.money then
 			log.error("change gold money db ~= runtime")
@@ -539,7 +542,8 @@ function base_player:incr_gold(p,why)
 
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
 
-	if self.is_player and not self.is_android then
+	if not self:is_android() then
+		dump(p)
 		local newmoney = self:incrby("money",p.money)
 		if newmoney ~= self.money then
 			log.error("change gold money db ~= runtime")
@@ -568,7 +572,7 @@ function base_player:incr_room_card(p,why)
 	
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_ROOM_CARD)
 	
-	if self.is_player and not self.is_android then
+	if not self:is_android() then
 		local room_card = self:incrby("room_card",p.money)
 		if room_card ~= self.room_card then
 			log.error("change room_card db ~= runtime")
@@ -596,7 +600,7 @@ function base_player:incr_diamond(p,why)
 
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_DIAMOND)
 	
-	if self.is_player and not self.is_android then
+	if not self:is_android() then
 		local diamond = self:incrby("diamond",p.money)
 		if diamond ~= self.diamond then
 			log.error("change diamond db ~= runtime")

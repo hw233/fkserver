@@ -15,7 +15,6 @@ end
 -- 初始化
 function base_active_android:init(roomid_, guid_, account_, nickname_)
 	base_character.init(self, guid_, account_, nickname_)
-	self.is_android = true
 
 	self.wait_active_android_[roomid_] = self.wait_active_android_[roomid_] or {}
 	self.wait_active_android_[roomid_][guid_] = self
@@ -131,7 +130,6 @@ end
 -- 初始化
 function base_passive_android:init(roomid_, guid_, account_, nickname_)
 	base_character.init(self, guid_, account_, nickname_)
-	self.is_android = true
 
 	self.init_passive_android_[roomid_] = self.init_passive_android_[roomid_] or {}
 	self.init_passive_android_[roomid_][guid_] = self

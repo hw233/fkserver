@@ -22,8 +22,6 @@ local game_android = base_character:new()
 -- 初始化
 function game_android:init(roomid_, guid_, account_, nickname_)
 	base_character.init(self, guid_, account_, nickname_)
-
-	self.is_android = true
 	self.money = 10000
 	self.bank  = 0
 	self.header_icon = math.random(10)

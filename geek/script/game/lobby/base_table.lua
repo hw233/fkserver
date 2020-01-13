@@ -313,7 +313,7 @@ function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_mo
 end
 
 function base_table:player_bet_flow_log(player,money)
-	if not player.is_player then return end
+	if player:is_android() then return end
 
 	if money <= 0 then return end
 
@@ -408,7 +408,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	self.players[chair_id] = player
 	log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
 			player.guid,player.table_id,player.chair_id)
-	if player.is_player then
+	if not player:is_android() then
 		for i, p in ipairs(self.players) do
 			if p == false then
 				-- 主动机器人坐下
@@ -671,7 +671,7 @@ function base_table:ready(player)
 
 	-- 机器人准备
 	self:foreach(function(p)
-		if p.is_android and (not self.ready_list[p.chair_id]) then
+		if p:is_android() and (not self.ready_list[p.chair_id]) then
 			self.ready_list[p.chair_id] = p
 
 			local notify = {
@@ -821,7 +821,7 @@ function base_table:check_game_maintain()
 	if game_switch == 1 then--游戏将进入维护阶段
 		log.warning("All Game will maintain..game_switch=[%d].....................",game_switch)
 		for i,v in pairs (self.players) do
-			if v.is_player == true and v.vip ~= 100 then
+			if not v:is_android() and v.vip ~= 100 then
 				send2client_pb(v, "SC_GameMaintain", {
 					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 				})
@@ -894,7 +894,7 @@ end
 function base_table:send_maintain_player()
 	local iRet = false
 	for i,v in pairs (self.players) do
-		if  v.is_player == true and v.vip ~= 100 then
+		if  not v:is_android() and v.vip ~= 100 then
 			send2client_pb(v, "SC_GameMaintain", {
 			result = GAME_SERVER_RESULT_MAINTAIN,
 			})
