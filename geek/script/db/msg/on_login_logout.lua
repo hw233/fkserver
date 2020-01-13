@@ -2770,6 +2770,7 @@ function on_sd_change_player_money(msg)
 		local guid = item.guid
 		local money_type = item.money_type
 		local money = item.money
-		dbopt.game:query("UPDATE t_player_money SET money = %d WHERE guid = %d AND money_type = %d;",money,guid,money_type)
+		local where = item.where or 0
+		dbopt.game:query("UPDATE t_player_money SET money = %d WHERE guid = %d AND money_type = %d AND where = %d;",money,guid,money_type,where)
 	end
 end
