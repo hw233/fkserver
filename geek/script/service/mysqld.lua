@@ -111,8 +111,8 @@ function db_conn_pool:get()
 end
 
 
-function db_conn_pool:execute_pb(sql, pb)
-	self:get():execute_pb(sql,pb)
+function db_conn_pool:execute(sql, tb)
+	self:get():execute(sql,tb)
 end
 
 function db_conn_pool:update(sql)
