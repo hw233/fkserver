@@ -12,8 +12,8 @@ function db:query(sql,...)
 	return skynet.call(mysqld,"lua","query",self.name,sql,...)
 end
 
-function db:execute(sql,pb)
-	return skynet.call(mysqld,"lua","execute_pb",self.name,sql,pb)
+function db:execute(sql,tb)
+	return skynet.call(mysqld,"lua","execute",self.name,sql,tb)
 end
 
 local mysql = {}

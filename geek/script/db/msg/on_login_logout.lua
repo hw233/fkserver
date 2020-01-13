@@ -11,16 +11,12 @@ local redisopt = require "redisopt"
 local json = require "cjson"
 local channel = require "channel"
 local reddb = redisopt.default
-
-local timer = require "timer"
+local enum = require "pb_enums"
 
 require "table_func"
-server_start_time =  os.time()
-local server_start_time = server_start_time
+local server_start_time =  os.time()
 
 local md5 = require "md5"
-
-local redisopt = require "redisopt"
 
 local get_init_money = get_init_money
 local get_init_regmoney = get_init_regmoney
@@ -1757,14 +1753,15 @@ function on_ld_verify_account(msg)
 end
 
 function on_ld_reg_account(msg)
+	dump(msg)
 	-- local validatebox_ip = reddb:get("validatebox_feng_ip")
 	-- local is_validatebox_block = validatebox_ip and tonumber(validatebox_ip) or 0
 	-- local account = msg.account
 
 	local res = dbopt.account:query(
-					[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
+					[[INSERT INTO t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
 						register_time,ip,version,phone_type,package_name) 
-					values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
+					VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
 					msg.guid,
 					msg.account,
 					msg.nickname,
@@ -1777,14 +1774,37 @@ function on_ld_reg_account(msg)
 					msg.phone_type or "unkown",
 					msg.package_name or ""
 				)
+
 	if res.errno then
-		log.error("on_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
+		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
 		return
 	end
 
+	res = dbopt.game:query([[INSERT INTO t_player(guid,account,nickname,level,head_url) 
+					VALUES(%d,'%s','%s','%s','%s');]],
+					msg.guid,
+					msg.account,
+					msg.nickname,
+					msg.level,
+					msg.open_id_icon
+				)
+
+	if res.errno then
+		log.error("on_ld_reg_account insert into t_player throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
+
+	for money_type = 0,2 do
+		res = dbopt.game:query([[INSERT INTO t_player_money(guid,money_type) VALUES(%d,%d);]],msg.guid,money_type)
+		if res.errno then
+			log.error("on_ld_reg_account insert into t_player_money throw exception.[%d],[%s]",res.errno,res.err)
+			return
+		end
+	end
+
 	res = dbopt.log:query(
-		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
-			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+		[[INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
+			VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
 		msg.guid,
 		msg.version,
 		msg.phone_type or "unkown",
@@ -1793,7 +1813,7 @@ function on_ld_reg_account(msg)
 	)
 
 	if res.errno then
-		log.error("on_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
+		log.error("on_ld_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
 		return
 	end
 
@@ -2742,5 +2762,14 @@ function on_reg_account(msg)
 	if res.errno then
 		log.error("on_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
 		return
+	end
+end
+
+function on_sd_change_player_money(msg)
+	for _,item in pairs(msg) do
+		local guid = item.guid
+		local money_type = item.money_type
+		local money = item.money
+		dbopt.game:query("UPDATE t_player_money SET money = %d WHERE guid = %d AND money_type = %d;",money,guid,money_type)
 	end
 end

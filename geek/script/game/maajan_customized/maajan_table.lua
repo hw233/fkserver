@@ -1892,6 +1892,14 @@ function maajan_table:on_game_balance()
             status = player_balance_status(p),
             hu_tile = p.hu and p.hu.tile or nil,
         })
+
+        if p.win_money > 0 then
+            p:add_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD,money = p.win_money}},
+                enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+        elseif p.win_money < 0 then
+            p:cost_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD,money = -p.win_money}},
+                enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+        end
     end
 
     dump(msg,9)

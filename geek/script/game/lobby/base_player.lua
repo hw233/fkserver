@@ -7,6 +7,7 @@ require "game.lobby.base_android"
 local log  = require "log"
 local enum = require "pb_enums"
 require "data.item_details_table"
+local channel = require "channel"
 local item_details_table = item_details_table
 local base_active_android = base_active_android
 
@@ -354,11 +355,11 @@ end
 
 -- 得到钱
 function base_player:get_money(money_type)
-	if money_type == ITEM_PRICE_TYPE_DIAMOND then
+	if money_type == enum.ITEM_PRICE_TYPE_DIAMOND then
 		return self.diamond or 0
 	end
 
-	if money_type == ITEM_PRICE_TYPE_ROOM_CARD then
+	if money_type == enum.ITEM_PRICE_TYPE_ROOM_CARD then
 		return self.room_card or 0
 	end
 
@@ -403,16 +404,17 @@ function base_player:decr_diamond(p,why)
 	local oldmoney = money
 	p.money = math.ceil(p.money)
 	log.info("guid[%d] money_type[%d]  money[%d]" ,self.guid, p.money_type, p.money)
-	if p.money <= 0 or money < p.money then
-		log.error("=====cost_money==============="..money.."=="..p.money)
-		return
-	end
-
 	log.info("money[%d] - p[%d]" , money,p.money)
 	money = money - p.money
-
 	self.diamond = money
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_DIAMOND)
+
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.diamond,
+		money_type = p.money_type,
+	}})
+
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_DIAMOND)
 	
 	if self.is_player and not self.is_android then
 		local newmoney = self:decrby("diamond",p.money)
@@ -420,10 +422,10 @@ function base_player:decr_diamond(p,why)
 			log.error("change diamond db ~= runtime")
 		end
 
-		self:log_money(ITEM_PRICE_TYPE_DIAMOND,why,oldmoney,money,0,0)
+		self:log_money(enum.ITEM_PRICE_TYPE_DIAMOND,why,oldmoney,money,0,0)
 	end
 	
-	log.info("cost_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.diamond)
+	log.info("decr_diamond  end oldmoney[%d] new_money[%d]" , oldmoney, self.diamond)
 end
 
 function base_player:decr_room_card(p,why)
@@ -431,16 +433,17 @@ function base_player:decr_room_card(p,why)
 	local oldmoney = money
 	p.money = math.ceil(p.money)
 	log.info("guid[%d] money_type[%d]  money[%d]" ,self.guid, p.money_type, p.money)
-	if p.money <= 0 or money < p.money then
-		log.error("=====cost_money==============="..money.."=="..p.money)
-		return
-	end
-
 	log.info("money[%d] - p[%d]" , money,p.money)
 	money = money - p.money
-
 	self.room_card = money
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_ROOM_CARD)
+
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.room_card,
+		money_type = p.money_type,
+	}})
+
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_ROOM_CARD)
 	
 	if self.is_player and not self.is_android then
 		local newmoney = self:decrby("room_card",p.money)
@@ -448,10 +451,10 @@ function base_player:decr_room_card(p,why)
 			log.error("change room_card db ~= runtime")
 		end
 
-		self:log_money(ITEM_PRICE_TYPE_ROOM_CARD,why,oldmoney,self.room_card,0,0)
+		self:log_money(enum.ITEM_PRICE_TYPE_ROOM_CARD,why,oldmoney,self.room_card,0,0)
 	end
 	
-	log.info("cost_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.room_card)
+	log.info("decr_room_card  end oldmoney[%d] new_money[%d]" , oldmoney, self.room_card)
 end
 
 function base_player:decr_gold(p,why)
@@ -459,17 +462,18 @@ function base_player:decr_gold(p,why)
 	local oldmoney = money
 	p.money = math.ceil(p.money)
 	log.info("guid[%d] money_type[%d]  money[%d]" ,self.guid, p.money_type, p.money)
-	if p.money <= 0 or money < p.money then
-		log.error("=====cost_money==============="..money.."=="..p.money)
-		return
-	end
-
 	log.info("money[%d] - p[%d]" , money,p.money)
 	money = money - p.money
-
 	self.money = money
+
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.money,
+		money_type = p.money_type,
+	}})
+
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
-	
+
 	if self.is_player and not self.is_android then
 		local newmoney = self:decrby("money",p.money)
 		if newmoney ~= self.money then
@@ -479,7 +483,7 @@ function base_player:decr_gold(p,why)
 		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,why,oldmoney,self.money,self.bank,self.bank)
 	end
 
-	log.info("cost_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)
+	log.info("decr_gold  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)
 end
 
 -- 花钱
@@ -488,9 +492,9 @@ function base_player:cost_money(price, why, whatever)
 		log.info("guid[%d] money_type[%d]  money[%d]" ,self.guid, p.money_type, p.money)
 		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			self:decr_gold(p,why,whatever)
-		elseif p.money_type == ITEM_PRICE_TYPE_ROOM_CARD then
+		elseif p.money_type == enum.ITEM_PRICE_TYPE_ROOM_CARD then
 			self:decr_room_card(p,why,whatever)
-		elseif p.money_type == ITEM_PRICE_TYPE_DIAMOND  then
+		elseif p.money_type == enum.ITEM_PRICE_TYPE_DIAMOND  then
 			self:decr_diamond(p,why,whatever)
 		end
 	end
@@ -527,9 +531,14 @@ function base_player:incr_gold(p,why)
 	log.info("guid[%d] add money[%d]",self.guid , p.money)
 	money = money + p.money
 	self.money = money
-	
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.money,
+		money_type = p.money_type,
+	}})
+
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
-	
+
 	if self.is_player and not self.is_android then
 		local newmoney = self:incrby("money",p.money)
 		if newmoney ~= self.money then
@@ -550,15 +559,21 @@ function base_player:incr_room_card(p,why)
 	log.info("guid[%d] add money[%d]",self.guid , p.money)
 	money = money + p.money
 	self.room_card = money
+
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.room_card,
+		money_type = p.money_type,
+	}})
 	
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_ROOM_CARD)
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_ROOM_CARD)
 	
 	if self.is_player and not self.is_android then
 		local room_card = self:incrby("room_card",p.money)
 		if room_card ~= self.room_card then
 			log.error("change room_card db ~= runtime")
 		end
-		self:log_money(ITEM_PRICE_TYPE_ROOM_CARD,why,oldmoney,money,0,0)
+		self:log_money(enum.ITEM_PRICE_TYPE_ROOM_CARD,why,oldmoney,money,0,0)
 	end
 end
 
@@ -573,14 +588,20 @@ function base_player:incr_diamond(p,why)
 	money = money + p.money
 	self.diamond = money
 	
-	self:notify_money(why,money,money-oldmoney,ITEM_PRICE_TYPE_DIAMOND)
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = self.diamond,
+		money_type = p.money_type,
+	}})
+
+	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_DIAMOND)
 	
 	if self.is_player and not self.is_android then
 		local diamond = self:incrby("diamond",p.money)
 		if diamond ~= self.diamond then
 			log.error("change diamond db ~= runtime")
 		end
-		self:log_money(ITEM_PRICE_TYPE_DIAMOND,why,oldmoney,money,0,0)
+		self:log_money(enum.ITEM_PRICE_TYPE_DIAMOND,why,oldmoney,money,0,0)
 	end
 end
 
@@ -590,9 +611,9 @@ function base_player:add_money(price, opttype)
 		log.info("guid[%d] add money[%d],money_type:%d",self.guid , p.money,p.money_type)
 		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			self:incr_gold(p,opttype)
-		elseif p.money_type == ITEM_PRICE_TYPE_ROOM_CARD then
+		elseif p.money_type == enum.ITEM_PRICE_TYPE_ROOM_CARD then
 			self:incr_room_card(p,opttype)
-		elseif p.money_type == ITEM_PRICE_TYPE_DIAMOND then
+		elseif p.money_type == enum.ITEM_PRICE_TYPE_DIAMOND then
 			self:incr_diamond(p,opttype)
 		end
 	end
@@ -752,7 +773,7 @@ function base_player:cost_player_banker_money( value, opttype ,is_savedb)
 	self.bank = bank_
 	self:notify_bank_money(opttype,bank_,bank_ - oldbank)
 	log.info("cost_player_banker_money:opttype--------------%d",opttype)
-	self:log_money(ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
+	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
 
 	acturl_cost_money = value
 	log.info("cost_player_banker_money  end oldbank[%d] new_bank[%d]" , oldbank, self.bank)
@@ -778,7 +799,7 @@ function base_player:change_bank(value, opttype, is_savedb, whatever)
 	self.bank = bank_
 	self:notify_bank_money(opttype,bank_,bank_  - oldbank)
 	log.info("opttype--------------".. opttype)
-	self:log_money(ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
+	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,self.money,self.money,oldbank,self.bank)
 
 	log.info("change_bank  end oldbank[%d] new_bank[%d]" , oldbank, self.bank)
 	return ret
@@ -805,26 +826,11 @@ function base_player:change_money(value, opttype, is_savedb, whatever)
 	log.info("money is :"..self.money)
 	self:notify_money(opttype,money_,money_ - oldmoney)
 	log.info("opttype--------------".. opttype)
-	self:log_money(ITEM_PRICE_TYPE_GOLD,opttype,oldmoney,self.money,self.bank,self.bank)
+	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,oldmoney,self.money,self.bank,self.bank)
 	log.info("change_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)
 	return ret
 end
 
--- 2017-02-17 by rocky add玩家每局百人牛牛信息存档发送到db
-function base_player:player_save_ox_data(player_info)
-	send2db_pb("SD_SavePlayerOxData", {
-		guid = player_info.guid,
-		is_android = player_info.is_android,
-		table_id = player_info.table_id,
-		banker_id = player_info.banker_id,
-		nickname = player_info.nickname,
-		money = player_info.money,
-		win_money = player_info.win_money,
-		bet_money = player_info.bet_money,
-		tax = player_info.tax,
-		curtime = player_info.curtime,
-	})
-end
 
 --记录游戏对手
 function base_player:set_player_ip_contrl(player_list)

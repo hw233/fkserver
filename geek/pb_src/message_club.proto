@@ -38,6 +38,8 @@ message C2S_CREATE_CLUB_REQ {
     string name = 1;//俱乐部名称
     string icon = 2;//俱乐部头像
     string notice = 3;//公告内容
+    int32  type = 4;//类型 联盟 亲友群
+    int32  parent = 5;//父节点
 }
 
 //创建俱乐部结果

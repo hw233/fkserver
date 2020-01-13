@@ -11,6 +11,7 @@ require "db.msg.on_bank"
 require "db.msg.on_chat_mail"
 require "db.msg.on_log"
 require "db.msg.on_bonus_hongbao"
+require "db.msg.on_club"
 
 local register_dispatcher = msgopt.register
 
@@ -18,15 +19,12 @@ local register_dispatcher = msgopt.register
 -- 注册Login发过来的消息分派函数
 register_dispatcher("SD_BankTransfer",on_sd_bank_transfer)
 register_dispatcher("S_BankTransferByGuid",on_s_bank_transfer_by_guid)
-register_dispatcher("LD_LogMoney",on_ld_log_money)
 register_dispatcher("LD_AgentAddPlayerMoney",on_LD_AgentAddPlayerMoney)
--- register_dispatcher("LD_QueryMaintain",on_ld_query_maintain)
 register_dispatcher("LD_NewNotice",on_ld_NewNotice)
 register_dispatcher("LD_DelMessage",on_ld_DelMessage)
 register_dispatcher("LD_AlipayEdit",on_ld_AlipayEdit)
 register_dispatcher("LD_AgentsTransfer_finish",on_ld_AgentTransfer_finish)
 register_dispatcher("LD_CC_ChangeMoney",on_ld_cc_changemoney)
--- register_dispatcher("LD_DO_SQL",on_ld_do_sql)
 register_dispatcher("LD_ReCharge",on_ld_recharge)
 register_dispatcher("LD_BankcardEdit",on_ld_BankcardEdit)
 register_dispatcher("LD_VerifyAccount",on_ld_verify_account)
@@ -49,7 +47,6 @@ register_dispatcher("SD_QueryPlayerData",on_sd_query_player_data)
 register_dispatcher("SD_SavePlayerData",on_sd_save_player_data)
 register_dispatcher("SD_SavePlayerMoney",on_SD_SavePlayerMoney)
 register_dispatcher("SD_SavePlayerBank",on_SD_SavePlayerBank)
--- register_dispatcher("SD_BankSetPassword",on_sd_bank_set_password)
 register_dispatcher("SD_BankChangePassword",on_sd_bank_change_password)
 register_dispatcher("SD_ResetPW",on_sd_resetpw)
 register_dispatcher("SD_BankLogin",on_sd_bank_login)
@@ -64,9 +61,9 @@ register_dispatcher("SD_LogMoney",on_sd_log_money)
 register_dispatcher("SD_LoadAndroidData",on_sd_load_android_data)
 register_dispatcher("SD_CashMoneyType",on_sd_cash_money_type)
 register_dispatcher("SD_SavePlayerOxData",on_sd_save_player_Ox_data)
-register_dispatcher("SL_Log_Money",on_sl_log_money)
+register_dispatcher("SD_LogGameMoney",on_sd_log_game_money)
 register_dispatcher("SD_QueryOxConfigData",on_sd_query_Ox_config_data)
-register_dispatcher("SL_Log_Game",on_sl_log_Game)
+register_dispatcher("SL_Log_Game",on_sl_log_game)
 register_dispatcher("SL_Channel_Invite_Tax",on_sl_channel_invite_tax)
 register_dispatcher("SD_QueryPlayerInviteReward",on_sd_query_player_invite_reward)
 register_dispatcher("SD_QueryChannelInviteCfg",on_sd_query_channel_invite_cfg)
@@ -97,3 +94,6 @@ register_dispatcher("SD_ReqQueryPlayerBonus",on_sd_query_bonus_hongbao)
 register_dispatcher("SD_QueryPlayerCurrentBonusLimitInfo",on_sd_query_bonus_activity_limit_info)
 register_dispatcher("SD_UpdatePlayerCurrentBonusLimitInfo",on_sd_update_bonus_activity_limit_info)
 
+register_dispatcher("SD_CreateClub",on_sd_create_club)
+register_dispatcher("SD_DismissClub",on_sd_dismiss_club)
+register_dispatcher("SD_ChangePlayerMoney",on_sd_change_player_money)

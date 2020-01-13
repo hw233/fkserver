@@ -72,6 +72,8 @@ redismetadata.club.info = redismeta:create({
         status = "number",
         online_count = "number",
         owner = "number",
+        type = "number",
+        parent = "number",
     }
 })
 

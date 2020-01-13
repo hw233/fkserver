@@ -37,24 +37,31 @@ local club_op = {
     OP_APPLY_EXIT    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_APPLY_EXIT"),
 }
 
-local CLUB_OP_RESULT_SUCCESS = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_SUCCESS")
-local CLUB_OP_RESULT_FAILED = pb.enum("CLUB_OP_RESULT", "CLUB_OP_RESULT_FAILED")
-local CLUB_OP_RESULT_NO_RIGHTS = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_NO_RIGHTS")
-local CLUB_OP_RESULT_INTERNAL_ERROR = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_INTERNAL_ERROR")
-local CLUB_OP_RESULT_NO_CLUB = pb.enum("CLUB_OP_RESULT","CLUB_OP_RESULT_NO_CLUB")
-
 local CRT_BOSS = pb.enum("CLUB_ROLE_TYPE","CRT_BOSS")
 local CRT_PLAYER = pb.enum("CLUB_ROLE_TYPE","CRT_PLAYER")
 local CRT_ADMIN = pb.enum("CLUB_ROLE_TYPE","CRT_ADMIN")
 
 
 function on_cs_club_create(msg,guid)
+    if msg.parent and msg.parent ~= 0 then
+        local p_club = base_clubs[msg.parent]
+        if not p_club then
+            log.error("on_cs_club_create no parent club,%s.",msg.parent)
+            onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+                result = enum.ERROR_CLUB_NOT_FOUND,
+            })
+            return
+        end
+    end
+
     local player = base_players[guid]
     if not player then
-        log.error("internal error,recv msg but guid not online.")
-        return {
-            result = CLUB_OP_RESULT_INTERNAL_ERROR,
-        }
+        log.error("internal error,recv msg but no player.")
+        onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+        })
+
+        return
     end
 
     dump(player)
@@ -64,24 +71,25 @@ function on_cs_club_create(msg,guid)
     --         result = CLUB_OP_RESULT_NO_RIGHTS,
     --     }
     -- end
-    
+
     local id = math.random(1000000,9999999)
     for _ = 1,1000 do
         if not base_clubs[id] then break end
         id = math.random(1000000,9999999)
     end
 
-    base_club:create(id,msg.name,msg.icon,msg.notice,player)
+    base_club:create(id,msg.name,msg.icon,msg.notice,player,msg.type,msg.parent)
 	if not id then
 		return {
-            result = CLUB_OP_RESULT_FAILED,
+            result = enum.CLUB_OP_RESULT_FAILED,
         }
     end
-    
-    local update = base_clubs[id]
+
+    base_clubs[id] = nil
+    local _ = base_clubs[id]
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-        result = CLUB_OP_RESULT_SUCCESS,
+        result = enum.CLUB_OP_RESULT_SUCCESS,
         id = id,
     })
 end
@@ -93,14 +101,14 @@ function on_cs_club_dismiss(msg,guid)
         log.error("internal error,recv msg but guid not online.")
         return {
             club_id = club_id,
-            result = CLUB_OP_RESULT_INTERNAL_ERROR,
+            result = enum.CLUB_OP_RESULT_INTERNAL_ERROR,
         }
     end
 
     if not player:has_club_rights() then
         return {
             club_id = club_id,
-            result = CLUB_OP_RESULT_NO_RIGHTS,
+            result = enum.CLUB_OP_RESULT_NO_RIGHTS,
         }
     end
 
@@ -108,12 +116,12 @@ function on_cs_club_dismiss(msg,guid)
     if not club then
         return {
             club_id = club_id,
-            result = CLUB_OP_RESULT_NO_CLUB,
+            result = enum.CLUB_OP_RESULT_NO_CLUB,
         }
     end
 
     club:dismiss()
-    for mem,p in pairs(club_memeber[club_id]) do
+    for mem,_ in pairs(club_memeber[club_id]) do
         player_club[mem][club_id] = nil
     end
     club_memeber[club_id] = nil
@@ -121,7 +129,7 @@ function on_cs_club_dismiss(msg,guid)
 
     return {
         club_id = club_id,
-        result = CLUB_OP_RESULT_SUCCESS,
+        result = enum.CLUB_OP_RESULT_SUCCESS,
     }
 end
 
@@ -154,8 +162,8 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local games = {}
     local info = channel.query()
-    for id,_ in pairs(info) do
-        local id = id:match("service%.(%d+)")
+    for sid,_ in pairs(info) do
+        local id = sid:match("service%.(%d+)")
         if id then
             local conf = serviceconf[tonumber(id)]
             if conf.name == "game" then
@@ -197,7 +205,7 @@ function on_cs_club_detail_info_req(msg,guid)
         end
     end
 
-    local info = {
+    local club_info = {
         result = enum.ERROR_NONE,
         club_id = club_id,
         club_name = club.name,
@@ -212,9 +220,9 @@ function on_cs_club_detail_info_req(msg,guid)
         table_templates = table.values(club_table_template[club_id]),
     }
 
-    -- dump(info)
+    -- dump(club_info)
 
-    onlineguid.send(guid,"S2C_CLUB_INFO_RES",info)
+    onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
 end
 
 function on_cs_club_list(msg,guid)
@@ -429,7 +437,7 @@ end
 
 
 function on_cs_club_exit_req(msg,guid)
-    
+
 end
 
 function on_cs_club_request_list_req(msg,guid)
@@ -488,7 +496,7 @@ end
 local function on_cs_club_exit(msg,guid)
     local who = base_players[guid]
 	if not who:has_club_rights() then
-		return CLUB_OP_RESULT_NO_RIGHTS
+		return enum.CLUB_OP_RESULT_NO_RIGHTS
 	end
 
     local club_id = msg.club_id
@@ -498,7 +506,7 @@ local function on_cs_club_exit(msg,guid)
         player_club[msg.guid][club_id] = nil
     end
     
-    return CLUB_OP_RESULT_SUCCESS
+    return enum.CLUB_OP_RESULT_SUCCESS
 end
 
 local function on_cs_club_agree_request(msg,guid)
@@ -629,7 +637,7 @@ function on_cs_club_lock_table(msg,guid)
 end
 
 function on_cs_club_unlock_table(msg,guid)
-
+    
 end
 
 function on_cs_online_member_without_gaming(msg,guid)

@@ -15,6 +15,7 @@ local base_clubs = require "game.club.base_clubs"
 local timer_manager = require "game.timer_manager"
 local onlineguid = require "netguidopt"
 local skynet = require "skynetproto"
+local channel = require "channel"
 
 local reddb = redisopt.default
 
@@ -282,7 +283,7 @@ function  base_table:save_game_log(s_playid,s_playType,s_log,ext_id,s_starttime,
 		endtime = s_endtime,
 		ext_id = ext_id,
 	}
-	send2db_pb("SL_Log_Game",nMsg)
+	channel.publish("db.?","msg","SL_Log_Game",nMsg)
 end
 
 function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
@@ -291,6 +292,7 @@ function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_mo
 		type = s_type,
 		gameid = self.def_game_id,
 		game_name = self.def_game_name,
+		money_type = enum.ITEM_PRICE_TYPE_GOLD,
 		phone_type = player.phone_type,
 		old_money = s_old_money,
 		new_money = player.money,
@@ -304,7 +306,7 @@ function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_mo
 		to_bonus_money = to_bonus_money_ or 0,
 		seniorpromoter = player.seniorpromoter,
 	}
-	send2db_pb("SL_Log_Money",nMsg)
+	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 	send2client_pb(player,"SC_Gamefinish",{
 		money = player.money
 	})
@@ -331,6 +333,7 @@ function base_table:player_money_log_when_gaming(player,s_type,s_old_money,s_tax
 		gameid = self.def_game_id,
 		game_name = self.def_game_name,
 		phone_type = player.phone_type,
+		money_type = enum.ITEM_PRICE_TYPE_GOLD,
 		old_money = s_old_money,
 		new_money = player.money,
 		tax = s_tax,
@@ -343,29 +346,7 @@ function base_table:player_money_log_when_gaming(player,s_type,s_old_money,s_tax
 		to_bonus_money = to_bonus_money_ or 0,
 		seniorpromoter = player.seniorpromoter,
 	}
-	send2db_pb("SL_Log_Money",nMsg)
-end
-
-function base_table:do_player_money_log(player, s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
-	local nMsg = {
-		guid = player.guid,
-		type = s_type,
-		gameid = self.def_game_id,
-		game_name = self.def_game_name,
-		phone_type = player.phone_type,
-		old_money = s_old_money,
-		new_money = player.money,
-		tax = s_tax,
-		change_money = s_change_money,
-		ip = player.ip,
-		id = s_id,
-		channel_id = player.channel_id,
-		platform_id = player.platform_id,
-		get_bonus_money = get_bonus_money_,
-		to_bonus_money = to_bonus_money_,
-		seniorpromoter = player.seniorpromoter,
-	}
-	send2db_pb("SL_Log_Money",nMsg)
+	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 end
 
 function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,money_change,table_id)

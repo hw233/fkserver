@@ -9,6 +9,7 @@ local club_table_template = require "game.club.club_table_template"
 local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
 local json = require "cjson"
+local channel = require "channel"
 
 local reddb = redisopt.default
 
@@ -16,7 +17,7 @@ local table_expire_seconds = 60 * 60 * 5
 
 local base_club = {}
 
-function base_club:create(id,name,icon,notice,owner)
+function base_club:create(id,name,icon,notice,owner,tp,parent)
     id = tonumber(id)
     local owner_guid = type(owner) == "number" and owner or owner.guid
     local c = {
@@ -25,24 +26,28 @@ function base_club:create(id,name,icon,notice,owner)
         id = id,
         notice = notice,
         owner = owner_guid,
+        type = tp,
+        parent = parent,
     }
 
     dump(c)
 
     reddb:sadd("club:all",id)
-    local r = reddb:hmset("club:info:"..tostring(id),c)
+    reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
     c.tables = {}
     setmetatable(c,base_club)
-    if r then
-        base_club[id] = c
-        return id
-    end
+    base_club[id] = c
+
+    channel.call("db.?","msg","SD_CreateClub",c)
+
+    return id
 end
 
 function base_club:dismiss()
     reddb:del("club:info:"..tostring(self.id))
     reddb:del("club:memeber:"..tostring(self.id))
+    channel.call("db.?","msg","SD_DismissClub",self.id)
 end
 
 function base_club:request_join(guid)
@@ -112,13 +117,13 @@ function base_club:reject_request(request)
 		log.error("agree club request,who is unkown,guid:%s",whoee)
 		return
     end
- 
+
     if request.type == "invite" then
         reddb:srem(string.format("player:request:%s",who),request.id)
     else
         reddb:srem(string.format("player:request:%s",whoee),request.id)
     end
-    
+
     reddb:del(string.format("club:request:%d",request.id))
     reddb:del(string.format("request:%s",request.id))
     return true
