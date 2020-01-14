@@ -84,6 +84,7 @@ message TABLE_TEMPLATE{
     int32   game_id = 3;
     string  description = 4;
     string  rule = 5;
+    string  advanced_rule = 6;
 }
 
 enum OPERATION_TYPE{
