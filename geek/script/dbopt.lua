@@ -6,6 +6,24 @@ local skynet = require "skynet"
 
 local mysqld
 
+local transaction = {}
+
+function transaction:begin()
+	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"BEGIN;")
+end
+
+function transaction:rollback()
+	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"ROLLBACK;")
+end
+
+function transaction:execute(sql,...)
+	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,sql,...)
+end
+
+function transaction:commit()
+	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"COMMIT;")
+end
+
 local db = {}
 
 function db:query(sql,...)
@@ -16,12 +34,9 @@ function db:execute(sql,tb)
 	return skynet.call(mysqld,"lua","execute",self.name,sql,tb)
 end
 
-function db:querywithconn(conn,sql,...)
-	return skynet.call(mysqld,"lua","querywithconn",self.name,conn,sql,...)
-end
-
-function db:getconn()
-	return skynet.call(mysqld,"lua","getconn",self.name)
+function db:transaction()
+	local conn = skynet.call(mysqld,"lua","getconn",self.name)
+	return setmetatable({name = self.name,conn = conn},{__index = transaction})
 end
 
 local mysql = {}
