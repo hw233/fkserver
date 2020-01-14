@@ -543,7 +543,6 @@ function base_player:incr_gold(p,why)
 	self:notify_money(why,money,money-oldmoney,enum.ITEM_PRICE_TYPE_GOLD)
 
 	if not self:is_android() then
-		dump(p)
 		local newmoney = self:incrby("money",p.money)
 		if newmoney ~= self.money then
 			log.error("change gold money db ~= runtime")

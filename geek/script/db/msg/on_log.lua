@@ -9,7 +9,6 @@ local enum = require "pb_enums"
 
 -- 钱日志
 function on_sd_log_money(msg)
-    dump(msg)
 	dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$;", msg)
 	-- if msg.opt_type == enum.LOG_MONEY_OPT_TYPE_RESET_ACCOUNT then
     --     local sql = string.format("update t_player set bind_gold = %d , bind_time = current_timestamp where guid = %d", msg.new_money - msg.old_money ,msg.guid )
