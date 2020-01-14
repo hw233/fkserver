@@ -100,7 +100,19 @@ function db_conn_pool:choice()
 	return self.conns[i]
 end
 
-function db_conn_pool:get()
+function db_conn_pool:chooseone()
+	if #self.conns == 0 then
+		table.insert(self.conns,new_db_connection(self.cfg))
+	end
+
+	return math.random(#self.conns)
+end
+
+function db_conn_pool:get(id)
+	if id then
+		return self.conns[id]
+	end
+
 	if #self.conns >= self.max_conn then
 		return self:choice()
 	end
@@ -124,22 +136,21 @@ function db_conn_pool:query(sql)
 end
 
 function db_conn_pool:fmt_query(sqlfmt,...)
-	return self:get():query(string.format(sqlfmt,...))
+	return self:get():query(sqlfmt,...)
 end
 
 function db_conn_pool:fmt_execute(sqlfmt,...)
-	return self:get():query(string.format(sqlfmt,...))
+	return self:get():query(sqlfmt,...)
 end
 
 function db_conn_pool:fmt_execute_pb(sqlfmt,...)
-	return self:get():query(string.format(sqlfmt,...))
+	return self:get():query(sqlfmt,...)
 end
 
 
 local dbmanager = {all = {}}
 
 function dbmanager:open(cfg)
-	-- dump(cfg)
 	if self.all[cfg.name] then
 		return self.all[cfg.name]
 	end
@@ -194,6 +205,18 @@ function CMD.execute(dbname,sql,tb)
 	local pool = dbmanager:get(dbname)
 	if not pool then return end
 	return pool:execute(sql,tb)
+end
+
+function CMD.querywithconn(dbname,connid,fmtsql,...)
+	local pool = dbmanager:get(dbname)
+	if not pool then return end
+	return pool:get(connid):query(fmtsql,...)
+end
+
+function CMD.getconn(dbname)
+	local pool = dbmanager:get(dbname)
+	if not pool then return end
+	return pool:chooseone()
 end
 
 function CMD.open(cfg)

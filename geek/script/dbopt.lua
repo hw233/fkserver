@@ -16,6 +16,14 @@ function db:execute(sql,tb)
 	return skynet.call(mysqld,"lua","execute",self.name,sql,tb)
 end
 
+function db:querywithconn(conn,sql,...)
+	return skynet.call(mysqld,"lua","querywithconn",self.name,conn,sql,...)
+end
+
+function db:getconn()
+	return skynet.call(mysqld,"lua","getconn",self.name)
+end
+
 local mysql = {}
 
 setmetatable(mysql,{
