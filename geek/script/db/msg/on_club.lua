@@ -47,7 +47,7 @@ function on_sd_create_club(msg)
     res = trans:execute(table.concat(transaction,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
-        trans:query("ROLLBACK;")
+        trans:rollback()
         return
     end
 
