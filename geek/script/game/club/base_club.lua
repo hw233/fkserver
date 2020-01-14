@@ -32,14 +32,16 @@ function base_club:create(id,name,icon,notice,owner,tp,parent)
 
     dump(c)
 
+    if not channel.call("db.?","msg","SD_CreateClub",c) then
+        return
+    end
+
     reddb:sadd("club:all",id)
     reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
     c.tables = {}
     setmetatable(c,base_club)
     base_club[id] = c
-
-    channel.call("db.?","msg","SD_CreateClub",c)
 
     return id
 end
@@ -130,11 +132,21 @@ function base_club:reject_request(request)
 end
 
 function base_club:join(guid)
+    local is_join = channel.call("db.?","msg","SD_JoinClub",{club_id = self.id,guid = guid})
+    if not is_join then
+        return
+    end
+
 	reddb:sadd(string.format("club:member:%s",self.id),guid)
-	reddb:sadd(string.format("player:club:%s",guid),self.id)
+    reddb:sadd(string.format("player:club:%s",guid),self.id)
 end
 
 function base_club:exit(guid)
+    local is_join = channel.call("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
+    if not is_join then
+        return
+    end
+
 	reddb:srem(string.format("club:member:%s",self.id),guid)
 	reddb:srem(string.format("player:club:%s",guid),self.id)
 end
