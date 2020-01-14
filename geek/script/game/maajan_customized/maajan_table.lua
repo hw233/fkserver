@@ -449,40 +449,12 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
-    if not p.men then
-        return actions
-    end
-
-    actions[ACTION.PENG] = nil
-    local old_ting_tiles = p.men.tiles
-    local function is_ting_equal(ls,rs)
-        for lt,_ in pairs(ls or {}) do
-            if not rs[lt] then return false end
-        end
-
-        return true
-    end
-
-    local shoupai = clone(p.pai.shou_pai)
-
-    if actions[ACTION.AN_GANG]  then
-        table.decr(shoupai,mo_pai,3)
-        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
-            actions[ACTION.AN_GANG] = nil
-        end
-        table.incr(shoupai,mo_pai,3)
-    end
-
-    if actions[ACTION.FREE_BA_GANG] then
-        actions[ACTION.FREE_BA_GANG]= nil
-    end
-
-    if actions[ACTION.MING_GANG] then
-        table.decr(shoupai,in_pai,3)
-        if not is_ting_equal(old_ting_tiles,mj_util.is_ting(p.pai)) then
-            actions[ACTION.MING_GANG] = nil
-        end
-        table.incr(shoupai,in_pai,3)
+    if p.men then
+        actions[ACTION.PENG] = nil
+        actions[ACTION.AN_GANG] = nil
+        actions[ACTION.MING_GANG] = nil
+        actions[ACTION.BA_GANG] = nil
+        actions[ACTION.FREE_BA_GANG] = nil
     end
 
     return actions
