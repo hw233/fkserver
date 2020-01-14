@@ -286,12 +286,12 @@ function  base_table:save_game_log(s_playid,s_playType,s_log,ext_id,s_starttime,
 	channel.publish("db.?","msg","SL_Log_Game",nMsg)
 end
 
-function base_table:player_money_log(player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
+function base_table:player_money_log(player,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
 	local nMsg = {
 		guid = player.guid,
-		type = s_type,
-		gameid = self.def_game_id,
-		game_name = self.def_game_name,
+		type = s_change_money > 0 and 2 or 1,
+		gameid = def_game_id,
+		game_name = def_game_name,
 		money_type = enum.ITEM_PRICE_TYPE_GOLD,
 		phone_type = player.phone_type,
 		old_money = s_old_money,
@@ -326,10 +326,10 @@ function base_table:player_bet_flow_log(player,money)
 	send2db_pb("SD_LogBetFlow",msg)
 end
 
-function base_table:player_money_log_when_gaming(player,s_type,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
+function base_table:player_money_log_when_gaming(player,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
 	local nMsg = {
 		guid = player.guid,
-		type = s_type,
+		type = s_change_money > 0 and 2 or 1,
 		gameid = self.def_game_id,
 		game_name = self.def_game_name,
 		phone_type = player.phone_type,

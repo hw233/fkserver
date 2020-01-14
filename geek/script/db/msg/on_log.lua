@@ -36,14 +36,14 @@ function on_sd_log_game_money( msg)
     local sql
     if msg.guid >= 0 then
         sql = string.format([[
-            INSERT INTO `log`.`t_log_money_tj` (`guid`, `type`, `gameid`, `game_name`,`phone_type`,`money_type`, `old_money`, `new_money`, `tax`, `get_bonus_money`, `to_bonus_money`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` , `seniorpromoter`)
-            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' , %d)]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.get_bonus_money,msg.to_bonus_money,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id,msg.seniorpromoter)
+            INSERT INTO `log`.`t_log_money_tj` (`guid`, `type`, `gameid`, `game_name`,`phone_type`,`money_type`, `old_money`, `new_money`, `tax`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` , `seniorpromoter`)
+            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' , %d)]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id,msg.seniorpromoter)
     elseif msg.guid < 0 then --机器人日志记录到另一张同样的表里
         sql = string.format([[
-            INSERT INTO `log`.`t_log_money_tj_robot` (`guid`, `type`, `gameid`, `game_name`,`phone_type`, `money_type`, `old_money`, `new_money`, `tax`, `get_bonus_money`, `to_bonus_money`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` )
-            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' )]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.get_bonus_money,msg.to_bonus_money,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id)
+            INSERT INTO `log`.`t_log_money_tj_robot` (`guid`, `type`, `gameid`, `game_name`,`phone_type`, `money_type`, `old_money`, `new_money`, `tax`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` )
+            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' )]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id)
     end
 
     log.info("sql [%s]" , sql)
