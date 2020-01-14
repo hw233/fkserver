@@ -410,8 +410,8 @@ end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
     if not mo_pai and not in_pai then
-        if  not p.ting and not p.men and (p.chu_pai_count == 0 or 
-            (self.conf.rule.yi_zhang_bao_ting and p.chu_pai_count == 1)) then
+        if  not p.ting and not p.men and table.nums(p.pai.ming_pai) == 0 and
+            (p.chu_pai_count == 0 or (self.conf.rule.yi_zhang_bao_ting and p.chu_pai_count == 1)) then
             local ting_tiles = mj_util.is_ting(p.pai)
             if table.nums(ting_tiles) > 0 then
                 return {
