@@ -43,11 +43,11 @@ function on_sd_create_club(msg)
         "COMMIT;",
     }
 
-    local conn = gamedb:getconn()
-    res = gamedb:querywithconn(conn,table.concat(transaction,"\n"))
+    local trans = gamedb:transaction()
+    res = trans:execute(table.concat(transaction,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
-        gamedb:querywithconn(conn,"ROLLBACK;")
+        trans:query("ROLLBACK;")
         return
     end
 
