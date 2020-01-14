@@ -1501,13 +1501,13 @@ function maajan_table:get_ji_items(p,ji_tiles)
 
         for t,_ in pairs(ji_tiles[tile] or {}) do
             p_ji_tiles[t] = p_ji_tiles[t] or {}
-            p_ji_tiles[t][tile] = {count = c,whoee = s.whoee,}
+            p_ji_tiles[t][tile] = {count = c}
         end
     end
 
-    local desk_ji_tiles = {}
+    local desk_tiles = {}
     for _,tile in pairs(p.pai.desk_tiles) do
-        if (tile == 21 and p.ji.chong_feng.normal) then
+        if tile == 21 and p.ji.chong_feng.normal then
             local t = HU_TYPE.CHONG_FENG_JI
             if ji_tiles[21][HU_TYPE.JING_JI] then
                 t = HU_TYPE.CHONG_FENG_JING_JI
@@ -1515,7 +1515,8 @@ function maajan_table:get_ji_items(p,ji_tiles)
 
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1}
-        elseif (tile == 18 and p.ji.chong_feng.wu_gu) then
+            p.ji.chong_feng.normal = false
+        elseif tile == 18 and p.ji.chong_feng.wu_gu then
             local t = HU_TYPE.CHONG_FENG_WU_GU
             if ji_tiles[18] and ji_tiles[18][HU_TYPE.JING_WU_GU_JI] then
                 t = HU_TYPE.CHONG_FENG_JING_WU_GU
@@ -1523,12 +1524,13 @@ function maajan_table:get_ji_items(p,ji_tiles)
 
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1}
+            p.ji.chong_feng.wu_gu = false
         end
 
-        table.incr(desk_ji_tiles,tile)
+        table.incr(desk_tiles,tile)
     end
 
-    for tile,c in pairs(desk_ji_tiles) do
+    for tile,c in pairs(desk_tiles) do
         for t,_ in pairs(ji_tiles[tile] or {}) do
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = c}
@@ -1550,7 +1552,7 @@ function maajan_table:calculate_ji(p,ji_tiles)
     local types = {}
 
     local typetiles = self:get_ji_items(p,ji_tiles)
-
+    dump(typetiles)
     for t,tiles in pairs(typetiles) do
         local tscore = HU_TYPE_INFO[t].score
         for tile,c in pairs(tiles) do
@@ -1590,7 +1592,7 @@ function maajan_table:calculate_ji(p,ji_tiles)
                             end
                         end
                     else
-                        if t ~= HU_TYPE.XING_QI_JI and t ~= HU_TYPE.FAN_PAI_JI then
+                        if t == HU_TYPE.CHONG_FENG_JI or t == HU_TYPE.CHONG_FENG_WU_GU or t == HU_TYPE.CHONG_FENG_JING_JI or t == HU_TYPE.CHONG_FENG_JING_WU_GU  then
                             local jiao_count = table.sum(self.players,function(pi) return (pi.hu or pi.ting or pi.men or pi.jiao) and 1 or 0 end)
                             types[p.chair_id] = types[p.chair_id] or {}
                             table.insert(types[p.chair_id],{type = t,score = - tscore * c.count,tile = tile,count = jiao_count})
@@ -1635,7 +1637,6 @@ function maajan_table:gen_ji_tiles()
             ji_tiles[fan_pai_ji][HU_TYPE.FAN_PAI_JI] = 1
             if self.conf.rule.yao_bai_ji then
                 local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 2) % 9 + 1
-                dump(yao_bai_ji)
                 ji_tiles[yao_bai_ji] = ji_tiles[yao_bai_ji] or {}
                 ji_tiles[yao_bai_ji][HU_TYPE.FAN_PAI_JI] = 1
             end
@@ -1709,13 +1710,13 @@ function maajan_table:balance_player(p,ji_tiles)
         end
     end
 
-    if p.hu or p.ting or p.jiao or p.men then
-        local ji_res = self:calculate_ji(p,ji_tiles)
-        for chair_id,item in pairs(ji_res) do
-            items[chair_id] = items[chair_id] or {}
-            items[chair_id].ji = item
-        end
+    local ji_res = self:calculate_ji(p,ji_tiles)
+    for chair_id,item in pairs(ji_res) do
+        items[chair_id] = items[chair_id] or {}
+        items[chair_id].ji = item
+    end
 
+    if p.hu or p.ting or p.jiao or p.men then
         local gang_res = self:calculate_gang(p)
         for chair_id,item in pairs(gang_res) do
             items[chair_id] = items[chair_id] or {}
@@ -2293,22 +2294,18 @@ function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
     end
 
     local _,last_tile = self:get_last_chu_pai()
-    if tile == 21 then
-        if last_tile == 21 then
-            local pi = self:chu_pai_player()
-            pi.ji.chong_feng.normal = false
-            p.ji.chong_feng.normal = false
-            p.ji.zhe_ren.normal = true
-        end
+    if tile == 21 and last_tile == 21 then
+        local pi = self:chu_pai_player()
+        pi.ji.chong_feng.normal = false
+        p.ji.chong_feng.normal = false
+        p.ji.zhe_ren.normal = true
     end
 
-    if (self.conf.rule.wu_gu_ji and tile == 18)  then
-        if last_tile == 18 then
-            local pi = self:chu_pai_player()
-            pi.ji.chong_feng.normal = false
-            p.ji.chong_feng.wu_gu = false
-            p.ji.zhe_ren.wu_gu = true
-        end
+    if self.conf.rule.wu_gu_ji and tile == 18 and last_tile == 18  then
+        local pi = self:chu_pai_player()
+        pi.ji.chong_feng.normal = false
+        p.ji.chong_feng.wu_gu = false
+        p.ji.zhe_ren.wu_gu = true
     end
 end
 
