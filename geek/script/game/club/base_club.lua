@@ -17,14 +17,13 @@ local table_expire_seconds = 60 * 60 * 5
 
 local base_club = {}
 
-function base_club:create(id,name,icon,notice,owner,tp,parent)
+function base_club:create(id,name,icon,owner,tp,parent)
     id = tonumber(id)
     local owner_guid = type(owner) == "number" and owner or owner.guid
     local c = {
         name = name,
         icon = icon,
         id = id,
-        notice = notice,
         owner = owner_guid,
         type = tp,
         parent = parent,
@@ -39,6 +38,7 @@ function base_club:create(id,name,icon,notice,owner,tp,parent)
     reddb:sadd("club:all",id)
     reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
+    reddb:hset("club:role:"..tostring(id),tostring(owner_guid),enum.CRT_BOSS)
     c.tables = {}
     setmetatable(c,base_club)
     base_club[id] = c
@@ -171,7 +171,7 @@ function base_club:broadcast(msgname,msg,except)
     if except then
         except = type(except) == "number" and except or except.guid
     end
-    for guid,_ in pairs(club_member[self.id] or {}) do
+    for guid,_ in pairs(club_member[self.id]) do
         if not except or except ~= guid then
             onlineguid.send(guid,msgname,msg)
         end

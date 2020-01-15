@@ -1419,3 +1419,8 @@ message SC_GameServerCfg {
 message CS_GameServerCfg {
 	enum MsgID { Nil = 0; ID = 1188; }
 }
+
+message SC_PopupTips{
+	enum MsgID { Nil = 0; ID = 1189; }
+	string content = 1; //json内容
+}

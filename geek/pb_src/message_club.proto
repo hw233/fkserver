@@ -1,6 +1,5 @@
 syntax = "proto3";
 
-import "message.proto";
 import "common.proto";
 
 
@@ -9,6 +8,7 @@ import "common.proto";
 //请求俱乐部列表
 message C2S_CLUBLIST_REQ {
     enum MsgID {NIL = 0;ID = 14004;}
+    int32 type = 1;
 }
 
 //俱乐部列表信息
@@ -21,11 +21,7 @@ message S2C_CLUBLIST_RES {
 //创建俱乐部请求
 message C2S_CREATE_CLUB_REQ { 
     enum MsgID {NIL = 0;ID = 14006;}
-    string name = 1;//俱乐部名称
-    string icon = 2;//俱乐部头像
-    string notice = 3;//公告内容
-    int32  type = 4;//类型 联盟 亲友群
-    int32  parent = 5;//父节点
+    CLUB_BASE_INFO info = 1;
 }
 
 //创建俱乐部结果
@@ -79,8 +75,8 @@ message C2S_CLUB_INFO_REQ{
 message S2C_CLUB_INFO_RES {
     enum MsgID {NIL = 0;ID = 14017;}
     int32 result = 1;
-    CLUB_BASE_INFO club_info = 2;
-    CLUB_ROLE_TYPE role_type = 5;         //当前玩家在俱乐部中扮演的角色
+    int32 club_id = 2;
+    CLUB_MEMBER my_club_info = 3;
     bool closed = 6;           //歇业
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
     int32 club_diamond = 8;    //钻石数量  群主和管理员可见  否则 0不充足  1充足
@@ -91,28 +87,6 @@ message S2C_CLUB_INFO_RES {
     bool  allow_create_room = 13;
 }
 
-message C2S_CLUB_REQUEST_LIST_REQ{
-    enum MsgID {NIL = 0;ID = 14064;}
-    int32 club_id = 1;
-}
-
-message S2C_CLUB_REQUEST_LIST_RES{
-    enum MsgID {NIL = 0;ID = 14065;}
-    int32 club_id = 1;
-    repeated REQUEST_INFO reqs = 2;
-}
-
-message C2S_EDIT_CLUB_GAME_TYPE_REQ{ 
-    enum MsgID {NIL = 0;ID = 14069;}
-    int32 club_id = 1;
-    int32 guid = 2;
-    repeated int32 game_types = 3; 
-}
-
-message S2C_EDIT_CLUB_GAME_TYPE_RES{
-    enum MsgID {NIL = 0;ID = 14070;}
-    int32 result = 1;
-}
 
 //俱乐部成员列表请求
 message C2S_CLUB_PLAYER_LIST_REQ{ 
@@ -121,12 +95,14 @@ message C2S_CLUB_PLAYER_LIST_REQ{
     int32 guid = 2;    //玩家ID，SEARCH_LIST时需要传递此参数
 }
 
+
+
 //俱乐部成员列表数据
 message S2C_CLUB_PLAYER_LIST_RES{ 
     enum MsgID {NIL = 0;ID = 14025;}
     
     int32 result = 1;
-    repeated PLAYER_BASE_INFO player_list = 2; //玩家列表
+    repeated CLUB_MEMBER player_list = 2; //玩家列表
 }
 
 //俱乐部成员管理，基础操作
@@ -239,4 +215,41 @@ message S2C_NOTIFY_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14063;}
     SYNC_TYPE       sync = 1;
     TABLE_TEMPLATE  template = 2;
+}
+
+message C2S_CREATE_CLUB_WITH_REQ{
+    enum MsgID {NIL = 0;ID = 14064;}
+    int32 req_id = 1;
+    CLUB_BASE_INFO club_info = 2;
+}
+
+message C2S_INVITE_JOIN_CLUB{
+    enum MsgID {NIL = 0;ID = 14065;}
+    int32   invitee = 1;
+    int32   inviter_club = 2;
+    string  invite_type = 3;
+}
+
+
+message C2S_CLUB_REQUEST_LIST_REQ{
+    enum MsgID {NIL = 0;ID = 14066;}
+    int32 club_id = 1;
+}
+
+message S2C_CLUB_REQUEST_LIST_RES{
+    enum MsgID {NIL = 0;ID = 14067;}
+    int32 club_id = 1;
+    repeated REQUEST_INFO reqs = 2;
+}
+
+message C2S_EDIT_CLUB_GAME_TYPE_REQ{ 
+    enum MsgID {NIL = 0;ID = 14068;}
+    int32 club_id = 1;
+    int32 guid = 2;
+    repeated int32 game_types = 3; 
+}
+
+message S2C_EDIT_CLUB_GAME_TYPE_RES{
+    enum MsgID {NIL = 0;ID = 14069;}
+    int32 result = 1;
 }

@@ -1189,10 +1189,12 @@ function on_cs_create_private_room(msg,guid)
 		},
 		seat_list = {{
 			chair_id = player.chair_id,
-			open_id_icon = player.open_id_icon,
-			guid = player.guid,
-			nickname = player.nickname,
-			sex = player.sex,
+			player_info = {
+				icon = player.open_id_icon,
+				guid = player.guid,
+				nickname = player.nickname,
+				sex = player.sex,
+			},
 			ready = tb.ready_list[player.chair_id] and true or false,
 		}},
 	})

@@ -28,7 +28,6 @@ message C2S_ROOM_CREATE_REQ
 message S2C_ROOM_CREATE_RES
 {
     enum MsgID {NONE = 0; ID = 10012;}
-
     int32   result = 1;
     TABLE_INFO info = 2;
     repeated SEAT_INFO seat_list = 3;

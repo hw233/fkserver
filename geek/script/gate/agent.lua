@@ -546,14 +546,6 @@ function MSG.CS_BankLogin(msg)
 	return true
 end
 
--- function MSG.SS_JoinPrivateRoom(msg)
-    -- msg.owner_game_id = s.get_game_server_id
-    -- msg.first_game_type = s.get_first_game_type
-    -- msg.second_game_type = s.get_second_game_type
-    -- msg.private_room_score_type = s.get_private_room_score_type
-	-- channel.publish("game."..tostring(msg.game_id),"SS_JoinPrivateRoom",msg)
--- end
-
 function MSG.C2S_HEARTBEAT_REQ()
     netmsgopt.send(fd,"S2C_HEARTBEAT_RES",{
         dataTime = os.time(),
