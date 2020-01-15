@@ -172,9 +172,7 @@ message C2S_CLUB_PLAYER_INFO_REQ{
 message S2C_CLUB_PLAYER_INFO_RES{ 
     enum MsgID {NIL = 0;ID = 14032;}
     int32 result = 1;
-    int32 guid = 2;        //玩家ID
-    string head_icon = 3;       //玩家头像
-    string nick_name = 4;       //玩家昵称
+    PLAYER_BASE_INFO base_info = 2;
     int32 zhan = 5;             //点赞
     int32 club_score = 6;       //俱乐部分数
     int32 game_count = 7;       //牌局的统计,次数
@@ -182,7 +180,6 @@ message S2C_CLUB_PLAYER_INFO_RES{
     int32 last_game_time = 9;   //最近的牌局时间戳
     bool is_in_black_list = 10; //被操作玩家是否在黑名单中
     CLUB_ROLE_TYPE role_type = 11; //被操作玩家在当前俱乐部的身份
-    bool sex = 12;//玩家性别  true 男性 false 女性
 }
 
 

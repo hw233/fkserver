@@ -52,6 +52,7 @@ message CLUB_BASE_INFO {
     int32   id = 1;
     string  name = 2;
     string  icon = 3;
+    int32   type = 4;
 }
 
 //单个座位信息

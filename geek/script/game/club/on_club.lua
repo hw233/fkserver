@@ -235,11 +235,7 @@ function on_cs_club_list(msg,guid)
                 id = club.id,
                 name = club.name,
                 icon = club.icon,
-                level = club.level,
-                status = club.status,
-                player_num_online = club.online_count,
-                boss_guid = club.owner,
-                player_num = table.nums(club_memeber[club.id]),
+                type = club.type
             })
         end
     end
