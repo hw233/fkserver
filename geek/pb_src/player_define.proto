@@ -64,7 +64,7 @@ message ItemInfo {
 	int32 item_num = 2; 					// 物品数量
 }
 
-message Msg_DataInfo{
+message MsgDataInfo{
 	int32  id = 1;							// 编号
 	int32  start_time = 2;					// 开始时间
 	int32  end_time = 3;					// 结束时间

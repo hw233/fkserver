@@ -85,6 +85,22 @@ function base_club:invite_join(invitee,inviter)
     return req_id
 end
 
+function base_club:invite_create_son(invitee,inviter)
+    local req_id = reddb:incr("request:global:id")
+	req_id = tonumber(req_id)
+	local request = {
+		id = req_id,
+		type = "invite_create",
+		club_id = self.id,
+        whoee = invitee,
+        who = inviter,
+	}
+
+    reddb:hmset("request:"..tostring(req_id),request)
+    reddb:sadd(string.format("player:request:%s",invitee),req_id)
+    return req_id
+end
+
 function base_club:agree_request(request)
     local who = request.who
     local whoee = request.whoee
@@ -279,5 +295,7 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
 
     return enum.ERROR_NONE,info
 end
+
+
 
 return base_club

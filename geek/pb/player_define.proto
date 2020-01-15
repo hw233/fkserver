@@ -1,5 +1,5 @@
 
-Š#
+‰#
 player_define.proto"ø
 GameClientRoomListCfg
 game_id (RgameId(
@@ -60,8 +60,8 @@ headerIcon
 openIdIcon">
 ItemInfo
 item_id (RitemId
-item_num (RitemNum"¦
-Msg_DataInfo
+item_num (RitemNum"¥
+MsgDataInfo
 id (Rid
 
 start_time (R	startTime

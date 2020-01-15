@@ -901,12 +901,12 @@ message CS_QueryPlayerMsgData{
 // 返回查询玩家公告及消息
 message SC_QueryPlayerMsgData{
 	enum MsgID { Nil = 0; ID = 1118; }
-	repeated Msg_DataInfo pb_msg_data = 1;			// 消息数据
+	repeated MsgDataInfo pb_msg_data = 1;			// 消息数据
 }
 // 追加消息
 message SC_NewMsgData{	
 	enum MsgID { Nil = 0; ID = 1119; }
-	repeated Msg_DataInfo pb_msg_data = 1; 			// 玩家的guid
+	repeated MsgDataInfo pb_msg_data = 1; 			// 玩家的guid
 }
 
 // 设置已读

@@ -4,20 +4,6 @@ import "message.proto";
 import "common.proto";
 
 
-message CLUB_PLAYER_BASE_INFO { 
-    int32 guid = 1;    //玩家ID
-    string icon = 2;        //头像
-    string nickname = 3;   //昵称
-    int32 time = 4;        //上次离线时间戳，在线:0  -1:房间中
-    CLUB_ROLE_TYPE role_type = 7;   //玩家在当前俱乐部的身份
-}
-
-message REQUEST_INFO{
-    int32  req_id = 1;
-    string type = 2;                 //
-    CLUB_PLAYER_BASE_INFO who = 3;          //
-}
-
 //-----------------------消息协议---------------------------
 
 //请求俱乐部列表
@@ -29,7 +15,7 @@ message C2S_CLUBLIST_REQ {
 message S2C_CLUBLIST_RES { 
     enum MsgID {NIL = 0;ID = 14005;}
     int32 result = 1;
-    repeated PB_CLUB_INFO clubs = 2;
+    repeated CLUB_BASE_INFO clubs = 2;
 }
 
 //创建俱乐部请求
@@ -47,19 +33,6 @@ message S2C_CREATE_CLUB_RES {
     enum MsgID {NIL = 0;ID = 14007;}
     int32 result = 1;
     int32 club_id = 2;
-}
-
-//查询俱乐部的基本信息(未使用)
-message C2S_SEARCH_CLUB_REQ { 
-    enum MsgID {NIL = 0;ID = 14008;}
-    int32 club_id = 1;
-}
-
-//俱乐部查询结果(未使用)
-message S2C_SEARCH_CLUB_RES { 
-    enum MsgID {NIL = 0;ID = 14009;}
-    int32 result = 1;
-    PB_CLUB_INFO club_info = 2;
 }
 
 //申请加入俱乐部
@@ -96,7 +69,7 @@ message S2C_TABLE_TEMPLATE_EDIT_RES{
     int32 template_id = 2;
 }
 
-//请求）
+//请求
 message C2S_CLUB_INFO_REQ{
     enum MsgID {NIL = 0;ID = 14016;}
     int32 club_id = 1;
@@ -106,19 +79,16 @@ message C2S_CLUB_INFO_REQ{
 message S2C_CLUB_INFO_RES {
     enum MsgID {NIL = 0;ID = 14017;}
     int32 result = 1;
-    int32 club_id = 2;      //俱乐部ID
-    string club_name = 3;   //俱乐部名称
-    string note = 4;        //俱乐部的公告信息
+    CLUB_BASE_INFO club_info = 2;
     CLUB_ROLE_TYPE role_type = 5;         //当前玩家在俱乐部中扮演的角色
     bool closed = 6;           //歇业
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
     int32 club_diamond = 8;    //钻石数量  群主和管理员可见  否则 0不充足  1充足
-    bool club_add_status = 9;  //是否有玩家申请加入
-    int32 player_count = 10;//俱乐部总人数
-    repeated TABLE_TEMPLATE table_templates =11;//可以快速加入的游戏列表和规则
-    repeated int32 gamelist = 12;
-    int32 player_num_online = 13; //在线人数
-    bool  allow_create_room = 14;
+    int32 player_count = 9;//俱乐部总人数
+    repeated TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
+    repeated int32 gamelist = 11;
+    int32 player_num_online = 12; //在线人数
+    bool  allow_create_room = 13;
 }
 
 message C2S_CLUB_REQUEST_LIST_REQ{
@@ -156,7 +126,7 @@ message S2C_CLUB_PLAYER_LIST_RES{
     enum MsgID {NIL = 0;ID = 14025;}
     
     int32 result = 1;
-    repeated CLUB_PLAYER_BASE_INFO player_list = 2; //玩家列表
+    repeated PLAYER_BASE_INFO player_list = 2; //玩家列表
 }
 
 //俱乐部成员管理，基础操作
@@ -215,22 +185,6 @@ message S2C_CLUB_PLAYER_INFO_RES{
     bool sex = 12;//玩家性别  true 男性 false 女性
 }
 
-//俱乐部战绩查询  群主和管理员  看所有数据   普通玩家 只看自己
-message C2S_CLUB_SELECT_RECORD_REQ{ 
-    enum MsgID {NIL = 0;ID = 14033;}
-    int32 club_id = 1;
-    string beginDate = 2;//开始时间 eg 查询 2019-03-01的战绩 格式 2019-03-01 00:00:00
-    string endDate = 3;//结束时间 格式 2019-03-02 00:00:00
-}
-
-//战绩查询 回复
-message S2C_CLUB_SELECT_RECORD_RES
-{ 
-    enum MsgID {NIL = 0;ID = 14034;}
-    int32 result = 1;
-    repeated RECORD_ROOM roomRecord = 2;
-}
-
 
 //解散 亲友群 只能群主
 message C2S_CLUB_DISMISS_REQ{ 
@@ -244,7 +198,6 @@ message S2C_CLUB_DISMISS_RES{
     int32 result = 1;
     int32 club_id = 2;
 }
-
 
 //亲友群 踢人 请求 房主才能操作
 message C2S_CLUB_KICK_PLAYER_REQ{ 
@@ -262,17 +215,6 @@ message S2C_CLUB_KICK_PLAYER_RES{
     int32 guid = 2;    //踢出成功的玩家id
 }
 
-//基本数据同步
-message S2C_SYNC_BASE_RES{ 
-    enum MsgID {NIL = 0;ID = 14050;}
-    int32 club_id=1;
-    string club_name=2;
-    int32 onlines=3;//在线人数
-    int32 cur_total=4;//当前总人数
-    int32 cur_diamonds=5;//当前钻石数
-    repeated TABLE_TEMPLATE fasted_game_list =21;//可以快速加入的游戏列表和规则
-}
-
 //桌子有关同步
 message S2C_SYNC_TABLES_RES{ 
     enum MsgID {NIL = 0;ID = 14051;}
@@ -283,41 +225,6 @@ message S2C_SYNC_TABLES_RES{
     SYNC_TYPE sync_type=5;
 }
 
-//请求 在线没有游戏的玩家列表
-message C2S_GET_ONLINE_FRIENDS_REQ{ 
-    enum MsgID {NIL = 0;ID = 14052;}
-    int32 club_id=1;
-}
-
-//响应 在线没有游戏的玩家列表
-message S2C_GET_ONLINE_FRIENDS_RES{ 
-    enum MsgID {NIL = 0;ID = 14053;}
-    int32 result =1;
-    int32 club_id=2;
-    repeated DB_SIMPLE_PLAYER onlines=3;
-}
-
-//响应 操作游戏邀请
-message S2C_RESPONSE_ASKING_RES{ 
-    enum MsgID {NIL = 0;ID = 14058;}
-    bool agree = 1;//true  同意，false 拒绝
-}
-
-//玩家精简信息
-message DB_SIMPLE_PLAYER{ 
-    enum MsgID {NIL = 0;ID = 14059;}
-    int32 guid=1;
-    string header=2;
-    string nickName =3;
-    int32 time = 4;      //上次离线时间戳，在线:0  -1:房间中
-}
-
-message S2C_SYNC_ADMIN_RES{ 
-    enum MsgID {NIL = 0;ID = 14060;}
-    int32 club_id=1;
-    int32 guid=2;
-    bool is_admin=3;
-}
 
 message C2S_EDIT_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14061;}

@@ -530,36 +530,6 @@ end
 --     return true
 -- end
 
-function MSG.C2S_LOGIN_REQ(msg,session)
-    local s = logining[session.fd]
-    if s then
-        log.error("login repeated! fd:%d",session.fd)
-        return
-    end
-
-    logining[session.fd] = coroutine.running()
-
-    msg.loginIp = session.ip
-    local info,server = channel.call("login.?","msg","C2S_LOGIN_REQ",msg,gateid)
-    local guid = info.guid
-    if info.ret == enum.LOGIN_RESULT_SUCCESS then
-        if not check_login_session(session.fd) then --已断开连接
-            channel.publish("service."..tostring(server),"lua","afk",guid)
-            return
-        end
-        
-        skynet.call(gate,"lua","login",session.fd,info.guid,info.game_id,info)
-    end
-
-    info.roomCard = info.room_card
-
-    dump(info)
-
-    netmsgopt.send(session.fd,"S2C_LOGIN_RES",info)
-
-    logining[session.fd] = nil
-end
-
 function MSG.C2S_HEARTBEAT_REQ(_,session)
     netmsgopt.send(session.fd,"S2C_HEARTBEAT_RES",{
         dataTime = os.time(),

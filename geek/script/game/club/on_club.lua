@@ -207,9 +207,10 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local club_info = {
         result = enum.ERROR_NONE,
-        club_id = club_id,
-        club_name = club.name,
-        note = club.note,
+        club_info = {
+            id = club_id,
+            name = club.name,
+        },
         closed = false,
         player_count = total_count,
         player_num_online = online_count,
@@ -354,7 +355,7 @@ function on_cs_club_invite_join_req(msg,guid)
         return
     end
 
-    club.invite_join(msg.guid,guid)
+    club:invite_join(msg.guid,guid)
     player_request[msg.guid] = nil
 end
 
@@ -622,6 +623,10 @@ function on_cs_club_operation(msg,guid)
     if f then
         f(msg,guid)
     end
+end
+
+function on_cs_club_invite_create_req(msg,guid)
+
 end
 
 function on_cs_club_kickout(msg,guid)

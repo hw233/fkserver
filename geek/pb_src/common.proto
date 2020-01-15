@@ -39,43 +39,45 @@ enum SYNC_TYPE{
 
 //-----------------------基础结构----------------------------
 
+message PLAYER_BASE_INFO { 
+    int32   guid = 1;    //玩家ID
+    string  icon = 2;        //头像
+    string  nickname = 3;   //昵称
+    bool    sex =4; // 性别
+    CLUB_ROLE_TYPE role_type = 5;   //玩家在当前俱乐部的身份
+}
+
 //俱乐部信息
-message PB_CLUB_INFO {
-    enum MsgID {NIL = 0;ID = 14001;}
-    int32 id = 1;
-    string name = 2;
-    string icon = 3;
+message CLUB_BASE_INFO {
+    int32   id = 1;
+    string  name = 2;
+    string  icon = 3;
 }
 
 //单个座位信息
 message SEAT_INFO { 
-    enum MsgID {NIL = 0;ID = 14048;}
     int32 chair_id = 1; //座位序号
-    string open_id_icon = 2; //头像图标
-    int32 guid = 3; //玩家ID
-    string nickname = 4;//昵称
-    bool sex =5; // 性别
-    bool ready = 6; //准备状态
+    PLAYER_BASE_INFO player_info = 2; //玩家信息
+    bool ready = 3; //准备状态
 }
 
 message TABLE_INFO {
-	int32 game_type = 1;				// 一级菜单
-	int32 owner = 2;
-	int32 club_id = 3;
-	int32 table_id = 4;			
-	string rule = 5;	
+	int32   game_type = 1;				// 一级菜单
+	int32   owner = 2;
+	int32   club_id = 3;
+	int32   table_id = 4;			
+	string  rule = 5;	
 }
 
 //单个房间信息
 message TABLE_STATUS_INFO { 
-    enum MsgID {NIL = 0;ID = 14049;}
-    int32 table_id = 1; //桌号
+    int32   table_id = 1; //桌号
     repeated SEAT_INFO seat_list = 2; //桌子对应的位置信息
-    int32 table_status = 3;   //房间状态
-    int32 room_cur_round = 4; //当前局数
-    bool locked = 5;    //是否加锁  true锁住
-    string rule = 6;
-    int32 game_type = 7;
+    int32   table_status = 3;   //房间状态
+    int32   room_cur_round = 4; //当前局数
+    bool    locked = 5;    //是否加锁  true锁住
+    string  rule = 6;
+    int32   game_type = 7;
 }
 
 message TABLE_TEMPLATE{
@@ -85,6 +87,12 @@ message TABLE_TEMPLATE{
     string  description = 4;
     string  rule = 5;
     string  advanced_rule = 6;
+}
+
+message REQUEST_INFO{
+    int32  req_id = 1;
+    string type = 2;
+    PLAYER_BASE_INFO who = 3;
 }
 
 enum OPERATION_TYPE{
