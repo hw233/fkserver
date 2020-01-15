@@ -140,6 +140,8 @@ function on_cs_edit_table_template(msg,guid)
         [enum.OPERATION_MODIFY] = on_cs_modify_table_template,
     }
 
+    dump(msg)
+
     local template = msg.template
     if not template then
         send2client_pb(guid,"S2C_EDIT_TABLE_TEMPLATE",{
