@@ -114,14 +114,6 @@ function base_room:init(conf,chair_count,ready_mode)
 			return true
 		end,
 	})
-
-	timer_manager:new_timer(2,function()
-		base_bonus.load_activity()
-	end)
-
-	timer_manager:new_timer(1,function()
-		base_bonus.tick()
-	end,"global_bonus_update_timer",true)
 end
 
 -- gm重新更新配置, room_lua_cfg
