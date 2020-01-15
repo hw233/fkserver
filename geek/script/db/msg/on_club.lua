@@ -33,18 +33,18 @@ function on_sd_create_club(msg)
     gamedb:query("SET NAMES = utf8;")
     gamedb:query("SET AUTOCOMMIT = 0;")
 
-    local transaction = {
+    local transqls = {
         "BEGIN;",
         string.format("INSERT INTO t_club(id,name,owner,icon,type,parent) VALUES(%d,'%s',%d,'%s',%d,%d);",
                     msg.id,msg.name,msg.owner,msg.icon,msg.type,msg.parent),
-        string.format("INSERT INTO t_club_money(id,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_GOLD),
-        string.format("INSERT INTO t_club_money(id,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_ROOM_CARD),
-        string.format("INSERT INTO t_club_member(id,guid) VALUES(%d,%d);",msg.id,msg.owner),
+        string.format("INSERT INTO t_club_money(club,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_GOLD),
+        string.format("INSERT INTO t_club_money(club,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_ROOM_CARD),
+        string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",msg.id,msg.owner),
         "COMMIT;",
     }
 
     local trans = gamedb:transaction()
-    res = trans:execute(table.concat(transaction,"\n"))
+    res = trans:execute(table.concat(transqls,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
         trans:rollback()
