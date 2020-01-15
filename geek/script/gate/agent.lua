@@ -76,7 +76,7 @@ end
 
 local MSG = {}
 
-function MSG.C_RequestPublicKey(guid,msg)
+function MSG.C_RequestPublicKey(msg)
     if not rsa_public_key then
         rsa_public_key = skynet.public_key()
     end
@@ -388,7 +388,7 @@ function MSG.CS_ResetAccount(msg)
 end
 
 
-function MSG.CS_SetPassword(guid,msg)
+function MSG.CS_SetPassword(msg)
 	if inserverid == 0 then
 		log.warning( "game_id == 0" )
 		return false
@@ -428,7 +428,7 @@ function MSG.CS_SetPassword(guid,msg)
 	return true
 end
 
-function MSG.CS_SetPasswordBySms(guid,msg)
+function MSG.CS_SetPasswordBySms(msg)
     if not inserverid then
 		log.warning( "game_id == 0" )
 		return false
@@ -454,7 +454,7 @@ function MSG.CS_SetPasswordBySms(guid,msg)
 	return true
 end
 
-function MSG.CS_BankSetPassword(guid,msg) 
+function MSG.CS_BankSetPassword(msg) 
 	if inserverid == 0 then
 		log.warning( "game_id == 0" )
 		return false
@@ -472,7 +472,7 @@ function MSG.CS_BankSetPassword(guid,msg)
 	return true
 end
 
-function MSG.CS_BankChangePassword(guid,msg)
+function MSG.CS_BankChangePassword(msg)
 	if inserverid == 0 then
 		log.warning( "game_id == 0" )
 		return false
@@ -512,7 +512,7 @@ end
 -- 	return true
 -- end
 
-function MSG.CS_BankDraw(guid,msg)
+function MSG.CS_BankDraw(msg)
 	if inserverid == 0 then
 		log.warning( "game_id == 0" )
 		return false
@@ -529,7 +529,7 @@ function MSG.CS_BankDraw(guid,msg)
 	return true
 end
 
-function MSG.CS_BankLogin(guid,msg) 
+function MSG.CS_BankLogin(msg) 
 	if inserverid == 0 then
 		log.warning( "game_id == 0" )
 		return false
@@ -553,20 +553,6 @@ end
     -- msg.private_room_score_type = s.get_private_room_score_type
 	-- channel.publish("game."..tostring(msg.game_id),"SS_JoinPrivateRoom",msg)
 -- end
-
-function MSG.C2S_LOGOUT_REQ(msg)
-    if not inserverid then
-        skynet.call(gate,"lua","logout",guid)
-        skynet.exit()
-    else
-        local res = channel.call("service."..tostring(inserverid),"msg","C2S_LOGOUT_REQ",guid,msg)
-        netmsgopt.send(fd,"S2C_LOGOUT_RES",res)
-        if res.logoutType then
-            skynet.call(gate,"lua","logout",guid)
-            skynet.exit()
-        end
-    end
-end
 
 function MSG.C2S_HEARTBEAT_REQ()
     netmsgopt.send(fd,"S2C_HEARTBEAT_RES",{
