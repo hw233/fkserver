@@ -106,11 +106,11 @@ function on_cs_pull_summary_mails(msg,guid)
 		log.error("on_cs_pull_summary_mails illegal player.guid:%d",guid)
 		return
 	end
-
+	
 	local all_mail_ids = player_mail[guid]
 	local mail_ids = {}
 	if not msg.mail_ids or table.nums(msg.mail_ids) == 0 then
-		mail_ids = all_mail_ids
+		mail_ids = table.keys(all_mail_ids)
 	else
 		for _,mail_id in pairs(msg.mail_ids) do
 			if all_mail_ids[mail_id] then

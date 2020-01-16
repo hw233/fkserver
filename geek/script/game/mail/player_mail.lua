@@ -12,7 +12,7 @@ setmetatable(player_mail,{
             mail_ids[mail_id] = true
         end
         t[guid] = mail_ids
-        return mids
+        return mail_ids
     end
 })
 
