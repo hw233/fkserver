@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "player_define.proto";
+import "common.proto";
 
 // 客户端和服务器通信消息
 // C Client, L LoginServer, D DBServer, S GameServer
@@ -222,9 +223,8 @@ message CS_RequestPlayerInfo {
 // 回复玩家数据信息
 message SC_ReplyPlayerInfo {
 	enum MsgID { Nil = 0; ID = 1019; }
-	int32 guid = 1;
-	PlayerBaseInfo pb_base_info = 2;		// 玩家基本信息
-	repeated MailInfo pb_mails = 3; 		// 邮件列表
+	int32 			guid = 1;
+	PlayerBaseInfo 	pb_base_info = 2;		// 玩家基本信息
 }
 
 message GameMsg {	
@@ -579,41 +579,41 @@ message SC_NewMarquee {
 // 发送邮件
 message CS_SendMail {
 	enum MsgID { Nil = 0; ID = 1070; }
-	MailInfo pb_mail = 1;
+	MailInfo 	mail = 1;
 }
 
 // 写邮件的收到是否成功
 message SC_SendMail {
 	enum MsgID { Nil = 0; ID = 1071; }
-	int32 ret = 1; 						// 0 成功 1 没有找到收邮件人
-	MailInfo pb_mail = 2;
+	int32 		result = 1;// 0 成功 1 没有找到收邮件人
+	MailInfo 	mail = 2;
 }
 
 // 收邮件的会收到该消息
-message SC_RecviceMail {
+message SC_ReceiveMail {
 	enum MsgID { Nil = 0; ID = 1072; }
-	MailInfo pb_mail = 1;
+	MailInfo	mail = 1;
 }
 
 // 删除邮件
 message CS_DelMail {
 	enum MsgID { Nil = 0; ID = 1073; }
-	string mail_id = 1; 					// 邮件id
+	string 	mail_id = 1; 					// 邮件id
 }
 
 message SC_DelMail {
 	enum MsgID { Nil = 0; ID = 1074; }
-	int32 result = 1;						// 结果 MAIL_OPT_RESULT
-	string mail_id = 2; 					// 邮件id
+	int32 	result = 1;						// 结果 MAIL_OPT_RESULT
+	string 	mail_id = 2; 					// 邮件id
 }
 
 // 提取附件
-message CS_ReceiveMailAttachment {
+message CS_PullMailAttachment {
 	enum MsgID { Nil = 0; ID = 1075; }
 	string mail_id = 1; 					// 邮件id
 }
 
-message SC_ReceiveMailAttachment {
+message SC_PullMailAttachment {
 	enum MsgID { Nil = 0; ID = 1076; }
 	int32 result = 1;						// 结果 MAIL_OPT_RESULT
 	string mail_id = 2; 					// 邮件id
@@ -626,33 +626,33 @@ message SC_ReceiveMailAttachment {
 //////////////////////////////////////////////////////////////////////////
 
 // 登陆奖励
-message CS_ReceiveRewardLogin {
+message CS_PullRewardLogin {
 	enum MsgID { Nil = 0; ID = 1077; }
 }
 
-message SC_ReceiveRewardLogin {
+message SC_PullRewardLogin {
 	enum MsgID { Nil = 0; ID = 1078; }
 	int32 result = 1;						// 结果 RECEIVE_REWARD_RESULT
 	int64 money = 2;						// 奖励金币
 }
 
 // 在线奖励
-message CS_ReceiveRewardOnline {
+message CS_PullRewardOnline {
 	enum MsgID { Nil = 0; ID = 1079; }
 }
 
-message SC_ReceiveRewardOnline {
+message SC_PullRewardOnline {
 	enum MsgID { Nil = 0; ID = 1080; }
 	int32 result = 1;						// 结果 RECEIVE_REWARD_RESULT
 	int64 money = 2;						// 奖励金币
 }
 
 // 救济金
-message CS_ReceiveReliefPayment {
+message CS_PullReliefPayment {
 	enum MsgID { Nil = 0; ID = 1081; }
 }
 
-message SC_ReceiveReliefPayment {
+message SC_PullReliefPayment {
 	enum MsgID { Nil = 0; ID = 1082; }
 	int32 result = 1;						// 结果 RECEIVE_REWARD_RESULT
 	int64 money = 2;						// 奖励金币
@@ -870,12 +870,12 @@ message SC_ChangeTable {
 	string ip_area = 9;					// 客户端ip地区
 }
 
-message SC_HEARTBEAT{
+message SC_HeartBeat{
 	enum MsgID { Nil = 0; ID = 1112; }
 	int32 severTime = 1;				// 服务器时间 时间戳
 }
 
-message CS_HEARTBEAT{
+message CS_HeartBeat{
 	enum MsgID { Nil = 0; ID = 1113; }
 }
 
@@ -1420,7 +1420,66 @@ message CS_GameServerCfg {
 	enum MsgID { Nil = 0; ID = 1188; }
 }
 
-message SC_PopupTips{
+message CS_PullMailDetail {
 	enum MsgID { Nil = 0; ID = 1189; }
-	string content = 1; //json内容
+	string mail_id = 1;
+}
+
+message CS_PullSummaryMails{
+	enum MsgID { Nil = 0; ID = 1190;}
+	repeated string mail_ids = 1;
+}
+
+message SC_PullMails{
+	enum MsgID { Nil = 0; ID = 1191;}
+
+	repeated MailInfo mails = 1;
+}
+
+message SC_PullMailDetail{
+	enum MsgID { Nil = 0; ID = 1192;}
+
+	MailInfo mail = 1;
+}
+
+message CS_ReadMail{
+	enum MsgID { Nil = 0; ID = 1193;}
+	string mail_id = 1;
+}
+
+//房间创建请求
+message CS_CreateRoom
+{
+    enum MsgID {NONE = 0; ID = 1194;}
+    int32   game_type = 1;    //1金花  2 麻将
+    int32   club_id = 3; //俱乐部ID，在外部创建房间id=0
+    int32   template_id = 4;  // 
+    string  rule = 5;//规则json
+}
+
+
+//响应-创建房间
+message SC_CreateRoom
+{
+    enum MsgID {NONE = 0; ID = 1195;}
+    int32   result = 1;
+    TABLE_INFO info = 2;
+    repeated SEAT_INFO seat_list = 3;
+}
+
+//加入房间请求
+message CS_JoinRoom
+{
+    enum MsgID {NONE = 0; ID = 1196;}
+    int32 table_id = 1;     //房间号
+    int32 reconnect = 2;    //重连
+}
+
+//加入房间回复(本人)
+message SC_JoinRoom
+{
+    enum MsgID {NONE = 0; ID = 1197;}
+    int32 result = 1;
+    TABLE_INFO info = 2;
+    repeated SEAT_INFO seat_list = 3;
 }

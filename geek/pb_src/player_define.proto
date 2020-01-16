@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-// message变量加pb_前缀，用于客户端解析
+import "common.proto";
 
 
 // 客户端用的服务器房间配置结构
@@ -60,8 +60,8 @@ message PlayerVisualInfo {
 
 // 物品基本信息
 message ItemInfo {
-	int32 item_id = 1;						// 物品id
-	int32 item_num = 2; 					// 物品数量
+	int32 id = 1;					// 物品id
+	int32 num = 2; 					// 物品数量
 }
 
 message MsgDataInfo{
@@ -75,24 +75,19 @@ message MsgDataInfo{
 
 // 物品背包信息
 message ItemBagInfo {
-	repeated ItemInfo pb_items = 1; 				// 物品
+	repeated ItemInfo items = 1; 				// 物品
 }
 
 // 邮件信息
 message MailInfo {
-	string mail_id = 1; 					// 邮件id，客户端发送不填
-	int32 expiration_time = 2; 			// 过期时间，客户端发送不填
-	int32 guid = 3; 						// 收邮件玩家的guid
-	int32 send_guid = 4; 					// 发邮件的guid，客户端发送不填
-	string send_name = 5; 					// 发邮件的名字，客户端发送不填
-	string title = 6; 						// 标题
-	string content = 7; 					// 内容
-	repeated ItemInfo pb_attachment = 8; 			// 附件
-}
-
-// 邮件列表
-message MailListInfo {
-	repeated MailInfo pb_mails = 1; 				// 邮件
+	string id = 1; 	// 邮件id，客户端发送不填
+	int32  expiration = 2; 	// 过期时间，客户端发送不填
+	int32  create_time = 3;			
+	PLAYER_BASE_INFO  receiver = 4;
+	PLAYER_BASE_INFO  sender = 5;
+	string title = 6;
+	string content = 7;
+	int32  status = 8;
 }
 
 // 银行流水
@@ -161,13 +156,13 @@ message Recharge {
 }
 
 // 跑马灯
-message Marquee{
-	int32  id = 1;							// 编号
-	int32  start_time = 2;					// 开始时间
-	int32  end_time = 3;					// 结束时间
-	string content = 4;					// 消息内容
-	int32 number = 5;						// 轮播次数
-	int32 interval_time = 6;				// 轮播时间间隔（秒）	
+message Marquee {
+	int32  	id = 1;							// 编号
+	int32  	start_time = 2;					// 开始时间
+	int32  	end_time = 3;					// 结束时间
+	string 	content = 4;					// 消息内容
+	int32 	number = 5;						// 轮播次数
+	int32 	interval_time = 6;				// 轮播时间间隔（秒）	
 }
 
 message AgentsTransferData{

@@ -230,26 +230,31 @@ message C2S_INVITE_JOIN_CLUB{
     string  invite_type = 3;
 }
 
+message S2C_INVITE_JOIN_CLUB{
+    enum MsgID {NIL = 0;ID = 14066;}
+    int32 result = 1;
+}
+
 
 message C2S_CLUB_REQUEST_LIST_REQ{
-    enum MsgID {NIL = 0;ID = 14066;}
+    enum MsgID {NIL = 0;ID = 14067;}
     int32 club_id = 1;
 }
 
 message S2C_CLUB_REQUEST_LIST_RES{
-    enum MsgID {NIL = 0;ID = 14067;}
+    enum MsgID {NIL = 0;ID = 14068;}
     int32 club_id = 1;
     repeated REQUEST_INFO reqs = 2;
 }
 
 message C2S_EDIT_CLUB_GAME_TYPE_REQ{ 
-    enum MsgID {NIL = 0;ID = 14068;}
+    enum MsgID {NIL = 0;ID = 14069;}
     int32 club_id = 1;
     int32 guid = 2;
     repeated int32 game_types = 3; 
 }
 
 message S2C_EDIT_CLUB_GAME_TYPE_RES{
-    enum MsgID {NIL = 0;ID = 14069;}
+    enum MsgID {NIL = 0;ID = 14070;}
     int32 result = 1;
 }

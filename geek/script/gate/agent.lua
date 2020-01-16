@@ -546,14 +546,8 @@ function MSG.CS_BankLogin(msg)
 	return true
 end
 
-function MSG.C2S_HEARTBEAT_REQ()
-    netmsgopt.send(fd,"S2C_HEARTBEAT_RES",{
-        dataTime = os.time(),
-    })
-end
-
-function MSG.CS_HEARTBEAT()
-    netmsgopt.send(fd,"SC_HEARTBEAT",{
+function MSG.CS_HeartBeat()
+    netmsgopt.send(fd,"SC_HeartBeat",{
         severTime = os.time(),
     })
 end
@@ -566,7 +560,7 @@ local function dispatch_client(buf)
         return
     end
 
-    if msgname ~= "C2S_HEARTBEAT_REQ" then
+    if msgname ~= "CS_HeartBeat" then
         log.info("agent.dispatch %s,%s,%s",msgname,msgid,#msgstr)
     end
 

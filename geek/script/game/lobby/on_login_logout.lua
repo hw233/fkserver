@@ -1084,21 +1084,21 @@ function on_cs_create_private_room(msg,guid)
 	local player = base_players[guid]
 
 	if player.table_id then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = enum.GAME_SERVER_RESULT_IN_ROOM,
 		})
 		return
 	end
 
 	if player.chair_id then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
 		})
 		return
 	end
 
 	if not rule_str and not template_id then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = enum.ERORR_PARAMETER_ERROR,
 		})
 		return
@@ -1109,7 +1109,7 @@ function on_cs_create_private_room(msg,guid)
 		local room_id = find_best_room(game_type)
 		if not room_id then
 			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
-			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			send2client_pb(guid,"SC_CreateRoom",{
 				result = enum.GAME_SERVER_RESULT_NO_GAME_SERVER,
 				game_type = game_type,
 			})
@@ -1120,7 +1120,7 @@ function on_cs_create_private_room(msg,guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 		onlineguid[guid] = nil
-		channel.publish("game."..tostring(room_id),"msg","C2S_ROOM_CREATE_REQ",msg,guid)
+		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
 		return
 	end
 
@@ -1133,7 +1133,7 @@ function on_cs_create_private_room(msg,guid)
 
 	local ok,rule = pcall(json.decode,rule_str)
 	if not ok then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = enum.ERORR_PARAMETER_ERROR,
 		})
 		return
@@ -1141,7 +1141,7 @@ function on_cs_create_private_room(msg,guid)
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = result,
 			game_type = game_type,
 		})
@@ -1153,7 +1153,7 @@ function on_cs_create_private_room(msg,guid)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
-			send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+			send2client_pb(guid,"SC_CreateRoom",{
 				result = enum.ERROR_CLUB_NOT_FOUND,
 				game_type = game_type,
 			})
@@ -1172,13 +1172,13 @@ function on_cs_create_private_room(msg,guid)
 	end
 
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+		send2client_pb(guid,"SC_CreateRoom",{
 			result = result,
 		})
 		return
 	end
 
-	send2client_pb(guid,"S2C_ROOM_CREATE_RES",{
+	send2client_pb(guid,"SC_CreateRoom",{
 		result = result,
 		info = {
 			game_type = game_type,
@@ -1204,14 +1204,14 @@ function on_cs_reconnect(guid)
 	local player = base_players[guid]
 	local onlineinfo = onlineguid[guid]
 	if not onlineinfo then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 		})
 		return
 	end
 
 	if not onlineinfo.table or not onlineinfo.chair then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR,
 		})
 		return
@@ -1221,7 +1221,7 @@ function on_cs_reconnect(guid)
 	local chair_id = onlineinfo.chair
 	local private_table = base_private_table[onlineinfo.global_table]
 	if not private_table then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
 		})
 		return
@@ -1240,7 +1240,7 @@ function on_cs_reconnect(guid)
 		})
 	end)
 
-	send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+	send2client_pb(guid,"SC_JoinRoom",{
 		result = enum.ERROR_NONE,
 		info = {
 			game_type = private_table.game_type,
@@ -1263,7 +1263,7 @@ function on_cs_join_private_room(msg,guid)
 	if reconnect and reconnect ~= 0 then
 		local onlineinfo = onlineguid[guid]
 		if not onlineinfo then
-			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			send2client_pb(guid,"SC_JoinRoom",{
 				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 			})
 			return
@@ -1272,7 +1272,7 @@ function on_cs_join_private_room(msg,guid)
 	end
 
 	if not global_table_id then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
@@ -1280,7 +1280,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local private_table = base_private_table[global_table_id]
 	if not private_table then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
@@ -1288,7 +1288,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local game_type = private_table.game_type
 	if not game_type then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 	end
@@ -1298,7 +1298,7 @@ function on_cs_join_private_room(msg,guid)
 		onlineguid[guid] = nil
 		local room_id = find_best_room(game_type)
 		if not room_id then 
-			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			send2client_pb(guid,"SC_JoinRoom",{
 				result = enum.ERROR_JOIN_ROOM_NO,
 			})
 			return 
@@ -1308,7 +1308,7 @@ function on_cs_join_private_room(msg,guid)
 		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
-		channel.publish("game."..tostring(room_id),"msg","C2S_JOIN_ROOM_REQ",msg,guid)
+		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid)
 		return
 	end
 
@@ -1333,7 +1333,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local result,_,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
-		send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+		send2client_pb(guid,"SC_JoinRoom",{
 			result = result,
 		})
 		return
@@ -1344,7 +1344,7 @@ function on_cs_join_private_room(msg,guid)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
-			send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+			send2client_pb(guid,"SC_JoinRoom",{
 				result = enum.ERROR_CLUB_NOT_FOUND,
 			})
 			return
@@ -1377,7 +1377,7 @@ function on_cs_join_private_room(msg,guid)
 		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
 	end
 
-	send2client_pb(guid,"S2C_JOIN_ROOM_RES",{
+	send2client_pb(guid,"SC_JoinRoom",{
 		result = result,
 		info = {
 			game_type = private_table.game_type,

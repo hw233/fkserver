@@ -1,6 +1,6 @@
 
-‰#
-player_define.proto"ø
+Í"
+player_define.protocommon.proto"ø
 GameClientRoomListCfg
 game_id (RgameId(
 second_game_type (RsecondGameType&
@@ -57,10 +57,10 @@ headerIcon
 	room_card (RroomCard
 sex (Rsex 
 open_id_icon (	R
-openIdIcon">
-ItemInfo
-item_id (RitemId
-item_num (RitemNum"¥
+openIdIcon",
+ItemInfo
+id (Rid
+num (Rnum"¥
 MsgDataInfo
 id (Rid
 
@@ -68,20 +68,21 @@ start_time (R	startTime
 end_time (RendTime
 msg_type (RmsgType
 is_read (RisRead
-content (	Rcontent"3
-ItemBagInfo$
-pb_items (2	.ItemInfoRpbItems"ú
-MailInfo
-mail_id (	RmailId'
-expiration_time (RexpirationTime
-guid (Rguid
-	send_guid (RsendGuid
-	send_name (	RsendName
+content (	Rcontent".
+ItemBagInfo
+items (2	.ItemInfoRitems"ý
+MailInfo
+id (	Rid
+
+expiration (R
+expiration
+create_time (R
+createTime-
+receiver (2.PLAYER_BASE_INFORreceiver)
+sender (2.PLAYER_BASE_INFORsender
 title (	Rtitle
-content (	Rcontent.
-pb_attachment (2	.ItemInfoRpbAttachment"4
-MailListInfo$
-pb_mails (2	.MailInfoRpbMails"²
+content (	Rcontent
+status (Rstatus"²
 BankStatement
 serial (Rserial
 guid (Rguid

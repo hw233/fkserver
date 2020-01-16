@@ -112,5 +112,15 @@ redismetadata.privatetable.template = redismeta:create({
     }
 })
 
+redismetadata.mail = redismeta:create({
+    fields = {
+        email_id = "string",
+        sender = "number",
+        reciever = "number",
+        expire = "number",
+        content = "json",
+    }
+})
+
 
 return redismetadata

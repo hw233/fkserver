@@ -530,14 +530,8 @@ end
 --     return true
 -- end
 
-function MSG.C2S_HEARTBEAT_REQ(_,session)
-    netmsgopt.send(session.fd,"S2C_HEARTBEAT_RES",{
-        dataTime = os.time(),
-    })
-end
-
-function MSG.CS_HEARTBEAT(_,session)
-    netmsgopt.send(session.fd,"SC_HEARTBEAT",{
+function MSG.CS_HeartBeat(_,session)
+    netmsgopt.send(session.fd,"SC_HeartBeat",{
         severTime = os.time(),
     })
 end
