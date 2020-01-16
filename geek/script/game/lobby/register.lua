@@ -26,7 +26,6 @@ skynet.start(function()
 	require "game.lobby.on_award"
 	require "game.lobby.on_room"
 	require "game.lobby.on_chat"
-	require "game.lobby.on_mail"
 	require "game.lobby.on_recharge_cash"
 	require "game.club.on_club"
 	require "game.lobby.on_template"
@@ -132,9 +131,6 @@ skynet.start(function()
 	register_dispatcher("CS_BuyItem",on_cs_buy_item)
 	register_dispatcher("CS_DelItem",on_cs_del_item)
 	register_dispatcher("CS_UseItem",on_cs_use_item)
-	register_dispatcher("CS_SendMail",on_cs_send_mail)
-	register_dispatcher("CS_DelMail",on_cs_del_mail)
-	register_dispatcher("CS_PullMailAttachment",on_cs_receive_mail_attachment)
 	register_dispatcher("CS_PullRewardLogin",on_cs_receive_reward_login)
 	register_dispatcher("CS_PullRewardOnline",on_cs_receive_reward_online)
 	register_dispatcher("CS_PullReliefPayment",on_cs_receive_relief_payment)

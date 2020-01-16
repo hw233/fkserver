@@ -598,13 +598,13 @@ message SC_ReceiveMail {
 // 删除邮件
 message CS_DelMail {
 	enum MsgID { Nil = 0; ID = 1073; }
-	string 	mail_id = 1; 					// 邮件id
+	repeated string mail_ids = 1; 					// 邮件id
 }
 
 message SC_DelMail {
 	enum MsgID { Nil = 0; ID = 1074; }
 	int32 	result = 1;						// 结果 MAIL_OPT_RESULT
-	string 	mail_id = 2; 					// 邮件id
+	repeated string mail_ids = 2; 					// 邮件id
 }
 
 // 提取附件

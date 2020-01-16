@@ -95,6 +95,7 @@ function CMD.start(conf)
 
 	require "game.lobby.register"
 	require "game.club.register"
+	require "game.mail.register"
 	require "hotfix"
 	require "game.lobby.base_android"
 	require "game.lobby.gm_cmd"

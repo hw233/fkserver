@@ -18,7 +18,8 @@ local club_game_type = require "game.club.club_game_type"
 local base_private_table = require "game.lobby.base_private_table"
 local club_role = require "game.club.club_role"
 local table_template = require "game.lobby.table_template"
-local json = require "cjson"
+local base_mails = require "game.mail.base_mails"
+local player_mail = require "game.mail.player_mail"
 local enum = require "pb_enums"
 require "functions"
 
@@ -41,16 +42,16 @@ local club_op = {
 
 function on_cs_club_create(msg,guid)
     local club_info = msg.info
-    if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
-        local p_club = base_clubs[msg.parent]
-        if not p_club then
-            log.error("on_cs_club_create no parent club,%s.",msg.parent)
-            onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-                result = enum.ERROR_CLUB_NOT_FOUND,
-            })
-            return
-        end
-    end
+    -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
+    --     local p_club = base_clubs[msg.parent]
+    --     if not p_club then
+    --         log.error("on_cs_club_create no parent club,%s.",msg.parent)
+    --         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+    --             result = enum.ERROR_CLUB_NOT_FOUND,
+    --         })
+    --         return
+    --     end
+    -- end
 
     local player = base_players[guid]
     if not player then
@@ -92,20 +93,23 @@ function on_cs_club_create(msg,guid)
     })
 end
 
-function on_cs_club_create_club_with_req(msg,guid)
-    local req_info = base_request[msg.req_id]
-    if not req_info then
-        log.error("on_cs_club_create_club_with_req no parent club,%s.",msg.parent)
+function on_cs_club_create_club_with_mail(msg,guid)
+    dump(msg)
+    local mail = base_mails[msg.mail_id]
+    if not mail or mail.status ~= 0 then
+        log.error("on_cs_club_create_club_with_req no request,%s.",msg.mail_id)
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
             result = enum.ERROR_CLUB_OP_EXPIRE,
         })
         return
     end
 
-    local inviter_club_id = req_info.club_id
+    local content = mail.content
+
+    local inviter_club_id = content.club_id
     local inviter_club = base_clubs[inviter_club_id]
     if not inviter_club then
-        log.error("on_cs_club_create_club_with_req no parent club,%s.",msg.parent)
+        log.error("on_cs_club_create_club_with_req no parent club,%s.",inviter_club_id)
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
         })
@@ -150,8 +154,11 @@ function on_cs_club_create_club_with_req(msg,guid)
         }
     end
 
-    base_clubs[id] = nil
     local _ = base_clubs[id]
+
+    reddb:hset("mail:"..msg.mail_id,"status",1)
+    base_mails[msg.mail_id] = nil
+    player_mail[guid][msg.mail_id] = nil
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
@@ -160,36 +167,38 @@ function on_cs_club_create_club_with_req(msg,guid)
 end
 
 function on_cs_club_invite_join_club(msg,guid)
+    local invite_type = msg.invite_type
+    local invitee = msg.invitee
     local club_id = msg.inviter_club
     local club = base_clubs[club_id]
     if not club then
         log.warning("unknown club:%s",club_id)
-        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
+        onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
             result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
 
-    if club_memeber[club_id][guid] then
+    if club_memeber[club_id][invitee] then
         log.warning("club member:%s join self club:%s",guid,club_id)
-        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
+        onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
             result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
         })
         return
     end
 
-    local player_reqs = player_request:all(club.owner)
-    for _,req in pairs(player_reqs) do
-        if req.who == guid and req.type == "join" then
-            onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-                result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
-            })
-            return
-        end
-    end
+    -- for req_id,_ in pairs(player_request[club.owner]) do
+    --     local req = base_request[req_id]
+    --     if req.who == guid and req.type == invite_type then
+    --         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+    --             result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
+    --         })
+    --         return
+    --     end
+    -- end
 
-    club:request_join(guid)
-    onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
+    club:invite_join(invitee,club,invite_type)
+    onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
         result = enum.ERROR_NONE,
     })
 
@@ -337,12 +346,13 @@ function on_cs_club_list(msg,guid)
     log.info("on_cs_club_list,guid:%s",guid)
     local clubs = {}
     for _,club in pairs(base_clubs:list()) do
-        if club_memeber[club.id][guid] then
+        if club_memeber[club.id][guid] and (not msg.type or club.type == msg.type) then
             table.insert(clubs,{
                 id = club.id,
                 name = club.name,
                 icon = club.icon,
-                type = club.type
+                type = club.type,
+                parent = club.parent,
             })
         end
     end

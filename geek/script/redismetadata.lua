@@ -119,6 +119,8 @@ redismetadata.mail = redismeta:create({
         reciever = "number",
         expire = "number",
         content = "json",
+        status = "number",
+        create_time = "number",
     }
 })
 

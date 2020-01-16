@@ -217,9 +217,9 @@ message S2C_NOTIFY_TABLE_TEMPLATE{
     TABLE_TEMPLATE  template = 2;
 }
 
-message C2S_CREATE_CLUB_WITH_REQ{
+message C2S_CREATE_CLUB_WITH_INVITE_MAIL{
     enum MsgID {NIL = 0;ID = 14064;}
-    int32 req_id = 1;
+    string mail_id = 1;
     CLUB_BASE_INFO club_info = 2;
 }
 

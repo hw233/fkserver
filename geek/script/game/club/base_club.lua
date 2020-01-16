@@ -10,6 +10,7 @@ local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
 local json = require "cjson"
 local channel = require "channel"
+local base_mail = require "game.mail.base_mail"
 
 local reddb = redisopt.default
 
@@ -69,36 +70,16 @@ function base_club:request_join(guid)
     return req_id
 end
 
-function base_club:invite_join(invitee,inviter)
-	local req_id = reddb:incr("request:global:id")
-	req_id = tonumber(req_id)
-	local request = {
-		id = req_id,
-		type = "invite",
+function base_club:invite_join(invitee,inviter_club,type)
+    local mail_info = base_mail.create_mail(inviter_club.owner,invitee,"被邀请加入联盟...",{
+        type = type,
 		club_id = self.id,
         whoee = invitee,
-        who = inviter,
-	}
-
-    reddb:hmset("request:"..tostring(req_id),request)
-    reddb:sadd(string.format("player:request:%s",invitee),req_id)
-    return req_id
-end
-
-function base_club:invite_create_son(invitee,inviter)
-    local req_id = reddb:incr("request:global:id")
-	req_id = tonumber(req_id)
-	local request = {
-		id = req_id,
-		type = "invite_create",
-		club_id = self.id,
-        whoee = invitee,
-        who = inviter,
-	}
-
-    reddb:hmset("request:"..tostring(req_id),request)
-    reddb:sadd(string.format("player:request:%s",invitee),req_id)
-    return req_id
+        who = inviter_club.owner,
+    })
+    
+    base_mail.send_mail(mail_info)
+    return mail_info.id
 end
 
 function base_club:agree_request(request)
