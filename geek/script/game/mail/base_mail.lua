@@ -60,7 +60,7 @@ function base_mail.send_mail(mail_info)
 			guid = sender.guid,
 			nickname = 	sender.nickname,
 			sex = sender.sex,
-			icon = sender.open_id_icon,
+			icon = sender.icon,
 		},
 		title = mail_info.title,
 		content = mail_info.content,

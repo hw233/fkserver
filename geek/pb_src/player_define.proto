@@ -33,7 +33,7 @@ message PlayerBaseInfo {
 	int32 gold = 11;
 	int32 diamond = 12;	
 	int32 room_card = 13;
-	string open_id_icon = 14;
+	string icon = 14;
 	int32  status = 15;					//
 	string phone = 16;
 	bool   sex = 17;
@@ -55,7 +55,7 @@ message PlayerVisualInfo {
 	int32 	diamond = 10;      //
 	int32 	room_card = 11; 						//
 	int32   sex = 12;
-	string  open_id_icon = 13;
+	string  icon = 13;
 }
 
 // 物品基本信息

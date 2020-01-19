@@ -1820,7 +1820,7 @@ function maajan_table:on_game_balance()
         p.total_money = p.total_money or 0
         local p_log = self.game_log.players[chair_id]
         p_log.nickname = p.nickname
-        p_log.head_url = p.open_id_icon
+        p_log.head_url = p.icon
         p_log.guid = p.guid
         p_log.sex = p.sex
         p_log.pai = {
@@ -2550,10 +2550,12 @@ function maajan_table:global_status_info()
     for chair_id,p in pairs(self.players) do
         table.insert(seats,{
             chair_id = chair_id,
-            open_id_icon = p.open_id_icon,
-            guid = p.guid,
-            nickname = p.nickname,
-            sex = p.sex,
+            player_info = {
+                guid = p.guid,
+                icon = p.icon,
+                nickname = p.nickname,
+                sex = p.sex,
+            },
             ready = self.ready_list[chair_id] and true or false,
         })
     end
@@ -2561,7 +2563,7 @@ function maajan_table:global_status_info()
     local info = {
         table_id = self.private_id,
         seat_list = seats,
-        room_cur_round = self.cur_round or 1,
+        room_cur_round = self.cur_round or 0,
         rule = self.private_id and json.encode(self.conf.conf) or "",
         game_type = def_first_game_type,
     }

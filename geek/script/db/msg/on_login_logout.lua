@@ -1768,7 +1768,7 @@ function on_ld_reg_account(msg)
 					msg.level,
 					msg.login_ip,
 					msg.open_id,
-					msg.open_id_icon,
+					msg.icon,
 					msg.login_ip,
 					msg.version,
 					msg.phone_type or "unkown",
@@ -1786,7 +1786,7 @@ function on_ld_reg_account(msg)
 					msg.account,
 					msg.nickname,
 					msg.level,
-					msg.open_id_icon
+					msg.icon
 				)
 
 	if res.errno then
@@ -2738,7 +2738,7 @@ function on_reg_account(msg)
 					msg.level,
 					msg.login_ip,
 					msg.open_id,
-					msg.open_id_icon,
+					msg.icon,
 					msg.login_ip,
 					msg.version,
 					msg.phone_type or "unkown",

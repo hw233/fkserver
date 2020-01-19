@@ -171,7 +171,7 @@ function on_cs_pull_mail_detail(msg,guid)
 			create_time = mail_info.create_time,
 			sender = {
 				guid = sender.guid,
-				icon = sender.open_id_icon,
+				icon = sender.icon,
 				nickname = sender.nickname,
 				sex = sender.sex,
 			},

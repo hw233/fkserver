@@ -99,7 +99,7 @@ function base_player:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, 
 					money = p:get_money(),
 					header_icon = p:get_header_icon(),
 					ip_area = p.ip_area,
-					open_id_icon = p.open_id_icon,
+					icon = p.icon,
 					sex = p.sex,
 				}
 				notify.pb_visual_info = notify.pb_visual_info or {}

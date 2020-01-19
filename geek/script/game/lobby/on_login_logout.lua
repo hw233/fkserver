@@ -1034,7 +1034,7 @@ end
 function on_cs_create_private_room(msg,guid)
 	local game_type = msg.game_type
     local club_id = msg.club_id
-	local rule_str = msg.rule
+	local rule = msg.rule
 	local template_id = msg.template_id
 
 	dump(msg)
@@ -1055,13 +1055,27 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
-	if not rule_str and not template_id then
+	if not rule and not template_id then
 		send2client_pb(guid,"SC_CreateRoom",{
 			result = enum.ERORR_PARAMETER_ERROR,
 		})
 		return
 	end
 
+	if template_id and template_id ~= 0 then
+		local template = table_template[template_id]
+		club_id = template.club_id
+		rule = template.rule
+		game_type = template.game_id
+	else
+		local ok,rule = pcall(json.decode,rule)
+		if not ok or not rule then 
+			send2client_pb(guid,"SC_CreateRoom",{
+				result = enum.ERORR_PARAMETER_ERROR,
+			})
+		end
+	end
+	
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
 		local room_id = find_best_room(game_type)
@@ -1079,21 +1093,6 @@ function on_cs_create_private_room(msg,guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 		onlineguid[guid] = nil
 		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
-		return
-	end
-
-	if template_id and template_id ~= 0 then
-		local template = table_template[template_id]
-		club_id = template.club_id
-		rule_str = template.rule
-		game_type = template.game_id
-	end
-
-	local ok,rule = pcall(json.decode,rule_str)
-	if not ok then
-		send2client_pb(guid,"SC_CreateRoom",{
-			result = enum.ERORR_PARAMETER_ERROR,
-		})
 		return
 	end
 
@@ -1142,13 +1141,13 @@ function on_cs_create_private_room(msg,guid)
 			game_type = game_type,
 			club_id = club_id,
 			table_id = global_table_id,
-			rule = msg.rule,
+			rule = json.encode(rule),
 			owner = guid,
 		},
 		seat_list = {{
 			chair_id = player.chair_id,
 			player_info = {
-				icon = player.open_id_icon,
+				icon = player.icon,
 				guid = player.guid,
 				nickname = player.nickname,
 				sex = player.sex,
@@ -1190,10 +1189,12 @@ function on_cs_reconnect(guid)
 	tb:foreach(function(p)
 		table.insert(seats,{
 			chair_id = p.chair_id,
-			open_id_icon = p.open_id_icon,
-			guid = p.guid,
-			nickname = p.nickname,
-			sex = p.sex,
+			player_info = {
+				icon = p.icon,
+				guid = p.guid,
+				nickname = p.nickname,
+				sex = p.sex,
+			},
 			ready = tb.ready_list[p.chair_id] and true or false,
 		})
 	end)
@@ -1324,10 +1325,12 @@ function on_cs_join_private_room(msg,guid)
 		tb:foreach(function(p) 
 			table.insert(seats,{
 				chair_id = p.chair_id,
-				open_id_icon = p.open_id_icon,
-				guid = p.guid,
-				nickname = p.nickname,
-				sex = p.sex,
+				player_info = {
+					icon = p.icon,
+					guid = p.guid,
+					nickname = p.nickname,
+					sex = p.sex,
+				},
 				ready = tb.ready_list[p.chair_id] and true or false,
 			})
 		end)

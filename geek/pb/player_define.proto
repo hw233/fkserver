@@ -1,5 +1,5 @@
 
-Í"
+±"
 player_define.protocommon.proto"ø
 GameClientRoomListCfg
 game_id (RgameId(
@@ -17,7 +17,7 @@ cell_money (R	cellMoney
 platform_id
  (	R
 platformId
-title (	Rtitle"Þ
+title (	Rtitle"Ð
 PlayerBaseInfo
 bank (Rbank&
 login_award_day (RloginAwardDay5
@@ -33,14 +33,13 @@ headerIcon'
  (RslotmaAddition
 gold (Rgold
 diamond (Rdiamond
-	room_card (RroomCard 
-open_id_icon (	R
-openIdIcon
+	room_card (RroomCard
+icon (	Ricon
 status (Rstatus
 phone (	Rphone
 sex (Rsex
 type (Rtype
-nickname (	Rnickname"Ü
+nickname (	Rnickname"Î
 PlayerVisualInfo
 chair_id (RchairId
 guid (Rguid
@@ -55,9 +54,8 @@ headerIcon
 diamond
  (Rdiamond
 	room_card (RroomCard
-sex (Rsex 
-open_id_icon (	R
-openIdIcon",
+sex (Rsex
+icon (	Ricon",
 ItemInfo
 id (Rid
 num (Rnum"¥
