@@ -1068,7 +1068,8 @@ function on_cs_create_private_room(msg,guid)
 		rule = template.rule
 		game_type = template.game_id
 	else
-		local ok,rule = pcall(json.decode,rule)
+		local ok
+		ok,rule = pcall(json.decode,rule)
 		if not ok or not rule then 
 			send2client_pb(guid,"SC_CreateRoom",{
 				result = enum.ERORR_PARAMETER_ERROR,
