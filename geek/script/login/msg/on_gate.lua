@@ -121,16 +121,16 @@ end
 
 local function wx_auth(msg)
     dump(msg)
-    local conf = global_conf
-    local _,authjson = http_get(string.format(conf.wx_auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
-            conf.wx_auth_appid,conf.wx_auth_secret,msg.code))
+    local conf = global_conf.auth.wx
+    local _,authjson = http_get(string.format(conf.auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
+            conf.appid,conf.secret,msg.code))
     local auth = json.decode(authjson)
     if auth.errcode then
         log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
         return tonumber(auth.errcode),auth.errmsg
     end
 
-    local _,userinfojson = http_get(string.format(conf.wx_userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
+    local _,userinfojson = http_get(string.format(conf.userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
     local userinfo = json.decode(userinfojson)
     if userinfo.errcode then
         log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)

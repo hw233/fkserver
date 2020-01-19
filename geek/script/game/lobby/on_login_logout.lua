@@ -386,19 +386,9 @@ function on_cs_request_player_info(msg,guid)
 
 	log.info("player guid[%d] in request_player_info" , guid)
 
-	local emailid = reddb:smembers("email:"..tostring(guid))
-	local emails = {}
-	for _,eid in ipairs(emailid) do
-		local email = base_emails[eid]
-		if email then
-			table.insert(emails,email)
-		end
-	end
-
 	local info = {}
 	info.guid = guid
 	info.pb_base_info = player
-	info.pb_emails = emails
 
 	onlineguid.send(guid,"SC_ReplyPlayerInfo",info)
 
@@ -571,38 +561,6 @@ function on_ds_charge_rate(msg)
 		charge_money = msg.charge_money,
 		agent_money = msg.agent_money
 	})
-
-end
-
--- 加载玩家数据
-function on_ds_load_player_data(msg)
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in game", msg.guid)
-		return
-	end
-
-	if msg.info_type == 1 then
-		if #msg.pb_base_info > 0 then
-			local data = pb.decode(msg.pb_base_info[1], msg.pb_base_info[2])
-
-			data.money = data.money or 0
-			data.bank = data.bank or 0
-			data.slotma_addition = data.slotma_addition or 0
-
-			player.pb_base_info = data
-			
-			send2client_pb(player, "SC_ReplyPlayerInfo", {
-				pb_base_info = data,
-			})
-		else
-			player.pb_base_info = {}
-		end
-
-		check_load_complete(player)
-	end
-	
-	log.info ("test .................. on_ds_load_player_data")
 end
 
 function on_S_ReplyPrivateRoomConfig(msg)
@@ -612,7 +570,7 @@ function on_S_ReplyPrivateRoomConfig(msg)
 		if v.first_game_type == 6 then
 			t.room_cfg = {}
 			local cfg = eval(v.room_lua_cfg)
-			for j,u in ipairs(cfg) do
+			for _,u in ipairs(cfg) do
 				table.insert(t.room_cfg, {cell_money = u.score[1], money_limit = u.money_limit})
 			end
 		end
@@ -623,7 +581,7 @@ end
 
 -- 计算进入私人房间需要
 local function calc_private_table_need_money(first_game_type, second_game_type, chair_count)
-	for i,v in ipairs(g_PrivateRoomConfig) do
+	for _,v in ipairs(g_PrivateRoomConfig) do
 		if v.first_game_type == first_game_type then
 			local cfg = v.room_cfg[second_game_type]
 			if not cfg then

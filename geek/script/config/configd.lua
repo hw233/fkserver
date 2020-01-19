@@ -53,15 +53,12 @@ local function load_db_cfg()
 end
 
 local function load_global()
-    local ps = dbopt.config:query("SELECT * FROM t_globle_string_cfg;")
-    for _,p in pairs(ps) do
-        globalconf[p.key] = p.value
+    local globalcfg = dbopt.config:query("SELECT * FROM t_global_cfg;")
+    if #globalcfg == 0 then
+        return
     end
-
-    local pi = dbopt.config:query("SELECT * FROM t_globle_int_cfg;")
-    for _,p in pairs(pi) do
-        globalconf[p.key] = tonumber(p.value)
-    end
+    
+    globalconf = json.decode(globalcfg[1].value)
 end
 
 local MSG = {}
