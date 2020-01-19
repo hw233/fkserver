@@ -371,7 +371,7 @@ function on_cs_club_detail_info_req(msg,guid)
             name = club.name,
         },
         my_club_info = {
-            role = club_role[club_id][guid] or enum.CRT_PLAYER,
+            role = tonumber(club_role[club_id][guid]) or enum.CRT_PLAYER,
         },
         closed = false,
         player_count = total_count,
@@ -486,37 +486,6 @@ function on_club_create_table(club,player,chair_count,round,rule)
     return result,global_table_id,tb
 end
 
-function on_cs_club_invite_join_req(msg,guid)
-    local inviter = guid
-    local club_id = msg.inviter_club
-    local player = base_players[inviter]
-    if not player then
-        log.error("internal error,recv msg but guid not online.")
-        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = enum.ERROR_PLAYER_NOT_EXIST,
-        })
-        return
-    end
-
-    if not player:has_club_rights() then
-        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = enum.ERROR_CLUB_NOT_FOUND,
-        })
-        return
-    end
-
-    local club = base_clubs[club_id]
-    if not club then
-        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = enum.ERROR_CLUB_NOT_FOUND,
-        })
-        return
-    end
-
-    club:invite_join(msg.guid,guid)
-    player_request[msg.guid] = nil
-end
-
 function on_cs_club_query_memeber(msg,guid)
     local ms = {}
     for mem,_ in pairs(club_memeber[msg.club_id]) do
@@ -525,7 +494,7 @@ function on_cs_club_query_memeber(msg,guid)
             table.insert(ms,{
                 info = {
                     guid = p.guid,
-                    icon = p.open_id_icon,
+                    icon = p.icon,
                     nickname = p.nickname,
                 },
                 role = club_role[msg.club_id][guid] or enum.CRT_PLAYER
@@ -555,7 +524,7 @@ function on_cs_club_request_list_req(msg,guid)
             who = {
                 guid = player.guid,
                 nickname = player.nickname,
-                icon = player.open_id_icon,
+                icon = player.icon,
             },
         })
     end
