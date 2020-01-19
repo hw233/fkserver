@@ -81,7 +81,7 @@ message S2C_CLUB_INFO_RES {
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
     int32 club_diamond = 8;    //钻石数量  群主和管理员可见  否则 0不充足  1充足
     int32 player_count = 9;//俱乐部总人数
-    repeated TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
+    repeated CLUB_TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
     repeated int32 gamelist = 11;
     int32 player_num_online = 12; //在线人数
     bool  allow_create_room = 13;
@@ -201,20 +201,20 @@ message S2C_SYNC_TABLES_RES{
 
 message C2S_EDIT_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14061;}
-    TABLE_TEMPLATE  template = 1;
+    CLUB_TABLE_TEMPLATE  template = 1;
     int32           edit_op = 2;
 }
 
 message S2C_EDIT_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14062;}
     int32           result = 1;
-    TABLE_TEMPLATE  template = 2;
+    CLUB_TABLE_TEMPLATE  template = 2;
 }
 
 message S2C_NOTIFY_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14063;}
-    SYNC_TYPE       sync = 1;
-    TABLE_TEMPLATE  template = 2;
+    SYNC_TYPE            sync = 1;
+    CLUB_TABLE_TEMPLATE  template = 2;
 }
 
 message C2S_CREATE_CLUB_WITH_INVITE_MAIL{
@@ -257,4 +257,19 @@ message C2S_EDIT_CLUB_GAME_TYPE_REQ{
 message S2C_EDIT_CLUB_GAME_TYPE_RES{
     enum MsgID {NIL = 0;ID = 14070;}
     int32 result = 1;
+}
+
+message C2S_CONFIG_CLUB_TABLE_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14071;}
+    int32 template_id  = 1;
+    int32 club_id = 2;
+    string conf = 3; //JSON
+}
+
+message S2C_CONFIG_CLUB_TABLE_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14072;}
+    int32   result = 1;
+    int32   template_id = 2;
+    int32   club_id = 3;
+    string  conf = 4; //JSON
 }

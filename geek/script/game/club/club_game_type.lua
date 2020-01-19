@@ -10,7 +10,7 @@ setmetatable(club_game_type,{
     __index = function(t,club_id)
         local ids = reddb:smembers("club:game:"..tostring(club_id))
         for i = 1,#ids do
-            ids[i] = tonumber(ids[i])
+            ids[i] = true
         end
 
         t[club_id] = ids

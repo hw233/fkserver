@@ -12,7 +12,7 @@ setmetatable(club_member,{
             ms[tonumber(guid)] = true
         end
 
-        t[club_id] = ms
+        -- t[club_id] = ms --多游服情况下，不缓存
         return ms
     end,
 })

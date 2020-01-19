@@ -16,7 +16,7 @@ local club_role = {}
 setmetatable(club_role,{
     __index = function(t,club_id)
         local roles = setmetatable({club = club_id},{__index = get_role})
-        t[club_id] = roles
+        -- t[club_id] = roles
         return roles
     end
 })

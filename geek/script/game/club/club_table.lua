@@ -12,7 +12,7 @@ setmetatable(club_table,{
             tbs[tonumber(id)] = true
         end
 
-        t[club_id] = tbs
+        -- t[club_id] = tbs
 
         return tbs
     end,

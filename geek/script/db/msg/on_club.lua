@@ -68,7 +68,7 @@ function on_sd_join_club(msg)
         return
     end
 
-    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_club WHERE id = %d;",msg.club_id)
+    res = gamedb:query("SELECT COUNT(*) AS c FROM t_club WHERE id = %d;",msg.club_id)
     if res.errno then
         log.error("on_sd_join_club query player error:%d,%s",res.errno,res.err)
         return
@@ -79,7 +79,7 @@ function on_sd_join_club(msg)
         return
     end
 
-    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_club_member WHERE guid = %d AND id = %d;",msg.guid,msg.club_id)
+    res = gamedb:query("SELECT COUNT(*) AS c FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id)
     if res.errno then
         log.error("on_sd_join_club query club member error:%d,%s",res.errno,res.err)
         return
@@ -90,7 +90,7 @@ function on_sd_join_club(msg)
         return
     end
 
-    res = gamedb:query("INSERT INTO t_club_member(id,guid) VALUES(%d,%d);",msg.club_id,msg.guid)
+    res = gamedb:query("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",msg.club_id,msg.guid)
     if res.errno then
         log.error("on_sd_join_club INSERT member error:%d,%s",res.errno,res.err)
         return

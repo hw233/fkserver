@@ -20,7 +20,9 @@ local club_role = require "game.club.club_role"
 local table_template = require "game.lobby.table_template"
 local base_mails = require "game.mail.base_mails"
 local player_mail = require "game.mail.player_mail"
+local club_request = require "game.club.club_request"
 local enum = require "pb_enums"
+local json = require "cjson"
 require "functions"
 
 local g_room = g_room
@@ -131,8 +133,6 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
-    dump(player)
-
     -- if not player:has_club_rights() then
 	-- 	return {
     --         result = CLUB_OP_RESULT_NO_RIGHTS,
@@ -157,8 +157,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
     local _ = base_clubs[id]
 
     reddb:hset("mail:"..msg.mail_id,"status",1)
-    base_mails[msg.mail_id] = nil
-    player_mail[guid][msg.mail_id] = nil
+    base_mails[msg.mail_id].status = 1
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
@@ -253,6 +252,58 @@ function on_cs_club_query(msg,guid)
     }
 end
 
+local function get_club_tables(club_id)
+    if not club_id then return end
+
+    local tables = {}
+    repeat
+        local club = base_clubs[club_id]
+        if not club then break end
+
+        for pid,_ in pairs(club_table[club_id]) do
+            local priv_tb = base_private_table[pid]
+            local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
+            table.insert(tables,tableinfo)
+        end
+
+        club_id = club.parent
+    until not club_id or club_id == 0
+
+    return tables
+end
+
+local function get_club_templates(club_id,guid)
+    if not club_id then return end
+
+    local templates = {}
+    repeat
+        local club = base_clubs[club_id]
+        if not club then break end
+
+        for ttid,_ in pairs(club_table_template[club_id]) do
+            local temp = table_template[ttid]
+            table.insert(templates,{
+                template = {
+                    template_id = temp.template_id,
+                    game_id = temp.game_id,
+                    description = temp.description,
+                    rule = json.encode(temp.rule),
+                    advanced_rule = json.encode(temp.advanced_rule),
+                },
+                club_id = temp.club_id,
+                visual = true,
+                conf = json.encode({
+                    self_commission = 0,
+                }),
+            })
+        end
+
+        club_id = club.parent
+    until not club_id or club_id == 0
+
+    return templates
+end
+
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     if not club_id then
@@ -296,12 +347,7 @@ function on_cs_club_detail_info_req(msg,guid)
         real_games = table.keys(games)
     end
 
-    local tables = {}
-    for pid,_ in pairs(club_table[club_id]) do
-        local priv_tb = base_private_table[pid]
-        local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-        table.insert(tables,tableinfo)
-    end
+    local tables = get_club_tables(club_id)
 
     local online_count = 0
     local total_count = 0
@@ -316,10 +362,7 @@ function on_cs_club_detail_info_req(msg,guid)
         end
     end
 
-    local templates = {}
-    for ttid,_ in pairs(club_table_template[club_id]) do
-        table.insert(templates,table_template[ttid])
-    end
+    local templates = get_club_templates(club_id,guid)
 
     local club_info = {
         result = enum.ERROR_NONE,
@@ -390,6 +433,7 @@ function on_cs_club_edit_game_type(msg,guid)
 end
 
 function on_cs_club_join_req(msg,guid)
+    dump(msg)
     local club_id = msg.club_id
     local club = base_clubs[club_id]
     if not club then
@@ -408,9 +452,9 @@ function on_cs_club_join_req(msg,guid)
         return
     end
 
-    local player_reqs = player_request:all(club.owner)
-    for _,req in pairs(player_reqs) do
-        if req.who == guid and req.type == "join" then
+    for req_id,_ in pairs(club_request[club_id]) do
+        local req = base_request[req_id]
+        if req and req.who == guid and req.type == "join" then
             onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
                 result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
             })
@@ -423,7 +467,8 @@ function on_cs_club_join_req(msg,guid)
         result = enum.ERROR_NONE,
     })
 
-    player_request[club.owner] = nil
+    player_request[guid] = nil
+    club_request[club_id] = nil
 end
 
 function on_club_create_table(club,player,chair_count,round,rule)
@@ -493,10 +538,6 @@ function on_cs_club_query_memeber(msg,guid)
     })
 end
 
-function on_cs_club_publish_notice(msg,guid)
-
-end
-
 
 function on_cs_club_exit_req(msg,guid)
 
@@ -505,7 +546,7 @@ end
 function on_cs_club_request_list_req(msg,guid)
     local club_id = msg.club_id
     local reqs = {}
-    for rid,_ in pairs(player_request[guid]) do
+    for rid,_ in pairs(club_request[club_id]) do
         local req = base_request[rid]
         local player = base_players[req.who]
         table.insert(reqs,{
@@ -603,8 +644,8 @@ local function on_cs_club_agree_request(msg,guid)
     end
 
     -- 更新数据
-    player_request[request.whoee] = nil
     base_request[request.id] = nil
+    club_request[request.club_id][msg.request_id] = nil
     club_memeber[request.club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -655,7 +696,7 @@ local function on_cs_club_reject_request(msg,guid)
         return
     end
 
-    player_request[request.who][request.id] = nil
+    player_request[request.whoee][request.id] = nil
     base_request[request.id] = nil
     club_memeber[request.club_id] = nil
 
@@ -685,34 +726,11 @@ function on_cs_club_operation(msg,guid)
     end
 end
 
-function on_cs_club_invite_create_req(msg,guid)
-
-end
 
 function on_cs_club_kickout(msg,guid)
 
 end
 
 function on_cs_club_dismiss_table(msg,guid)
-
-end
-
-function on_cs_club_lock_table(msg,guid)
-
-end
-
-function on_cs_club_unlock_table(msg,guid)
-    
-end
-
-function on_cs_online_member_without_gaming(msg,guid)
-
-end
-
-function on_cs_invite_member_to_game(msg,guid)
-
-end
-
-function on_cs_response_invite_to_game(msg,guid)
 
 end

@@ -77,6 +77,12 @@ redismetadata.club.info = redismeta:create({
     }
 })
 
+redismetadata.club.conf = redismeta:create({
+    fields = {
+        
+    }
+})
+
 redismetadata.club.request = redismeta:create({
     fields = {
         club_id = "number",
@@ -105,10 +111,11 @@ redismetadata.privatetable.template = redismeta:create({
     fields = {
         template_id = "number",
         game_type = "number",
-        rule = "string",
+        rule = "json",
         description = "string",
         game_id = "number",
         club_id = "number",
+        advanced_rule = "json",
     }
 })
 

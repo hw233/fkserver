@@ -84,11 +84,17 @@ message TABLE_STATUS_INFO {
 
 message TABLE_TEMPLATE{
     int32   template_id = 1;
-    int32   club_id = 2;
-    int32   game_id = 3;
-    string  description = 4;
-    string  rule = 5;
-    string  advanced_rule = 6;
+    int32   game_id = 2;
+    string  description = 3;
+    string  rule = 4;
+    string  advanced_rule = 5;
+}
+
+message CLUB_TABLE_TEMPLATE{
+    TABLE_TEMPLATE  template = 1;
+    int32           club_id = 2;
+    bool            visual = 3;
+    string          conf = 4;
 }
 
 message CLUB_MEMBER{
