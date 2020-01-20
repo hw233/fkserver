@@ -186,6 +186,14 @@ function on_cs_club_invite_join_club(msg,guid)
         return
     end
 
+    if not base_players[guid] then
+        log.warning("invite join club but inviter is not exists,guid:%s",guid)
+        onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+            result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
+        })
+        return
+    end
+
     -- for req_id,_ in pairs(player_request[club.owner]) do
     --     local req = base_request[req_id]
     --     if req.who == guid and req.type == invite_type then
@@ -196,7 +204,7 @@ function on_cs_club_invite_join_club(msg,guid)
     --     end
     -- end
 
-    club:invite_join(invitee,club,invite_type)
+    club:invite_join(invitee,guid,club,invite_type)
     onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
         result = enum.ERROR_NONE,
     })
@@ -292,9 +300,7 @@ local function get_club_templates(club_id,guid)
                 },
                 club_id = temp.club_id,
                 visual = true,
-                conf = json.encode({
-                    self_commission = 0,
-                }),
+                conf = json.encode({}),
             })
         end
 
@@ -546,7 +552,7 @@ end
 
 local function on_cs_club_administrator(msg,guid)
     if msg.op == club_op.ADD_ADMIN then
-        
+
     elseif msg.op == club_op.REMOVE_ADMIN then
 
     end
@@ -572,7 +578,7 @@ local function on_cs_club_exit(msg,guid)
 
     local club_id = msg.club_id
     if base_players[msg.guid] then
-        base_clubs[club_id].exit(msg.guid)
+        base_clubs[club_id]:exit(msg.guid)
         club_memeber[club_id][msg.guid] = nil
         player_club[msg.guid][club_id] = nil
     end
@@ -702,4 +708,8 @@ end
 
 function on_cs_club_dismiss_table(msg,guid)
 
+end
+
+function on_cs_config_club_table_template(msg,guid)
+    
 end

@@ -264,6 +264,7 @@ message C2S_CONFIG_CLUB_TABLE_TEMPLATE{
     int32 template_id  = 1;
     int32 club_id = 2;
     string conf = 3; //JSON
+    bool  is_visual = 4;
 }
 
 message S2C_CONFIG_CLUB_TABLE_TEMPLATE{
@@ -272,4 +273,5 @@ message S2C_CONFIG_CLUB_TABLE_TEMPLATE{
     int32   template_id = 2;
     int32   club_id = 3;
     string  conf = 4; //JSON
+    bool  is_visual = 5;
 }

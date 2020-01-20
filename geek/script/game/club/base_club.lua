@@ -11,6 +11,7 @@ local enum = require "pb_enums"
 local json = require "cjson"
 local channel = require "channel"
 local base_mail = require "game.mail.base_mail"
+local club_role = require "game.club.club_role"
 
 local reddb = redisopt.default
 
@@ -70,11 +71,15 @@ function base_club:request_join(guid)
     return req_id
 end
 
-function base_club:invite_join(invitee,inviter_club,type)
+function base_club:invite_join(invitee,inviter,inviter_club,type)
     if string.lower(type) == "invite_join" then
-        self:join(invitee)
+        local inviter_role = club_role[self.id][inviter]
+        if inviter_role ~= enum.CRT_ADMIN and inviter_role ~= enum.CRT_PARTNER and inviter_role ~= enum.CRT_BOSS then
+            return enum.ERORR_PARAMETER_ERROR
+        end
+        self:join(invitee,inviter)
         club_member[self.id] = nil
-        return true
+        return enum.ERROR_NONE
     end
 
     if string.lower(type) == "invite_create" then
@@ -86,7 +91,7 @@ function base_club:invite_join(invitee,inviter_club,type)
         })
 
         base_mail.send_mail(mail_info)
-        return mail_info.id
+        return enum.ERROR_NONE
     end
 end
 
@@ -131,13 +136,14 @@ function base_club:reject_request(request)
     return true
 end
 
-function base_club:join(guid)
+function base_club:join(guid,inviter)
     local is_join = channel.call("db.?","msg","SD_JoinClub",{club_id = self.id,guid = guid})
     if not is_join then
         return
     end
 
-	reddb:sadd(string.format("club:member:%s",self.id),guid)
+    reddb:sadd(string.format("club:member:%s",self.id),guid)
+    reddb:hset(string.format("player:info:%d",guid),"parent",inviter)
     reddb:sadd(string.format("player:club:%s",guid),self.id)
 end
 
