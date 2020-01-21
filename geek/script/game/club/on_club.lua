@@ -19,8 +19,9 @@ local base_private_table = require "game.lobby.base_private_table"
 local club_role = require "game.club.club_role"
 local table_template = require "game.lobby.table_template"
 local base_mails = require "game.mail.base_mails"
-local player_mail = require "game.mail.player_mail"
 local club_request = require "game.club.club_request"
+local club_template_conf = require "game.club.club_template_conf"
+local redismetadata = require "redismetadata"
 local enum = require "pb_enums"
 local json = require "cjson"
 require "functions"
@@ -280,6 +281,47 @@ local function get_club_tables(club_id)
     return tables
 end
 
+local function get_template_club_commission(club,template)
+    local tax = template.advanced_rule.tax
+    local commission = tax and tax.AA or (tax.big_win and tax.big_win[3][2] or 0)
+    if club.parent and club.parent ~= 0 then
+        local parent = base_clubs[club.parent]
+        local conf = club_template_conf[parent.id][template.template_id]
+        commission = commission - conf.conf.self_commission
+    end
+
+    return commission
+end
+
+local function get_club_template_confs(club_id)
+    if not club_id then return end
+
+    local origin_club = base_clubs[club_id]
+    local confs = {}
+    repeat
+        local club = base_clubs[club_id]
+        if not club then break end
+
+        for ttid,_ in pairs(club_table_template[club_id]) do
+            local conf = club_template_conf[origin_club.id][ttid]
+            local temp = table_template[ttid]
+            table.insert(confs,{
+                conf = json.encode({
+                    commission = get_template_club_commission(origin_club,temp),
+                    self_commission = conf and conf.conf and conf.conf.self_commission or 0,
+                }),
+                club_id = origin_club.id,
+                template_id = temp.template_id,
+                visual = not conf and true or conf.is_visual,
+            })
+        end
+
+        club_id = club.parent
+    until not club_id or club_id == 0
+
+    return confs
+end
+
 local function get_club_templates(club_id,guid)
     if not club_id then return end
 
@@ -299,8 +341,6 @@ local function get_club_templates(club_id,guid)
                     advanced_rule = json.encode(temp.advanced_rule),
                 },
                 club_id = temp.club_id,
-                visual = true,
-                conf = json.encode({}),
             })
         end
 
@@ -369,6 +409,8 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local templates = get_club_templates(club_id,guid)
+    local club_temp_confs = get_club_template_confs(club_id)
+    
 
     local club_info = {
         result = enum.ERROR_NONE,
@@ -386,6 +428,7 @@ function on_cs_club_detail_info_req(msg,guid)
         table_list = tables,
         gamelist = real_games,
         table_templates = templates,
+        confs = club_temp_confs,
     }
 
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
@@ -711,5 +754,55 @@ function on_cs_club_dismiss_table(msg,guid)
 end
 
 function on_cs_config_club_table_template(msg,guid)
-    
+    local player = base_players[guid]
+    if not player then 
+        send2client_pb(guid,"S2C_CONFIG_CLUB_TABLE_TEMPLATE",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+        return
+    end
+
+    local mconf = msg.conf
+    local club_id = mconf.club_id
+    local template_id = mconf.template_id
+    local ok,conf = pcall(json.decode,mconf.conf)
+    if not ok then 
+        send2client_pb(guid,"S2C_CONFIG_CLUB_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        send2client_pb(guid,"S2C_CONFIG_CLUB_TABLE_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local template = table_template[template_id]
+    if not template then
+        send2client_pb(guid,"S2C_CONFIG_CLUB_TABLE_TEMPLATE",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local c = {
+        is_visual = mconf.is_visual,
+        conf = conf,
+        club_id = club_id,
+        template_id = template_id,
+    }
+
+    reddb:hmset(string.format("conf:%d:%d",club_id,template_id),redismetadata.conf:encode(c))
+    club_template_conf[club_id][template_id] = nil
+
+    send2client_pb(guid,"S2C_CONFIG_CLUB_TABLE_TEMPLATE",{
+        result = enum.ERROR_NONE,
+        conf = c,
+    })
+
+    return
 end

@@ -21,10 +21,10 @@ local typemetafunc = {
     },
     boolean = {
         encode = function(v)
-            return (v and v == "true") and true or false
+            return (v and v == true) and "true" or "false"
         end,
         decode = function(v)
-            return (v and v == true) and "true" or "false"
+            return (v and v == "true") and true or false
         end,
     },
 }

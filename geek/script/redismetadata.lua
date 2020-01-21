@@ -77,9 +77,12 @@ redismetadata.club.info = redismeta:create({
     }
 })
 
-redismetadata.club.conf = redismeta:create({
+redismetadata.conf = redismeta:create({
     fields = {
-        
+        conf = "json",
+        is_visual = "boolean",
+        club_id = "number",
+        template_id = "number",
     }
 })
 
