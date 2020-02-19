@@ -12,6 +12,12 @@ local json = require "cjson"
 local channel = require "channel"
 local base_mail = require "game.mail.base_mail"
 local club_role = require "game.club.club_role"
+local club_template_conf = require "game.club.club_template_conf"
+local redismetadata = require "redismetadata"
+local base_money = require "game.lobby.base_money"
+local club_money_type = require "game.club.club_money_type"
+local club_money = require "game.club.club_money"
+local player_money = require "game.lobby.player_money"
 
 local reddb = redisopt.default
 
@@ -31,21 +37,61 @@ function base_club:create(id,name,icon,owner,tp,parent)
         parent = parent,
     }
 
-    dump(c)
+    local money_info
+    if parent and parent ~= 0 then
+        local parent_money_id = club_money_type[parent]
+        money_info = base_money[parent_money_id]
+    else
+        money_info = {
+            id = reddb:incr("money:global"),
+            club = id,
+            type = enum.MONEY_TYPE_GOLD,
+        }
+    end
 
-    if not channel.call("db.?","msg","SD_CreateClub",c) then
+    if not channel.call("db.?","msg","SD_CreateClub",{
+        info = c,
+        money_info = money_info,
+    }) then
         return
     end
 
+    if not parent or parent == 0 then
+        reddb:hmset(string.format("money:info:%d",money_info.id),{
+            id = money_info.id,
+            club = id,
+            type = enum.MONEY_TYPE_GOLD,
+        })
+    end
+
+    reddb:set(string.format("club:money_type:%d",id),money_info.id)
+    reddb:hset(string.format("club:money:%d",id),money_info.id,0)
     reddb:sadd("club:all",id)
     reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
-    reddb:hset("club:role:"..tostring(id),tostring(owner_guid),enum.CRT_BOSS)
+    reddb:hset(string.format("player:money:%d",owner_guid),money_info.id,0)
+
+    club_money[id] = nil
+    club_money_type[id] = nil
+    player_money[owner_guid][money_info.id] = nil
+
+    if parent and parent ~= 0 then
+        reddb:sadd(string.format("club:team:%d",parent),id)
+    end
+
+    reddb:hset(string.format("club:role:%d",id),owner_guid,enum.CRT_BOSS)
+    club_role[id][owner_guid] = nil
     c.tables = {}
     setmetatable(c,base_club)
     base_club[id] = c
 
     return id
+end
+
+function base_club:exit_from_parent()
+    if self.parent and self.parent ~= 0 then
+        reddb:srem(string.format("club:team:%d",self.parent),self.id)
+    end
 end
 
 function base_club:dismiss()
@@ -74,6 +120,7 @@ end
 function base_club:invite_join(invitee,inviter,inviter_club,type)
     if string.lower(type) == "invite_join" then
         local inviter_role = club_role[self.id][inviter]
+        dump(inviter_role)
         if inviter_role ~= enum.CRT_ADMIN and inviter_role ~= enum.CRT_PARTNER and inviter_role ~= enum.CRT_BOSS then
             return enum.ERORR_PARAMETER_ERROR
         end
@@ -131,7 +178,6 @@ function base_club:reject_request(request)
     end
 
     reddb:srem(string.format("player:request:%s",whoee),request.id)
-
     reddb:del(string.format("request:%s",request.id))
     return true
 end
@@ -190,6 +236,7 @@ function base_club:join_table(player,private_table,chair_count)
     return g_room:join_private_table(player,private_table,chair_count)
 end
 
+
 function base_club:create_table_template(game_id,desc,rule,advanced_rule)
     local ok,ruletb = pcall(json.decode,rule) 
     if not ok or not ruletb then
@@ -208,17 +255,35 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
 
     reddb:hmset(string.format("template:%d",id),info)
     reddb:sadd(string.format("club:template:%d",self.id),id)
+    reddb:hmset(string.format("conf:%d:%d",self.id,id),
+        redismetadata.conf:encode({
+            visual = true,
+            conf = {
+                self_comission = 0,
+            },
+            club_id = self.id,
+            template_id = id,
+        })
+    )
 
+    club_template_conf[self.id][id] = nil
     club_table_template[self.id] = nil
     local _ = table_template[id]
 
+    advanced_rule = type(advanced_rule) == "string" and json.decode(advanced_rule) or advanced_rule
+    local tax = not advanced_rule and 0 or
+        (advanced_rule.consume_type == 1 and advanced_rule.tax.AAScore or advanced_rule.tax.big_win[3][2])
+    
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_ADD,
         template = {
             template = info,
             club_id = self.id,
             visual = true,
-            conf = json.encode({})
+            conf = json.encode({
+                self_comission = 0,
+                commission = tax,
+            })
         }
     })
 
@@ -232,9 +297,11 @@ function base_club:remove_table_template(template_id)
 
     template_id = tonumber(template_id)
     reddb:del(string.format("template:%d",template_id))
+    reddb:del(string.format("template:%d:%d",self.id,template_id))
     reddb:srem(string.format("club:template:%d",self.id),template_id)
     table_template[template_id] = nil
     club_table_template[self.id][template_id] = nil
+    club_template_conf[self.id][template_id] = nil
 
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_DEL,
@@ -278,24 +345,67 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
         advanced_rule = (advanced_rule and advanced_rule ~= "") and advanced_rule or template.advanced_rule
     }
 
-    dump(info)
-
     reddb:hmset(string.format("template:%d",template_id),info)
 
     table_template[template_id] = nil
     club_table_template[self.id][template_id] = nil 
 
+    local tax = not advanced_rule and 0 or
+        (advanced_rule.consume_type == 1 and advanced_rule.tax.AAScore or advanced_rule.tax.big_win[3][2])
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_UPDATE,
         template = {
             template = info,
             club_id = self.id,
             visual = true,
-            conf = json.encode({}),
+            conf = json.encode({
+                self_commission = 0,
+                commission =  tax,
+            }),
         },
     })
 
     return enum.ERROR_NONE,info
+end
+
+function base_club:notify_money(why,oldmoney,changemoney,money_id)
+
+end
+
+function base_club:incr_money(item,why)
+	local oldmoney = club_money[self.id][item.money_id]
+	log.info("club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
+	log.info("money[%d] - p[%d]" , oldmoney,item.money)
+
+	local changes = channel.call("db.?","msg","SD_ChangeClubMoney",{{
+		club = self.id,
+		money = item.money,
+		money_id = item.money_id,
+	}},why)
+
+	if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
+		log.error("db incr_money error,club[%d] money_id[%d] oldmoney[%d]",self.id,item.money_id,oldmoney)
+		return
+	end
+	
+	local dboldmoney = changes[1].oldmoney
+	local dbnewmoney = changes[1].newmoney
+	
+	if dboldmoney ~= oldmoney then
+		log.error("db incrmoney error,club[%d] money_id[%d] oldmoney[%d] dboldmoney[%d]",self.id,item.money_id,oldmoney,dboldmoney)
+		return
+	end
+
+    local newmoney = reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money)
+    if dbnewmoney ~= newmoney then
+        log.error("db incrmoney error,club[%d] money_id[%d] newmoney[%d] dbnewmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
+        return
+    end
+    
+    club_money[self.id][item.money_id] = nil
+	log.info("incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
+	self:notify_money(why,oldmoney,newmoney-oldmoney,item.money_id)
+	return oldmoney,newmoney
 end
 
 

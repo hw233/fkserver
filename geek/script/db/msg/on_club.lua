@@ -4,42 +4,55 @@ local log = require "log"
 local enum = require "pb_enums"
 
 function on_sd_create_club(msg)
-    if not msg.owner or not msg.id then
-        log.error("on_sd_create_club invalid id or owner,id:%s,owner:%s",msg.id,msg.owner)
+    dump(msg)
+    local club_info = msg.info
+    local money_info = msg.money_info
+    if not club_info.owner or not club_info.id then
+        log.error("on_sd_create_club invalid id or owner,id:%s,owner:%s",club_info.id,club_info.owner)
         return
     end
 
     local gamedb = dbopt.game
 
-    if msg.parent and msg.parent ~= 0 then
-        local res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",msg.parent)
+    if club_info.parent and club_info.parent ~= 0 then
+        local res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
         if res.errno then
             log.error("on_sd_create_club query parent error:%d,%s",res.errno,res.err)
             return
         end
     end
 
-    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",msg.owner)
+    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",club_info.owner)
     if res.errno then
         log.error("on_sd_create_club check owner id error:%d,%s",res.errno,res.err)
         return
     end
 
     if res[1].c ~= 1 then
-        log.error("on_sd_create_club check owner got wrong owner count,owner:%s",msg.owner)
+        log.error("on_sd_create_club check owner got wrong owner count,owner:%s",club_info.owner)
         return
     end
 
     gamedb:query("SET NAMES = utf8;")
     gamedb:query("SET AUTOCOMMIT = 0;")
 
+    res = gamedb:query("SELECT COUNT(*) AS c FROM t_money WHERE id = %d;",money_info.id)
+    if res.errno then
+        log.error("on_sd_create_club check money error:%d,%s",res.errno,res.err)
+        return
+    end
+
+    if res[1].c == 0 then
+        dbopt.game:query("INSERT INTO t_money(id,club,type) VALUES(%d,%d,%d);",money_info.id,club_info.id,money_info.type)
+    end
+
     local transqls = {
         "BEGIN;",
         string.format("INSERT INTO t_club(id,name,owner,icon,type,parent) VALUES(%d,'%s',%d,'%s',%d,%d);",
-                    msg.id,msg.name,msg.owner,msg.icon,msg.type,msg.parent),
-        string.format("INSERT INTO t_club_money(club,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_GOLD),
-        string.format("INSERT INTO t_club_money(club,money_type,money) VALUES(%d,%d,0);",msg.id,enum.ITEM_PRICE_TYPE_ROOM_CARD),
-        string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",msg.id,msg.owner),
+                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent),
+        string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0);",club_info.id,money_info.id),
+        string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_info.id,club_info.owner),
+        string.format("INSERT INTO t_player_money(guid,money_id,money) VALUES(%d,%d,0);",club_info.owner,money_info.id),
         "COMMIT;",
     }
 
@@ -113,4 +126,54 @@ end
 
 function on_sd_dismiss_club(msg)
 
+end
+
+function on_sd_add_club_member(msg)
+    local club_id = msg.club_id
+    local guid = msg.guid
+
+    dump(msg)
+
+    dbopt.game:query("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_id,guid)
+end
+
+local function incr_club_money(club,money_id,money,why)
+	local res = dbopt.game:query("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id)
+	if res.errno then
+		log.error("incr_club_money SELECT money error,errno:%d,err:%s",res.errno,res.err)
+		return
+	end
+
+    local oldmoney = tonumber(res[1].money)
+	res = dbopt.game:query("UPDATE t_club_money SET money = money + %d WHERE club = %d AND money_id = %d;",money,club,money_id)
+	if res.errno then
+		log.error("incr_club_money change money error,errno:%d,err:%s",res.errno,res.err)
+		return
+    end
+    
+    res = dbopt.game:query("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id)
+    if res.errno then
+		log.error("incr_club_money select new money error,errno:%d,err:%s",res.errno,res.err)
+		return
+    end
+
+	local newmoney = tonumber(res[1].money)
+
+	dbopt.log:query("INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
+		club,money_id,money,oldmoney,newmoney,why)
+	return oldmoney,newmoney
+end
+
+function on_sd_change_club_money(items,why)
+    dump(items)
+	local changes = {}
+	for _,item in pairs(items) do
+		local oldmoney,newmoney = incr_club_money(item.club,item.money_id,item.money,why)
+		table.insert(changes,{
+			oldmoney = oldmoney,
+			newmoney = newmoney,
+		})
+    end
+
+	return changes
 end

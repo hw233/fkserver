@@ -1,4 +1,5 @@
 local pb = require "pb"
+local protoc = require "protoc"
 
 pb.loadfile("./geek/pb/error_code.proto")
 pb.loadfile("./geek/pb/enum_define.proto")

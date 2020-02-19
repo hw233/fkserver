@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-message ObjectField{
+message OBJECT_FIELD{
 	enum Type{ 
 		Nil = 0;
 		Number = 1;
@@ -13,11 +13,16 @@ message ObjectField{
 }
 
 //更新对象属性
-message SyncObjectField{
+message SYNC_OBJECT_FIELDS{
 	enum MsgID{ Nil = 0;ID = 998;}
 	string 		object_type = 2; //对象类型（字符)
-	ObjectField object_id = 3; // 对象id
-	repeated ObjectField fields = 4;//要同步的字段
+	OBJECT_FIELD object_id = 3; // 对象id
+	repeated OBJECT_FIELD fields = 4;//要同步的字段
+}
+
+enum CLUB_TYPE{
+    CT_DEFAULT = 0;//亲友群
+    CT_UNION = 1;//联盟
 }
 
 
@@ -49,11 +54,19 @@ message PLAYER_BASE_INFO {
 
 //俱乐部信息
 message CLUB_BASE_INFO {
-    int32   id = 1; 
-    string  name = 2;
-    string  icon = 3;
-    int32   type = 4;
-    int32   parent = 5;
+    int32       id = 1; 
+    string      name = 2;
+    string      icon = 3;
+    int32       type = 4;
+    int32       parent = 5;
+}
+
+//团队信息
+message CLUB_TEAM_INFO{
+    CLUB_BASE_INFO base = 1;
+    PLAYER_BASE_INFO boss = 2;
+    int32 money = 3; //金额
+    int32 commission = 4; //返利佣金
 }
 
 //单个座位信息
@@ -98,6 +111,7 @@ message CLUB_TABLE_TEMPLATE{
 message CLUB_MEMBER{
     PLAYER_BASE_INFO info = 1;
     int32 role = 2;
+    int32 money = 3;
 }
 
 message REQUEST_INFO{
@@ -119,6 +133,7 @@ enum PAY_OPTION{
     BOSS = 2;
     ROOM_OWNER = 3;
 }
+
 
 message CLUB_TEMPLATE_CONF{
     int32   template_id  = 1;

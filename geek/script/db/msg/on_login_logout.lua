@@ -1794,12 +1794,10 @@ function on_ld_reg_account(msg)
 		return
 	end
 
-	for money_type = 0,2 do
-		res = dbopt.game:query([[INSERT INTO t_player_money(guid,money_type) VALUES(%d,%d);]],msg.guid,money_type)
-		if res.errno then
-			log.error("on_ld_reg_account insert into t_player_money throw exception.[%d],[%s]",res.errno,res.err)
-			return
-		end
+	res = dbopt.game:query([[INSERT INTO t_player_money(guid,money_id) VALUES(%d,%d);]],msg.guid,0)
+	if res.errno then
+		log.error("on_ld_reg_account insert into t_player_money throw exception.[%d],[%s]",res.errno,res.err)
+		return
 	end
 
 	res = dbopt.log:query(
@@ -2765,12 +2763,50 @@ function on_reg_account(msg)
 	end
 end
 
-function on_sd_change_player_money(msg)
-	for _,item in pairs(msg) do
-		local guid = item.guid
-		local money_type = item.money_type
-		local money = item.money
-		local where = item.where or 0
-		dbopt.game:query("UPDATE t_player_money SET money = %d WHERE guid = %d AND money_type = %d AND where = %d;",money,guid,money_type,where)
+local function incr_player_money(guid,money_id,money,where,why)
+	local res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND where = %d;",guid,money_id,where)
+	if res.errno then
+		log.error("incr_player_money SELECT money error,errno:%d,err:%s",res.errno,res.err)
+		return
 	end
+
+	local oldmoney = tonumber(res[1].money)
+	res = dbopt.game:query("UPDATE t_player_money SET money = money + %d WHERE guid = %d AND money_id = %d AND where = %d;",money,guid,money_id,where)
+	if res.errno then
+		log.error("incr_player_money change money error,errno:%d,err:%s",res.errno,res.err)
+		return
+	end
+
+	res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND where = %d",guid,money_id,where)
+	if res.errno then
+		log.error("incr_player_money select new money error,errno:%d,err:%s",res.errno,res.err)
+		return
+	end
+
+	local newmoney = tonumber(res[1].money)
+
+	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,where,opt_type) VALUES(%d,%d,%d,%d,%d,%d)",
+		guid,money_id,money,oldmoney,newmoney,where,why)
+	return oldmoney,newmoney
+end
+
+function on_sd_change_player_money(items,why)
+	local changes = {}
+	for _,item in pairs(items) do
+		local oldmoney,newmoney = incr_player_money(item.guid,item.money_id,item.money,item.where or 0,why)
+		table.insert(changes,{
+			oldmoney = oldmoney,
+			newmoney = newmoney,
+		})
+	end
+
+	return changes
+end
+
+
+function on_sd_new_money_type(msg)
+	local id = msg.id
+	local club_id = msg.club_id
+	local money_type = msg.type
+	dbopt.game:query("INSERT INTO t_money(id,type,club_id) VALUES(%d,%d,%s)",id,money_type,club_id)
 end

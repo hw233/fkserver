@@ -3,11 +3,12 @@ local redisopt = require "redisopt"
 local reddb = redisopt.default
 
 local function get_role(t,guid)
-    local role = reddb:hget("club:role:"..tostring(t.club),tostring(guid))
+    local role = reddb:hget("club:role:"..tostring(t.club),guid)
     if not role or role == "" then
         return nil
     end
-    t[guid] = tonumber(role)
+    role = tonumber(role)
+    t[guid] = role
     return role
 end
 

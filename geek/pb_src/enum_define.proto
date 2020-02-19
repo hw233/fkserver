@@ -105,6 +105,10 @@ enum ITEM_PRICE_TYPE {
 	ITEM_PRICE_TYPE_DIAMOND = 2;							//钻石
 }
 
+enum MONEY_CONST_ID{
+	ROOM_CARD = 0;	//房卡
+}
+
 // 物品种类
 enum ITEM_TYPE {
 	ITEM_TYPE_MONEY = 0;									// 货币，用于奖励
@@ -231,6 +235,8 @@ enum LOG_MONEY_OPT_TYPE {
 	LOG_MONEY_OPT_TYPE_SHELONGMEN = 45;//射龙门
 	LOG_MONEY_OPT_TYPE_PROXY_CASH_MONEY = 46;				//代理提现
 	LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE = 47;				//贵州麻将
+	LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB = 48;			//联盟下分
+	LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB = 49;		//联盟上分
 }
 
 // 游戏准备模式

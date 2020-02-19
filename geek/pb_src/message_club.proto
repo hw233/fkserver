@@ -5,13 +5,13 @@ import "common.proto";
 
 //-----------------------消息协议---------------------------
 
-//请求俱乐部列表
+//请求所在俱乐部列表
 message C2S_CLUBLIST_REQ {
     enum MsgID {NIL = 0;ID = 14004;}
     int32 type = 1;
 }
 
-//俱乐部列表信息
+//俱乐部所在列表信息
 message S2C_CLUBLIST_RES { 
     enum MsgID {NIL = 0;ID = 14005;}
     int32 result = 1;
@@ -103,7 +103,8 @@ message S2C_CLUB_PLAYER_LIST_RES{
     enum MsgID {NIL = 0;ID = 14025;}
     
     int32 result = 1;
-    repeated CLUB_MEMBER player_list = 2; //玩家列表
+    int32 club_id = 2;
+    repeated CLUB_MEMBER player_list = 3; //玩家列表
 }
 
 //俱乐部成员管理，基础操作
@@ -112,21 +113,24 @@ message C2S_CLUB_OP_REQ{
     enum C2S_CLUB_OP_TYPE
     {
         NONE = 0;
-        ADD_TO_BLACK = 1;       //1、拉黑
-        REMOVE_TO_BLACK = 2;    //2、从黑名单移除
-        ADD_ADMIN = 3;          //3、设置管理员
+        FORBID_GAME = 1;       //1、禁止游戏
+        CANCEL_FORBID = 2;    //2、取消禁止
+        ADD_ADMIN = 3;          //3、添加管理
         REMOVE_ADMIN = 4;       //4、移除管理
-        REMOVE_PLAYER = 5;      //5、踢出亲友圈
-        OP_JOIN_AGREED = 6;        //6、同意加入俱乐部
-        OP_JOIN_REJECTED = 7;      //7、拒绝加入俱乐部
-        OP_EXIT_AGREED = 8;        //8、同意退出俱乐部
-        OP_EXIT_REJECTED = 9;      //9、拒绝退出俱乐部
-        OP_APPLY_EXIT = 10;        //10、非管理员申请退出俱乐部
+        ADD_PARTNER = 5;          //5、添加合伙人
+        REMOVE_PARTNER = 6;       //6、移除合伙人
+        BLOCK_CLUB = 7;          //7、封停俱乐部
+        UNBLOCK_CLUB = 8;       //8、取消封停
+        OP_EXIT_AGREED = 9;        //9、踢出俱乐部    
+        OP_JOIN_AGREED = 10;        //10、同意加入俱乐部
+        OP_JOIN_REJECTED = 11;      //11、拒绝加入俱乐部
+        OP_APPLY_EXIT = 12;        //12、退出俱乐部
+        CLOSE_CLUB = 13;            //打烊俱乐部
     }
 
     int32 op = 1;
     int32 club_id = 2;
-    int32 guid = 3;
+    int32 target_id = 3;
     int32 request_id = 4;
 }
 
@@ -134,7 +138,8 @@ message C2S_CLUB_OP_REQ{
 message S2C_CLUB_OP_RES{ 
     enum MsgID {NIL = 0;ID = 14028;}
     int32 result = 1;
-    C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE op_type = 2;
+    int32 op = 2;
+    int32 target_id = 3;
 }
 
 
@@ -269,4 +274,39 @@ message S2C_CONFIG_CLUB_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14072;}
     int32   result = 1;
     CLUB_TEMPLATE_CONF conf = 2;
+}
+
+//联盟成员列表请求
+message C2S_CLUB_TEAM_LIST_REQ{ 
+    enum MsgID {NIL = 0;ID = 14073;}
+    int32 club_id = 1;//俱乐部ID
+}
+
+//联盟成员列表数据
+message S2C_CLUB_TEAM_LIST_RES{ 
+    enum MsgID {NIL = 0;ID = 14074;}
+    
+    int32 result = 1;
+    repeated CLUB_TEAM_INFO teams = 2; //团队列表
+}
+
+//转帐请求
+message C2S_CLUB_TRANSFER_MONEY_REQ{
+    enum MsgID {NIL = 0;ID = 14077;}
+    int32 source_type = 1;
+    int32 source_id = 2;
+    int32 target_type = 3;
+    int32 target_id = 4;
+    int32 money = 5;
+}
+
+//转帐回复
+message S2C_CLUB_TRANSFER_MONEY_RES{
+    enum MsgID {NIL = 0;ID = 14078;}
+    int32 result = 1;
+    int32 source_type = 2;
+    int32 source_id = 3;
+    int32 target_type = 4;
+    int32 target_id = 5;
+    int32 money = 6;
 }
