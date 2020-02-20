@@ -9,7 +9,7 @@ setmetatable(club_money,{
             __index = function(t,money_id)
                 local money = reddb:hget(string.format("club:money:%d",club_id),money_id)
                 money = tonumber(money) or 0
-                t[money_id] = money
+                -- t[money_id] = money
                 return money
             end
         })

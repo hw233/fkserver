@@ -26,6 +26,7 @@ local club_money_type = require "game.club.club_money_type"
 local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local redismetadata = require "redismetadata"
+local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
 require "functions"
@@ -409,23 +410,56 @@ function on_cs_club_detail_info_req(msg,guid)
         end
     end
 
+    local club_status = {
+        status = 0,
+        player_count = total_count,
+        online_player_count = online_count,
+    }
+
     local templates = get_club_templates(club_id,guid)
     local club_temp_confs = get_club_template_confs(club_id)
-    
+    local money_id = club_money_type[club_id]
+    local boss = base_players[club.owner]
+    local myself = base_players[guid]
+    local my_team_info = {
+        info = {
+            guid = myself.guid,
+            icon = myself.icon,
+            nickname = myself.nickname,
+            sex = myself.sex,
+        },
+        role = tonumber(club_role[club_id][guid]) or enum.CRT_PLAYER,
+        money = {
+            money_id = money_id,
+            count = player_money[guid][money_id]
+        }
+    }
+
+    local team_info = {
+        base = {
+            id = club_id,
+            name = club.name,
+            icon = club.icon,
+            type = club.type,
+        },
+        boss = {
+            guid = boss.guid,
+            icon = boss.icon,
+            nickname = boss.nickname,
+            sex = boss.sex,
+        },
+        money = {{
+            money_id = money_id,
+            count = club_money[club_id][money_id] or 0
+        }},
+        money_id = money_id,
+    }
 
     local club_info = {
         result = enum.ERROR_NONE,
-        club_info = {
-            id = club_id,
-            name = club.name,
-        },
-        my_club_info = {
-            role = tonumber(club_role[club_id][guid]) or enum.CRT_PLAYER,
-        },
-        closed = false,
-        player_count = total_count,
-        player_num_online = online_count,
-        club_diamond = base_players[club.owner].diamond,
+        self_info = team_info,
+        my_team_info = my_team_info,
+        status = club_status,
         table_list = tables,
         gamelist = real_games,
         table_templates = templates,
@@ -556,6 +590,7 @@ function on_cs_club_query_memeber(msg,guid)
         return
     end
 
+    local money_id = club_money_type[club_id]
     local ms = {}
     for mem,_ in pairs(club_member[club_id]) do
         local p = base_players[mem]
@@ -565,9 +600,13 @@ function on_cs_club_query_memeber(msg,guid)
                     guid = p.guid,
                     icon = p.icon,
                     nickname = p.nickname,
+                    sex = p.sex,
                 },
                 role = club_role[club_id][p.guid] or enum.CRT_PLAYER,
-                money = player_money[p.guid][club_money_type[club_id]] or 0,
+                money = {
+                    money_id = money_id,
+                    count = player_money[p.guid][money_id] or 0,
+                }
             })
         end
     end
@@ -961,7 +1000,12 @@ function on_cs_club_team_list(msg,guid)
     local team_ids = club_team[club_id]
     for team_id,_ in pairs(team_ids) do
         local team_club = base_clubs[team_id]
+        local team_money_id = club_money_type[team_id]
         local boss = base_players[team_club.owner]
+        local moneies = {{
+            money_id = team_money_id,
+            count = club_money[team_id][team_money_id]
+        }}
         table.insert(teams,{
             base = team_club,
             boss = {
@@ -970,7 +1014,8 @@ function on_cs_club_team_list(msg,guid)
                 nickname = boss.nickname,
                 sex = boss.sex,
             },
-            money = club_money[team_id][club_money_type[team_id]],
+            money = moneies,
+            money_id = team_money_id,
             commission = 0,
         })
     end
@@ -1011,7 +1056,7 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
     end
 
     local role = club_role[target_club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.BOSS then
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         res.result = enum.ERROR_NOT_IS_CLUB_BOSS
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
@@ -1026,15 +1071,46 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
         return
     end
 
-    p:incr_money({
+    -- reddb:multi()
+
+    if not p:incr_money({
         money_id = money_id,
         money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return        
+    end
 
-    club:incr_money({
+    if not club:incr_money({
         money_id = money_id,
         money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
+
+    -- reddb:exec()
+
+    onlineguid.send(p.guid,"SYNC_OBJECT",util.format_sync_info(
+        "PLAYER",{
+            guid = p.guid,
+            club_id = club.id,
+            money_id = money_id,
+        },{
+            money = player_money[p.guid][money_id],
+        }))
+
+    onlineguid.send(club.owner,"SYNC_OBJECT",util.format_sync_info(
+        "CLUB",{
+            id = club.id,
+            money_id = money_id,
+        },{
+            money = club_money[club.id][money_id],
+        }))
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
@@ -1062,19 +1138,23 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
         return
     end
 
-    -- if not club_team[source_club_id][target_club_id] and not club_team[target_club_id][source_club_id] then
-    --     res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
-    --     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-    --     return
-    -- end
+    
+    local parent_club_id = club_team[source_club_id][target_club_id] and source_club_id or
+        (club_team[target_club_id][source_club_id] and target_club_id or nil)
+    if not parent_club_id then
+        res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
-    -- local role = club_role[source_club_id][guid]
-    -- if role ~= enum.CRT_ADMIN and role ~= enum.BOSS then
-    --     res.result = enum.ERROR_NOT_IS_CLUB_BOSS
-    --     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-    --     return
-    -- end
+    local role = club_role[parent_club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
+    local why = parent_club_id == source_club_id and enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB or enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB
     local money_id = club_money_type[target_club_id]
 
     local orgin_money = club_money[source_club_id][money_id]
@@ -1084,15 +1164,45 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
         return
     end
 
-    sourceclub:incr_money({
+    -- reddb:multi()
+
+    if not sourceclub:incr_money({
         money_id = money_id,
         money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },why) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
-    targetclub:incr_money({
+    if not targetclub:incr_money({
         money_id = money_id,
         money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },why) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
+
+    -- reddb:exec()
+
+    onlineguid.send(sourceclub.owner,"SYNC_OBJECT",util.format_sync_info(
+        "CLUB",{
+            id = sourceclub.id,
+            money_id = money_id,
+        },{
+            money = club_money[sourceclub.id][money_id],
+        }))
+
+    onlineguid.send(targetclub.owner,"SYNC_OBJECT",util.format_sync_info(
+        "CLUB",{
+            id = targetclub.id,
+            money_id = money_id,
+        },{
+            money = club_money[targetclub.id][money_id],
+        }))
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
@@ -1127,7 +1237,7 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
     end
 
     local role = club_role[source_club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.BOSS then
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         res.result = enum.ERROR_NOT_IS_CLUB_BOSS
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
@@ -1142,15 +1252,45 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
         return
     end
 
-    p:incr_money({
+    -- reddb:multi()
+
+    if not p:incr_money({
         money_id = money_id,
         money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
-    club:incr_money({
+    if not club:incr_money({
         money_id = money_id,
         money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB) then
+        -- reddb:discard()
+        res.result = enum.ERROR_CLUB_UNKOWN
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
+    -- reddb:exec()
+
+    onlineguid.send(p.guid,"SYNC_OBJECT",util.format_sync_info(
+        "PLAYER",{
+            guid = p.guid,
+            club_id = club.id,
+            money_id = money_id,
+        },{
+            money = player_money[p.guid][money_id],
+        }))
+
+    onlineguid.send(club.owner,"SYNC_OBJECT",util.format_sync_info(
+        "CLUB",{
+            id = club.id,
+            money_id = money_id,
+        },{
+            money = club_money[club.id][money_id],
+        }))
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
@@ -1175,7 +1315,7 @@ function on_cs_transfer_money(msg,guid)
     end
 
     if source_type == 0 then
-        if target_type == 1 then 
+        if target_type == 1 then
             transfer_money_player2club(msg.source_id,msg.target_id,money,guid)
             return
         end

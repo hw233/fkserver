@@ -75,16 +75,12 @@ message C2S_CLUB_INFO_REQ{
 message S2C_CLUB_INFO_RES {
     enum MsgID {NIL = 0;ID = 14017;}
     int32 result = 1;
-    int32 club_id = 2;
-    CLUB_MEMBER my_club_info = 3;
-    bool closed = 6;           //歇业
+    CLUB_TEAM_INFO 	self_info = 2;
+    CLUB_MEMBER     my_team_info = 3;
+    CLUB_STATUS_INFO status = 4;
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
-    int32 club_diamond = 8;    //钻石数量  群主和管理员可见  否则 0不充足  1充足
-    int32 player_count = 9;//俱乐部总人数
     repeated CLUB_TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
     repeated int32 gamelist = 11;
-    int32 player_num_online = 12; //在线人数
-    bool  allow_create_room = 13;
     repeated CLUB_TEMPLATE_CONF confs = 14;
 }
 

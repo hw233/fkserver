@@ -56,17 +56,6 @@ local function save_player(guid, info_)
 		header_icon = info_.header_icon,
 		slotma_addition = info_.slotma_addition,
 	}
-	
-	-- 基本数据
-	--[[redis_cmd_query(string.format("HGET player_base_info %d", guid), function (reply)
-		if reply:is_string() then
-			local info = pb.decode("PlayerBaseInfo", from_hex(reply:get_string()))
-			
-			info.money = info.money or 0
-			info.bank = info.bank or 0
-			db_execute(db, "UPDATE t_player SET $FIELD$ WHERE guid=" .. guid .. "", info)
-		end
-	end)--]]
 
 	info.money = info.money or 0
 	--info.bank = info.bank or 0
@@ -1754,129 +1743,48 @@ end
 
 function on_ld_reg_account(msg)
 	dump(msg)
-	-- local validatebox_ip = reddb:get("validatebox_feng_ip")
-	-- local is_validatebox_block = validatebox_ip and tonumber(validatebox_ip) or 0
-	-- local account = msg.account
 
-	local res = dbopt.account:query(
-					[[INSERT INTO t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-						register_time,ip,version,phone_type,package_name) 
-					VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
-					msg.guid,
-					msg.account,
-					msg.nickname,
-					msg.level,
-					msg.login_ip,
-					msg.open_id,
-					msg.icon,
-					msg.login_ip,
-					msg.version,
-					msg.phone_type or "unkown",
-					msg.package_name or ""
-				)
-
+	local transqls = {
+		"BEGIN;",
+		string.format([[INSERT INTO account.t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
+			register_time,ip,version,phone_type,package_name) 
+			VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
+			msg.guid,
+			msg.account,
+			msg.nickname,
+			msg.level,
+			msg.login_ip,
+			msg.open_id,
+			msg.icon,
+			msg.login_ip,
+			msg.version,
+			msg.phone_type or "unkown",
+			msg.package_name or ""),
+		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url) 
+			VALUES(%d,'%s','%s','%s','%s');]],
+			msg.guid,
+			msg.account,
+			msg.nickname,
+			msg.level,
+			msg.icon),
+		string.format([[INSERT INTO game.t_player_money(guid,money_id) VALUES(%d,%d);]],msg.guid,enum.ROOM_CARD_ID),
+		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
+				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+			msg.guid,
+			msg.version,
+			msg.phone_type or "unkown",
+			msg.ip,
+			msg.platform_id or ""),
+		"COMMIT;"
+	}
+	local trans = dbopt.game:transaction()
+	local res = trans:execute(table.concat(transqls,"\n"))
+	dump(res)
 	if res.errno then
+		trans:rollback()
 		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
 		return
 	end
-
-	res = dbopt.game:query([[INSERT INTO t_player(guid,account,nickname,level,head_url) 
-					VALUES(%d,'%s','%s','%s','%s');]],
-					msg.guid,
-					msg.account,
-					msg.nickname,
-					msg.level,
-					msg.icon
-				)
-
-	if res.errno then
-		log.error("on_ld_reg_account insert into t_player throw exception.[%d],[%s]",res.errno,res.err)
-		return
-	end
-
-	res = dbopt.game:query([[INSERT INTO t_player_money(guid,money_id) VALUES(%d,%d);]],msg.guid,0)
-	if res.errno then
-		log.error("on_ld_reg_account insert into t_player_money throw exception.[%d],[%s]",res.errno,res.err)
-		return
-	end
-
-	res = dbopt.log:query(
-		[[INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
-			VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
-		msg.guid,
-		msg.version,
-		msg.phone_type or "unkown",
-		msg.ip,
-		msg.platform_id or ""
-	)
-
-	if res.errno then
-		log.error("on_ld_reg_account update t_log_login throw exception.[%d],[%s]",res.errno,res.err)
-		return
-	end
-
-	-- local reply = dbopt.account:query(sql)
-	-- if reply then
-	-- 		local inviter_guid = reply.inviter_guid
-	-- 		local inviter_account = reply.inviter_account
-
-	-- 		reply.guest_account_result = reply
-	-- 		reply.phone = msg.phone
-	-- 		reply.phone_type = msg.phone_type
-	-- 		reply.version = msg.version
-	-- 		reply.channel_id = msg.channel_id
-	-- 		reply.package_name = msg.package_name
-	-- 		reply.imei = msg.imei
-	-- 		reply.ip = msg.ip
-	-- 		reply.ip_area = msg.ip_area
-	-- 		reply.platform_id = msg.platform_id
-
-	-- 		if reply.ret == 0 and reply.vip == 100 then
-	-- 			local imeitemp = reply.imei
-	-- 			local deprecated_imeitemp = msg.deprecated_imei
-	-- 			if imeitemp ~= msg.imei then
-	-- 				deprecated_imeitemp = msg().imei()
-	-- 			end
-
-	-- 			sql = string.format( [[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`,
-	-- 											`login_version`, `login_channel_id`, `login_package_name`,  `login_imei`, `login_ip`,
-	-- 											`channel_id` , `is_guest` , `create_time` , `register_time` , `deprecated_imei` , `platform_id`,`seniorpromoter`) "
-	-- 											"VALUES('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ,'%s' ,
-	-- 											FROM_UNIXTIME('%s'), if ('%d'>'0', FROM_UNIXTIME('%d'), null), '%s' , '%s' , '%s') ]]
-	-- 											,reply.guid
-	-- 											,msg.phone
-	-- 											,msg.phone_type
-	-- 											,msg.version
-	-- 											,msg.channel_id
-	-- 											,msg.package_name
-	-- 											,imeitemp
-	-- 											,msg.ip
-	-- 											,reply.channel_id
-	-- 											,reply.is_guest
-	-- 											,reply.create_time
-	-- 											,reply.register_time
-	-- 											,deprecated_imeitemp
-	-- 											,msg.platform_id
-	-- 											,reply.seniorpromoter
-	-- 											)
-	-- 			log.info(sql)
-	-- 			db.account:query(sql)
-
-	-- 			-- 插入代理关系
-	-- 			db.account:query(
-	-- 				"INSERT INTO proxy.player_proxy_relationship(guid,proxy_guid,proxy_account) VALUES(%d,%d,'%s')"
-	-- 				, reply.guid, inviter_guid, inviter_account
-	-- 				)
-	-- 		else
-	-- 			-- 维护中
-	-- 			log.info( "game is MaintainStatus" )
-	-- 		end
-	-- 	end
-	-- else
-	-- 	log.error( "guest imei[%s] failed", msg.imei )
-	-- 	reply.guest_account_result = LOGIN_RESULT_DB_ERR
-	-- end
-	-- return reply
 end
 
 
@@ -2764,20 +2672,22 @@ function on_reg_account(msg)
 end
 
 local function incr_player_money(guid,money_id,money,where,why)
-	local res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND where = %d;",guid,money_id,where)
+	local res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where)
 	if res.errno then
 		log.error("incr_player_money SELECT money error,errno:%d,err:%s",res.errno,res.err)
 		return
 	end
 
+	dump(res)
+
 	local oldmoney = tonumber(res[1].money)
-	res = dbopt.game:query("UPDATE t_player_money SET money = money + %d WHERE guid = %d AND money_id = %d AND where = %d;",money,guid,money_id,where)
+	res = dbopt.game:query("UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;",money,guid,money_id,where)
 	if res.errno then
 		log.error("incr_player_money change money error,errno:%d,err:%s",res.errno,res.err)
 		return
 	end
 
-	res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND where = %d",guid,money_id,where)
+	res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d",guid,money_id,where)
 	if res.errno then
 		log.error("incr_player_money select new money error,errno:%d,err:%s",res.errno,res.err)
 		return
@@ -2785,8 +2695,8 @@ local function incr_player_money(guid,money_id,money,where,why)
 
 	local newmoney = tonumber(res[1].money)
 
-	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,where,opt_type) VALUES(%d,%d,%d,%d,%d,%d)",
-		guid,money_id,money,oldmoney,newmoney,where,why)
+	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,opt_type) VALUES(%d,%d,%d,%d,%d,%d)",
+		guid,money_id,oldmoney,newmoney,where,why)
 	return oldmoney,newmoney
 end
 

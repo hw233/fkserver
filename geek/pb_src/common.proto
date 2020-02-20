@@ -1,23 +1,11 @@
 syntax = "proto3";
 
-message OBJECT_FIELD{
-	enum Type{ 
-		Nil = 0;
-		Number = 1;
-		String = 2;
-		Json = 3;
-	};
-	string 			 name = 1;  //字段名字
-	Type             type = 2; //字段数型
-	string 			 value = 3;//字符值
-}
 
 //更新对象属性
-message SYNC_OBJECT_FIELDS{
-	enum MsgID{ Nil = 0;ID = 998;}
-	string 		object_type = 2; //对象类型（字符)
-	OBJECT_FIELD object_id = 3; // 对象id
-	repeated OBJECT_FIELD fields = 4;//要同步的字段
+message SYNC_OBJECT{
+	enum MsgID{ Nil = 0;ID = 996;}
+	string    id = 1; // 对象id,JSON
+	string    data = 2;//要同步的字段,JSON
 }
 
 enum CLUB_TYPE{
@@ -61,12 +49,25 @@ message CLUB_BASE_INFO {
     int32       parent = 5;
 }
 
+//CLUB状态信息
+message CLUB_STATUS_INFO{
+    int32 status = 1;//状态 0正常 1歇业
+    int32 player_count = 2;//总人数
+    int32 online_player_count = 3; //在线人数
+}
+
+message MONEY_INFO{
+    int32 money_id = 1;//货币id
+    int32 count = 2;//数量
+}
+
 //团队信息
 message CLUB_TEAM_INFO{
     CLUB_BASE_INFO base = 1;
     PLAYER_BASE_INFO boss = 2;
-    int32 money = 3; //金额
-    int32 commission = 4; //返利佣金
+    int32 money_id = 3;//货币id
+    repeated MONEY_INFO money = 4; //金额
+    int32 commission = 5; //返利佣金
 }
 
 //单个座位信息
@@ -111,7 +112,7 @@ message CLUB_TABLE_TEMPLATE{
 message CLUB_MEMBER{
     PLAYER_BASE_INFO info = 1;
     int32 role = 2;
-    int32 money = 3;
+    MONEY_INFO money = 3;
 }
 
 message REQUEST_INFO{

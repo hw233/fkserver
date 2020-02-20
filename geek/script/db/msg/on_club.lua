@@ -36,16 +36,6 @@ function on_sd_create_club(msg)
     gamedb:query("SET NAMES = utf8;")
     gamedb:query("SET AUTOCOMMIT = 0;")
 
-    res = gamedb:query("SELECT COUNT(*) AS c FROM t_money WHERE id = %d;",money_info.id)
-    if res.errno then
-        log.error("on_sd_create_club check money error:%d,%s",res.errno,res.err)
-        return
-    end
-
-    if res[1].c == 0 then
-        dbopt.game:query("INSERT INTO t_money(id,club,type) VALUES(%d,%d,%d);",money_info.id,club_info.id,money_info.type)
-    end
-
     local transqls = {
         "BEGIN;",
         string.format("INSERT INTO t_club(id,name,owner,icon,type,parent) VALUES(%d,'%s',%d,'%s',%d,%d);",
@@ -53,6 +43,7 @@ function on_sd_create_club(msg)
         string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0);",club_info.id,money_info.id),
         string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_info.id,club_info.owner),
         string.format("INSERT INTO t_player_money(guid,money_id,money) VALUES(%d,%d,0);",club_info.owner,money_info.id),
+        string.format("INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);",money_info.id,club_info.id),
         "COMMIT;",
     }
 
@@ -68,8 +59,8 @@ function on_sd_create_club(msg)
 end
 
 function on_sd_join_club(msg)
+    dump(msg)
     local gamedb = dbopt.game
-
     local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",msg.guid)
     if res.errno then
         log.error("on_sd_join_club query player error:%d,%s",res.errno,res.err)
@@ -109,6 +100,12 @@ function on_sd_join_club(msg)
         return
     end
 
+    res = gamedb:query("INSERT INTO t_player_money (SELECT %d,money_id,0,0 FROM t_club_money_type WHERE club = %d);",msg.guid,msg.club_id)
+    if res.errno then
+        log.error("on_sd_join_club INSERT player_money error:%d,%s",res.errno,res.err)
+        return
+    end
+
     return true
 end
 
@@ -145,12 +142,12 @@ local function incr_club_money(club,money_id,money,why)
 	end
 
     local oldmoney = tonumber(res[1].money)
-	res = dbopt.game:query("UPDATE t_club_money SET money = money + %d WHERE club = %d AND money_id = %d;",money,club,money_id)
+	res = dbopt.game:query("UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;",money,club,money_id)
 	if res.errno then
 		log.error("incr_club_money change money error,errno:%d,err:%s",res.errno,res.err)
 		return
     end
-    
+
     res = dbopt.game:query("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id)
     if res.errno then
 		log.error("incr_club_money select new money error,errno:%d,err:%s",res.errno,res.err)
@@ -159,8 +156,13 @@ local function incr_club_money(club,money_id,money,why)
 
 	local newmoney = tonumber(res[1].money)
 
-	dbopt.log:query("INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
-		club,money_id,money,oldmoney,newmoney,why)
+	res = dbopt.log:query("INSERT INTO log.t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
+        club,money_id,oldmoney,newmoney,why)
+    if res.errno then
+        log.error("incr_club_money insert log.t_log_money_club error,errno:%d,err:%s",res.errno,res.err)
+        return
+    end
+
 	return oldmoney,newmoney
 end
 

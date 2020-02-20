@@ -120,7 +120,6 @@ end
 function base_club:invite_join(invitee,inviter,inviter_club,type)
     if string.lower(type) == "invite_join" then
         local inviter_role = club_role[self.id][inviter]
-        dump(inviter_role)
         if inviter_role ~= enum.CRT_ADMIN and inviter_role ~= enum.CRT_PARTNER and inviter_role ~= enum.CRT_BOSS then
             return enum.ERORR_PARAMETER_ERROR
         end
@@ -373,7 +372,7 @@ function base_club:notify_money(why,oldmoney,changemoney,money_id)
 end
 
 function base_club:incr_money(item,why)
-	local oldmoney = club_money[self.id][item.money_id]
+	local oldmoney = tonumber(club_money[self.id][item.money_id]) or 0
 	log.info("club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
 	log.info("money[%d] - p[%d]" , oldmoney,item.money)
 
@@ -388,15 +387,18 @@ function base_club:incr_money(item,why)
 		return
 	end
 	
-	local dboldmoney = changes[1].oldmoney
-	local dbnewmoney = changes[1].newmoney
-	
+	local dboldmoney = tonumber(changes[1].oldmoney)
+	local dbnewmoney = tonumber(changes[1].newmoney)
+    dump(dboldmoney)
+    dump(oldmoney)
 	if dboldmoney ~= oldmoney then
 		log.error("db incrmoney error,club[%d] money_id[%d] oldmoney[%d] dboldmoney[%d]",self.id,item.money_id,oldmoney,dboldmoney)
 		return
 	end
 
-    local newmoney = reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money)
+    local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money))
+    dump(dbnewmoney)
+    dump(newmoney)
     if dbnewmoney ~= newmoney then
         log.error("db incrmoney error,club[%d] money_id[%d] newmoney[%d] dbnewmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
         return

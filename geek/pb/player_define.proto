@@ -1,5 +1,5 @@
 
-±"
+µ!
 player_define.protocommon.proto"¯
 GameClientRoomListCfg
 game_id (RgameId(
@@ -17,7 +17,7 @@ cell_money (R	cellMoney
 platform_id
  (	R
 platformId
-title (	Rtitle"–
+title (	Rtitle"í
 PlayerBaseInfo
 bank (Rbank&
 login_award_day (RloginAwardDay5
@@ -25,37 +25,31 @@ platformId
 online_award_time (RonlineAwardTime(
 online_award_num (RonlineAwardNum0
 relief_payment_count (RreliefPaymentCount
-level (Rlevel
-money (Rmoney
+level (Rlevel!
+money (2.MONEY_INFORmoney
 header_icon	 (R
 headerIcon'
 slotma_addition
  (RslotmaAddition
-gold (Rgold
-diamond (Rdiamond
-	room_card (RroomCard
-icon (	Ricon
-status (Rstatus
-phone (	Rphone
-sex (Rsex
-type (Rtype
-nickname (	Rnickname"Œ
+icon (	Ricon
+status (Rstatus
+phone (	Rphone
+sex (Rsex
+type (Rtype
+nickname (	Rnickname"ê
 PlayerVisualInfo
 chair_id (RchairId
 guid (Rguid
 account (	Raccount
 nickname (	Rnickname
-level (Rlevel
-money (Rmoney
+level (Rlevel!
+money (2.MONEY_INFORmoney
 header_icon (R
 headerIcon
-ip_area (	RipArea
-gold	 (Rgold
-diamond
- (Rdiamond
-	room_card (RroomCard
-sex (Rsex
-icon (	Ricon",
+ip_area (	RipArea
+sex	 (Rsex
+icon
+ (	Ricon",
 ItemInfo
 id (Rid
 num (Rnum"•

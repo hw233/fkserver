@@ -28,6 +28,7 @@ local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
+local player_money = require "game.lobby.player_money"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
@@ -388,7 +389,11 @@ function on_cs_request_player_info(msg,guid)
 
 	local info = {}
 	info.guid = guid
-	info.pb_base_info = player
+	info.pb_base_info = clone(player)
+	info.pb_base_info.money = {{
+		money_id = 0,
+		count = player_money[guid][0] or 0,
+	}}
 
 	onlineguid.send(guid,"SC_ReplyPlayerInfo",info)
 

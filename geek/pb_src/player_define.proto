@@ -27,18 +27,15 @@ message PlayerBaseInfo {
 	int32 online_award_num = 5;			  // 在线奖励，该领取哪个奖励
 	int32 relief_payment_count = 6; 		  // 救济金，今天领取次数
 	int32 level = 7;			  // 玩家等级
-	int64 money = 8; 			  // 有多少钱
+	repeated MONEY_INFO money = 8; 			  // 有多少钱
 	int32 header_icon = 9; 	  // 头像
 	int32 slotma_addition = 10; // 老虎机中奖权重
-	int32 gold = 11;
-	int32 diamond = 12;	
-	int32 room_card = 13;
-	string icon = 14;
-	int32  status = 15;					//
-	string phone = 16;
-	bool   sex = 17;
-	int32  type = 18;
-	string 	nickname = 19; 	// 昵称
+	string icon = 11;
+	int32  status = 12;					//
+	string phone = 13;
+	bool   sex = 14;
+	int32  type = 15;
+	string 	nickname = 16; 	// 昵称
 }
 
 // 其他玩家可见信息
@@ -48,14 +45,11 @@ message PlayerVisualInfo {
 	string 	account = 3;					// 账号
 	string 	nickname = 4;					// 昵称
 	int32 	level = 5;			// 玩家等级
-	int64 	money = 6; 			// 有多少钱
+	repeated MONEY_INFO	money = 6; 			// 有多少钱
 	int32 	header_icon = 7; 	// 头像	
 	string 	ip_area = 8;					// 客户端ip地区
-	int32 	gold = 9;					//
-	int32 	diamond = 10;      //
-	int32 	room_card = 11; 						//
-	int32   sex = 12;
-	string  icon = 13;
+	int32   sex = 9;
+	string  icon = 10;
 }
 
 // 物品基本信息

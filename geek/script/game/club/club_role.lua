@@ -8,7 +8,7 @@ local function get_role(t,guid)
         return nil
     end
     role = tonumber(role)
-    t[guid] = role
+    -- t[guid] = role
     return role
 end
 

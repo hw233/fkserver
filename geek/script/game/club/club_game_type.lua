@@ -13,7 +13,6 @@ setmetatable(club_game_type,{
             ids[i] = true
         end
 
-        t[club_id] = ids
         return ids
     end,
 })
