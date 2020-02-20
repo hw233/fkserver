@@ -251,11 +251,7 @@ end
 
 --用户数量
 function base_table:get_player_count()
-	local count = 0
-	for _,_ in pairs(self.players) do
-		count = count + 1
-	end
-	return count
+	return table.nums(self.players)
 end
 
 -- 遍历桌子

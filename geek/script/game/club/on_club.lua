@@ -495,7 +495,7 @@ function on_cs_club_list(msg,guid)
     onlineguid.send(guid,"S2C_CLUBLIST_RES",{
         result = 0,
         clubs = clubs,
-    })
+    }) 
 end
 
 function on_cs_club_edit_game_type(msg,guid)

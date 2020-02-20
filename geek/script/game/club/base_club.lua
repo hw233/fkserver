@@ -322,13 +322,6 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
     end
 
     template_id = tonumber(template_id)
-
-    local ok,ruletb = pcall(json.decode,rule)
-    if not ok or not ruletb then
-        log.error("modify_table_template rule is illegel.")
-        return enum.ERORR_PARAMETER_ERROR
-    end
-
     local template = table_template[template_id]
     if not template then
         log.error("modify_table_template template not exists.")
@@ -340,21 +333,22 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
         club_id = self.id,
         game_id = (game_id and game_id ~= 0) and game_id or template.game_id,
         description = (desc and desc ~= "") and desc or template.description,
-        rule = (rule and rule ~= "") and rule or template.rule,
-        advanced_rule = (advanced_rule and advanced_rule ~= "") and advanced_rule or template.advanced_rule
+        rule = rule or template.rule,
+        advanced_rule = advanced_rule or template.advanced_rule
     }
 
-    reddb:hmset(string.format("template:%d",template_id),info)
+    local rawtemp = redismetadata.privatetable.template:encode(info)
+    reddb:hmset(string.format("template:%d",template_id),rawtemp)
 
     table_template[template_id] = nil
     club_table_template[self.id][template_id] = nil 
-
+    
     local tax = not advanced_rule and 0 or
         (advanced_rule.consume_type == 1 and advanced_rule.tax.AAScore or advanced_rule.tax.big_win[3][2])
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_UPDATE,
         template = {
-            template = info,
+            template = rawtemp,
             club_id = self.id,
             visual = true,
             conf = json.encode({
