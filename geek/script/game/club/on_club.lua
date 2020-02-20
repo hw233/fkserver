@@ -370,6 +370,14 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
+            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+        })
+        return
+    end
+
     local games = {}
     local info = channel.query()
     for sid,_ in pairs(info) do
