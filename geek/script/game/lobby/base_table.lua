@@ -16,6 +16,9 @@ local timer_manager = require "game.timer_manager"
 local onlineguid = require "netguidopt"
 local skynet = require "skynetproto"
 local channel = require "channel"
+local club_money_type = require "game.club.club_money_type"
+local player_money = require "game.lobby.player_money"
+local json = require "cjson"
 
 local reddb = redisopt.default
 
@@ -217,6 +220,81 @@ function base_table:commit_dismiss(player,agree)
 	return enum.ERROR_NONE
 end
 
+function base_table:do_commission()
+
+end
+
+function base_table:balance(winlose,why)
+	local tax = {}
+	if self.private_id then
+		local private_table = base_private_table[self.private_id]
+		if not private_table then
+			log.error("base_table:balance [%d] got nil private conf.",self.private_id)
+			return
+		end
+
+		local money_id = self:get_private_money_id()
+		if not money_id then
+			log.error("base_table:balance [%d] got nil private money id.",self.private_id)
+			return
+		end
+
+		local advanced_rule = private_table.advanced_rule
+		if not advanced_rule then
+			log.error("base_table:balance [%d] got nil private advanced_rule conf.",self.private_id)
+			return
+		end
+
+		local taxconf = advanced_rule.tax
+		if not taxconf or (not taxconf.AA and not taxconf.big_win) then
+			log.error("base_table:balance [%d] got nil private tax conf.",self.private_id)
+			return
+		end
+
+		if taxconf.AA then
+			for guid,_ in pairs(self.players) do
+				tax[guid] = taxconf.AA
+			end
+		elseif taxconf.big_win then
+			local winloselist = {}
+			for guid,change in pairs(winlose) do 
+				table.insert(winloselist,{guid = guid,change = change}) 
+			end
+
+			table.sort(winloselist,function(l,r) return l.change > r.change end)
+
+			local maxwin = winloselist[1].change
+			for _,c in pairs(winloselist) do
+				local change = c.change
+				if change == maxwin then
+					local bigwin = taxconf.big_win
+					if change > 0 and change <= bigwin[1][1] then
+						tax[c.guid] = bigwin[1][2]
+					elseif change > bigwin[2][1] and change <= bigwin[3][1] then
+						tax[c.guid] = bigwin[2][2]
+					elseif change > bigwin[3][1] then
+						tax[c.guid] = bigwin[3][1]
+					end
+				end
+			end
+		end
+		
+		for guid,p in pairs(self.players) do
+			local ptax = tax[guid] or 0
+			local change = winlose[guid] or 0
+			local final_change = change - ptax
+			local old_money = player_money[guid][money_id]
+
+			p:incr_money({
+				money_id = money_id,
+				money = final_change,
+			},why)
+
+			self:player_money_log(p,money_id,old_money,ptax,final_change)
+		end
+	end
+end
+
 function base_table:game_over()
 	self:check_game_maintain()
 
@@ -224,10 +302,13 @@ function base_table:game_over()
 end
 
 function base_table:on_game_overed()
-	if self.private_id and self.cur_round and self.cur_round >= self.conf.round then
-		for _,p in pairs(self.players) do
-            p:forced_exit()
-        end
+	if self.private_id then
+		if self.cur_round and self.cur_round >= self.conf.round then
+			self:on_private_game_overed()
+			for _,p in pairs(self.players) do
+				p:forced_exit()
+			end
+		end
 	end
 end
 
@@ -269,38 +350,34 @@ function base_table:foreach_except(except, func)
 	end
 end
 
-function  base_table:save_game_log(s_playid,s_playType,s_log,ext_id,s_starttime,s_endtime)
+function  base_table:save_game_log(gamelog)
 	log.info("==============================base_table:save_game_log")
+	local slog = json.encode(gamelog)
+	log.info(slog)
 	local nMsg = {
-		playid = s_playid,
-		type = s_playType,
-		log = s_log,
-		starttime = s_starttime,
-		endtime = s_endtime,
-		ext_id = ext_id,
+		playid = self.game_id,
+		type = def_game_name,
+		log = json.encode(gamelog),
+		starttime = self.start_time,
+		endtime = os.time(),
+		ext_id = self.game_id_ext,
 	}
 	channel.publish("db.?","msg","SL_Log_Game",nMsg)
 end
 
-function base_table:player_money_log(player,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
+function base_table:player_money_log(player,money_id,old_money,tax,change_money)
 	local nMsg = {
 		guid = player.guid,
-		type = s_change_money > 0 and 2 or 1,
+		type = change_money > 0 and 2 or 1,
 		gameid = def_game_id,
 		game_name = def_game_name,
-		money_type = enum.ITEM_PRICE_TYPE_GOLD,
-		phone_type = player.phone_type,
-		old_money = s_old_money,
-		new_money = player.money,
-		tax = s_tax,
-		change_money = s_change_money,
-		ip = player.ip,
-		id = s_id,
-		channel_id = player.create_channel_id,
+		money_id = money_id,
+		old_money = old_money,
+		new_money = old_money + change_money,
+		tax = tax,
+		change_money = change_money,
+		id = self.game_id,
 		platform_id = player.platform_id,
-		get_bonus_money = get_bonus_money_ or 0,
-		to_bonus_money = to_bonus_money_ or 0,
-		seniorpromoter = player.seniorpromoter,
 	}
 	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 	send2client_pb(player,"SC_Gamefinish",{
@@ -322,25 +399,19 @@ function base_table:player_bet_flow_log(player,money)
 	send2db_pb("SD_LogBetFlow",msg)
 end
 
-function base_table:player_money_log_when_gaming(player,s_old_money,s_tax,s_change_money,s_id,get_bonus_money_,to_bonus_money_)
+function base_table:player_money_log_when_gaming(player,money_id,old_money,tax,change_money)
 	local nMsg = {
 		guid = player.guid,
-		type = s_change_money > 0 and 2 or 1,
+		type = change_money > 0 and 2 or 1,
 		gameid = self.def_game_id,
 		game_name = self.def_game_name,
-		phone_type = player.phone_type,
-		money_type = enum.ITEM_PRICE_TYPE_GOLD,
-		old_money = s_old_money,
+		money_id = money_id,
+		old_money = old_money,
 		new_money = player.money,
-		tax = s_tax,
-		change_money = s_change_money,
-		ip = player.ip,
-		id = s_id,
-		channel_id = player.create_channel_id,
+		tax = tax,
+		change_money = change_money,
+		id = self.game_id,
 		platform_id = player.platform_id,
-		get_bonus_money = get_bonus_money_ or 0,
-		to_bonus_money = to_bonus_money_ or 0,
-		seniorpromoter = player.seniorpromoter,
 	}
 	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 end
@@ -751,8 +822,70 @@ function base_table:on_pre_start(player_count)
 
 end
 
-function base_table:cost_private_fee()
+function base_table:get_private_money_id()
+	local private_table = base_private_table[self.private_id]
+	if not private_table then
+		log.error("base_table:get_money_id [%d] got nil private conf",self.private_id)
+		return 0
+	end
 
+	local club = private_table.club
+	if not club then
+		log.error("base_table:get_money_id [%d] got nil private club",self.private_id)
+		return 0
+	end
+
+	return club_money_type[club]
+end
+
+function base_table:cost_private_fee()
+	if not self.private_id then return end
+
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.error("base_table:cost_private_fee [%d] got nil private conf",self.private_id)
+		return
+	end
+
+	local rule = private_table.rule
+	if not rule then
+		log.error("base_table:cost_private_fee [%d] got nil private rule",self.private_id)
+		return
+	end
+
+	local pay = rule.pay
+	if pay.option == enum.PAY_OPTION_AA then
+		local money_each = math.floor(self.room_limit / self.chair_count)
+		for _,p in pairs(self.players) do
+			p:cost_money({{
+				money_id = 0,
+				money = money_each,
+			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+		end
+	elseif pay.option == enum.PAY_OPTION_BOSS then
+		local club = base_clubs[private_table.club]
+		while club.parent and club.parent ~= 0 do
+			club = base_clubs[club.parent]
+			if not club then 
+				log.error("base_table:cost_private_fee [%d] got nil parent club.",self.private_id)
+				return
+			end
+		end
+
+		local boss = base_players[club.owner]
+		if not boss then
+			log.error("base_table:cost_private_fee [%d] got nil club [%d] boss [%d].",self.private_id,club.id,club.owner)
+			return
+		end
+		
+		local money = self.room_.conf.private_conf.fee
+		boss:cost_money({{
+			money_id = 0,
+			money = money,
+		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+	else
+		log.error("base_table:cost_private_fee [%d] got wrong pay option.")
+	end
 end
 
 function base_table:on_started()
@@ -763,6 +896,10 @@ function base_table:on_started()
 	if self.cur_round == 1 then
 		self:cost_private_fee()
 	end
+
+	self.start_time = os.time()
+	self.game_id = self:get_next_game_id()
+	self.game_id_ext = self:get_ext_game_id()
 end
 
 -- 开始游戏
@@ -806,10 +943,6 @@ function base_table:start(player_count)
 
 	self:on_started()
 	return ret
-end
-
-function base_table:round_over()
-
 end
 
 -- 检查是否维护

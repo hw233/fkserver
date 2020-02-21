@@ -35,14 +35,14 @@ function on_sd_log_game_money( msg)
     local sql
     if msg.guid >= 0 then
         sql = string.format([[
-            INSERT INTO `log`.`t_log_money_tj` (`guid`, `type`, `gameid`, `game_name`,`phone_type`,`money_type`, `old_money`, `new_money`, `tax`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` , `seniorpromoter`)
-            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' , %d)]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id,msg.seniorpromoter)
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `id`, `platform_id')
+            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.id,msg.platform_id)
     elseif msg.guid < 0 then --机器人日志记录到另一张同样的表里
         sql = string.format([[
-            INSERT INTO `log`.`t_log_money_tj_robot` (`guid`, `type`, `gameid`, `game_name`,`phone_type`, `money_type`, `old_money`, `new_money`, `tax`, `change_money`, `ip`, `id`, `channel_id`, `platform_id` )
-            VALUES (%d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s' )]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.phone_type,msg.money_type,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.ip,msg.id,msg.channel_id,msg.platform_id)
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `id`, `platform_id')
+            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.id,msg.platform_id)
     end
 
     log.info("sql [%s]" , sql)
@@ -75,7 +75,7 @@ end
 function on_sl_robot_log_money(msg)
 	log.info("...................... on_sl_robot_log_money")
     dbopt.log:query([[
-        INSERT INTO `log`.`t_log_robot_money_tj` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `id`)
+        INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `id`)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, %d, '%s')]],
         msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.tax,msg.money_change,msg.id)
 end

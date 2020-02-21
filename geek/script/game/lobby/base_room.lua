@@ -280,16 +280,15 @@ end
 
 function base_room:check_private_limit(player,chair_count,conf)
 	local pay_option = conf.pay.option
-	local money_type = conf.pay.money_type
 	
 	if pay_option == enum.PAY_OPTION_AA then
 		local player_limit = math.ceil(self.room_limit / chair_count)
 		
-		return not player:check_room_limit(player_limit,money_type)
+		return not player:check_room_limit(player_limit,0)
 	end
 
 	if pay_option == enum.PAY_OPTION_BOSS then
-		return not player:check_room_limit(self.room_limit,money_type)
+		return not player:check_room_limit(self.room_limit,0)
 	end
 
 	return false
@@ -418,21 +417,21 @@ function base_room:reconnect(player,table_id,chair_id)
 end
 
 -- 加入私人房间
-function base_room:join_private_table(player,private_table_conf,chair_count)
+function base_room:join_private_table(player,private_table,chair_count)
 	if player.table_id or player.chair_id then
 		log.warning("player tableid is [%d] chairid is [%d]",player.table_id,player.chair_id)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
-	local table_id = private_table_conf.real_table_id
+	local table_id = private_table.real_table_id
 	local tb = self.tables[table_id]
 	if not tb then
-		log.info("join private table:%d,%d not found",private_table_conf.table_id,table_id)
+		log.info("join private table:%d,%d not found",private_table.table_id,table_id)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	if not self:check_private_limit(player,chair_count,private_table_conf.rule) then
-		log.info("join private table:%d,%d money limit:%d",private_table_conf.table_id,table_id,player.guid)
+	if not self:check_private_limit(player,chair_count,private_table.rule) then
+		log.info("join private table:%d,%d money limit:%d",private_table.table_id,table_id,player.guid)
 		return enum.GAME_SERVER_RESULT_ROOM_LIMIT
 	end
 
@@ -443,7 +442,7 @@ function base_room:join_private_table(player,private_table_conf,chair_count)
 
 	local chair_id = tb:get_free_chair_id()
 	if not chair_id then
-		log.info("join private table:%d,%d without free chair",private_table_conf.table_id,table_id)
+		log.info("join private table:%d,%d without free chair",private_table.table_id,table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
 	end
 
@@ -451,7 +450,7 @@ function base_room:join_private_table(player,private_table_conf,chair_count)
 
 	tb:player_sit_down(player, chair_id)
 
-	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table_conf.table_id)
+	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table.table_id)
 
 	return enum.GAME_SERVER_RESULT_SUCCESS,tb
 end

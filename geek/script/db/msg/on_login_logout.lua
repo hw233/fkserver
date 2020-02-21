@@ -1779,7 +1779,6 @@ function on_ld_reg_account(msg)
 	}
 	local trans = dbopt.game:transaction()
 	local res = trans:execute(table.concat(transqls,"\n"))
-	dump(res)
 	if res.errno then
 		trans:rollback()
 		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)

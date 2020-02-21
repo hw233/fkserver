@@ -72,8 +72,8 @@ function base_player:send_pb(msgname,msg)
 end
 
 -- 检查房间限制
-function base_player:check_room_limit(score,money_type)
-	return self:get_money(money_type) < score
+function base_player:check_room_limit(score,money_id)
+	return self:get_money(money_id) < score
 end
 
 -- 进入房间并坐下
@@ -159,9 +159,10 @@ function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, r
 			result = result_,
 			})
 
-		reddb:hdel("player:online:guid:"..tostring(self.guid),"first_game_type")
-		reddb:hdel("player:online:guid:"..tostring(self.guid),"second_game_type")
-		reddb:hdel("player:online:guid:"..tostring(self.guid),"server")
+		local onlinekey = string.format("player:online:guid:%d",self.guid)
+		reddb:hdel(onlinekey,"first_game_type")
+		reddb:hdel(onlinekey,"second_game_type")
+		reddb:hdel(onlinekey,"server")
 	else
 		log.info("send SC_StandUpAndExitRoom nil "..result_)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
@@ -359,15 +360,7 @@ end
 
 -- 得到钱
 function base_player:get_money(money_id)
-	if money_id == enum.ITEM_PRICE_TYPE_DIAMOND then
-		return self.diamond or 0
-	end
-
-	if money_id == enum.ITEM_PRICE_TYPE_ROOM_CARD then
-		return self.room_card or 0
-	end
-
-	return self.money or 0
+	return player_money[self.guid][money_id or 0] or 0
 end
 
 --得到银行的钱
@@ -443,7 +436,7 @@ function base_player:incr_money(item,why)
 end
 
 -- 花钱
-function base_player:cost_money(price, why, whatever)
+function base_player:cost_money(price, why)
 	for _, item in ipairs(price) do
 		log.info("guid[%d] money_id[%d]  money[%d] why[%d]" ,self.guid, item.money_id, item.money,why)
 		if item.money > 0 then 
@@ -454,7 +447,7 @@ function base_player:cost_money(price, why, whatever)
 		item.money_id = item.money_id or 0
 		item.where = item.where or 0
 		item.money = - item.money
-		local oldmoney,_ = self:incr_money(item,why,whatever)
+		local oldmoney,_ = self:incr_money(item,why)
 		if not oldmoney then
 			return
 		end

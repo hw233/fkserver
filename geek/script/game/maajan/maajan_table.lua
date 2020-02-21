@@ -1401,9 +1401,7 @@ function maajan_table:FSM_event(event_table)
             self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
             self.game_log.end_game_time = os.time()
-            local s_log = json.encode(self.game_log)
-	        log.info(s_log)
-	        self:save_game_log(self.game_log.table_game_id,self.def_game_name,s_log,self.game_log.start_game_time,self.game_log.end_game_time)
+	        self:save_game_log(self.game_log)
 
             self:update_state(FSM_S.GAME_CLOSE)
         else

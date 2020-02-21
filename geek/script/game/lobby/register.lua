@@ -74,7 +74,6 @@ skynet.start(function()
 	register_dispatcher("DS_PlayerBankTransfer",on_DS_PlayerBankTransfer)
 	register_dispatcher("DS_BandBankcard",on_ds_bandbankcard)
 	register_dispatcher("DS_BandBankcardNum",on_ds_bandbankcardnum)
-	register_dispatcher("DS_Get_Instructor_Weixin",on_ds_instructor_weixin)
 
 	--------------------------------------------------------------------
 	-- 注册Login发过来的消息分派函数
@@ -163,7 +162,6 @@ skynet.start(function()
 	register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
 	register_dispatcher("CS_RequestProxyConfig",on_CS_RequestProxyConfig)
 	register_dispatcher("CS_BandBankcard",on_cs_bandbankcard)
-	register_dispatcher("CS_Get_Instructor_Weixin",on_cs_instructor_weixin)
 	-- --红包
 	-- register_dispatcher("CS_QueryBonusActivity",on_cs_query_bonus_activities)
 	-- register_dispatcher("CS_QueryBonus",on_cs_query_bonus)

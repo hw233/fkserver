@@ -19,14 +19,4 @@ local base_clubs = setmetatable({},{
     end
 })
 
-function base_clubs:list()
-    local clubs = {}
-    local clubids = reddb:smembers("club:all")
-    for _,id in pairs(clubids) do
-        clubs[id] = base_clubs[tonumber(id)]
-    end
-
-    return clubs
-end
-
 return base_clubs

@@ -1812,6 +1812,8 @@ function maajan_table:on_game_balance()
         ben_ji = fan_pai_tile,
     }
 
+    local balances = {}
+
     for chair_id,p in pairs(self.players) do
         local p_score = scores[chair_id] or 0
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
@@ -1866,14 +1868,10 @@ function maajan_table:on_game_balance()
             hu_tile = p.hu and p.hu.tile or nil,
         })
 
-        if p.win_money > 0 then
-            p:add_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD,money = p.win_money}},
-                enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
-        elseif p.win_money < 0 then
-            p:cost_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD,money = -p.win_money}},
-                enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
-        end
+        balances[p.guid] = p.win_money
     end
+
+    self:balance(balances)
 
     dump(msg,9)
 
@@ -1884,10 +1882,9 @@ function maajan_table:on_game_balance()
     self.game_log.end_game_time = os.time()
     self.game_log.cur_round = self.cur_round
 
-    self:save_game_log(
-        self:get_next_game_id(),self.def_game_name,self.game_log,self:get_ext_game_id(),
-        self.game_log.start_game_time,self.game_log.end_game_time
-    )
+    self:save_game_log(self.game_log)
+
+    self.game_log = nil
     
     self:game_over()
 end

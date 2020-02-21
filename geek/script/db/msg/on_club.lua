@@ -14,23 +14,13 @@ function on_sd_create_club(msg)
 
     local gamedb = dbopt.game
 
+    local res 
     if club_info.parent and club_info.parent ~= 0 then
-        local res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
+        res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
         if res.errno then
             log.error("on_sd_create_club query parent error:%d,%s",res.errno,res.err)
             return
         end
-    end
-
-    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",club_info.owner)
-    if res.errno then
-        log.error("on_sd_create_club check owner id error:%d,%s",res.errno,res.err)
-        return
-    end
-
-    if res[1].c ~= 1 then
-        log.error("on_sd_create_club check owner got wrong owner count,owner:%s",club_info.owner)
-        return
     end
 
     gamedb:query("SET NAMES = utf8;")
@@ -38,11 +28,14 @@ function on_sd_create_club(msg)
 
     local transqls = {
         "BEGIN;",
-        string.format("INSERT INTO t_club(id,name,owner,icon,type,parent) VALUES(%d,'%s',%d,'%s',%d,%d);",
-                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent),
+        string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent) SELECT %d,'%s',%d,'%s',%d,%d 
+                        WHERE EXISTS (SELECT * FROM t_player WHERE guid = %d);]],
+                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,club_info.owner),
         string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0);",club_info.id,money_info.id),
         string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_info.id,club_info.owner),
-        string.format("INSERT INTO t_player_money(guid,money_id,money) VALUES(%d,%d,0);",club_info.owner,money_info.id),
+        string.format([[INSERT INTO t_player_money(guid,money_id,money) SELECT %d,%d,0 
+            WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = %d);]],
+            club_info.owner,money_info.id,club_info.owner,money_info.id),
         string.format("INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);",money_info.id,club_info.id),
         "COMMIT;",
     }
@@ -83,24 +76,18 @@ function on_sd_join_club(msg)
         return
     end
 
-    res = gamedb:query("SELECT COUNT(*) AS c FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id)
-    if res.errno then
-        log.error("on_sd_join_club query club member error:%d,%s",res.errno,res.err)
-        return
-    end
-
-    if res[1].c > 0 then
-        log.error("on_sd_join_club check club member exists,club:%s,guid:%s",msg.club_id,msg.guid)
-        return
-    end
-
-    res = gamedb:query("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",msg.club_id,msg.guid)
+    res = gamedb:query([[INSERT INTO t_club_member(club,guid) SELECT %d,%d 
+        WHERE NOT EXISTS (SELECT * FROM t_club_member WHERE club = %d AND guid = %d);]],
+        msg.club_id,msg.guid,msg.club_id,msg.guid,msg.guid)
     if res.errno then
         log.error("on_sd_join_club INSERT member error:%d,%s",res.errno,res.err)
         return
     end
 
-    res = gamedb:query("INSERT INTO t_player_money (SELECT %d,money_id,0,0 FROM t_club_money_type WHERE club = %d);",msg.guid,msg.club_id)
+    res = gamedb:query([[INSERT INTO t_player_money
+        (SELECT %d,money_id,0,0 FROM (SELECT * FROM t_club_money_type WHERE club = %d) m
+        WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = m.money_id));]],
+        msg.guid,msg.club_id,msg.guid)
     if res.errno then
         log.error("on_sd_join_club INSERT player_money error:%d,%s",res.errno,res.err)
         return
@@ -110,9 +97,7 @@ function on_sd_join_club(msg)
 end
 
 function on_sd_exit_club(msg)
-    local gamedb = dbopt.game
-
-    local res = gamedb:query("DELETE FROM t_club_member WHERE guid = %d AND id = %d;",msg.guid,msg.club_id)
+    local res = dbopt.game:query("DELETE FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id)
     if res.errno then
         log.error("on_sd_exit_club DELETE member error:%d,%s",res.errno,res.err)
         return

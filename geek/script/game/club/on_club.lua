@@ -6,7 +6,7 @@ local redisopt = require "redisopt"
 local base_players = require "game.lobby.base_players"
 local base_clubs = require "game.club.base_clubs"
 local club_member = require "game.club.club_member"
-local player_club = require "game.club.player_club"
+local player_club = require "game.lobby.player_club"
 local channel = require "channel"
 local serviceconf = require "serviceconf"
 local onlineguid = require "netguidopt"
@@ -137,12 +137,6 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
-    -- if not player:has_club_rights() then
-	-- 	return {
-    --         result = CLUB_OP_RESULT_NO_RIGHTS,
-    --     }
-    -- end
-
     local id = math.random(1000000,9999999)
     for _ = 1,1000 do
         if not base_clubs[id] then break end
@@ -245,9 +239,6 @@ function on_cs_club_dismiss(msg,guid)
     end
 
     club:dismiss()
-    for mem,_ in pairs(club_member[club_id]) do
-        player_club[mem][club_id] = nil
-    end
     club_member[club_id] = nil
     base_clubs[club_id] = nil
 
@@ -282,8 +273,8 @@ local function get_template_club_commission(club,template)
         return 0
     end
 
-    local tax = template.advanced_rule.tax
-    local commission = tax and tax.AAScore or (tax.big_win and tax.big_win[3][2] or 0)
+    local advanced_rule = template.advanced_rule
+    local commission = advanced_rule.tax and advanced_rule.tax.AA or advanced_rule.tax.big_win[3][2] or 0
     if club.parent and club.parent ~= 0 then
         local parent = base_clubs[club.parent]
         local conf = club_template_conf[parent.id][template.template_id]
@@ -370,13 +361,13 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local role = club_role[club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
-        onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS,
-        })
-        return
-    end
+    -- local role = club_role[club_id][guid]
+    -- if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+    --     onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
+    --         result = enum.ERROR_NOT_IS_CLUB_BOSS,
+    --     })
+    --     return
+    -- end
 
     local games = {}
     local info = channel.query()
@@ -480,16 +471,8 @@ end
 function on_cs_club_list(msg,guid)
     log.info("on_cs_club_list,guid:%s",guid)
     local clubs = {}
-    for _,club in pairs(base_clubs:list()) do
-        if club_member[club.id][guid] and (not msg.type or club.type == msg.type) then
-            table.insert(clubs,{
-                id = club.id,
-                name = club.name,
-                icon = club.icon,
-                type = club.type,
-                parent = club.parent,
-            })
-        end
+    for club,_ in pairs(player_club[guid][msg.type or enum.CT_DEFAULT]) do
+        table.insert(clubs,base_clubs[club])
     end
 
     onlineguid.send(guid,"S2C_CLUBLIST_RES",{
@@ -563,8 +546,8 @@ function on_cs_club_join_req(msg,guid)
     club_request[club_id] = nil
 end
 
-function on_club_create_table(club,player,chair_count,round,rule)
-    local result,global_table_id,tb = club:create_table(player,chair_count,round,rule)
+function on_club_create_table(club,player,chair_count,round,rule,template)
+    local result,global_table_id,tb = club:create_table(player,chair_count,round,rule,template)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         local tableinfo = channel.call("game."..def_game_id,"msg","GetTableStatusInfo",tb.table_id_)
         club:broadcast("S2C_SYNC_TABLES_RES",{
@@ -616,6 +599,28 @@ function on_cs_club_query_memeber(msg,guid)
                     count = player_money[p.guid][money_id] or 0,
                 }
             })
+        end
+    end
+
+    for team,_ in pairs(club_team[club_id]) do
+        local club = base_clubs[team]
+        if club.type == enum.CT_UNION then
+            local p = base_players[club.owner]
+            if p then
+                table.insert(ms,{
+                    info = {
+                        guid = p.guid,
+                        icon = p.icon,
+                        nickname = p.nickname,
+                        sex = p.sex,
+                    },
+                    role = enum.CRT_PARTNER,
+                    money = {
+                        money_id = money_id,
+                        count = player_money[p.guid][money_id] or 0,
+                    }
+                })
+            end
         end
     end
 
@@ -730,15 +735,11 @@ end
 
 local function on_cs_club_exit(msg,guid)
     local who = base_players[guid]
-	if not who:has_club_rights() then
-		return enum.CLUB_OP_RESULT_NO_RIGHTS
-	end
 
     local club_id = msg.club_id
     if base_players[msg.guid] then
         base_clubs[club_id]:exit(msg.guid)
         club_member[club_id][msg.guid] = nil
-        player_club[msg.guid][club_id] = nil
     end
     
     return enum.CLUB_OP_RESULT_SUCCESS
@@ -884,8 +885,16 @@ local function on_cs_club_partner(msg,guid)
     
         base_club:create(id,"","",target_guid,enum.CT_UNION,club_id)
 
-        reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_PARTNER)
+        channel.publish("db.?","msg","SD_ExitClub",{
+            guid = target_guid,
+            club_id = club_id,
+        })
+
+        reddb:srem(string.format("club:member:%d",club_id),target_guid)
+        club_member[club_id] = nil
+        reddb:hdel(string.format("club:role:%d",club_id),target_guid)
         club_role[club_id][target_guid] = nil
+
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end

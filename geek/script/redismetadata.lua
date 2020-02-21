@@ -107,6 +107,7 @@ redismetadata.privatetable.info = redismeta:create({
         real_table_id = "number",
         room_id = "number",
         create_time = "number",
+        template = "number",
     }
 })
 

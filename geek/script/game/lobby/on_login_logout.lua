@@ -7,7 +7,6 @@ local login_award_table = login_award_table
 
 require "game.net_func"
 local send2db_pb = send2db_pb
-local send2client_pb = send2client_pb
 
 local base_player = require "game.lobby.base_player"
 local base_players = require "game.lobby.base_players"
@@ -76,7 +75,7 @@ function on_ls_AlipayEdit(msg)
 		player.alipay_account = msg.alipay_account
 		player.alipay_name = msg.alipay_name		
 	end
-	send2client_pb(player,  "SC_AlipayEdit" , notify)
+	onlineguid.send(player,  "SC_AlipayEdit" , notify)
 end
 
 --普通消息，不需要客户端组装消息内容
@@ -189,7 +188,7 @@ function on_cs_login_validatebox(player, msg)
 		((msg.answer[1] == player.login_validate_answer[1] and msg.answer[2] == player.login_validate_answer[2]) or
 		(msg.answer[1] == player.login_validate_answer[2] and msg.answer[2] == player.login_validate_answer[1])) then
 
-		send2client_pb(player,  "SC_LoginValidatebox", {
+		onlineguid.send(player,  "SC_LoginValidatebox", {
 			result = LOGIN_RESULT_SUCCESS,
 			})
 
@@ -221,7 +220,7 @@ function on_cs_login_validatebox(player, msg)
 		}
 		
 		local msg = {result = enum.LOGIN_RESULT_LOGIN_VALIDATEBOX_FAIL,pb_validatebox = notify}
-		send2client_pb(player,  "SC_LoginValidatebox",msg)		
+		onlineguid.send(player,  "SC_LoginValidatebox",msg)		
 end
 
 -- 玩家退出 
@@ -299,50 +298,6 @@ local function next_day(player)
 	player.online_award_start_time = os.time()
 end
 
--- 加载玩家数据
-local function load_player_data_complete(player)
-	if to_days(player.logout_time) ~= cur_to_days() then
-		next_day(player)
-	end
-
-	log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete" , player.guid,player.account)
-	player.login_time = os.time()
-	player.online_award_start_time = player.login_time
-	
-	if player.is_offline then
-		log.info("-------------------------1")
-	end
-	
-	if g_room:is_play(player) then
-		log.info("-------------------------2")
-	end
-
-	if player.is_offline and g_room:is_play(player) then
-		log.info("=====================================send SC_ReplyPlayerInfoComplete")
-		local notify = {
-			pb_gmMessage = {
-				first_game_type = def_first_game_type,
-				second_game_type = def_second_game_type,
-				room_id = player.room_id,
-				table_id = player.table_id,
-				chair_id = player.chair_id,
-			}
-		}
-
-		log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete send have data gate_id[%d]" , player.guid,player.account,player.gate_id)
-		send2client_pb(player,"SC_ReplyPlayerInfoComplete", notify)
-		return
-	end
-
-	log.info("player [%d] account [%s] SC_ReplyPlayerInfoComplete send data is nill gate_id[%d]" , player.guid,player.account,player.gate_id)
-	send2client_pb(player,"SC_ReplyPlayerInfoComplete", nil)
-
-	--邀请码的奖励
-	send2db_pb("SD_QueryPlayerInviteReward", {
-			guid = player.guid,
-		})
-end
-
 local channel_cfg = {}
 function channel_invite_cfg(channel_id)
 	if channel_cfg then
@@ -371,10 +326,6 @@ function on_ds_load_player_invite_reward(msg)
 		return
 	end
 	if msg.reward and msg.reward > 0 then player:change_money(msg.reward,LOG_MONEY_OPT_TYPE_INVITE) end
-end
-
-local function check_load_complete(player)
-	load_player_data_complete(player)
 end
 
 -- 请求玩家信息
@@ -410,7 +361,7 @@ function on_ds_notifyclientbankchange(msg)
 		return
 	end
 
-	send2client_pb(player,"SC_NotifyBank",{
+	onlineguid.send(player,"SC_NotifyBank",{
 		opt_type = msg.log_type,
 		bank = msg.new_bank,
 		change_bank = msg.change_bank,
@@ -434,18 +385,18 @@ function  on_ds_player_append_info(msg)
 		, msg.risk_show_proxy
 		, msg.create_time
 		 )
-	send2client_pb(player,  "SC_Player_Identiy", {
+	onlineguid.send(player,  "SC_Player_Identiy", {
 		guid = msg.guid,						            -- 玩家ID
 		identity_type = tonumber(msg.identity_type),		-- 所属玩家身份 0 默认身份
 		identity_param = tonumber(msg.identity_param),   	-- 所属身份附加参数
 	})
 
-	send2client_pb(player,  "SC_Player_SeniorPromoter", {
+	onlineguid.send(player,  "SC_Player_SeniorPromoter", {
 		guid = msg.guid,						            -- 玩家ID
 		seniorpromoter = tonumber(msg.seniorpromoter),		-- 所属推广员
 	})
 
-	send2client_pb(player,  "SC_Player_Append_Info", {
+	onlineguid.send(player,  "SC_Player_Append_Info", {
 		guid = msg.guid,						            -- 玩家ID
 		risk = msg.risk,						            -- 玩家危险等级
 		risk_show_proxy = msg.risk_show_proxy,				-- 危险等级对应显示代理商策略概率
@@ -471,7 +422,7 @@ function  on_update_risk(msg)
 		, msg.guid
 		, msg.risk
 		 )
-	send2client_pb(player,  "SC_Player_Risk", {
+	onlineguid.send(player,  "SC_Player_Risk", {
 		guid = msg.guid,						            -- 玩家ID
 		risk = tonumber(msg.risk),		            -- 玩家危险等级
 	})
@@ -491,7 +442,7 @@ function  on_ls_player_identiy(msg)
 		, msg.identity_type
 		, msg.identity_param
 		 )
-	send2client_pb(player,  "SC_Player_Identiy", {
+	onlineguid.send(player,  "SC_Player_Identiy", {
 		guid = msg.guid,						            -- 玩家ID
 		identity_type = tonumber(msg.identity_type),		-- 所属玩家身份 0 默认身份
 		identity_param = tonumber(msg.identity_param),   	-- 所属身份附加参数
@@ -513,7 +464,7 @@ function  on_ls_player_seniorpromoter(msg)
 		, msg.guid
 		, msg.seniorpromoter
 		 )
-	send2client_pb(player,  "SC_Player_SeniorPromoter", {
+	onlineguid.send(player,  "SC_Player_SeniorPromoter", {
 		guid = msg.guid,						            -- 玩家ID
 		seniorpromoter = tonumber(msg.seniorpromoter),		-- 所属推广员
 	})
@@ -548,7 +499,7 @@ function on_ds_charge_rate(msg)
 		, msg.agent_money
 		 ))
 
-	send2client_pb(player,"SC_Charge_Rate", {
+	onlineguid.send(player,"SC_Charge_Rate", {
 		guid = msg.guid,					                -- 玩家ID
 		charge_num = msg.charge_num,		                -- 成功充值次数
 		agent_num = msg.agent_num,		                    -- 代理商成功充值次数
@@ -640,21 +591,6 @@ local function check_private_table_chair(first_game_type, chair_count)
 	return false
 end
 
-function on_cs_instructor_weixin(msg,guid)
-	send2db_pb("SD_Get_Instructor_Weixin", {guid = guid,})
-end
-
-function on_ds_instructor_weixin( msg )	
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in game", msg.guid)
-		return
-	end
-	send2client_pb(player, "SC_Get_Instructor_Weixin", {
-		instructor_weixin = msg.instructor_weixin,
-		})
-end
-
 -- 切换游戏服务器
 function on_cs_change_game(msg,guid)
 	local player = base_players[guid]
@@ -677,7 +613,7 @@ function on_cs_change_game(msg,guid)
 	log.info("game_switch [%d] player.guid[%d] player.vip[%d]",game_switch,player.guid,player.vip)
 	if  game_switch == 1 then --游戏进入维护阶段
 		if player.vip ~= 100 then	
-			send2client_pb(player, "SC_GameMaintain", {
+			onlineguid.send(player, "SC_GameMaintain", {
 				result = enum.GAME_SERVER_RESULT_MAINTAIN,
 			})
 			player:forced_exit()
@@ -687,7 +623,7 @@ function on_cs_change_game(msg,guid)
 	end
 
 	if msg.private_room_opt == 1 and not check_private_table_chair(msg.private_room_chair_count) then
-		send2client_pb(player, "SC_EnterRoomAndSitDown", {
+		onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -701,7 +637,7 @@ function on_cs_change_game(msg,guid)
 	if msg.private_room_opt == 1 then
 		local needmoney = calc_private_table_need_money(msg.first_game_type, msg.private_room_score_type, msg.private_room_chair_count)
 		if not needmoney then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -714,7 +650,7 @@ function on_cs_change_game(msg,guid)
 
 		local money = player.money or 0
 		if money < needmoney then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_MONEY,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -732,7 +668,7 @@ function on_cs_change_game(msg,guid)
 		log.info("on_cs_change_game: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d]",def_game_name,def_game_id,room.game_switch_is_open)
 		if g_room.game_switch_is_open == 1 then --游戏进入维护阶段
 			if player.vip ~= 100 then	
-				send2client_pb(player, "SC_GameMaintain", {
+				onlineguid.send(player, "SC_GameMaintain", {
 						result = enum.GAME_SERVER_RESULT_MAINTAIN,
 						})
 				player:forced_exit()
@@ -797,7 +733,7 @@ function on_cs_change_game(msg,guid)
 				end
 			end)
 			
-			send2client_pb(player, "SC_EnterRoomAndSitDown", notify)
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", notify)
 
 			tb:player_sit_down_finished(player)
 
@@ -813,7 +749,7 @@ function on_cs_change_game(msg,guid)
 
 			log.info("change step this ok,account=%s", player.account)
 		else
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = result_,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -887,7 +823,7 @@ local function check_change_complete(player, msg)
 			end
 		end)
 		
-		send2client_pb(player, "SC_EnterRoomAndSitDown", notify)
+		onlineguid.send(player, "SC_EnterRoomAndSitDown", notify)
 
 		tb:player_sit_down_finished(player)
 
@@ -896,7 +832,7 @@ local function check_change_complete(player, msg)
 		if result_ == 14 then --game maintain
 			log.warning("check_change_complete:result_ = [%d], game_name = [%s],game_id =[%d], will maintain,exit",result_,def_game_name,def_game_id)
 		end
-		send2client_pb(player, "SC_EnterRoomAndSitDown", {
+		onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 			result = result_,
 			game_id = def_game_id,
 			first_game_type = msg.first_game_type,
@@ -970,7 +906,6 @@ local function check_money_type(money_type)
 	local money_type_all = {
 		[enum.ITEM_PRICE_TYPE_GOLD] = true,
 		[enum.ITEM_PRICE_TYPE_ROOM_CARD] = true,
-		[enum.ITEM_PRICE_TYPE_DIAMOND] = true,
 	}
 
 	return money_type ~= nil and money_type_all[money_type]
@@ -978,34 +913,34 @@ end
 
 
 local function get_chair_count(option)
-	local gameconf = serviceconf[def_game_id].conf
+	local gameconf = g_room.conf
 	return gameconf.private_conf.chair_count_option[option]
 end
 
 local function get_play_round(option)
-	local gameconf = serviceconf[def_game_id].conf
+	local gameconf = g_room.conf
 	return gameconf.private_conf.round_count_option[option]
 end
 
 local function check_rule(rule)
 	local chair_count = get_chair_count(rule.room.player_count_option + 1)
 	if not chair_count then
-		return enum.ERROR_CLUB_UNKONW
+		return enum.ERORR_PARAMETER_ERROR
 	end
 
 	local play_round = get_play_round(rule.round.option + 1)
 	if not play_round then
-		return enum.ERROR_CLUB_UNKONW
+		return enum.ERORR_PARAMETER_ERROR
 	end
 
 	local pay_option = rule.pay.option
 	if not check_pay_option(pay_option) then
-		return enum.ERROR_CLUB_UNKONW
+		return enum.ERORR_PARAMETER_ERROR
 	end
 
 	local money_type = rule.pay.money_type
 	if not check_money_type(money_type) then
-		return enum.ERROR_CLUB_UNKONW
+		return enum.ERORR_PARAMETER_ERROR
 	end
 
 	return enum.ERROR_NONE,play_round,chair_count,pay_option,money_type
@@ -1042,41 +977,46 @@ function on_cs_create_private_room(msg,guid)
 	local rule = msg.rule
 	local template_id = msg.template_id
 
-	dump(msg)
-
 	local player = base_players[guid]
 
 	if player.table_id then
-		send2client_pb(guid,"SC_CreateRoom",{
+		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.GAME_SERVER_RESULT_IN_ROOM,
 		})
 		return
 	end
 
 	if player.chair_id then
-		send2client_pb(guid,"SC_CreateRoom",{
+		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
 		})
 		return
 	end
 
 	if not rule and not template_id then
-		send2client_pb(guid,"SC_CreateRoom",{
+		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.ERORR_PARAMETER_ERROR,
 		})
 		return
 	end
 
+	local template
 	if template_id and template_id ~= 0 then
-		local template = table_template[template_id]
-		club_id = template.club_id
+		template = table_template[template_id]
+		if not template then
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.ERORR_PARAMETER_ERROR
+			})
+			return
+		end
+
 		rule = template.rule
 		game_type = template.game_id
 	else
 		local ok
 		ok,rule = pcall(json.decode,rule)
 		if not ok or not rule then 
-			send2client_pb(guid,"SC_CreateRoom",{
+			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.ERORR_PARAMETER_ERROR,
 			})
 		end
@@ -1087,7 +1027,7 @@ function on_cs_create_private_room(msg,guid)
 		local room_id = find_best_room(game_type)
 		if not room_id then
 			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
-			send2client_pb(guid,"SC_CreateRoom",{
+			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.GAME_SERVER_RESULT_NO_GAME_SERVER,
 				game_type = game_type,
 			})
@@ -1104,7 +1044,7 @@ function on_cs_create_private_room(msg,guid)
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
-		send2client_pb(guid,"SC_CreateRoom",{
+		onlineguid.send(guid,"SC_CreateRoom",{
 			result = result,
 			game_type = game_type,
 		})
@@ -1116,32 +1056,28 @@ function on_cs_create_private_room(msg,guid)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
-			send2client_pb(guid,"SC_CreateRoom",{
+			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.ERROR_CLUB_NOT_FOUND,
 				game_type = game_type,
 			})
 			return
 		end
 
-		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
+		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 	elseif pay_option == enum.PAY_OPTION_AA then
-		if club then
-			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule)
-		else
-			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
-		end
-	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
-		
+		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
+	else
+		result = enum.ERORR_PARAMETER_ERROR
 	end
 
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		send2client_pb(guid,"SC_CreateRoom",{
+		onlineguid.send(guid,"SC_CreateRoom",{
 			result = result,
 		})
 		return
 	end
 
-	send2client_pb(guid,"SC_CreateRoom",{
+	onlineguid.send(guid,"SC_CreateRoom",{
 		result = result,
 		info = {
 			game_type = game_type,
@@ -1167,14 +1103,14 @@ function on_cs_reconnect(guid)
 	local player = base_players[guid]
 	local onlineinfo = onlineguid[guid]
 	if not onlineinfo then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 		})
 		return
 	end
 
 	if not onlineinfo.table or not onlineinfo.chair then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR,
 		})
 		return
@@ -1184,7 +1120,7 @@ function on_cs_reconnect(guid)
 	local chair_id = onlineinfo.chair
 	local private_table = base_private_table[onlineinfo.global_table]
 	if not private_table then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
 		})
 		return
@@ -1205,7 +1141,7 @@ function on_cs_reconnect(guid)
 		})
 	end)
 
-	send2client_pb(guid,"SC_JoinRoom",{
+	onlineguid.send(guid,"SC_JoinRoom",{
 		result = enum.ERROR_NONE,
 		info = {
 			game_type = private_table.game_type,
@@ -1228,7 +1164,7 @@ function on_cs_join_private_room(msg,guid)
 	if reconnect and reconnect ~= 0 then
 		local onlineinfo = onlineguid[guid]
 		if not onlineinfo then
-			send2client_pb(guid,"SC_JoinRoom",{
+			onlineguid.send(guid,"SC_JoinRoom",{
 				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
 			})
 			return
@@ -1237,7 +1173,7 @@ function on_cs_join_private_room(msg,guid)
 	end
 
 	if not global_table_id then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
@@ -1245,7 +1181,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local private_table = base_private_table[global_table_id]
 	if not private_table then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 		return
@@ -1253,7 +1189,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local game_type = private_table.game_type
 	if not game_type then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
 	end
@@ -1263,7 +1199,7 @@ function on_cs_join_private_room(msg,guid)
 		onlineguid[guid] = nil
 		local room_id = find_best_room(game_type)
 		if not room_id then 
-			send2client_pb(guid,"SC_JoinRoom",{
+			onlineguid.send(guid,"SC_JoinRoom",{
 				result = enum.ERROR_JOIN_ROOM_NO,
 			})
 			return 
@@ -1298,7 +1234,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local result,_,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
-		send2client_pb(guid,"SC_JoinRoom",{
+		onlineguid.send(guid,"SC_JoinRoom",{
 			result = result,
 		})
 		return
@@ -1309,7 +1245,7 @@ function on_cs_join_private_room(msg,guid)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
-			send2client_pb(guid,"SC_JoinRoom",{
+			onlineguid.send(guid,"SC_JoinRoom",{
 				result = enum.ERROR_CLUB_NOT_FOUND,
 			})
 			return
@@ -1317,13 +1253,9 @@ function on_cs_join_private_room(msg,guid)
 
 		result,tb = club:join_table(player,private_table,chair_count)
 	elseif pay_option == enum.PAY_OPTION_AA then
-		if club then
-			result,tb = club:join_table(player,private_table,chair_count)
-		else
-			result,tb = g_room:join_private_table(player,private_table,chair_count)
-		end
-	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
-		
+		result,tb = g_room:join_private_table(player,private_table,chair_count)
+	else
+		result = enum.ERORR_PARAMETER_ERROR
 	end
 
 	local seats = {}
@@ -1344,7 +1276,7 @@ function on_cs_join_private_room(msg,guid)
 		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
 	end
 
-	send2client_pb(guid,"SC_JoinRoom",{
+	onlineguid.send(guid,"SC_JoinRoom",{
 		result = result,
 		info = {
 			game_type = private_table.game_type,
@@ -1368,7 +1300,7 @@ function on_ss_join_private_room(msg)
 	if msg.table_id then
 		local needmoney = calcPrivateRoomNeedMoney(msg.first_game_type, msg.private_room_score_type)
 		if not needmoney then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -1383,7 +1315,7 @@ function on_ss_join_private_room(msg)
 		local bank = player.bank or 0
 		
 		if money + bank < needmoney + def_private_room_bank then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -1395,7 +1327,7 @@ function on_ss_join_private_room(msg)
 		end
 
 		if bank < def_private_room_bank then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_BANK,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -1408,7 +1340,7 @@ function on_ss_join_private_room(msg)
 		end
 
 		if money < needmoney then
-			send2client_pb(player, "SC_EnterRoomAndSitDown", {
+			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
 				result = GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_MONEY,
 				game_id = def_game_id,
 				first_game_type = msg.first_game_type,
@@ -1428,7 +1360,7 @@ function on_ss_join_private_room(msg)
 				private_room_score_type = msg.private_room_score_type,
 			})
 	else
-		send2client_pb(player, "SC_JoinPrivateRoomFailed", {
+		onlineguid.send(player, "SC_JoinPrivateRoomFailed", {
 			owner_guid = msg.owner_guid,
 			result = GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
 		})
@@ -1454,13 +1386,13 @@ function on_CS_PrivateRoomInfo(player, msg)
 		table.insert(t, {first_game_type = v.first_game_type, table_count = tb, cell_money = cm})
 	end
 
-	send2client_pb(player, "SC_PrivateRoomInfo", {pb_info = t})
+	onlineguid.send(player, "SC_PrivateRoomInfo", {pb_info = t})
 end
 
 -- 完善账号
 function on_cs_reset_account(player, msg)
 	if (not player.is_guest) and (not player.flag_wait_reset_account) then
-		send2client_pb(player,  "SC_ResetAccount", {
+		onlineguid.send(player,  "SC_ResetAccount", {
 			result = LOGIN_RESULT_RESET_ACCOUNT_FAILED,
 			account = msg.account,
 			nickname = msg.nickname,
@@ -1471,7 +1403,7 @@ function on_cs_reset_account(player, msg)
 	end
 
 	if  string.find(msg.account,"170") == 1 or string.find(msg.account,"171") == 1 then
-		send2client_pb(player,  "SC_ResetAccount", {
+		onlineguid.send(player,  "SC_ResetAccount", {
 			result = LOGIN_RESULT_TEL_ERR,
 			account = msg.account,
 			nickname = msg.nickname,
@@ -1526,7 +1458,7 @@ function do_on_ds_reset_account(msg, register_money)
 	end
 	player.flag_wait_reset_account = nil
 
-	send2client_pb(player,  "SC_ResetAccount", {
+	onlineguid.send(player,  "SC_ResetAccount", {
 		result = msg.ret,
 		account = msg.account,
 		nickname = msg.nickname,
@@ -1559,7 +1491,7 @@ function on_cs_bandalipay(msg,guid)
 		})
 	else
 		log.info "on_cs_bandalipay ........................... false"
-		send2client_pb("SC_BandAlipay", {
+		onlineguid.send("SC_BandAlipay", {
 			guid = guid,
 			result = GAME_BAND_ALIPAY_CHECK_ERROR,
 			alipay_account = "",
@@ -1575,13 +1507,13 @@ function on_ds_bandalipay(msg)
 		if msg.result == GAME_BAND_ALIPAY_SUCCESS then
      		player.alipay_account = msg.alipay_account
      		player.alipay_name = msg.alipay_name
-			send2client_pb(player, "SC_BandAlipay", {
+			onlineguid.send(player, "SC_BandAlipay", {
 				result = msg.result,
 				alipay_account = msg.alipay_account,
 				alipay_name = msg.alipay_name,
 				})
 		else
-			send2client_pb(player, "SC_BandAlipay", {
+			onlineguid.send(player, "SC_BandAlipay", {
 				result = msg.result,
 				alipay_account = "",
 				alipay_name = "",
@@ -1601,7 +1533,7 @@ end
 -- 修改密码
 function on_cs_set_password(player, msg)
 	if player.is_guest then
-		send2client_pb(player,  "SC_SetPassword", {
+		onlineguid.send(player,  "SC_SetPassword", {
 			result = LOGIN_RESULT_SET_PASSWORD_GUEST,
 		})
 
@@ -1623,14 +1555,14 @@ function on_ds_set_password(msg)
 		return
 	end
 
-	send2client_pb(player, "SC_SetPassword", {
+	onlineguid.send(player, "SC_SetPassword", {
 		result = msg.ret,
 	})
 end
 
 function on_cs_set_password_by_sms(player, msg)
 	if player.is_guest then
-		send2client_pb(player,  "SC_SetPassword", {
+		onlineguid.send(player,  "SC_SetPassword", {
 			result = LOGIN_RESULT_SET_PASSWORD_GUEST,
 		})
 
@@ -1664,7 +1596,7 @@ function on_ds_set_nickname(msg)
 		player.nickname = msg.nickname
 	end
 
-	send2client_pb(player,  "SC_SetNickname", {
+	onlineguid.send(player,  "SC_SetNickname", {
 		nickname = msg.nickname,
 		result = msg.ret,
 	})
@@ -1678,7 +1610,7 @@ function on_cs_change_header_icon(player, msg)
 		player.flag_base_info = true
 	end
 
-	send2client_pb(player,"SC_ChangeHeaderIcon", {
+	onlineguid.send(player,"SC_ChangeHeaderIcon", {
 		header_icon = msg.header_icon,
 	})
 end
@@ -1752,11 +1684,11 @@ function  on_ds_QueryPlayerMsgData(msg)
 	local player = base_players[msg.guid]
 	if player then
 		if msg.pb_msg_data then
-			send2client_pb(player,"SC_NewMsgData",{
+			onlineguid.send(player,"SC_NewMsgData",{
 				pb_msg_data = msg.pb_msg_data.pb_msg_data_info
 			})
 		else
-			send2client_pb(player,"SC_QueryPlayerMsgData")
+			onlineguid.send(player,"SC_QueryPlayerMsgData")
 		end
 	else
 		log.info("on_ds_QueryPlayerMsgData not find player , guid :%d",msg.guid)
@@ -1779,16 +1711,16 @@ function on_ds_QueryPlayerMarquee(msg)
 		if msg.pb_msg_data then
 			--player.msg_data_info = msg.pb_msg_data.pb_msg_data_info
 			if msg.first then
-				send2client_pb(player,"SC_QueryPlayerMarquee",{
+				onlineguid.send(player,"SC_QueryPlayerMarquee",{
 					pb_msg_data = msg.pb_msg_data.pb_msg_data_info
 				})
 			else
-				send2client_pb(player,"SC_NewMarquee",{
+				onlineguid.send(player,"SC_NewMarquee",{
 					pb_msg_data = msg.pb_msg_data.pb_msg_data_info
 				})
 			end
 		else
-			send2client_pb(player,"SC_QueryPlayerMarquee")
+			onlineguid.send(player,"SC_QueryPlayerMarquee")
 		end
 	else
 		log.info("on_ds_QueryPlayerMarquee not find player , guid : " ..msg.guid)
@@ -1850,7 +1782,7 @@ function on_ls_FreezeAccount( msg )
 		status = msg.status,
 	}
 	-- 通知客户端
-	send2client_pb(player,  "SC_FreezeAccount", notifyT)
+	onlineguid.send(player,  "SC_FreezeAccount", notifyT)
 	-- 修改玩家数据
 	player.disable = msg.status;
 	if player.disable == 1 then
@@ -2009,7 +1941,7 @@ function on_cs_change_maintain(msg)
 			}) --广播游戏维护状态--]]
 			g_room:foreach_by_player(function (player) 
 				if player and player.vip ~= 100 then --非系统玩家广播维护
-					send2client_pb(player, "SC_GameMaintain", {
+					onlineguid.send(player, "SC_GameMaintain", {
 					result = 0,
 					})
 				end
@@ -2057,12 +1989,12 @@ function on_CS_RequestProxyConfig(player,msg)
 				notify.pb_platform_proxys = info
 			end
 
-			send2client_pb(player,  "SC_ReplyProxyConfig", notify)	
+			onlineguid.send(player,  "SC_ReplyProxyConfig", notify)	
 		else
 			local notify = {
 				result = 1,
 			}
-			send2client_pb(player,  "SC_ReplyProxyConfig", notify)
+			onlineguid.send(player,  "SC_ReplyProxyConfig", notify)
 			log.error("on_CS_RequestProxyConfig error platform_id:%d", platform_id_)
 
 			send2login_pb("SL_RequestProxyInfo",{platform_id = platform_id_})
@@ -2089,7 +2021,7 @@ function on_CS_QueryRechargeAndCashSwitch( player )
 
 	local pay_switch_json = tostring(reply)
 	log.info(pay_switch_json)
-	send2client_pb(player,"SC_ReplyClientPaySwitch",{recharge_switch_json = pay_switch_json})
+	onlineguid.send(player,"SC_ReplyClientPaySwitch",{recharge_switch_json = pay_switch_json})
 
 	--查询并发送当前玩家所属平台的兑换开关
 	local all_cash_switch = {}
@@ -2104,7 +2036,7 @@ function on_CS_QueryRechargeAndCashSwitch( player )
 
 	local cash_switch_json = tostring(reply)
 	log.info(cash_switch_json)
-	send2client_pb(player,"SC_ReplyClientAllCashSwitch",{all_cash_switch_json = cash_switch_json})
+	onlineguid.send(player,"SC_ReplyClientAllCashSwitch",{all_cash_switch_json = cash_switch_json})
 end
 
 function on_cs_change_recharge_switch(msg)
@@ -2126,7 +2058,7 @@ function on_cs_change_recharge_switch(msg)
 	base_players:foreach(function (player)
 		if player and tonumber(cur_platform_id) == tonumber(player.platform_id) then --非系统玩家广播充值开关汇总
 			log.info("send to player guid[%d] SC_ReplyClientPaySwitch......",player.guid)
-			send2client_pb(player,"SC_ReplyClientPaySwitch",{recharge_switch_json = pay_switch_json})
+			onlineguid.send(player,"SC_ReplyClientPaySwitch",{recharge_switch_json = pay_switch_json})
 		end
 	end)
 end
@@ -2149,7 +2081,7 @@ function on_cs_change_all_cash_switch(msg)
 	base_players:foreach(function (player) 
 		if player and tonumber(cur_platform_id) == tonumber(player.platform_id) then --非系统玩家广播充值开关汇总
 			log.info("send to player guid[%d] all_cash_switch_json......",player.guid)
-			send2client_pb(player,"SC_ReplyClientAllCashSwitch",{all_cash_switch_json = cash_switch_json})
+			onlineguid.send(player,"SC_ReplyClientAllCashSwitch",{all_cash_switch_json = cash_switch_json})
 		end
 	end)
 end
@@ -2188,7 +2120,7 @@ function on_cs_bandbankcard(msg,guid)
 		if player.change_bankcard_num == 0 then
 			notify.result = 4 --绑定已达到最大次数限制
 		end
-		send2client_pb(player, "SC_BandBankcard", notify)
+		onlineguid.send(player, "SC_BandBankcard", notify)
 	end
 end
 
@@ -2204,7 +2136,7 @@ function on_ds_bandbankcard(msg)
 			player.bank_city = msg.bank_city
 			player.bank_branch = msg.bank_branch
 
-			send2client_pb(player, "SC_BandBankcard", {
+			onlineguid.send(player, "SC_BandBankcard", {
 				result = msg.result,
 				bank_card_name = replace_bankcard_name_or_num_str(1,msg.bank_card_name),
 				bank_card_num = replace_bankcard_name_or_num_str(2,msg.bank_card_num),
@@ -2214,7 +2146,7 @@ function on_ds_bandbankcard(msg)
 				bank_branch = msg.bank_branch,
 			})
 		else
-			send2client_pb(player, "SC_BandBankcard", {
+			onlineguid.send(player, "SC_BandBankcard", {
 				result = msg.result,
 				bank_card_name = "**",
 				bank_card_num = "**",
@@ -2244,7 +2176,7 @@ function on_ls_BankcardEdit(msg)
 		player.bank_city = msg.bank_city
 		player.bank_branch = msg.bank_branch
 	end
-	send2client_pb(player,  "SC_BankcardEdit" , notify)
+	onlineguid.send(player,  "SC_BankcardEdit" , notify)
 end
 
 
