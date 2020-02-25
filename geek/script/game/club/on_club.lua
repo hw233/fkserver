@@ -363,6 +363,22 @@ function on_cs_club_detail_info_req(msg,guid)
         online_player_count = online_count,
     }
 
+    local role = club_role[club_id][guid]
+    if not role then
+        local my_unions = player_club[guid][enum.CT_UNION]
+        if table.nums(my_unions) > 0 then
+            for union_id,_ in pairs(my_unions) do
+                local union = base_clubs[union_id]
+                if union.owner == guid and union.parent == club_id and club.parent and club.parent ~= 0 then
+                    role = enum.CRT_PARTNER
+                    break
+                end
+            end
+        end
+
+        role = role or enum.CRT_PLAYER
+    end
+
     local templates = get_club_templates(club)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
@@ -374,7 +390,7 @@ function on_cs_club_detail_info_req(msg,guid)
             nickname = myself.nickname,
             sex = myself.sex,
         },
-        role = tonumber(club_role[club_id][guid]) or enum.CRT_PLAYER,
+        role = role,
         money = {
             money_id = money_id,
             count = player_money[guid][money_id]
@@ -545,28 +561,6 @@ function on_cs_club_query_memeber(msg,guid)
                     count = player_money[p.guid][money_id] or 0,
                 }
             })
-        end
-    end
-
-    for team,_ in pairs(club_team[club_id]) do
-        local club = base_clubs[team]
-        if club.type == enum.CT_UNION then
-            local p = base_players[club.owner]
-            if p then
-                table.insert(ms,{
-                    info = {
-                        guid = p.guid,
-                        icon = p.icon,
-                        nickname = p.nickname,
-                        sex = p.sex,
-                    },
-                    role = enum.CRT_PARTNER,
-                    money = {
-                        money_id = money_id,
-                        count = player_money[p.guid][money_id] or 0,
-                    }
-                })
-            end
         end
     end
 
@@ -831,14 +825,12 @@ local function on_cs_club_partner(msg,guid)
     
         base_club:create(id,"","",target_guid,enum.CT_UNION,club_id)
 
-        channel.publish("db.?","msg","SD_ExitClub",{
-            guid = target_guid,
-            club_id = club_id,
-        })
+        -- channel.publish("db.?","msg","SD_ExitClub",{
+        --     guid = target_guid,
+        --     club_id = club_id,
+        -- })
 
-        reddb:srem(string.format("club:member:%d",club_id),target_guid)
-        club_member[club_id] = nil
-        reddb:hdel(string.format("club:role:%d",club_id),target_guid)
+        reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_PARTNER)
         club_role[club_id][target_guid] = nil
 
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)

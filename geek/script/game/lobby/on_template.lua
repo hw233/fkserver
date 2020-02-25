@@ -1,6 +1,6 @@
 local enum = require "pb_enums"
 local base_clubs = require "game.club.base_clubs"
-local club_memeber = require "game.club.club_member"
+local club_member = require "game.club.club_member"
 local table_template = require "game.lobby.table_template"
 local onlineguid = require "netguidopt"
 local club_role = require "game.club.club_role"
@@ -23,7 +23,7 @@ function on_cs_create_table_template(msg,guid)
         })
     end
 
-    if not club_memeber[club_template.club_id][guid] then
+    if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
             result = enum.ERROR_NOT_IS_CLUB_MEMBER
         })
@@ -75,7 +75,7 @@ function on_cs_remove_table_template(msg,guid)
         return
     end
 
-    if not club_memeber[club_template.club_id][guid] then
+    if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
             result = enum.ERROR_NOT_IS_CLUB_MEMBER
         })
@@ -148,7 +148,7 @@ function on_cs_modify_table_template(msg,guid)
         return
     end
 
-    if not club_memeber[club_template.club_id][guid] then
+    if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
             result = enum.ERROR_NOT_IS_CLUB_MEMBER
         })

@@ -160,7 +160,7 @@ function on_cs_get_club_template_commission(msg,guid)
             dump(template)
             table.insert(confs,{
                 template_id = template.template_id,
-                commission = calc_club_template_commission(team,template),
+                commission = calc_club_template_commission(base_clubs[club_id],template),
                 commission_rate = get_real_club_template_commission_rate(team,template) * 10000,
             })
         end

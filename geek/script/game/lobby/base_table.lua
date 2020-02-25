@@ -20,6 +20,7 @@ local club_money_type = require "game.club.club_money_type"
 local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
 local club_template_conf = require "game.club.club_template_conf"
+local club_team_template_conf = require "game.club.club_team_template_conf"
 local json = require "cjson"
 
 local reddb = redisopt.default
@@ -221,23 +222,35 @@ function base_table:commit_dismiss(player,agree)
 	return enum.ERROR_NONE
 end
 
-local function get_final_template_club_commission_rate(club,template_id)
+
+local function get_real_club_template_conf(club,template_id)
+    local conf = club_template_conf[club.id][template_id]
+    if not conf then
+        club = base_clubs[club.parent]
+        if not club then return end
+        conf = club_team_template_conf[club.id][template_id]
+        if not conf then return end
+    end
+
+    return conf
+end
+
+local function calc_club_template_commission_rate(club,template_id)
     if not club or not club.parent or club.parent == 0 then
         return 1
     end
 
-    local conf = club_template_conf[club.id][template_id]
-    local rate = (conf and conf.conf and conf.conf.commission_rate or 0) / 10000
+    local conf = get_real_club_template_conf(club,template_id)
+    if not conf then
+        return 0
+    end
+
+    local rate = (conf and conf.commission_rate or 0) / 10000
     if rate == 0 then
         return rate
     end
 
-    if club.parent and club.parent ~= 0 then
-        club = base_clubs[club.parent]
-        return rate * get_final_template_club_commission_rate(club,template_id)
-    end
-
-    return rate
+    return rate * calc_club_template_commission_rate(base_clubs[club.parent],template_id)
 end
 
 function base_table:do_commission(taxes)
@@ -268,7 +281,6 @@ function base_table:do_commission(taxes)
 	end
 
 	for guid,tax in pairs(taxes) do
-		local remain_commission = tax
 		local club_ids = player_club[guid][enum.CT_UNION]
 		if table.nums(club_ids) == 0 then
 			log.error("base_table:do_commission [%d] player [%d] no union club.",self.private_id,guid)
@@ -278,8 +290,8 @@ function base_table:do_commission(taxes)
 		local club_id = club_ids[1]
 		repeat
 			local club = base_clubs[club_id]
-			local commission_rate = get_final_template_club_commission_rate(club,private_table.template)
-			local commission = math.floor(remain_commission * commission_rate)
+			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
+			local commission = math.floor(tax * commission_rate)
 			if commission > 0 then
 				club:incr_commission(commission,self.round_id)
 			end
