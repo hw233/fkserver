@@ -20,7 +20,7 @@ skynet.register_protocol {
 
 skynet.register_protocol {
     id = skynet.PTYPE_PROXY,
-    name = "proxy",
+    name = "forward",
     pack = skynet.pack,
     unpack = skynet.unpack,
 }

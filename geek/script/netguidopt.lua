@@ -30,7 +30,7 @@ function onlineguid.send(guids,msgname,msg)
             return
         end
   
-        channel.publish("gate."..s.gate,"client",guid,"proxy",msgname,msg)
+        channel.publish("gate."..s.gate,"client",guid,"forward",msgname,msg)
     end
 
     if type(guids) == "number" then
@@ -56,18 +56,18 @@ function onlineguid.control(player_or_guid,msgname,msg)
     channel.publish("gate."..s.gate,"client",guid,"lua",msgname,msg)
 end
 
-function onlineguid.broadcast(msgname,msg)
-    for guid,s in pairs(onlineguid) do
-        channel.publish("gate."..s.gate,"client",guid,"proxy",msgname,msg)
-    end
-end
-
-function onlineguid.broadcast_except(except,msgname,msg)
-    except = type(except) == "number" and except or except.guid
-    for guid,s in pairs(onlineguid) do
-        if guid ~= except then
-            channel.publish("gate."..s.gate,"client",guid,"proxy",msgname,msg)
+function onlineguid.broadcast(guids,msgname,msg)
+    local gateguids = {}
+    for _,guid in pairs(guids) do
+        local s = onlineguid[guid]
+        if s and s.gate then
+            gateguids[s.gate] = gateguids[s.gate] or {}
+            table.insert(gateguids[s.gate],guid)
         end
+    end
+
+    for gate,gguids in pairs(gateguids) do
+        channel.publish("gate."..gate,"client",gguids,"broadcast",msgname,msg)
     end
 end
 

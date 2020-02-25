@@ -55,6 +55,22 @@ function CONTROL.forward(who,...)
     channel.publish(who,...)
 end
 
+local FORWARD = {}
+
+function FORWARD.forward(who,...)
+    channel.publish("guid."..tostring(who),"forward",...)
+end
+
+function FORWARD.broadcast(whos,...)
+    for _,guid in pairs(whos) do
+        channel.publish("guid."..tostring(guid),"forward",...)
+    end
+end
+
+function FORWARD.lua(who,...)
+    channel.publish("guid."..tostring(who),"lua",...)
+end
+
 skynet.start(function()
     local handle = skynet.localname ".gate"
     if handle then
@@ -81,7 +97,13 @@ skynet.start(function()
         pack = skynet.pack,
     }
 
-    skynet.dispatch("client",function(_,_,guid,...)
-        channel.publish("guid."..tostring(guid),...)
+    skynet.dispatch("client",function(_,_,guids,msg,...)
+        local f = FORWARD[msg]
+        if not f then
+            log.error("unknow cmd:%s",msg)
+            return
+        end
+
+        skynet.retpack(f(guids,...))
     end)
 end)
