@@ -5,7 +5,7 @@ local base_players = require "game.lobby.base_players"
 local club_member = require "game.club.club_member"
 local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
-local club_table_template = require "game.club.club_table_template"
+local club_template = require "game.club.club_template"
 local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
 local json = require "cjson"
@@ -19,6 +19,7 @@ local club_money_type = require "game.club.club_money_type"
 local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
+local club_commission = require "game.club.club_commission"
 
 local reddb = redisopt.default
 
@@ -279,6 +280,37 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
     if not ok or not ruletb then
         return enum.ERORR_PARAMETER_ERROR
     end
+
+    local ok,advruletb = pcall(json.decode,advanced_rule)
+    if not ok or not advanced_rule or not advruletb.tax then
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    local mintax = 0
+    local tax = advruletb.tax
+    if tax.AA and tax.big_win then
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    if tax.AA then
+        mintax = tax.AA
+    elseif tax.big_win then
+        if table.nums(tax.big_win) == 0 then
+            return enum.ERORR_PARAMETER_ERROR
+        end
+
+        local last_money,last_tax = 0,0
+        for _,v in ipairs(tax.big_win) do
+            if v[1] < last_money or v[2] < last_tax then
+                return enum.ERORR_PARAMETER_ERROR
+            end
+        end
+
+        if tax.big_win[3] then
+            mintax = tax.big_win[3][2]
+        end
+    end
+
     local id = tonumber(reddb:incr("template:global:id"))
 
     local info = {
@@ -296,7 +328,8 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
         redismetadata.conf:encode({
             visual = true,
             conf = {
-                self_comission = 0,
+                commission_rate = 10000,
+                commission = mintax,
             },
             club_id = self.id,
             template_id = id,
@@ -304,22 +337,16 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
     )
 
     club_template_conf[self.id][id] = nil
-    club_table_template[self.id] = nil
+    club_template[self.id] = nil
     local _ = table_template[id]
 
     advanced_rule = type(advanced_rule) == "string" and json.decode(advanced_rule) or advanced_rule
-    local tax = advanced_rule and advanced_rule.tax and advanced_rule.tax.AA or advanced_rule.tax.big_win[3][2] or 0
     
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_ADD,
         template = {
             template = info,
             club_id = self.id,
-            visual = true,
-            conf = json.encode({
-                self_commission = 0,
-                commission = tax,
-            })
         }
     })
 
@@ -336,7 +363,7 @@ function base_club:remove_table_template(template_id)
     reddb:del(string.format("template:%d:%d",self.id,template_id))
     reddb:srem(string.format("club:template:%d",self.id),template_id)
     table_template[template_id] = nil
-    club_table_template[self.id][template_id] = nil
+    club_template[self.id][template_id] = nil
     club_template_conf[self.id][template_id] = nil
 
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
@@ -365,6 +392,20 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
         return enum.ERORR_PARAMETER_ERROR
     end
 
+    if rule then
+        local ok,ruletb = rule and pcall(json.decode,rule)
+        if not ok or not ruletb then
+            return enum.ERORR_PARAMETER_ERROR
+        end
+    end
+
+    if advanced_rule then
+        local ok,advruletb = pcall(json.decode,advanced_rule)
+        if not ok or not advanced_rule or not advruletb.tax then
+            return enum.ERORR_PARAMETER_ERROR
+        end
+    end
+
     local info = {
         template_id = template_id,
         club_id = self.id,
@@ -378,19 +419,13 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
     reddb:hmset(string.format("template:%d",template_id),rawtemp)
 
     table_template[template_id] = nil
-    club_table_template[self.id][template_id] = nil 
+    club_template[self.id][template_id] = nil
     
-    local tax = advanced_rule and advanced_rule.tax and advanced_rule.tax.AA or advanced_rule.tax.big_win[3][2] or 0
     self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
         sync = enum.SYNC_UPDATE,
         template = {
             template = rawtemp,
             club_id = self.id,
-            visual = true,
-            conf = json.encode({
-                self_commission = 0,
-                commission =  tax,
-            }),
         },
     })
 
@@ -399,6 +434,28 @@ end
 
 function base_club:notify_money(why,oldmoney,changemoney,money_id)
     
+end
+
+function base_club:incr_commission(money,round_id)
+    if money == 0 then return end
+
+    local money_id = club_money_type[self.id]
+    if not money_id then
+        log.error("base_club:incr_commission [%d] got nil money_id",self.id)
+        return
+    end
+
+    local newmoney = reddb:incrby(string.format("club:commission:%d",self.id),money)
+    newmoney = newmoney and tonumber(newmoney) or 0
+    club_commission[self.id] = nil
+
+    channel.call("db.?","msg","SD_LogClubCommission",{
+        club = self.id,
+        commission = money,
+        round_id = round_id,
+        money_id = money_id,
+    })
+    return newmoney
 end
 
 function base_club:incr_money(item,why)

@@ -18,6 +18,8 @@ local skynet = require "skynetproto"
 local channel = require "channel"
 local club_money_type = require "game.club.club_money_type"
 local player_money = require "game.lobby.player_money"
+local player_club = require "game.lobby.player_club"
+local club_template_conf = require "game.club.club_template_conf"
 local json = require "cjson"
 
 local reddb = redisopt.default
@@ -47,8 +49,7 @@ function base_table:get_next_game_id()
 end
 
 function base_table:get_ext_game_id()
-	self.ext_round_id = self.ext_round_id or math.random(1,100000)
-	local sext_round_id = string.format("%03d-%03d-%04d-%s-%06d",def_game_id,self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),self.ext_round_id)
+	local sext_round_id = string.format("%03d-%03d-%04d-%s-%06d",def_game_id,self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),math.random(1,100000))
 	log.info(sext_round_id)
 	return sext_round_id
 end
@@ -220,23 +221,109 @@ function base_table:commit_dismiss(player,agree)
 	return enum.ERROR_NONE
 end
 
-function base_table:do_commission()
+local function get_final_template_club_commission_rate(club,template_id)
+    if not club or not club.parent or club.parent == 0 then
+        return 1
+    end
 
+    local conf = club_template_conf[club.id][template_id]
+    local rate = (conf and conf.conf and conf.conf.commission_rate or 0) / 10000
+    if rate == 0 then
+        return rate
+    end
+
+    if club.parent and club.parent ~= 0 then
+        club = base_clubs[club.parent]
+        return rate * get_final_template_club_commission_rate(club,template_id)
+    end
+
+    return rate
+end
+
+function base_table:do_commission(taxes)
+	local money_id = self:get_money_id()
+	if not money_id then
+		log.error("base_table:do_commission [%d] got nil private money id.",self.private_id)
+		return
+	end
+
+	if not self.private_id then 
+		return
+	end
+
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.error("base_table:do_commission [%d] got nil private table.",self.private_id)
+		return
+	end
+
+	if not private_table.club then
+		log.error("base_table:do_commission [%d] got private club.",self.private_id)
+		return
+	end
+
+	if not private_table.template then
+		log.error("base_table:do_commission [%d] got nil private template.",self.private_id)
+		return
+	end
+
+	for guid,tax in pairs(taxes) do
+		local remain_commission = tax
+		local club_ids = player_club[guid][enum.CT_UNION]
+		if table.nums(club_ids) == 0 then
+			log.error("base_table:do_commission [%d] player [%d] no union club.",self.private_id,guid)
+			return
+		end
+
+		local club_id = club_ids[1]
+		repeat
+			local club = base_clubs[club_id]
+			local commission_rate = get_final_template_club_commission_rate(club,private_table.template)
+			local commission = math.floor(remain_commission * commission_rate)
+			if commission > 0 then
+				club:incr_commission(commission,self.round_id)
+			end
+			club_id = club.parent
+		until club.parent and club.parent ~= 0
+	end
 end
 
 function base_table:balance(winlose,why)
 	local tax = {}
-	if self.private_id then
+	for guid,_ in pairs(self.players) do
+		tax[guid] = 0
+	end
+
+	local money_id = self:get_money_id()
+	if not money_id then
+		log.error("base_table:balance [%d] got nil private money id.",self.private_id)
+		return
+	end
+	
+	local todo_commission = false
+	repeat
+		if not self.private_id then
+			break
+		end
+
 		local private_table = base_private_table[self.private_id]
 		if not private_table then
 			log.error("base_table:balance [%d] got nil private conf.",self.private_id)
 			return
 		end
 
-		local money_id = self:get_private_money_id()
-		if not money_id then
-			log.error("base_table:balance [%d] got nil private money id.",self.private_id)
-			return
+		if not private_table.club then
+			break
+		end
+
+		local club = base_clubs[private_table.club]
+		if not club then
+			log.error("base_table:balance [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club)
+			break
+		end
+
+		if club.type ~= enum.CT_UNION then
+			break
 		end
 
 		local advanced_rule = private_table.advanced_rule
@@ -250,6 +337,8 @@ function base_table:balance(winlose,why)
 			log.error("base_table:balance [%d] got nil private tax conf.",self.private_id)
 			return
 		end
+
+		todo_commission = true
 
 		if taxconf.AA then
 			for guid,_ in pairs(self.players) do
@@ -278,20 +367,24 @@ function base_table:balance(winlose,why)
 				end
 			end
 		end
-		
-		for guid,p in pairs(self.players) do
-			local ptax = tax[guid] or 0
-			local change = winlose[guid] or 0
-			local final_change = change - ptax
-			local old_money = player_money[guid][money_id]
+	until false
 
-			p:incr_money({
-				money_id = money_id,
-				money = final_change,
-			},why)
+	for guid,p in pairs(self.players) do
+		local ptax = tax[guid] or 0
+		local change = winlose[guid] or 0
+		local final_change = change - ptax
+		local old_money = player_money[guid][money_id]
 
-			self:player_money_log(p,money_id,old_money,ptax,final_change)
-		end
+		p:incr_money({
+			money_id = money_id,
+			money = final_change,
+		},why)
+
+		self:player_money_log(p,money_id,old_money,ptax,final_change)
+	end
+
+	if todo_commission then
+		self:do_commission(tax)
 	end
 end
 
@@ -355,12 +448,12 @@ function  base_table:save_game_log(gamelog)
 	local slog = json.encode(gamelog)
 	log.info(slog)
 	local nMsg = {
-		playid = self.game_id,
 		type = def_game_name,
-		log = json.encode(gamelog),
+		log = gamelog,
 		starttime = self.start_time,
 		endtime = os.time(),
-		ext_id = self.game_id_ext,
+		round_id = self.round_id,
+		ext_round_id = self.ext_round_id,
 	}
 	channel.publish("db.?","msg","SL_Log_Game",nMsg)
 end
@@ -376,13 +469,10 @@ function base_table:player_money_log(player,money_id,old_money,tax,change_money)
 		new_money = old_money + change_money,
 		tax = tax,
 		change_money = change_money,
-		id = self.game_id,
+		id = self.round_id,
 		platform_id = player.platform_id,
 	}
 	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
-	send2client_pb(player,"SC_Gamefinish",{
-		money = player.money
-	})
 end
 
 function base_table:player_bet_flow_log(player,money)
@@ -410,13 +500,13 @@ function base_table:player_money_log_when_gaming(player,money_id,old_money,tax,c
 		new_money = player.money,
 		tax = tax,
 		change_money = change_money,
-		id = self.game_id,
+		id = self.round_id,
 		platform_id = player.platform_id,
 	}
 	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 end
 
-function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,money_change,table_id)
+function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,money_change,round_id)
 	log.info("==============================base_table:robot_money_log")
 	local nMsg = {
 		guid = robot.guid,
@@ -428,7 +518,7 @@ function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,mo
 		new_money = robot.money,
 		tax = tax,
 		money_change = money_change,
-		id = table_id,
+		id = round_id,
 	}
 	send2db_pb("SL_Log_Robot_Money",nMsg)
 end
@@ -819,27 +909,40 @@ function base_table:send_info_to_player(player)
 end
 
 function base_table:on_pre_start(player_count)
-
+	self.round_id = self:get_next_game_id()
+	self.ext_round_id = self.ext_round_id or self:get_ext_game_id()
 end
 
-function base_table:get_private_money_id()
+function base_table:get_money_id()
+	if not self.private_id then
+		log.info("base_table:get_money_id,not private table,return -1.")
+		return -1
+	end
+
 	local private_table = base_private_table[self.private_id]
 	if not private_table then
 		log.error("base_table:get_money_id [%d] got nil private conf",self.private_id)
-		return 0
+		return
 	end
 
-	local club = private_table.club
+	local club_id = private_table.club
+	if not club_id or club_id == 0 then
+		return -1
+	end
+
+	local club = base_clubs[club_id]
 	if not club then
-		log.error("base_table:get_money_id [%d] got nil private club",self.private_id)
-		return 0
+		log.error("base_table:get_money_id [%d] got nil private club [%d].",self.private_id,club_id)
+		return
 	end
 
 	return club_money_type[club]
 end
 
 function base_table:cost_private_fee()
-	if not self.private_id then return end
+	if not self.private_id then
+		return
+	end
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
@@ -877,7 +980,7 @@ function base_table:cost_private_fee()
 			log.error("base_table:cost_private_fee [%d] got nil club [%d] boss [%d].",self.private_id,club.id,club.owner)
 			return
 		end
-		
+
 		local money = self.room_.conf.private_conf.fee
 		boss:cost_money({{
 			money_id = 0,
@@ -898,8 +1001,6 @@ function base_table:on_started()
 	end
 
 	self.start_time = os.time()
-	self.game_id = self:get_next_game_id()
-	self.game_id_ext = self:get_ext_game_id()
 end
 
 -- 开始游戏

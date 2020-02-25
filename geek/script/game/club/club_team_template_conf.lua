@@ -2,13 +2,13 @@ local redisopt = require "redisopt"
 local reddb  = redisopt.default
 local redismetadata = require "redismetadata"
 
-local club_template_conf = {}
+local club_team_template_conf = {}
 
-setmetatable(club_template_conf,{
-    __index = function(club,club_id)
+setmetatable(club_team_template_conf,{
+    __index = function(team,club_id)
         local confs = setmetatable({},{
             __index = function(t,template_id)
-                local conf = reddb:hgetall(string.format("conf:%d:%d",club_id,template_id))
+                local conf = reddb:hgetall(string.format("team_conf:%d:%d",club_id,template_id))
                 if not conf or table.nums(conf) == 0 then
                     return nil
                 end
@@ -18,10 +18,10 @@ setmetatable(club_template_conf,{
                 return conf
             end
         })
-        club[club_id] = confs
+        team[club_id] = confs
 
         return confs
     end,
 })
 
-return club_template_conf
+return club_team_template_conf

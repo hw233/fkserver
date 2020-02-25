@@ -2,9 +2,9 @@ local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
-local club_table_template = {}
+local club_template = {}
 
-setmetatable(club_table_template,{
+setmetatable(club_template,{
     __index = function(t,club_id)
         local tts = {}
         local ttids = reddb:smembers(string.format("club:template:%d",club_id))
@@ -19,4 +19,4 @@ setmetatable(club_table_template,{
 })
 
 
-return club_table_template
+return club_template

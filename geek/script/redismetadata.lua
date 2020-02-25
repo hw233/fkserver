@@ -79,7 +79,8 @@ redismetadata.club.info = redismeta:create({
 
 redismetadata.conf = redismeta:create({
     fields = {
-        conf = "json",
+        commission = "number",
+        commission_rate = "number",
         visual = "boolean",
         club_id = "number",
         template_id = "number",

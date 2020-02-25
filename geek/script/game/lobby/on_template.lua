@@ -38,7 +38,6 @@ function on_cs_create_table_template(msg,guid)
         template = {
             club_id = club_template.club_id,
             template = info,
-            visual = true,
         },
     })
 end
@@ -172,8 +171,6 @@ function on_cs_modify_table_template(msg,guid)
         template = {
             template = info,
             club_id = club_template.club_id,
-            visula = true,
-            conf = json.encode({}),
         },
     })
 end

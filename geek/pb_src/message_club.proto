@@ -81,7 +81,6 @@ message S2C_CLUB_INFO_RES {
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
     repeated CLUB_TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
     repeated int32 gamelist = 11;
-    repeated CLUB_TEMPLATE_CONF confs = 14;
 }
 
 
@@ -91,8 +90,6 @@ message C2S_CLUB_PLAYER_LIST_REQ{
     int32 club_id = 1;      //俱乐部ID
     int32 guid = 2;    //玩家ID，SEARCH_LIST时需要传递此参数
 }
-
-
 
 //俱乐部成员列表数据
 message S2C_CLUB_PLAYER_LIST_RES{ 
@@ -261,16 +258,7 @@ message S2C_EDIT_CLUB_GAME_TYPE_RES{
     int32 result = 1;
 }
 
-message C2S_CONFIG_CLUB_TABLE_TEMPLATE{
-    enum MsgID {NIL = 0;ID = 14071;}
-    CLUB_TEMPLATE_CONF conf = 1;
-}
 
-message S2C_CONFIG_CLUB_TABLE_TEMPLATE{
-    enum MsgID {NIL = 0;ID = 14072;}
-    int32   result = 1;
-    CLUB_TEMPLATE_CONF conf = 2;
-}
 
 //联盟成员列表请求
 message C2S_CLUB_TEAM_LIST_REQ{ 
@@ -305,4 +293,59 @@ message S2C_CLUB_TRANSFER_MONEY_RES{
     int32 target_type = 4;
     int32 target_id = 5;
     int32 money = 6;
+}
+
+
+
+message C2S_CONFIG_CLUB_TEAM_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14079;}
+    int32 club_id = 1;
+    CLUB_TEAM_TEMPLATE_CONF conf = 2;
+}
+
+message S2C_CONFIG_CLUB_TEAM_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14080;}
+    int32   result = 1;
+    int32   club_id = 2;
+    CLUB_TEAM_TEMPLATE_CONF conf = 3;
+}
+
+message C2S_GET_CLUB_TEAM_TEMPLATE_CONFIG{
+    enum MsgID {NIL = 0;ID = 14081;}
+    int32   club_id = 1;
+    int32   template_id = 2;
+}
+
+message S2C_GET_CLUB_TEAM_TEMPLATE_CONFIG{
+    enum MsgID {NIL = 0;ID = 14082;}
+    int32   club_id = 1;
+    repeated CLUB_TEAM_TEMPLATE_CONF confs = 3;
+}
+
+message C2S_CONFIG_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14083;}
+    int32   club_id = 1;
+    CLUB_TEMPLATE_CONF conf = 2;
+}
+
+message S2C_CONFIG_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14084;}
+    int32   result = 1;
+    int32   club_id = 2;
+    CLUB_TEMPLATE_CONF conf = 3;
+}
+
+message C2S_GET_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14085;}
+    int32   club_id = 1;
+    int32   team_id = 2;
+    int32   template_id = 3;
+}
+
+message S2C_GET_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14086;}
+    int32    result = 1;
+    int32    club_id = 2;
+    int32    team_id = 3;
+    repeated CLUB_TEMPLATE_CONF confs = 4;
 }

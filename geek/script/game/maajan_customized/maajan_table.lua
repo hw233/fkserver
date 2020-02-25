@@ -152,7 +152,6 @@ function maajan_table:on_started()
     self.waiting_player_actions    = {}
 	self:update_state(FSM_S.PER_BEGIN)
 	self.do_logic_update = true
-    self.table_game_id = self:get_next_game_id()
     local game_log_players = {}
     for i = 1,self.chair_count do game_log_players[i] = {} end
     self.game_log = {

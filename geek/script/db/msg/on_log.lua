@@ -35,14 +35,14 @@ function on_sd_log_game_money( msg)
     local sql
     if msg.guid >= 0 then
         sql = string.format([[
-            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `id`, `platform_id')
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `round_id`, `platform_id')
             VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
             msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.id,msg.platform_id)
     elseif msg.guid < 0 then --机器人日志记录到另一张同样的表里
         sql = string.format([[
-            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `id`, `platform_id')
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `round_id`, `platform_id')
             VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.id,msg.platform_id)
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.round_id,msg.platform_id)
     end
 
     log.info("sql [%s]" , sql)
@@ -52,10 +52,10 @@ end
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
     local sql = string.format([[
-        INSERT INTO `log`.`t_log_game_tj` (`id`, `type`, `log`, `ext_id`, `start_time`,`end_time`)
+        INSERT INTO `log`.`t_log_game` (`round_id`, `type`, `log`, `ext_round_id`, `start_time`,`end_time`)
         VALUES ('%s', '%s', '%s','%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
         ]],
-        msg.playid,msg.type,json.encode(msg.log),msg.ext_id,msg.starttime,msg.endtime)
+        msg.round_id,msg.type,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime)
     local ret = dbopt.log:query(sql)
     if ret.errno then
         log.error(ret.err)
@@ -75,9 +75,9 @@ end
 function on_sl_robot_log_money(msg)
 	log.info("...................... on_sl_robot_log_money")
     dbopt.log:query([[
-        INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `id`)
+        INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `round_id`)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, %d, '%s')]],
-        msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.tax,msg.money_change,msg.id)
+        msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.tax,msg.money_change,msg.round_id)
 end
 
 function  on_SD_SaveCollapsePlayerLog(msg)
@@ -116,6 +116,14 @@ function on_ld_log_login(msg)
 
     if res.errno then
         log.error("on_ld_log_login insert into t_log_login info throw exception.[%d],[%s]",res.errno,res.err)
+        return
+    end
+end
+
+function on_sd_log_club_commission(msg)
+    local res = dbopt.log:query("INSERT INTO t_log_commission(club,money_id,commission,round_id) VALUES(%d,%d,%d,'%s')",msg.club,msg.money_id,msg.commission,msg.round_id)
+    if res.errno then
+        log.error("on_sd_log_club_commission insert into t_log_commission info throw exception.[%d],[%s]",res.errno,res.err)
         return
     end
 end
