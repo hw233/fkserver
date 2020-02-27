@@ -25,7 +25,7 @@ function base_character:del()
 end
 
 -- 检查房间限制
-function base_character:check_room_limit(score)
+function base_character:check_money_limit(score)
 	return false
 end
 
@@ -122,8 +122,8 @@ end
 
 
 -- 检查强制踢出房间
-function base_character:check_forced_exit(score)
-	if self:check_room_limit(score) then
+function base_character:check_forced_exit(score,money_id)
+	if self:check_money_limit(score,money_id) then
 		self:forced_exit()
 	end
 end

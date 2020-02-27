@@ -35,14 +35,14 @@ function on_sd_log_game_money( msg)
     local sql
     if msg.guid >= 0 then
         sql = string.format([[
-            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `round_id`, `platform_id')
-            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.id,msg.platform_id)
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `change_money`, `round_id`, `platform_id')
+            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, '%s', '%d')]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.change_money,msg.id,msg.platform_id or 0)
     elseif msg.guid < 0 then --机器人日志记录到另一张同样的表里
         sql = string.format([[
-            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `tax`, `change_money`, `round_id`, `platform_id')
-            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, %d, '%s', '%d')]],
-            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.tax,msg.change_money,msg.round_id,msg.platform_id)
+            INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `change_money`, `round_id`, `platform_id')
+            VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, '%s', '%d')]],
+            msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.change_money,msg.round_id,msg.platform_id or 0)
     end
 
     log.info("sql [%s]" , sql)
@@ -63,7 +63,7 @@ function on_sl_log_game(msg)
 
     local players_sql = {}
     for _,p in pairs(msg.log.players) do
-        table.insert(players_sql,string.format("('%s',%d,%d)",msg.playid,msg.log.table_id,p.guid))
+        table.insert(players_sql,string.format("('%s',%d,%d)",msg.round_id,msg.log.table_id,p.guid))
     end
 
     ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid) VALUES"..table.concat(players_sql,",")..";")
@@ -75,9 +75,9 @@ end
 function on_sl_robot_log_money(msg)
 	log.info("...................... on_sl_robot_log_money")
     dbopt.log:query([[
-        INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`, `tax`, `money_change`, `round_id`)
-        VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, %d, '%s')]],
-        msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.tax,msg.money_change,msg.round_id)
+        INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`,`money_change`, `round_id`)
+        VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, '%s')]],
+        msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.money_change,msg.round_id)
 end
 
 function  on_SD_SaveCollapsePlayerLog(msg)

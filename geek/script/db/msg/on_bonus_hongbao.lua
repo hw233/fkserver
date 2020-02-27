@@ -10,8 +10,8 @@ local dbopt = require "dbopt"
 
 require "db.msg.on_log"
 
-local old_on_sl_log_money = on_sd_log_game_money
-function on_sd_log_game_money(game_id, msg)
+-- local old_on_sl_log_money = on_sd_log_game_money
+function on_sd_log_game_money_in_bonus(game_id, msg)
 	old_on_sl_log_money(game_id,msg)
 
 	if not msg.guid or msg.guid <= 0 then return end

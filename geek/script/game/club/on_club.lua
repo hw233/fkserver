@@ -23,6 +23,8 @@ local club_team = require "game.club.club_team"
 local club_money_type = require "game.club.club_money_type"
 local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
+local club_utils = require "game.club.club_utils"
+local club_commission = require "game.club.club_commission"
 local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
@@ -87,8 +89,11 @@ function on_cs_club_create(msg,guid)
 
     base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
-    base_clubs[id] = nil
-    local _ = base_clubs[id]
+    -- 初始送分
+    base_clubs[id]:incr_money({
+        money_id = club_money_type[id],
+        money = math.floor(global_cfg.union_init_money),
+    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
@@ -245,22 +250,27 @@ function on_cs_club_dismiss(msg,guid)
     }
 end
 
-local function get_club_tables(club_id)
-    if not club_id then return end
+local function get_club_tables(club)
+    if not club then return end
 
     local tables = {}
-    repeat
-        local club = base_clubs[club_id]
-        if not club then break end
+    for tid,_ in pairs(club_table[club.id] or {}) do
+        local priv_tb = base_private_table[tid]
+        local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
+        table.insert(tables,tableinfo)
+    end
 
-        for pid,_ in pairs(club_table[club_id]) do
-            local priv_tb = base_private_table[pid]
-            local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-            table.insert(tables,tableinfo)
+    return tables
+end
+
+local function deep_get_club_tables(club)
+    local tables = get_club_tables(club) or {}
+    for teamid,_ in pairs(club_team[club.id]) do
+        local team = base_clubs[teamid]
+        if team then
+            table.unionto(tables,deep_get_club_tables(team) or {})
         end
-
-        club_id = club.parent
-    until not club_id or club_id == 0
+    end
 
     return tables
 end
@@ -279,7 +289,6 @@ local function get_club_templates(club)
                     game_id = temp.game_id,
                     description = temp.description,
                     rule = json.encode(temp.rule),
-                    advanced_rule = json.encode(temp.advanced_rule),
                 },
                 club_id = temp.club_id,
             })
@@ -342,7 +351,8 @@ function on_cs_club_detail_info_req(msg,guid)
         real_games = table.keys(games)
     end
 
-    local tables = get_club_tables(club_id)
+    local root = club_utils.root(club)
+    local tables = deep_get_club_tables(root)
 
     local online_count = 0
     local total_count = 0
@@ -415,9 +425,11 @@ function on_cs_club_detail_info_req(msg,guid)
             count = club_money[club_id][money_id] or 0
         }},
         money_id = money_id,
+        commission = (role == enum.CRT_BOSS or role == enum.CRT_ADMIN) and club_commission[club_id] or 0,
     }
 
     local club_info = {
+        root = club_utils.root(club).id,
         result = enum.ERROR_NONE,
         self_info = team_info,
         my_team_info = my_team_info,
@@ -512,7 +524,9 @@ function on_club_create_table(club,player,chair_count,round,rule,template)
     local result,global_table_id,tb = club:create_table(player,chair_count,round,rule,template)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         local tableinfo = channel.call("game."..def_game_id,"msg","GetTableStatusInfo",tb.table_id_)
-        club:broadcast("S2C_SYNC_TABLES_RES",{
+        local root  = club_utils.root(club)
+        root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+            root_club = root.id,
             club_id = club.id,
             room_info = tableinfo,
             sync_table_id = global_table_id,
@@ -824,11 +838,6 @@ local function on_cs_club_partner(msg,guid)
         end
     
         base_club:create(id,"","",target_guid,enum.CT_UNION,club_id)
-
-        -- channel.publish("db.?","msg","SD_ExitClub",{
-        --     guid = target_guid,
-        --     club_id = club_id,
-        -- })
 
         reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_PARTNER)
         club_role[club_id][target_guid] = nil
@@ -1236,4 +1245,72 @@ function on_cs_transfer_money(msg,guid)
     end
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+end
+
+function on_cs_exchagne_club_commission(msg,guid)
+    local club_id = msg.club_id
+    local count = msg.count
+
+    if not count or not club_id then
+        onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
+            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+        })
+        return
+    end
+
+    local commission = club_commission[club_id]
+    if count < 0 then
+        count = commission
+    end
+
+    local result = club:exchange_commission(count)
+    onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
+        result = result,
+        club_id = club_id,
+    })
+end
+
+function on_cs_club_money(msg,guid)
+    local club_id = msg.club_id
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_MONEY_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_MONEY_RES",{
+            result = enum.ERROR_NOT_IS_CLUB_BOSS
+        })
+        return
+    end
+
+    local money_id = club_money_type[club_id]
+    onlineguid.send(guid,"S2C_CLUB_MONEY_RES",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        money_id = money_id,
+        count = club_money[club_id][money_id],
+        commission = club_commission[club_id] or 0,
+    })
 end

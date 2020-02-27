@@ -99,7 +99,7 @@ function base_active_android:think_on_sit_down(room_id_, table_id_, chair_id_)
 end
 
 -- 检查房间限制
-function base_active_android:check_room_limit(score)
+function base_active_android:check_money_limit(score)
 	return false
 end
 

@@ -23,17 +23,15 @@ function on_sd_create_club(msg)
         end
     end
 
-    gamedb:query("SET NAMES = utf8;")
-    gamedb:query("SET AUTOCOMMIT = 0;")
-
     local transqls = {
+        "SET AUTOCOMMIT = 0;",
         "BEGIN;",
         string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent) SELECT %d,'%s',%d,'%s',%d,%d 
                         WHERE EXISTS (SELECT * FROM t_player WHERE guid = %d);]],
                     club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,club_info.owner),
-        string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0);",club_info.id,money_info.id),
+        string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);",club_info.id,money_info.id,club_info.id),
         string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_info.id,club_info.owner),
-        string.format([[INSERT INTO t_player_money(guid,money_id,money) SELECT %d,%d,0 
+        string.format([[INSERT INTO t_player_money(guid,money_id,money) SELECT %d,%d,0
             WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = %d);]],
             club_info.owner,money_info.id,club_info.owner,money_info.id),
         string.format("INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);",money_info.id,club_info.id),
@@ -44,7 +42,7 @@ function on_sd_create_club(msg)
     res = trans:execute(table.concat(transqls,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
-        trans:rollback()
+        trans:execute("ROLLBACK;")
         return
     end
 
@@ -76,22 +74,27 @@ function on_sd_join_club(msg)
         return
     end
 
-    res = gamedb:query([[INSERT INTO t_club_member(club,guid) SELECT %d,%d 
-        WHERE NOT EXISTS (SELECT * FROM t_club_member WHERE club = %d AND guid = %d);]],
-        msg.club_id,msg.guid,msg.club_id,msg.guid,msg.guid)
+    local sqls = {
+        "SET AUTOCOMMIT = 0;",
+        "BEGIN;",
+        string.format([[INSERT INTO t_club_member(club,guid) SELECT %d,%d
+            WHERE NOT EXISTS (SELECT * FROM t_club_member WHERE club = %d AND guid = %d);]],
+            msg.club_id,msg.guid,msg.club_id,msg.guid,msg.guid),
+        string.format([[INSERT INTO t_player_money
+            (SELECT %d,money_id,0,0 FROM (SELECT * FROM t_club_money_type WHERE club = %d) m
+            WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = m.money_id));]],
+            msg.guid,msg.club_id,msg.guid),
+        "COMMIT;"
+    }
+    local tran = dbopt.game:transaction()
+    res = tran:execute(table.concat(sqls,"\n"))
     if res.errno then
-        log.error("on_sd_join_club INSERT member error:%d,%s",res.errno,res.err)
+        tran:execute("ROLLBACK;")
+        log.error("on_sd_join_club error:%d,%s",res.errno,res.err)
         return
     end
 
-    res = gamedb:query([[INSERT INTO t_player_money
-        (SELECT %d,money_id,0,0 FROM (SELECT * FROM t_club_money_type WHERE club = %d) m
-        WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = m.money_id));]],
-        msg.guid,msg.club_id,msg.guid)
-    if res.errno then
-        log.error("on_sd_join_club INSERT player_money error:%d,%s",res.errno,res.err)
-        return
-    end
+    dump(res)
 
     return true
 end
@@ -120,32 +123,35 @@ function on_sd_add_club_member(msg)
 end
 
 local function incr_club_money(club,money_id,money,why)
-	local res = dbopt.game:query("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id)
-	if res.errno then
-		log.error("incr_club_money SELECT money error,errno:%d,err:%s",res.errno,res.err)
-		return
-	end
+    local sqls = {
+        "SET AUTOCOMMIT = 0;",
+        "BEGIN;",
+        string.format("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id),
+        string.format("UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;",money,club,money_id),
+        string.format("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id),
+        "COMMIT;",
+    }
 
-    local oldmoney = tonumber(res[1].money)
-	res = dbopt.game:query("UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;",money,club,money_id)
-	if res.errno then
-		log.error("incr_club_money change money error,errno:%d,err:%s",res.errno,res.err)
-		return
-    end
-
-    res = dbopt.game:query("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id)
+    local tran = dbopt.game:transaction()
+    local res = tran:execute(table.concat(sqls,"\n"))
     if res.errno then
-		log.error("incr_club_money select new money error,errno:%d,err:%s",res.errno,res.err)
-		return
-    end
-
-	local newmoney = tonumber(res[1].money)
-
-	res = dbopt.log:query("INSERT INTO log.t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
-        club,money_id,oldmoney,newmoney,why)
-    if res.errno then
-        log.error("incr_club_money insert log.t_log_money_club error,errno:%d,err:%s",res.errno,res.err)
+        tran:execute("ROLLBACK;")
+        log.error("incr_club_money insert UPDATE money error,errno:%d,err:%s",res.errno,res.err)
         return
+    end
+
+    dump(res)
+
+    local oldmoney = res[3] and res[3][1] and res[3][1].money or nil
+    local newmoney = res[5] and res[5][1] and res[5][1].money or nil
+
+    if oldmoney and newmoney then
+        res = dbopt.log:query("INSERT INTO log.t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
+            club,money_id,oldmoney,newmoney,why)
+        if res.errno then
+            log.error("incr_club_money insert log.t_log_money_club error,errno:%d,err:%s",res.errno,res.err)
+            return
+        end
     end
 
 	return oldmoney,newmoney

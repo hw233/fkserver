@@ -7,7 +7,11 @@ require "game.lobby.base_android"
 local player_money = require "game.lobby.player_money"
 local log  = require "log"
 local enum = require "pb_enums"
+local json = require "cjson"
+local onlineguid = require "netguidopt"
+local util = require "util"
 require "data.item_details_table"
+local club_money_type = require "game.club.club_money_type"
 local channel = require "channel"
 local item_details_table = item_details_table
 local base_active_android = base_active_android
@@ -72,7 +76,7 @@ function base_player:send_pb(msgname,msg)
 end
 
 -- 检查房间限制
-function base_player:check_room_limit(score,money_id)
+function base_player:check_money_limit(score,money_id)
 	return self:get_money(money_id) < score
 end
 
@@ -260,11 +264,22 @@ function base_player:on_sit_down(table_id_, chair_id_, result_)
 end
 
 -- 通知坐下
-function base_player:notify_sit_down(player,reconnect)
+function base_player:notify_sit_down(player,reconnect,private_table)
 	log.info("notify_sit_down  player guid[%d] ip_area =%s",player.guid , player.ip_area)
+	
+	local visual_info = clone(player)
+	if private_table then
+		local club_id = private_table.club_id
+		local money_id = club_id and club_money_type[club_id] or -1
+		visual_info.money = {{
+			money_id = money_id,
+			count = player:get_money(money_id),
+		}}
+	end
+	
 	send2client_pb(self, "SC_NotifySitDown", {
 		table_id = player.table_id,
-		pb_visual_info = player,
+		pb_visual_info = visual_info,
 		is_online = reconnect,
 	})
 end
@@ -396,21 +411,27 @@ function base_player:decrby(field,value)
 end
 
 function base_player:incr_money(item,why)
+	if not why then
+		log.error("base_player:incr_money [%d] why can not be nil.",self.guid)
+		return
+	end
+
+	dump(item)
 	local where = item.where or 0
 	local oldmoney = player_money[self.guid][item.money_id]
-	log.info("guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
-	log.info("money[%d] - p[%d]" , oldmoney,item.money)
+	log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
+	log.info("base_player:incr_money money[%d] + p[%d]" , oldmoney,item.money)
 
 	local changes = channel.call("db.?","msg","SD_ChangePlayerMoney",{{
 		guid = self.guid,
-		money = item.money,
+		money = math.floor(item.money),
 		money_id = item.money_id,
 		where = where,
 	}},why)
 
 	if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
 		log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
-		return
+		-- return
 	end
 	
 	local dboldmoney = changes[1].oldmoney
@@ -418,20 +439,20 @@ function base_player:incr_money(item,why)
 	
 	if dboldmoney ~= oldmoney then
 		log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d] dboldmoney[%d]",self.guid,item.money_id,oldmoney,dboldmoney)
-		return
+		-- return
 	end
 
 	local newmoney
 	if not self:is_android() then
-		newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,item.money)
+		newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
 		if dbnewmoney ~= newmoney then
 			log.error("db incrmoney error,guid[%d] money_id[%d] newmoney[%d] dbnewmoney[%d]",self.guid,item.money_id,newmoney,dbnewmoney)
-			return
+			-- return
 		end
 	end
 	
-	log.info("incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
-	self:notify_money(why,oldmoney,newmoney-oldmoney,item.money_id,where)
+	log.info("base_player:incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
+	self:notify_money(item.money_id)
 	return oldmoney,newmoney
 end
 
@@ -439,7 +460,7 @@ end
 function base_player:cost_money(price, why)
 	for _, item in ipairs(price) do
 		log.info("guid[%d] money_id[%d]  money[%d] why[%d]" ,self.guid, item.money_id, item.money,why)
-		if item.money > 0 then 
+		if item.money < 0 then 
 			log.error("cost_money but got minus money values.")
 			return
 		end
@@ -457,15 +478,16 @@ function base_player:cost_money(price, why)
 end
 
 --通知客户端金钱变化
-function base_player:notify_money(why,money,change_money,money_id,where)
+function base_player:notify_money(money_id)
 	money_id = money_id or 0
-	send2client_pb(self, "SC_NotifyMoney", {
-		opt_type = why,
-		money_id = money_id,
-		money = money,
-		change_money = change_money,
-		where = where,
-		})
+	onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
+		"PLAYER",{
+			guid = self.guid,
+			money_id = money_id,
+		},{
+			money = player_money[self.guid][money_id] or 0
+		}
+	))
 end
 
 -- 加钱
@@ -691,7 +713,7 @@ function base_player:change_money(value, opttype, is_savedb, whatever)
 	local money_ = self:incrby("money",value)
 	self.money = money_
 	log.info("money is :"..self.money)
-	self:notify_money(opttype,money_,money_ - oldmoney)
+	self:notify_money()
 	log.info("opttype--------------".. opttype)
 	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,oldmoney,self.money,self.bank,self.bank)
 	log.info("change_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)

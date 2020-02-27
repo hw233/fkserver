@@ -14,7 +14,6 @@ setmetatable(table_template,{
         end
 
         temp = redismetadata.privatetable.template:decode(temp)
-        t[ttid] = temp
         return temp
     end,
 })

@@ -12,6 +12,7 @@ local md5 = require "md5.core"
 local enum = require "pb_enums"
 local dbopt = require "dbopt"
 local httpc = require "http.httpc"
+local player_money = require "game.lobby.player_money"
 require "functions"
 require "login.msg.runtime"
 
@@ -89,8 +90,9 @@ local function reg_account(msg)
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
+    reddb:hset(string.format("player:money:%d",guid),0,0)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
-
+    player_money[guid] = nil
     channel.call("db.?","msg","LD_RegAccount",info)
 
     return enum.LOGIN_RESULT_SUCCESS,info

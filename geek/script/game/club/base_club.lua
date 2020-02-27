@@ -20,12 +20,37 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
 local club_commission = require "game.club.club_commission"
+local club_team = require "game.club.club_team"
+local util = require "util"
 
 local reddb = redisopt.default
 
 local table_expire_seconds = 60 * 60 * 5
 
 local base_club = {}
+
+local function broadcast(clubid,msgname,msg,except)
+    if except then
+        except = type(except) == "number" and except or except.guid
+    end
+    local guids = {}
+    for guid,_ in pairs(club_member[clubid]) do
+        if not except or except ~= guid then
+            table.insert(guids,guid)
+        end
+    end
+
+    if table.nums(guids) ~= 0 then
+        onlineguid.broadcast(guids,msgname,msg)
+    end
+end
+
+local function recusive_broadcast(clubid,msgname,msg,except)
+    broadcast(clubid,msgname,msg,except)
+    for teamid,_ in pairs(club_team[clubid]) do
+        recusive_broadcast(teamid,msgname,msg,except)
+    end
+end
 
 function base_club:create(id,name,icon,owner,tp,parent)
     id = tonumber(id)
@@ -55,7 +80,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
         info = c,
         money_info = money_info,
     }) then
-        return
+        log.error("base_club:create SD_CreateClub failed.")
     end
 
     if (not parent or parent == 0) and tp == enum.CT_UNION then
@@ -67,7 +92,10 @@ function base_club:create(id,name,icon,owner,tp,parent)
     end
 
     reddb:set(string.format("club:money_type:%d",id),money_info.id)
-    reddb:hset(string.format("club:money:%d",id),money_info.id,0)
+    reddb:hmset(string.format("club:money:%d",id),{
+        [money_info.id] = 0,
+        [0] = 0,
+    })
     reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
     reddb:hset(string.format("player:money:%d",owner_guid),money_info.id,0)
@@ -81,9 +109,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
 
     reddb:hset(string.format("club:role:%d",id),owner_guid,enum.CRT_BOSS)
     club_role[id][owner_guid] = nil
-    c.tables = {}
-    setmetatable(c,base_club)
-    base_club[id] = c
+    setmetatable(c,{__index = base_club})
 
     return id
 end
@@ -197,15 +223,9 @@ function base_club:exit(guid)
 end
 
 function base_club:broadcast(msgname,msg,except)
-    if except then
-        except = type(except) == "number" and except or except.guid
-    end
-    for guid,_ in pairs(club_member[self.id]) do
-        if not except or except ~= guid then
-            onlineguid.send(guid,msgname,msg)
-        end
-    end
+    broadcast(self.id,msgname,msg,except)
 end
+
 
 function base_club:create_table(player,chair_count,round,conf,template)
     local member = club_member[self.id][player.guid]
@@ -214,48 +234,44 @@ function base_club:create_table(player,chair_count,round,conf,template)
         return enum.ERROR_NOT_IS_CLUB_MEMBER
     end
 
-    if template and not self:can_sit_down(template,player) then
+    if conf and not self:can_sit_down(conf,player) then
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
-    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,conf)
+    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,conf,self)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hmset(string.format("table:info:%d",global_tid),{
             club_id = self.id,
-            template = template and template.id or nil,
+            template = template.template_id,
         })
 
         reddb:sadd("club:table:"..self.id,global_tid)
-        reddb:expire("club:table:"..self.id,table_expire_seconds)
-        base_private_table[global_tid].club_id = self.id
+        -- reddb:expire("club:table:"..self.id,table_expire_seconds)
+        base_private_table[global_tid] = nil
     end
 
     return result,global_tid,tb
 end
 
 --玩家坐下积分检测
-function base_club:can_sit_down(template,player)
-    local advanced_rule = template.advanced_rule
-    if not advanced_rule then
+function base_club:can_sit_down(rule,player)
+    if not rule or not rule.union then
         return true
     end
 
-    local entry_score = advanced_rule.entry_score
-
+    local entry_score = rule.union.entry_score or 0
     local money_id = club_money_type[self.id]
     local money = player_money[player.guid][money_id]
-    dump(money)
     return money >= entry_score
 end
 
 --玩家积分破产
 function base_club:is_player_bankrupt(template,player)
-    local advanced_rule = template.advanced_rule
-    if not advanced_rule then
+    if not template.rule or not template.rule.union then
         return false
     end
 
-    local min_score = advanced_rule.min_score
+    local min_score = template.rule.union.min_score
     if not min_score then
         return false
     end
@@ -266,49 +282,49 @@ function base_club:is_player_bankrupt(template,player)
 end
 
 function base_club:join_table(player,private_table,chair_count)
-    local template = table_template[private_table.template]
-    if template and not self:can_sit_down(template,player) then
+    local rule = private_table.rule
+    if rule and not self:can_sit_down(rule,player) then
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
     return g_room:join_private_table(player,private_table,chair_count)
 end
 
-
-function base_club:create_table_template(game_id,desc,rule,advanced_rule)
-    local ok,ruletb = pcall(json.decode,rule) 
-    if not ok or not ruletb then
-        return enum.ERORR_PARAMETER_ERROR
-    end
-
-    local ok,advruletb = pcall(json.decode,advanced_rule)
-    if not ok or not advanced_rule or not advruletb.tax then
-        return enum.ERORR_PARAMETER_ERROR
-    end
-
-    local mintax = 0
-    local tax = advruletb.tax
-    if tax.AA and tax.big_win then
-        return enum.ERORR_PARAMETER_ERROR
-    end
-
-    if tax.AA then
-        mintax = tax.AA
-    elseif tax.big_win then
-        if table.nums(tax.big_win) == 0 then
-            return enum.ERORR_PARAMETER_ERROR
+local function check_rule(rule)
+    if type(rule) == "string" then
+        local ok
+        ok,rule = pcall(json.decode,rule)
+        if not ok or not rule then
+            return
         end
+    end
 
-        local last_money,last_tax = 0,0
-        for _,v in ipairs(tax.big_win) do
-            if v[1] < last_money or v[2] < last_tax then
-                return enum.ERORR_PARAMETER_ERROR
+    if rule.union then
+        local tax = rule.union.tax
+        if not tax or (not tax.AA and not tax.big_win) then
+            return
+        end
+        if tax.big_win then
+            if table.nums(tax.big_win) == 0 then
+                return
+            end
+
+            local last_money,last_tax = 0,0
+            for _,v in ipairs(tax.big_win) do
+                if v[1] < last_money or v[2] < last_tax then
+                    return
+                end
             end
         end
+    end
 
-        if tax.big_win[3] then
-            mintax = tax.big_win[3][2]
-        end
+    return rule
+end
+
+function base_club:create_table_template(game_id,desc,rule)
+    rule = check_rule(rule)
+    if not rule then
+        return enum.ERORR_PARAMETER_ERROR
     end
 
     local id = tonumber(reddb:incr("template:global:id"))
@@ -318,8 +334,7 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
         club_id = self.id,
         game_id = game_id,
         description = desc,
-        rule = type(rule) == "string" and rule or json.encode(rule),
-        advanced_rule = type(advanced_rule) == "string" and advanced_rule or json.encode(advanced_rule),
+        rule = json.encode(rule),
     }
 
     reddb:hmset(string.format("template:%d",id),info)
@@ -327,10 +342,7 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
     reddb:hmset(string.format("conf:%d:%d",self.id,id),
         redismetadata.conf:encode({
             visual = true,
-            conf = {
-                commission_rate = 10000,
-                commission = mintax,
-            },
+            commission_rate = 10000,
             club_id = self.id,
             template_id = id,
         })
@@ -339,18 +351,14 @@ function base_club:create_table_template(game_id,desc,rule,advanced_rule)
     club_template_conf[self.id][id] = nil
     club_template[self.id] = nil
     local _ = table_template[id]
-
-    advanced_rule = type(advanced_rule) == "string" and json.decode(advanced_rule) or advanced_rule
     
-    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
-        sync = enum.SYNC_ADD,
-        template = {
-            template = info,
-            club_id = self.id,
-        }
-    })
-
     return enum.ERROR_NONE,info
+end
+
+
+
+function base_club:recusive_broadcast(msgname,msg,except)
+    recusive_broadcast(self.id,msgname,msg,except)
 end
 
 function base_club:remove_table_template(template_id)
@@ -366,21 +374,11 @@ function base_club:remove_table_template(template_id)
     club_template[self.id][template_id] = nil
     club_template_conf[self.id][template_id] = nil
 
-    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
-        sync = enum.SYNC_DEL,
-        template = {
-            template = {
-                template_id = template_id,
-            },
-            club_id = self.id,
-        }
-    })
-
     return enum.ERROR_NONE
 end
 
-function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_rule)
-    if not template_id then
+function base_club:modify_table_template(template_id,game_id,desc,rule)
+    if not template_id or not rule or not game_id then
         log.error("modify_table_template template_id is nil.")
         return enum.ERORR_PARAMETER_ERROR
     end
@@ -392,16 +390,14 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
         return enum.ERORR_PARAMETER_ERROR
     end
 
-    if rule then
-        local ok,ruletb = rule and pcall(json.decode,rule)
-        if not ok or not ruletb then
-            return enum.ERORR_PARAMETER_ERROR
-        end
+    if game_id ~= template.game_id then
+        log.error("modify_table_template template game_id is modifyed.")
+        return enum.ERORR_PARAMETER_ERROR
     end
 
-    if advanced_rule then
-        local ok,advruletb = pcall(json.decode,advanced_rule)
-        if not ok or not advanced_rule or not advruletb.tax then
+    if rule then
+        rule = check_rule(rule)
+        if not rule then
             return enum.ERORR_PARAMETER_ERROR
         end
     end
@@ -412,7 +408,6 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
         game_id = (game_id and game_id ~= 0) and game_id or template.game_id,
         description = (desc and desc ~= "") and desc or template.description,
         rule = rule or template.rule,
-        advanced_rule = advanced_rule or template.advanced_rule
     }
 
     local rawtemp = redismetadata.privatetable.template:encode(info)
@@ -420,20 +415,19 @@ function base_club:modify_table_template(template_id,game_id,desc,rule,advanced_
 
     table_template[template_id] = nil
     club_template[self.id][template_id] = nil
-    
-    self:broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
-        sync = enum.SYNC_UPDATE,
-        template = {
-            template = rawtemp,
-            club_id = self.id,
-        },
-    })
 
     return enum.ERROR_NONE,info
 end
 
-function base_club:notify_money(why,oldmoney,changemoney,money_id)
-    
+function base_club:notify_money()
+    onlineguid.send(self.owner,"SYNC_OBJECT",util.format_sync_info(
+        "CLUB",{
+            id = self.id,
+        },{
+            money = club_money[self.id][club_money_type[self.id]],
+            commission = club_commission[self.id],
+        }
+    ))
 end
 
 function base_club:incr_commission(money,round_id)
@@ -452,16 +446,43 @@ function base_club:incr_commission(money,round_id)
     channel.call("db.?","msg","SD_LogClubCommission",{
         club = self.id,
         commission = money,
-        round_id = round_id,
+        round_id = round_id or "",
         money_id = money_id,
     })
+
+    self:notify_money()
     return newmoney
 end
 
+function base_club:exchange_commission(count)
+    local commission = club_commission[self.id]
+    if count < 0 then count = commission  end
+
+    if count == 0 then return enum.ERROR_NONE end
+
+    if count < 0 then  return enum.ERORR_PARAMETER_ERROR end
+    if count > commission then return enum.ERROR_LESS_MIN_LIMIT  end
+
+    reddb:incrby(string.format("club:commission:%d",self.id),-math.floor(count))
+    self:incr_money({
+        money_id = club_money_type[self.id],
+        money = count,
+    },enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+    self:notify_money()
+
+    return enum.ERROR_NONE
+end
+
 function base_club:incr_money(item,why)
+    dump(item)
 	local oldmoney = tonumber(club_money[self.id][item.money_id]) or 0
-	log.info("club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
-	log.info("money[%d] - p[%d]" , oldmoney,item.money)
+	log.info("base_club:incr_money club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
+    log.info("base_club:incr_money money[%d] - p[%d]" , oldmoney,item.money)
+    
+    if oldmoney + item.money_id <= 0 then
+        log.warning("base_club:incr_money club[%d] money_id [%d] money[%d] not enough.",self.id,item.money_id,item.money)
+        return
+    end
 
 	local changes = channel.call("db.?","msg","SD_ChangeClubMoney",{{
 		club = self.id,
@@ -471,7 +492,7 @@ function base_club:incr_money(item,why)
 
 	if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
 		log.error("db incr_money error,club[%d] money_id[%d] oldmoney[%d]",self.id,item.money_id,oldmoney)
-		return
+		-- return
 	end
 	
 	local dboldmoney = tonumber(changes[1].oldmoney)
@@ -479,21 +500,21 @@ function base_club:incr_money(item,why)
     dump(dboldmoney)
     dump(oldmoney)
 	if dboldmoney ~= oldmoney then
-		log.error("db incrmoney error,club[%d] money_id[%d] oldmoney[%d] dboldmoney[%d]",self.id,item.money_id,oldmoney,dboldmoney)
-		return
+		log.error("db incrmoney error,club[%d] money_id[%d] dboldmoney[%d] oldmoney[%d] ",self.id,item.money_id,oldmoney,dboldmoney)
+		-- return
 	end
 
     local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money))
     dump(dbnewmoney)
     dump(newmoney)
     if dbnewmoney ~= newmoney then
-        log.error("db incrmoney error,club[%d] money_id[%d] newmoney[%d] dbnewmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
-        return
+        log.error("db incrmoney error,club[%d] money_id[%d] dbnewmoney[%d] newmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
+        -- return
     end
     
     club_money[self.id][item.money_id] = nil
 	log.info("incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
-	self:notify_money(why,oldmoney,newmoney-oldmoney,item.money_id)
+	self:notify_money()
 	return oldmoney,newmoney
 end
 

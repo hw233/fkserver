@@ -21,7 +21,10 @@ local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
 local club_template_conf = require "game.club.club_template_conf"
 local club_team_template_conf = require "game.club.club_team_template_conf"
+local club_utils = require "game.club.club_utils"
+local club_role = require "game.club.club_role"
 local json = require "cjson"
+local util = require "util"
 
 local reddb = redisopt.default
 
@@ -253,6 +256,17 @@ local function calc_club_template_commission_rate(club,template_id)
     return rate * calc_club_template_commission_rate(base_clubs[club.parent],template_id)
 end
 
+function base_table:calc_score_money(score)
+	local base_multi = 1
+    if self.private_id then
+        local private_table = base_private_table[self.private_id]
+        local rule = private_table.rule
+        base_multi = rule.union and rule.union.score_rate or 1
+	end
+	
+	return score * 100 * base_multi
+end
+
 function base_table:do_commission(taxes)
 	local money_id = self:get_money_id()
 	if not money_id then
@@ -270,134 +284,168 @@ function base_table:do_commission(taxes)
 		return
 	end
 
-	if not private_table.club then
+	if not private_table.club_id then
 		log.error("base_table:do_commission [%d] got private club.",self.private_id)
 		return
 	end
 
-	if not private_table.template then
-		log.error("base_table:do_commission [%d] got nil private template.",self.private_id)
-		return
-	end
+	dump(taxes)
+	dump(private_table)
 
-	for guid,tax in pairs(taxes) do
-		local club_ids = player_club[guid][enum.CT_UNION]
-		if table.nums(club_ids) == 0 then
-			log.error("base_table:do_commission [%d] player [%d] no union club.",self.private_id,guid)
-			return
+	local function get_belong_club(root,guid,club_type)
+		local maxlevel = 0
+		local max_level_club_id = 0
+		local club_ids = player_club[guid][club_type]
+		for club_id,_ in pairs(club_ids or {}) do
+			local level = club_utils.level(club_id)
+			local r = club_utils.root(club_id)
+			if maxlevel < level and root.id == r.id then
+				max_level_club_id = club_id
+			end
 		end
 
-		local club_id = club_ids[1]
-		repeat
+		return max_level_club_id
+	end
+
+	local root = club_utils.root(private_table.club_id)
+
+	for guid,tax in pairs(taxes) do
+		local club_id = get_belong_club(root,guid,enum.CT_UNION)
+		dump(club_id)
+		local last_rate = 0
+		while club_id and club_id ~= 0 do
 			local club = base_clubs[club_id]
 			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
-			local commission = math.floor(tax * commission_rate)
+			local commission = math.floor(tax * (commission_rate - last_rate))
+			last_rate = commission_rate
 			if commission > 0 then
 				club:incr_commission(commission,self.round_id)
 			end
 			club_id = club.parent
-		until club.parent and club.parent ~= 0
+		end
 	end
 end
 
-function base_table:balance(winlose,why)
-	local tax = {}
-	for guid,_ in pairs(self.players) do
-		tax[guid] = 0
-	end
-
+function base_table:cost_tax(winlose)
 	local money_id = self:get_money_id()
 	if not money_id then
 		log.error("base_table:balance [%d] got nil private money id.",self.private_id)
 		return
 	end
 	
-	local todo_commission = false
-	repeat
-		if not self.private_id then
-			break
-		end
+	if not self.private_id then
+		return
+	end
 
-		local private_table = base_private_table[self.private_id]
-		if not private_table then
-			log.error("base_table:balance [%d] got nil private conf.",self.private_id)
-			return
-		end
+	local private_table = base_private_table[self.private_id]
+	if not private_table then
+		log.error("base_table:balance [%d] got nil private conf.",self.private_id)
+		return
+	end
 
-		if not private_table.club then
-			break
-		end
+	if not private_table.club_id then
+		return
+	end
 
-		local club = base_clubs[private_table.club]
-		if not club then
-			log.error("base_table:balance [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club)
-			break
-		end
+	local club = base_clubs[private_table.club_id]
+	if not club then
+		log.error("base_table:balance [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club_id)
+		return
+	end
 
-		if club.type ~= enum.CT_UNION then
-			break
-		end
+	if club.type ~= enum.CT_UNION then
+		return
+	end
 
-		local advanced_rule = private_table.advanced_rule
-		if not advanced_rule then
-			log.error("base_table:balance [%d] got nil private advanced_rule conf.",self.private_id)
-			return
-		end
+	local rule = private_table.rule
+	if not rule then
+		log.error("base_table:balance [%d] got nil private rule conf.",self.private_id)
+		return
+	end
 
-		local taxconf = advanced_rule.tax
-		if not taxconf or (not taxconf.AA and not taxconf.big_win) then
-			log.error("base_table:balance [%d] got nil private tax conf.",self.private_id)
-			return
-		end
+	local taxconf = rule.union and rule.union.tax or nil
+	if not taxconf or (not taxconf.AA and not taxconf.big_win) then
+		log.error("base_table:balance [%d] got nil private tax conf.",self.private_id)
+		return
+	end
 
-		todo_commission = true
+	local function do_cost_tax_money(taxes)
+		for _,p in pairs(self.players) do
+			local guid = p.guid
+			local change = taxes[guid] or 0
+			local old_money = player_money[guid][money_id]
 
-		if taxconf.AA then
-			for guid,_ in pairs(self.players) do
-				tax[guid] = taxconf.AA
+			if change ~= 0 then
+				p:cost_money({{
+					money_id = money_id,
+					money = change,
+				}},enum.LOG_MONEY_OPT_TYPE_GAME_TAX)
+
+				self:player_money_log(p,money_id,old_money,change)
 			end
-		elseif taxconf.big_win then
-			local winloselist = {}
-			for guid,change in pairs(winlose) do 
-				table.insert(winloselist,{guid = guid,change = change}) 
+		end
+
+		dump(taxes)
+	
+		self:do_commission(taxes)
+	end
+
+	if taxconf.AA then
+		if self.cur_round == 1 then
+			local tax = {}
+			for _,p in pairs(self.players) do
+				tax[p.guid] = taxconf.AA
 			end
+			do_cost_tax_money(tax)
+		end
+		self:notify_game_money()
+		return
+	end
 
-			table.sort(winloselist,function(l,r) return l.change > r.change end)
+	if taxconf.big_win then
+		local winloselist = {}
+		for guid,change in pairs(winlose) do
+			table.insert(winloselist,{guid = guid,change = change})
+		end
 
-			local maxwin = winloselist[1].change
-			for _,c in pairs(winloselist) do
-				local change = c.change
-				if change == maxwin then
-					local bigwin = taxconf.big_win
-					if change > 0 and change <= bigwin[1][1] then
-						tax[c.guid] = bigwin[1][2]
-					elseif change > bigwin[2][1] and change <= bigwin[3][1] then
-						tax[c.guid] = bigwin[2][2]
-					elseif change > bigwin[3][1] then
-						tax[c.guid] = bigwin[3][1]
-					end
+		table.sort(winloselist,function(l,r) return l.change > r.change end)
+
+		local tax = {}
+		local maxwin = winloselist[1].change
+		for _,c in pairs(winloselist) do
+			local change = c.change
+			if change == maxwin then
+				local bigwin = taxconf.big_win
+				if change > 0 and change <= bigwin[1][1] then
+					tax[c.guid] = bigwin[1][2]
+				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
+					tax[c.guid] = bigwin[2][2]
+				elseif change > bigwin[3][1] then
+					tax[c.guid] = bigwin[3][1]
 				end
 			end
 		end
-	until false
 
-	for guid,p in pairs(self.players) do
-		local ptax = tax[guid] or 0
-		local change = winlose[guid] or 0
-		local final_change = change - ptax
-		local old_money = player_money[guid][money_id]
+		do_cost_tax_money(tax)
+		return
+	end
+end
 
-		p:incr_money({
+function base_table:notify_game_money()
+	local player_moneys = {}
+	local money_id = self:get_money_id()
+	for chair_id,p in pairs(self.players) do
+		table.insert(player_moneys,{
+			chair_id = chair_id,
 			money_id = money_id,
-			money = final_change,
-		},why)
-
-		self:player_money_log(p,money_id,old_money,ptax,final_change)
+			money = player_money[p.guid][money_id] or 0,
+		})
 	end
 
-	if todo_commission then
-		self:do_commission(tax)
-	end
+	self:broadcast2client("SYNC_OBJECT",util.format_sync_info(
+		"GAME",{},{
+			players = player_moneys,
+		}))
 end
 
 function base_table:game_over()
@@ -406,10 +454,14 @@ function base_table:game_over()
 	self:on_game_overed()
 end
 
+function base_table:on_final_game_overed()
+
+end
+
 function base_table:on_game_overed()
 	if self.private_id then
 		if self.cur_round and self.cur_round >= self.conf.round then
-			self:on_private_game_overed()
+			self:on_final_game_overed()
 			for _,p in pairs(self.players) do
 				p:forced_exit()
 			end
@@ -470,7 +522,7 @@ function  base_table:save_game_log(gamelog)
 	channel.publish("db.?","msg","SL_Log_Game",nMsg)
 end
 
-function base_table:player_money_log(player,money_id,old_money,tax,change_money)
+function base_table:player_money_log(player,money_id,old_money,change_money)
 	local nMsg = {
 		guid = player.guid,
 		type = change_money > 0 and 2 or 1,
@@ -479,7 +531,6 @@ function base_table:player_money_log(player,money_id,old_money,tax,change_money)
 		money_id = money_id,
 		old_money = old_money,
 		new_money = old_money + change_money,
-		tax = tax,
 		change_money = change_money,
 		id = self.round_id,
 		platform_id = player.platform_id,
@@ -501,7 +552,7 @@ function base_table:player_bet_flow_log(player,money)
 	send2db_pb("SD_LogBetFlow",msg)
 end
 
-function base_table:player_money_log_when_gaming(player,money_id,old_money,tax,change_money)
+function base_table:player_money_log_when_gaming(player,money_id,old_money,change_money)
 	local nMsg = {
 		guid = player.guid,
 		type = change_money > 0 and 2 or 1,
@@ -510,7 +561,6 @@ function base_table:player_money_log_when_gaming(player,money_id,old_money,tax,c
 		money_id = money_id,
 		old_money = old_money,
 		new_money = player.money,
-		tax = tax,
 		change_money = change_money,
 		id = self.round_id,
 		platform_id = player.platform_id,
@@ -591,16 +641,18 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 		chair = chair_id,
 	})
 
+	local privatetb = base_private_table[self.private_id]
 	self:foreach_except(player.chair_id,function (p)
-		p:notify_sit_down(player,reconnect)
+		p:notify_sit_down(player,reconnect,privatetb)
 	end)
 
 	if self.private_id then
-		local priv_tb = base_private_table[self.private_id]
-		if priv_tb and priv_tb.club_id then
-			local club = base_clubs[priv_tb.club_id]
+		if privatetb and privatetb.club_id then
+			local club = base_clubs[privatetb.club_id]
 			if club then
-				club:broadcast("S2C_SYNC_TABLES_RES",{
+				local root = club_utils.root(club)
+				root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+					root_club = root.id,
 					club_id = club.id,
 					room_info = self:global_status_info(),
 					sync_table_id = self.private_id,
@@ -645,8 +697,10 @@ function base_table:dismiss()
 		club_table[club_id][private_table_id] = nil
 		local club = base_clubs[club_id]
 		if club then
-			club:broadcast("S2C_SYNC_TABLES_RES",{
-				club_id = club_id,
+			local root = club_utils.root(club)
+			root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+				root_club = root.id,
+				club_id = club.id,
 				sync_type = enum.SYNC_DEL,
 				sync_table_id = private_table_id,
 			})
@@ -764,7 +818,9 @@ function base_table:player_stand_up(player, reason)
 			if priv_tb and priv_tb.club_id then
 				local club = base_clubs[priv_tb.club_id]
 				if club then
-					club:broadcast("S2C_SYNC_TABLES_RES",{
+					local root = club_utils.root(club)
+					root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+						root_club = root.id,
 						club_id = club.id,
 						room_info = self:global_status_info(),
 						sync_table_id = self.private_id,
@@ -937,8 +993,9 @@ function base_table:get_money_id()
 		return
 	end
 
-	local club_id = private_table.club
+	local club_id = private_table.club_id
 	if not club_id or club_id == 0 then
+		log.warning("base_table:get_money_id [%d] got nil private club.",self.private_id)
 		return -1
 	end
 
@@ -948,7 +1005,7 @@ function base_table:get_money_id()
 		return
 	end
 
-	return club_money_type[club]
+	return club_money_type[club_id]
 end
 
 function base_table:cost_private_fee()
@@ -968,6 +1025,8 @@ function base_table:cost_private_fee()
 		return
 	end
 
+	dump(rule)
+
 	local pay = rule.pay
 	if pay.option == enum.PAY_OPTION_AA then
 		local money_each = math.floor(self.room_limit / self.chair_count)
@@ -978,20 +1037,13 @@ function base_table:cost_private_fee()
 			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
 		end
 	elseif pay.option == enum.PAY_OPTION_BOSS then
-		local club = base_clubs[private_table.club]
-		while club.parent and club.parent ~= 0 do
-			club = base_clubs[club.parent]
-			if not club then 
-				log.error("base_table:cost_private_fee [%d] got nil parent club.",self.private_id)
-				return
-			end
-		end
-
-		local boss = base_players[club.owner]
-		if not boss then
-			log.error("base_table:cost_private_fee [%d] got nil club [%d] boss [%d].",self.private_id,club.id,club.owner)
+		local root = club_utils.root(private_table.club_id)
+		if not root then
+			log.error("base_table:cost_private_fee [%d] got nil root [%d].",self.private_id,private_table.club_id)
 			return
 		end
+
+		local boss = base_players[root.owner]
 
 		local money = self.room_.conf.private_conf.fee
 		boss:cost_money({{
@@ -1010,9 +1062,26 @@ function base_table:on_started()
 
 	if self.cur_round == 1 then
 		self:cost_private_fee()
+		self:cost_tax()
 	end
 
 	self.start_time = os.time()
+end
+
+function base_table:balance(moneies)
+	local money_id = self:get_money_id()
+	for chair_or_guid,money in pairs(moneies) do
+		if money ~= 0 then
+			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
+			local old_money = player_money[p.guid][money_id]
+			p:incr_money({{
+				money_id = money_id,
+				money = money,
+			}})
+
+			self:player_money_log(p,money_id,old_money,money)
+		end
+	end
 end
 
 -- 开始游戏

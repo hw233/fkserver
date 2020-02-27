@@ -13,6 +13,7 @@ local channel = require "channel"
 local serviceconf = require "serviceconf"
 local nameservice = require "nameservice"
 
+
 require "game.net_func"
 require "table_func"
 local timer_manager = require "game.timer_manager"
@@ -228,7 +229,7 @@ function base_room:enter_room_and_sit_down(player)
 	end
 
 	local ret = enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-	if not player:check_room_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
+	if not player:check_money_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
 		ret = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		local tb,k,j = self:get_suitable_table(self,player,false)
 		if tb then
@@ -278,20 +279,14 @@ function base_room:stand_up_and_exit_room(player,reason)
 	return enum.GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
 end
 
-function base_room:check_private_limit(player,chair_count,conf)
-	local pay_option = conf.pay.option
-	
-	if pay_option == enum.PAY_OPTION_AA then
-		local player_limit = math.ceil(self.room_limit / chair_count)
-		
-		return not player:check_room_limit(player_limit,0)
+function base_room:check_entry_table_limit(player,rule,club)
+	if not rule or not rule.union or not club then
+		return true
 	end
 
-	if pay_option == enum.PAY_OPTION_BOSS then
-		return not player:check_room_limit(self.room_limit,0)
-	end
+	local money_id = club_money[club.id]
 
-	return false
+	return player:get_money(money_id) >= rule.union.entry_score
 end
 
 function base_room:save_private_table(owner,table_id,chair_id)
@@ -340,21 +335,21 @@ function base_room:find_empty_table()
 end
 
 -- 创建私人房间
-function base_room:create_private_table(player,chair_count,round, conf)
+function base_room:create_private_table(player,chair_count,round, conf,club)
 	if player.table_id or player.chair_id then
 		log.info("player already in table, table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
-	end
-
-	if not self:check_private_limit(player,chair_count,conf) then
-		log.info("create private table:%s,%d money limit:%d",def_game_name,def_game_id,player.guid)
-		return enum.GAME_SERVER_RESULT_ROOM_LIMIT
 	end
 
 	if self.cur_player_count_ >= self.player_count_limit then
 		log.warning("room player is full,%s,%d",def_game_name,def_game_id)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 	end
+
+	-- if not self:check_entry_table_limit(player,conf,club) then
+	-- 	log.info("create private table:%s,%d money limit:%d",def_game_name,def_game_id,player.guid)
+	-- 	return enum.GAME_SERVER_RESULT_ROOM_LIMIT
+	-- end
 
 	local tb,table_id = self:find_empty_table()
 	if not tb then
@@ -391,9 +386,7 @@ function base_room:create_private_table(player,chair_count,round, conf)
 		create_time = os.time(),
 	})
 
-	-- reddb:expire("table:info:"..tostring(global_tid),table_expire_seconds)
 	reddb:sadd("player:table:"..tostring(player.guid),global_tid)
-	-- reddb:expire("player:table:"..tostring(player.guid),table_expire_seconds)
 
 	self:player_enter_room(player)
 	
@@ -430,10 +423,10 @@ function base_room:join_private_table(player,private_table,chair_count)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	if not self:check_private_limit(player,chair_count,private_table.rule) then
-		log.info("join private table:%d,%d money limit:%d",private_table.table_id,table_id,player.guid)
-		return enum.GAME_SERVER_RESULT_ROOM_LIMIT
-	end
+	-- if not self:check_private_limit(player,chair_count,private_table.rule) then
+	-- 	log.info("join private table:%d,%d money limit:%d",private_table.table_id,table_id,player.guid)
+	-- 	return enum.GAME_SERVER_RESULT_ROOM_LIMIT
+	-- end
 
 	if self.cur_player_count_ > self.player_count_limit then
 		log.warning("join private table,room is full,%s:%d",def_game_name,def_game_id)
@@ -562,7 +555,7 @@ function base_room:auto_enter_room(player)
 		end
 	end
 	
-	if not player:check_room_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
+	if not player:check_money_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
 		-- 通知消息
 		local notify = {
 			room_id = self.id,
@@ -600,7 +593,7 @@ function base_room:enter_room(player)
 		end
 	end
 
-	if player:check_room_limit(self:get_room_limit()) then
+	if player:check_money_limit(self:get_room_limit()) then
 		log.warning("guid[%d] check money limit fail,limit[%d],self[%s]",
 			player.guid, self:get_room_limit(), player.money)
 		return GAME_SERVER_RESULT_ROOM_LIMIT

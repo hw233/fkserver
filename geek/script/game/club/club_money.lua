@@ -6,10 +6,9 @@ local club_money = {}
 setmetatable(club_money,{
     __index = function(c,club_id)
         local moneies = setmetatable({},{
-            __index = function(t,money_id)
+            __index = function(_,money_id)
                 local money = reddb:hget(string.format("club:money:%d",club_id),money_id)
                 money = tonumber(money) or 0
-                -- t[money_id] = money
                 return money
             end
         })

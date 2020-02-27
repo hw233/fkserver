@@ -5,8 +5,7 @@ local mj_util 	= require "game.maajan_customized.base.mang_jiang_util"
 local log = require "log"
 local json = require "cjson"
 local maajan_tile_dealer = require "maajan_tile_dealer"
-local timer_manager = require "game.timer_manager"
-local base_player = require "game.lobby.base_player"
+local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
 
 require "functions"
@@ -1811,14 +1810,13 @@ function maajan_table:on_game_balance()
         ben_ji = fan_pai_tile,
     }
 
-    local balances = {}
-
+    
+    local chair_money = {}
     for chair_id,p in pairs(self.players) do
-        local p_score = scores[chair_id] or 0
+        local p_score = (scores[chair_id] or 0)
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         local ming_pai = table.values(p.pai.ming_pai)
         local desk_pai = table.values(p.pai.desk_tiles)
-        p.total_money = p.total_money or 0
         local p_log = self.game_log.players[chair_id]
         p_log.nickname = p.nickname
         p_log.head_url = p.icon
@@ -1829,12 +1827,13 @@ function maajan_table:on_game_balance()
             shou_pai = shou_pai,
             ming_pai = ming_pai,
         }
-        p.win_money = p_score
-        p.total_money = p.total_money + p.win_money
-        log.info("player hu %s,%s,%s,%s",chair_id,p.score,p.win_money,p.describe)
+        local win_money = self:calc_score_money(p_score)
+        p.total_score = (p.total_score or 0) + p_score
+        p.total_money = (p.total_money or 0) + win_money
+        log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
         p_log.score = p_score
         p_log.describe = p.describe
-        p_log.win_money = p.win_money
+        p_log.win_money = win_money
         p_log.total_money = p.total_money
         p_log.finish_task = p.finish_task
 
@@ -1858,7 +1857,7 @@ function maajan_table:on_game_balance()
 
         table.insert(msg.player_balance,{
             chair_id = chair_id,
-            total_score = p.total_money,
+            total_score = p.total_score,
             round_score = p_score,
             gang = balance_item and balance_item.gang or {},
             ji = balance_item and balance_item.ji or {},
@@ -1867,14 +1866,14 @@ function maajan_table:on_game_balance()
             hu_tile = p.hu and p.hu.tile or nil,
         })
 
-        balances[p.guid] = p.win_money
+        chair_money[chair_id] = win_money
     end
 
-    self:balance(balances)
-
     dump(msg,9)
-
+    self:balance(chair_money)
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
+
+    self:notify_game_money()
 
     self.game_log.balance = msg.player_balance
     self.game_log.ben_ji = msg.ben_ji
@@ -1886,6 +1885,15 @@ function maajan_table:on_game_balance()
     self.game_log = nil
     
     self:game_over()
+end
+
+function maajan_table:on_final_game_overed()
+    local total_winlose = {}
+    for _,p in pairs(self.players) do
+        total_winlose[p.guid] = p.total_money
+    end
+    
+    self:cost_tax(total_winlose)
 end
 
 function maajan_table:ding_zhuang()
@@ -2556,12 +2564,15 @@ function maajan_table:global_status_info()
         })
     end
 
+    local private_conf = base_private_table[self.private_id]
+
     local info = {
         table_id = self.private_id,
         seat_list = seats,
         room_cur_round = self.cur_round or 0,
         rule = self.private_id and json.encode(self.conf.conf) or "",
         game_type = def_first_game_type,
+        template_id = private_conf and private_conf.template,
     }
 
     return info

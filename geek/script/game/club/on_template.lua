@@ -63,11 +63,11 @@ local function calc_club_template_commission_rate(club,template)
 end
 
 local function calc_club_template_commission(club,template)
-    if not template or not template.advanced_rule or table.nums(template.advanced_rule) == 0 then
+    if not template or not template.rule or not template.rule.union then
         return 0
     end
 
-    local tax = template.advanced_rule.tax
+    local tax = template.rule.union.tax
     local commission = tax and tax.AA or (tax.big_win[3] and tax.big_win[3][2] or 0)
     local commission_rate = calc_club_template_commission_rate(club,template)
     commission = commission * commission_rate
@@ -121,7 +121,6 @@ function on_cs_get_club_template_commission(msg,guid)
 
     local club_id = msg.club_id
     local team_id = msg.team_id
-    local template_id = msg.template_id
 
     if not club_member[club_id][guid] then
         onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
@@ -232,7 +231,7 @@ function on_cs_config_club_template_commission(msg,guid)
     end
 
     local template = table_template[template_id]
-    if not template or not template.advanced_rule then
+    if not template or not template.rule or not template.rule.union then
         log.error("on_cs_config_club_template_commission illegal template.")
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
             result = enum.ERORR_PARAMETER_ERROR

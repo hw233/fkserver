@@ -4,6 +4,8 @@ local club_member = require "game.club.club_member"
 local table_template = require "game.lobby.table_template"
 local onlineguid = require "netguidopt"
 local club_role = require "game.club.club_role"
+local club_utils = require "game.club.club_utils"
+local redismetadata = require "redismetadata"
 local json = require "cjson"
 local log = require "log"
 
@@ -32,7 +34,19 @@ function on_cs_create_table_template(msg,guid)
 
     local template  = club_template.template
 
-    local ret,info = club:create_table_template(template.game_id,template.description,template.rule,template.advanced_rule)
+    local ret,info = club:create_table_template(template.game_id,template.description,template.rule)
+    if ret == enum.ERROR_NONE then
+        local root = club_utils.root(club)
+        root:recusive_broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+            sync = enum.SYNC_ADD,
+            template = {
+                template = info,
+                club_id = club.id,
+            },
+            root_club = root.id,
+        })
+    end
+
     onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
         result = ret,
         template = {
@@ -83,6 +97,21 @@ function on_cs_remove_table_template(msg,guid)
     end
 
     local ret = club:remove_table_template(template_id)
+
+    if ret == enum.ERROR_NONE then
+        local root = club_utils.root(club)
+        root:recusive_broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+            sync = enum.SYNC_DEL,
+            template = {
+                template = {
+                    template_id = template_id,
+                },
+                club_id = club.id,
+            },
+            root_club = root.id,
+        })
+    end
+
     onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
         result = ret,
     })
@@ -106,17 +135,6 @@ function on_cs_modify_table_template(msg,guid)
     end
 
     club_template.template.rule = rule
-
-    local ok,advanced_rule = pcall(json.decode,club_template.template.advanced_rule or "")
-    if not ok then
-        onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    club_template.template.advanced_rule = advanced_rule
-
     local template_id = club_template.template.template_id
     if not template_id then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
@@ -165,7 +183,20 @@ function on_cs_modify_table_template(msg,guid)
 
     local template = club_template.template
     local ret,info = club:modify_table_template(template_id,template.game_id,template.description,
-            template.rule,template.advanced_rule)
+            template.rule)
+
+    if ret == enum.ERROR_NONE then
+        local root = club_utils.root(club)
+        root:recusive_broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
+            sync = enum.SYNC_UPDATE,
+            template = {
+                template = info,
+                club_id = club.id,
+            },
+            root_club = root.id,
+        })
+    end
+    
     onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
         result = ret,
         template = {

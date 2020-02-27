@@ -81,6 +81,7 @@ message S2C_CLUB_INFO_RES {
     repeated TABLE_STATUS_INFO table_list = 7;    //房间列表信息
     repeated CLUB_TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
     repeated int32 gamelist = 11;
+    int32          root = 12;
 }
 
 
@@ -195,6 +196,7 @@ message S2C_SYNC_TABLES_RES{
     int32 sync_room_id = 3;
     int32 sync_table_id = 4;
     SYNC_TYPE sync_type=5;
+    int32 root_club = 6;
 }
 
 
@@ -214,6 +216,7 @@ message S2C_NOTIFY_TABLE_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14063;}
     SYNC_TYPE            sync = 1;
     CLUB_TABLE_TEMPLATE  template = 2;
+    int32                root_club = 3;
 }
 
 message C2S_CREATE_CLUB_WITH_INVITE_MAIL{
@@ -348,4 +351,30 @@ message S2C_GET_CLUB_TEMPLATE_COMMISSION{
     int32    club_id = 2;
     int32    team_id = 3;
     repeated CLUB_TEMPLATE_CONF confs = 4;
+}
+
+message C2S_EXCHANGE_CLUB_COMMISSON_REQ{ 
+    enum MsgID {NIL = 0;ID = 14087;}
+    int32 club_id = 1;      //俱乐部ID
+    int32 count = 2;
+}
+
+message S2C_EXCHANGE_CLUB_COMMISSON_RES{ 
+    enum MsgID {NIL = 0;ID = 14088;}
+    int32 result = 1;
+    int32 club_id = 2;      //俱乐部ID
+}
+
+message C2S_CLUB_MONEY_REQ{ 
+    enum MsgID {NIL = 0;ID = 14089;}
+    int32 club_id = 1;      //俱乐部ID
+}
+
+message S2C_CLUB_MONEY_RES{ 
+    enum MsgID {NIL = 0;ID = 14090;}
+    int32 result = 1;
+    int32 club_id = 2;      //俱乐部ID
+    int32 money_id =3;
+    int32 count = 4;
+    int32 commission = 5;
 }

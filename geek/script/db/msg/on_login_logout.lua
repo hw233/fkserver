@@ -2671,30 +2671,16 @@ function on_reg_account(msg)
 end
 
 local function incr_player_money(guid,money_id,money,where,why)
-	local res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where)
-	if res.errno then
-		log.error("incr_player_money SELECT money error,errno:%d,err:%s",res.errno,res.err)
-		return
-	end
-
-	dump(res)
-
-	local oldmoney = tonumber(res[1].money)
-	res = dbopt.game:query("UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;",money,guid,money_id,where)
-	if res.errno then
-		log.error("incr_player_money change money error,errno:%d,err:%s",res.errno,res.err)
-		return
-	end
-
-	res = dbopt.game:query("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d",guid,money_id,where)
-	if res.errno then
-		log.error("incr_player_money select new money error,errno:%d,err:%s",res.errno,res.err)
-		return
-	end
-
-	local newmoney = tonumber(res[1].money)
-
-	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,opt_type) VALUES(%d,%d,%d,%d,%d,%d)",
+	local sqls = {
+		string.format("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where),
+		string.format("UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;",money,guid,money_id,where),
+		string.format("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where),
+	}
+	
+	local res = dbopt.game:query(table.concat(sqls,"\t"))
+	local oldmoney = res[1] and res[1][1] and res[1][1].money
+	local newmoney = res[3] and res[3][1] and res[3][1].money
+	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,opt_type) VALUES(%d,%d,%d,%d,%d,%d);",
 		guid,money_id,oldmoney,newmoney,where,why)
 	return oldmoney,newmoney
 end

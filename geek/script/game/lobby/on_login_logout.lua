@@ -28,6 +28,9 @@ local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
 local player_money = require "game.lobby.player_money"
+local club_utils = require "game.club.club_utils"
+local club_money = require "game.club.club_money"
+local club_money_type = require "game.club.club_money_type"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
@@ -911,7 +914,6 @@ local function check_money_type(money_type)
 	return money_type ~= nil and money_type_all[money_type]
 end
 
-
 local function get_chair_count(option)
 	local gameconf = g_room.conf
 	return gameconf.private_conf.chair_count_option[option]
@@ -970,6 +972,31 @@ local function find_best_room(first_game_type,second_game_type)
 
 	return room_id
 end
+
+
+local function check_create_table_limit(player,payopt,club)
+	if payopt == enum.PAY_OPTION_AA then
+		if player:check_money_limit(g_room.conf.private_conf.fee,0) then 
+			return enum.ERROR_LESS_MIN_LIMIT 
+		end
+	elseif payopt == enum.PAY_OPTION_BOSS then
+		if not club then return 
+			enum.ERORR_PARAMETER_ERROR 
+		end
+		local root = club_utils.root(club)
+		if not root then return 
+			enum.ERORR_PARAMETER_ERROR 
+		end
+
+		local boss = base_players[root.owner]
+		if boss:check_money_limit(g_room.conf.private_conf.fee,0) then
+			return enum.ERROR_LESS_MIN_LIMIT
+		end
+	end
+
+	return
+end
+
 
 function on_cs_create_private_room(msg,guid)
 	local game_type = msg.game_type
@@ -1054,6 +1081,15 @@ function on_cs_create_private_room(msg,guid)
 	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
 
 	local club = club_id and base_clubs[club_id] or nil
+	local errno = check_create_table_limit(player,pay_option,club)
+	if errno then
+		onlineguid.send(guid,"SC_CreateRoom",{
+			result = errno,
+			game_type = game_type,
+		})
+		return
+	end
+
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
 			onlineguid.send(guid,"SC_CreateRoom",{
@@ -1063,6 +1099,8 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
+		dump(template)
+		
 		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 	elseif pay_option == enum.PAY_OPTION_AA then
 		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
@@ -1077,6 +1115,7 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
+	local money_id = club_id and club_money_type[club_id] or -1
 	onlineguid.send(guid,"SC_CreateRoom",{
 		result = result,
 		info = {
@@ -1095,6 +1134,10 @@ function on_cs_create_private_room(msg,guid)
 				sex = player.sex,
 			},
 			ready = tb.ready_list[player.chair_id] and true or false,
+			money = {
+				money_id = money_id,
+				count = player:get_money(money_id),
+			}
 		}},
 	})
 end
@@ -1126,6 +1169,8 @@ function on_cs_reconnect(guid)
 		return
 	end
 
+	local club_id = private_table.club_id
+	local money_id = club_id and club_money_type[club_id] or -1
 	local tb = g_room.tables[table_id]
 	local seats = {}
 	tb:foreach(function(p)
@@ -1138,6 +1183,10 @@ function on_cs_reconnect(guid)
 				sex = p.sex,
 			},
 			ready = tb.ready_list[p.chair_id] and true or false,
+			money = {
+				money_id = money_id,
+				count = p:get_money(money_id),
+			}
 		})
 	end)
 
@@ -1192,6 +1241,7 @@ function on_cs_join_private_room(msg,guid)
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.ERROR_JOIN_ROOM_NO,
 		})
+		return
 	end
 
 	local room_cfg = serviceconf[def_game_id].conf
@@ -1218,20 +1268,14 @@ function on_cs_join_private_room(msg,guid)
 		return
 	end
 
-	local rule = private_table.rule or {
-		round = {
-			option = 0,
-		},
-		pay = {
-			money_type = 0,
-			option = 0,
-		},
-		room = {
-			player_count_option = 0,
-		},
-		play = {}
-	}
+	if not private_table.rule then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.ERROR_JOIN_ROOM_NO,
+		})
+		return
+	end
 
+	local rule = private_table.rule
 	local result,_,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
 		onlineguid.send(guid,"SC_JoinRoom",{
@@ -1242,6 +1286,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local tb
 	local club_id = private_table.club_id
+	dump(private_table)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
@@ -1258,6 +1303,7 @@ function on_cs_join_private_room(msg,guid)
 		result = enum.ERORR_PARAMETER_ERROR
 	end
 
+	local money_id = club_id and club_money_type[club_id] or -1
 	local seats = {}
 	if result == enum.GAME_SERVER_RESULT_SUCCESS then
 		tb:foreach(function(p) 
@@ -1270,6 +1316,10 @@ function on_cs_join_private_room(msg,guid)
 					sex = p.sex,
 				},
 				ready = tb.ready_list[p.chair_id] and true or false,
+				money = {
+					money_id = money_id,
+					count = p:get_money(money_id),
+				}
 			})
 		end)
 	else
