@@ -397,8 +397,8 @@ function base_table:cost_tax(winlose)
 				tax[p.guid] = taxconf.AA
 			end
 			do_cost_tax_money(tax)
+			self:notify_game_money()
 		end
-		self:notify_game_money()
 		return
 	end
 
