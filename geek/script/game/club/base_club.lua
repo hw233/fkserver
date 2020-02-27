@@ -45,11 +45,18 @@ local function broadcast(clubid,msgname,msg,except)
     end
 end
 
-local function recusive_broadcast(clubid,msgname,msg,except)
-    broadcast(clubid,msgname,msg,except)
-    for teamid,_ in pairs(club_team[clubid]) do
-        recusive_broadcast(teamid,msgname,msg,except)
+local function recusive_get_members(club_id)
+    local guids = club_member[club_id]
+    for teamid,_ in pairs(club_team[club_id]) do
+        table.mergeto(guids,recusive_get_members(teamid))
     end
+
+    return guids
+end
+
+local function recusive_broadcast(clubid,msgname,msg)
+    local guids = recusive_get_members(clubid)
+    onlineguid.broadcast(table.keys(guids),msgname,msg)
 end
 
 function base_club:create(id,name,icon,owner,tp,parent)
