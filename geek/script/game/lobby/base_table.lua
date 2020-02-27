@@ -402,7 +402,7 @@ function base_table:cost_tax(winlose)
 		return
 	end
 
-	if taxconf.big_win then
+	if taxconf.big_win and winlose then
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
