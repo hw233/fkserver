@@ -1074,10 +1074,10 @@ function base_table:balance(moneies,why)
 		if money ~= 0 then
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
 			local old_money = player_money[p.guid][money_id]
-			p:incr_money({{
-				money_id = money_id,
-				money = money,
-			}},why)
+			p:incr_money({
+				money_id = math.floor(money_id),
+				money = math.floor(money),
+			},why)
 
 			self:player_money_log(p,money_id,old_money,money)
 		end
