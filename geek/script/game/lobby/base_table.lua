@@ -421,7 +421,7 @@ function base_table:cost_tax(winlose)
 				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
 					tax[c.guid] = bigwin[2][2]
 				elseif change > bigwin[3][1] then
-					tax[c.guid] = bigwin[3][1]
+					tax[c.guid] = bigwin[3][2]
 				end
 			end
 		end
@@ -1075,7 +1075,7 @@ function base_table:balance(moneies,why)
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
 			local old_money = player_money[p.guid][money_id]
 			p:incr_money({
-				money_id = math.floor(money_id),
+				money_id = money_id,
 				money = math.floor(money),
 			},why)
 
