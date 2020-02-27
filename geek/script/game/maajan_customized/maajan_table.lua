@@ -1957,7 +1957,7 @@ function maajan_table:on_game_overed()
             table.insert(final_scores,{
                 chair_id = chair_id,
                 guid = p.guid,
-                score = p.total_money,
+                score = p.total_score,
             })
         end
 
@@ -1982,6 +1982,7 @@ function maajan_table:on_game_overed()
             end
         end
     end
+
     base_table.on_game_overed(self)
 end
 
