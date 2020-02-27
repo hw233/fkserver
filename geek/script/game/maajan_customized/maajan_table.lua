@@ -1870,7 +1870,7 @@ function maajan_table:on_game_balance()
     end
 
     dump(msg,9)
-    self:balance(chair_money)
+    self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self:notify_game_money()

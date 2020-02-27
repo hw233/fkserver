@@ -1068,7 +1068,7 @@ function base_table:on_started()
 	self.start_time = os.time()
 end
 
-function base_table:balance(moneies)
+function base_table:balance(moneies,why)
 	local money_id = self:get_money_id()
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
@@ -1077,7 +1077,7 @@ function base_table:balance(moneies)
 			p:incr_money({{
 				money_id = money_id,
 				money = money,
-			}})
+			}},why)
 
 			self:player_money_log(p,money_id,old_money,money)
 		end
