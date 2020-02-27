@@ -418,10 +418,12 @@ function base_table:cost_tax(winlose)
 				local bigwin = taxconf.big_win
 				if change > 0 and change <= bigwin[1][1] then
 					tax[c.guid] = bigwin[1][2]
-				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
+				elseif change > bigwin[1][1] and change <= bigwin[2][1] then
 					tax[c.guid] = bigwin[2][2]
-				elseif change > bigwin[3][1] then
+				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
 					tax[c.guid] = bigwin[3][2]
+				else
+					tax[c.guid] = 0
 				end
 			end
 		end
