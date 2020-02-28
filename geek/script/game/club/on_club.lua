@@ -95,12 +95,6 @@ function on_cs_club_create(msg,guid)
         money = math.floor(global_cfg.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
-    -- 初始送分 房卡
-    base_clubs[id]:incr_money({
-        money_id = 0,
-        money = math.floor(global_cfg.union_init_money),
-    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
-
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
         id = id,

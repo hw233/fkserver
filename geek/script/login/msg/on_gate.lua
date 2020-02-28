@@ -90,7 +90,8 @@ local function reg_account(msg)
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
-    reddb:hset(string.format("player:money:%d",guid),0,0)
+    -- 测试注册时加默认房卡
+    reddb:hset(string.format("player:money:%d",guid),0,1000000)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
     player_money[guid] = nil
     channel.call("db.?","msg","LD_RegAccount",info)
