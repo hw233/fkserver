@@ -1046,6 +1046,7 @@ function on_cs_create_private_room(msg,guid)
 			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.ERORR_PARAMETER_ERROR,
 			})
+			return
 		end
 	end
 	

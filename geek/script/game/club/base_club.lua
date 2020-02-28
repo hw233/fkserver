@@ -249,7 +249,7 @@ function base_club:create_table(player,chair_count,round,conf,template)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hmset(string.format("table:info:%d",global_tid),{
             club_id = self.id,
-            template = template.template_id,
+            template = template and template.template_id or nil,
         })
 
         reddb:sadd("club:table:"..self.id,global_tid)
@@ -346,14 +346,6 @@ function base_club:create_table_template(game_id,desc,rule)
 
     reddb:hmset(string.format("template:%d",id),info)
     reddb:sadd(string.format("club:template:%d",self.id),id)
-    reddb:hmset(string.format("conf:%d:%d",self.id,id),
-        redismetadata.conf:encode({
-            visual = true,
-            commission_rate = 10000,
-            club_id = self.id,
-            template_id = id,
-        })
-    )
 
     club_template_conf[self.id][id] = nil
     club_template[self.id] = nil
