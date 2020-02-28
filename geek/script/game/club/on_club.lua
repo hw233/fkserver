@@ -89,9 +89,15 @@ function on_cs_club_create(msg,guid)
 
     base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
-    -- 初始送分
+    -- 初始送分 金币
     base_clubs[id]:incr_money({
         money_id = club_money_type[id],
+        money = math.floor(global_cfg.union_init_money),
+    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+
+    -- 初始送分 房卡
+    base_clubs[id]:incr_money({
+        money_id = 0,
         money = math.floor(global_cfg.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
