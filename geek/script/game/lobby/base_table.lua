@@ -289,9 +289,6 @@ function base_table:do_commission(taxes)
 		return
 	end
 
-	dump(taxes)
-	dump(private_table)
-
 	local function get_belong_club(root,guid,club_type)
 		local maxlevel = 0
 		local max_level_club_id = 0
@@ -309,6 +306,7 @@ function base_table:do_commission(taxes)
 
 	local root = club_utils.root(private_table.club_id)
 
+	local commissions = {}
 	for guid,tax in pairs(taxes) do
 		local club_id = get_belong_club(root,guid,enum.CT_UNION)
 		dump(club_id)
@@ -318,10 +316,15 @@ function base_table:do_commission(taxes)
 			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
 			local commission = math.floor(tax * (commission_rate - last_rate))
 			last_rate = commission_rate
-			if commission > 0 then
-				club:incr_commission(commission,self.round_id)
-			end
+			commissions[club] = (commissions[club] or 0) + commission
 			club_id = club.parent
+		end
+	end
+
+	dump(commissions)
+	for club,commission in pairs(commissions) do
+		if commission > 0 then
+			club:incr_commission(commission,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
 		end
 	end
 end
@@ -385,9 +388,7 @@ function base_table:cost_tax(winlose)
 			end
 		end
 
-		dump(taxes)
-	
-		self:do_commission(taxes)
+		self:notify_game_money()
 	end
 
 	if taxconf.AA then
@@ -397,7 +398,7 @@ function base_table:cost_tax(winlose)
 				tax[p.guid] = taxconf.AA
 			end
 			do_cost_tax_money(tax)
-			self:notify_game_money()
+			self:do_commission(tax)
 		end
 		return
 	end
@@ -410,25 +411,36 @@ function base_table:cost_tax(winlose)
 
 		table.sort(winloselist,function(l,r) return l.change > r.change end)
 
-		local tax = {}
 		local maxwin = winloselist[1].change
+		local tax = {}
+		local totalwin = 0
 		for _,c in pairs(winloselist) do
 			local change = c.change
 			if change == maxwin then
 				local bigwin = taxconf.big_win
 				if change > 0 and change <= bigwin[1][1] then
+					totalwin = totalwin + bigwin[1][2]
 					tax[c.guid] = bigwin[1][2]
 				elseif change > bigwin[1][1] and change <= bigwin[2][1] then
+					totalwin = totalwin + bigwin[2][2]
 					tax[c.guid] = bigwin[2][2]
 				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
+					totalwin = totalwin + bigwin[3][2]
 					tax[c.guid] = bigwin[3][2]
 				else
-					tax[c.guid] = 0
+					totalwin = totalwin + 0
 				end
 			end
 		end
 
+		local eachwin = totalwin / table.nums(self.players)
+		local commission_tax = {}
+		for _,p in pairs(self.players) do
+			commission_tax[p.guid] = math.floor(eachwin)
+		end
+
 		do_cost_tax_money(tax)
+		self:do_commission(commission_tax)
 		return
 	end
 end
