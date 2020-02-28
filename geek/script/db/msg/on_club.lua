@@ -13,10 +13,9 @@ function on_sd_create_club(msg)
     end
 
     local gamedb = dbopt.game
-
-    local res 
+     
     if club_info.parent and club_info.parent ~= 0 then
-        res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
+        local res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
         if res.errno then
             log.error("on_sd_create_club query parent error:%d,%s",res.errno,res.err)
             return
@@ -29,17 +28,19 @@ function on_sd_create_club(msg)
         string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent) SELECT %d,'%s',%d,'%s',%d,%d 
                         WHERE EXISTS (SELECT * FROM t_player WHERE guid = %d);]],
                     club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,club_info.owner),
-        string.format("INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);",club_info.id,money_info.id,club_info.id),
-        string.format("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_info.id,club_info.owner),
+        string.format([[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id),
+        string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],club_info.id,club_info.owner),
         string.format([[INSERT INTO t_player_money(guid,money_id,money) SELECT %d,%d,0
             WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = %d);]],
             club_info.owner,money_info.id,club_info.owner,money_info.id),
-        string.format("INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);",money_info.id,club_info.id),
+        string.format([[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],money_info.id,club_info.id),
         "COMMIT;",
     }
 
+    dump(transqls)
+
     local trans = gamedb:transaction()
-    res = trans:execute(table.concat(transqls,"\n"))
+    local res = trans:execute(table.concat(transqls,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
         trans:execute("ROLLBACK;")
@@ -86,6 +87,9 @@ function on_sd_join_club(msg)
             msg.guid,msg.club_id,msg.guid),
         "COMMIT;"
     }
+
+    dump(sqls)
+
     local tran = dbopt.game:transaction()
     res = tran:execute(table.concat(sqls,"\n"))
     if res.errno then
@@ -131,6 +135,8 @@ local function incr_club_money(club,money_id,money,why)
         string.format("SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;",club,money_id),
         "COMMIT;",
     }
+
+    dump(sqls)
 
     local tran = dbopt.game:transaction()
     local res = tran:execute(table.concat(sqls,"\n"))

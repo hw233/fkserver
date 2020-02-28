@@ -2672,14 +2672,28 @@ end
 
 local function incr_player_money(guid,money_id,money,where,why)
 	local sqls = {
-		string.format("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where),
-		string.format("UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;",money,guid,money_id,where),
-		string.format("SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;",guid,money_id,where),
+		"BEGIN;",
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;]],guid,money_id,where),
+		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;]],money,guid,money_id,where),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;]],guid,money_id,where),
+		"COMMIT;",
 	}
 	
-	local res = dbopt.game:query(table.concat(sqls,"\t"))
-	local oldmoney = res[1] and res[1][1] and res[1][1].money
-	local newmoney = res[3] and res[3][1] and res[3][1].money
+	dump(sqls)
+
+	local tran = dbopt.game:transaction()
+	local res = tran:execute(table.concat(sqls,"\n"))
+	if res.errno then
+		tran:execute("ROLLBACK;")
+		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
+		return
+	end
+	local oldmoney = res[2] and res[2][1] and res[2][1].money
+	local newmoney = res[4] and res[4][1] and res[4][1].money
+	if not oldmoney or not newmoney then
+		log.error("incr_player_money bad oldmoney [%s] or newmoney [%s]",oldmoney,newmoney)
+		return
+	end
 	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,opt_type) VALUES(%d,%d,%d,%d,%d,%d);",
 		guid,money_id,oldmoney,newmoney,where,why)
 	return oldmoney,newmoney
