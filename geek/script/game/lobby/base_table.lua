@@ -391,19 +391,28 @@ function base_table:cost_tax(winlose)
 		self:notify_game_money()
 	end
 
-	if taxconf.AA then
-		if self.cur_round == 1 then
-			local tax = {}
-			for _,p in pairs(self.players) do
-				tax[p.guid] = taxconf.AA
-			end
-			do_cost_tax_money(tax)
-			self:do_commission(tax)
+	if taxconf.AA and not winlose then
+		if self.cur_round ~= 1 then
+			return
 		end
+
+		local tax = {}
+		for _,p in pairs(self.players) do
+			tax[p.guid] = taxconf.AA
+		end
+		do_cost_tax_money(tax)
+		self:do_commission(tax)
 		return
 	end
 
 	if taxconf.big_win and winlose then
+		local round_option = rule.round.option
+		local final_round = self.room_.conf.private_conf.round_count_option[round_option]
+
+		if self.cur_round ~= final_round then
+			return
+		end
+
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
