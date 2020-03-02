@@ -90,11 +90,18 @@ local function reg_account(msg)
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
-    -- 测试注册时加默认房卡
-    reddb:hset(string.format("player:money:%d",guid),0,1000000)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
-    player_money[guid] = nil
+    -- 测试注册时加默认房卡
+    
     channel.call("db.?","msg","LD_RegAccount",info)
+
+    local player = base_players[guid]
+    player:incr_money({
+        money_id = 0,
+        money = 1000000,
+    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+
+    player_money[guid] = nil
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
