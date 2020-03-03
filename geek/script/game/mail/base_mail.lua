@@ -5,12 +5,15 @@ local log = require "log"
 local base_mails = require "game.mail.base_mails"
 local redisopt = require "redisopt"
 local player_mail = require "game.mail.player_mail"
+local reddot = require "game.reddot.reddot"
 
 local reddb = redisopt.default
 
 local mail_expaired_seconds = 60 * 60 * 24 * 7
 
 local base_mail = {}
+
+base_mail.reddot_type = 1001
 
 local function new_mail_id()
 	return string.format("%d-%d",skynet.time() * 1000,math.random(10000))
@@ -35,8 +38,22 @@ function base_mail.create_mail(sender,receiver,title,content)
 	reddb:sadd("player:mail:"..tostring(mail_info.receiver),mail_info.id)
 	local _ = base_mails[mail_info.id]
 	player_mail[receiver.guid] = nil
-    
+
     return mail_info
+end
+
+function base_mail.get_reddot_info(guid)
+	local count = 0
+	for mailid,_ in pairs(player_mail[guid]) do
+		local mail = base_mails[mailid]
+		if mail and mail.status == 0 then
+			count = count + 1
+		end
+	end
+	return {
+		type = base_mail.reddot_type,
+		count = count,
+	}
 end
 
 function base_mail.send_mail(mail_info)
@@ -50,7 +67,10 @@ function base_mail.send_mail(mail_info)
     if not receiver then
         log.warning("send mail failed,invalid recevier.")
         return
-    end
+	end
+	
+	local reddot_info = base_mail.get_reddot_info(receiver.guid)
+	reddot.push(receiver.guid,reddot_info)
 
     send2client_pb(mail_info.receiver,"SC_ReceiveMail",{
 		id = mail_info.id,

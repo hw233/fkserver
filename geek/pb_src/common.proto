@@ -147,5 +147,5 @@ message CLUB_TEAM_TEMPLATE_CONF{
     int32   template_id = 1;
     bool    visual = 2; 
     int32   commission = 3;
-    int32   commission_rate = 4;
+    float   commission_rate = 4;
 }

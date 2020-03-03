@@ -4,6 +4,7 @@ local enum = require "pb_enums"
 local redisopt = require "redisopt"
 local log = require "log"
 local json = require "cjson"
+local reddot = require "game.reddot.reddot"
 
 require "functions"
 
@@ -33,9 +34,7 @@ function on_cs_send_mail(msg,guid)
 		return
 	end
 
-	base_mail.send_mail(
-		base_mail.create_mail(sender,receiver,mail.title,mail.content)
-	)
+	base_mail.send_mail(base_mail.create_mail(sender,receiver,mail.title,mail.content))
 
 	print ("...................... on_cs_send_mail")
 end
@@ -197,4 +196,7 @@ function on_cs_read_mail(msg,guid)
 	end
 
 	reddb:hset("mail:"..msg.mail_id,"status",1)
+	base_mails[msg.mail_id] = nil
+	local mail_reddot = base_mail.get_reddot_info(guid)
+	reddot.push(guid,mail_reddot)
 end

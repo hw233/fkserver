@@ -1870,7 +1870,8 @@ function maajan_table:on_game_balance()
     end
 
     dump(msg,9)
-    self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+
+    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self:notify_game_money()
@@ -1887,10 +1888,57 @@ function maajan_table:on_game_balance()
     self:game_over()
 end
 
+
+function maajan_table:on_game_overed()
+    self.game_log = {}
+    self:ding_zhuang()
+
+    self.do_logic_update = false
+    self:clear_ready()
+    self:update_state(FSM_S.PER_BEGIN)
+
+    for _,v in ipairs(self.players) do
+        v.hu = nil
+        v.men = nil
+        v.ting = nil
+        v.jiao = nil
+        v.pai = {
+            ming_pai = {},
+            shou_pai = {},
+            desk_tiles = {},
+        }
+        if v.deposit then
+            v:forced_exit()
+        elseif v:is_android() then
+            self:ready(v)
+        end
+    end
+
+    base_table.on_game_overed(self)
+end
+
+
+function maajan_table:on_private_pre_dismiss()
+    self:on_final_game_overed()
+end
+
 function maajan_table:on_final_game_overed()
+    local final_scores = {}
+    for chair_id,p in pairs(self.players) do
+        table.insert(final_scores,{
+            chair_id = chair_id,
+            guid = p.guid,
+            score = p.total_score or 0,
+        })
+    end
+
+    self:broadcast2client("SC_Maajan_Final_Game_Over",{
+        player_scores = final_scores,
+    })
+
     local total_winlose = {}
     for _,p in pairs(self.players) do
-        total_winlose[p.guid] = p.total_money
+        total_winlose[p.guid] = p.total_money or 0
     end
     
     self:cost_tax(total_winlose)
@@ -1941,49 +1989,6 @@ function maajan_table:ding_zhuang()
     if max_chair_id > 0 then
         self.zhuang = max_chair_id
     end
-end
-
-function maajan_table:on_game_overed()
-    self.game_log = {}
-    self:ding_zhuang()
-
-    self.do_logic_update = false
-    self:clear_ready()
-    self:update_state(FSM_S.PER_BEGIN)
-
-    if self.private_id and self.cur_round and self.cur_round >= self.conf.round then
-        local final_scores = {}
-        for chair_id,p in pairs(self.players) do
-            table.insert(final_scores,{
-                chair_id = chair_id,
-                guid = p.guid,
-                score = p.total_score,
-            })
-        end
-
-        self:broadcast2client("SC_Maajan_Final_Game_Over",{
-            player_scores = final_scores,
-        })
-    else
-        for _,v in ipairs(self.players) do
-            v.hu = nil
-            v.men = nil
-            v.ting = nil
-            v.jiao = nil
-            v.pai = {
-                ming_pai = {},
-                shou_pai = {},
-                desk_tiles = {},
-            }
-            if v.deposit then
-                v:forced_exit()
-            elseif v:is_android() then
-                self:ready(v)
-            end
-        end
-    end
-
-    base_table.on_game_overed(self)
 end
 
 function maajan_table:FSM_event(evt)

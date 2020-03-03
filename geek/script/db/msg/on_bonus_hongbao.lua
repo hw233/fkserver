@@ -24,7 +24,7 @@ function on_sd_log_game_money_in_bonus(game_id, msg)
 	local first_game_type = data[1].first_game_type
 	if first_game_type == 0 then  return end
 
-	local data1 = db:query([[SELECT * FROM game.t_bonus_activity WHERE start_time <= NOW() AND end_time > NOW() AND platform_id = %d]],msg.platform_id)
+	local data1 = db:query([[SELECT * FROM game.t_bonus_activity WHERE start_time <= NOW() AND end_time > NOW() AND platform_id = %d;]],msg.platform_id)
 	if not data1 or #data1 == 0 then return end
 	
 	table.walk(data1,function(activity) 

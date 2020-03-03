@@ -292,6 +292,8 @@ message Maajan_Blanace_Player{
 	repeated Maajan_Balance_Score ji = 8;
 	BalanceStatus 			status = 9;
 	int32 hu_tile 			= 10;
+	int32 round_money 		= 11;
+	int32 total_money  		= 12;
 }
 
 //结算

@@ -25,6 +25,8 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
 local club_commission = require "game.club.club_commission"
+local club_template_conf = require "game.club.club_template_conf"
+local club_team_template_conf = require "game.club.club_team_template_conf"
 local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
@@ -159,7 +161,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
     club_team[inviter_club.id] = nil
 
     reddb:hset("mail:"..msg.mail_id,"status",1)
-    base_mails[msg.mail_id].status = 1
+    base_mails[msg.mail_id] = nil
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
@@ -276,13 +278,23 @@ local function deep_get_club_tables(club)
 end
 
 
+local function get_club_template_team_conf(club,template)
+    club = base_clubs[club.parent]
+    if not club then return end
+    local conf = club_team_template_conf[club.id][template.template_id]
+    if not conf then return end
+
+    return conf
+end
+
 local function get_club_templates(club)
     if not club then return end
 
     local templates = {}
     for tid,_ in pairs(club_template[club.id]) do
         local temp = table_template[tid]
-        if temp then
+        local conf = get_club_template_team_conf(club,temp)
+        if temp and (not conf or conf.visual) then
             table.insert(templates,{
                 template = {
                     template_id = temp.template_id,

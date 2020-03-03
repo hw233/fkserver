@@ -309,7 +309,6 @@ function base_table:do_commission(taxes)
 	local commissions = {}
 	for guid,tax in pairs(taxes) do
 		local club_id = get_belong_club(root,guid,enum.CT_UNION)
-		dump(club_id)
 		local last_rate = 0
 		while club_id and club_id ~= 0 do
 			local club = base_clubs[club_id]
@@ -321,7 +320,6 @@ function base_table:do_commission(taxes)
 		end
 	end
 
-	dump(commissions)
 	for club,commission in pairs(commissions) do
 		if commission > 0 then
 			club:incr_commission(commission,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
@@ -332,7 +330,7 @@ end
 function base_table:cost_tax(winlose)
 	local money_id = self:get_money_id()
 	if not money_id then
-		log.error("base_table:balance [%d] got nil private money id.",self.private_id)
+		log.error("base_table:cost_tax [%d] got nil private money id.",self.private_id)
 		return
 	end
 	
@@ -342,7 +340,7 @@ function base_table:cost_tax(winlose)
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then
-		log.error("base_table:balance [%d] got nil private conf.",self.private_id)
+		log.error("base_table:cost_tax [%d] got nil private conf.",self.private_id)
 		return
 	end
 
@@ -352,7 +350,7 @@ function base_table:cost_tax(winlose)
 
 	local club = base_clubs[private_table.club_id]
 	if not club then
-		log.error("base_table:balance [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club_id)
+		log.error("base_table:cost_tax [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club_id)
 		return
 	end
 
@@ -362,13 +360,13 @@ function base_table:cost_tax(winlose)
 
 	local rule = private_table.rule
 	if not rule then
-		log.error("base_table:balance [%d] got nil private rule conf.",self.private_id)
+		log.error("base_table:cost_tax [%d] got nil private rule conf.",self.private_id)
 		return
 	end
 
 	local taxconf = rule.union and rule.union.tax or nil
 	if not taxconf or (not taxconf.AA and not taxconf.big_win) then
-		log.error("base_table:balance [%d] got nil private tax conf.",self.private_id)
+		log.error("base_table:cost_tax [%d] got nil private tax conf.",self.private_id)
 		return
 	end
 
@@ -406,13 +404,6 @@ function base_table:cost_tax(winlose)
 	end
 
 	if taxconf.big_win and winlose then
-		local round_option = rule.round.option
-		local final_round = self.room_.conf.private_conf.round_count_option[round_option]
-
-		if self.cur_round ~= final_round then
-			return
-		end
-
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
@@ -483,7 +474,14 @@ end
 
 function base_table:on_game_overed()
 	if self.private_id then
-		if self.cur_round and self.cur_round >= self.conf.round then
+		local bankruptcy = self:check_bankruptcy()
+		dump(bankruptcy)
+		local is_bankruptcy = table.logic_or(bankruptcy,function(v) return v end)
+		if is_bankruptcy  then
+			self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+		end
+
+		if (self.cur_round and self.cur_round >= self.conf.round) or is_bankruptcy then
 			self:on_final_game_overed()
 			for _,p in pairs(self.players) do
 				p:forced_exit()
@@ -697,7 +695,7 @@ function base_table:on_private_pre_dismiss()
 end
 
 function base_table:on_private_dismissed()
-
+	
 end
 
 function base_table:dismiss()
@@ -1092,7 +1090,26 @@ function base_table:on_started()
 end
 
 function base_table:balance(moneies,why)
+	dump(moneies)
+
 	local money_id = self:get_money_id()
+
+	local minrate = 1
+	for pid,money in pairs(moneies) do
+		local p = self.players[pid] or base_players[pid]
+		local p_money = player_money[p.guid][money_id]
+		if p_money + money < 0 then
+			local r = math.abs(p_money) / math.abs(money)
+			if minrate > r then minrate = r end
+		end
+	end
+
+	for pid,_ in pairs(moneies) do
+		moneies[pid] = math.floor(moneies[pid] * minrate)
+	end
+	
+	dump(moneies)
+
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
@@ -1105,6 +1122,8 @@ function base_table:balance(moneies,why)
 			self:player_money_log(p,money_id,old_money,money)
 		end
 	end
+
+	return moneies
 end
 
 -- 开始游戏
@@ -1230,7 +1249,7 @@ function base_table:send_maintain_player()
 	for i,v in pairs (self.players) do
 		if  not v:is_android() and v.vip ~= 100 then
 			send2client_pb(v, "SC_GameMaintain", {
-			result = GAME_SERVER_RESULT_MAINTAIN,
+			result = enum.GAME_SERVER_RESULT_MAINTAIN,
 			})
 			v:forced_exit()
 			iRet = true
@@ -1239,21 +1258,25 @@ function base_table:send_maintain_player()
 	return iRet
 end
 
---检查玩家是否破产，是则返回ture，否则返回false
-function check_player_is_collapse(var_platform,player_money,func)
-	local reply = reddb:get(var_platform)
-	if type(reply) == "string" then
-		local result = false
-		local collapse_value = tostring(reply)
-		if player_money < tonumber(collapse_value) then
-			result = true
-		end
-
-		func(result)
-	else
-		func(false)
-	end
+function base_table:notify_bankruptcy(code)
+	self:broadcast2client("S2C_WARN_CODE_RES",{
+		warn_code = code,
+	})
 end
+
+-- 破产检测
+function base_table:check_bankruptcy()
+	local money_id = self:get_money_id()
+	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
+	local bankruptcy = {}
+	for _,p in pairs(self.players) do
+		local money = player_money[p.guid][money_id]
+		bankruptcy[p.guid] = money <= limit
+	end
+
+	return bankruptcy
+end
+
 --玩家破产日志
 function  base_table:save_player_collapse_log(player)
 	if not player then

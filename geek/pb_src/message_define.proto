@@ -1483,3 +1483,23 @@ message SC_JoinRoom
     TABLE_INFO info = 2;
     repeated SEAT_INFO seat_list = 3;
 }
+
+message S2C_WARN_CODE_RES
+{
+    enum MsgID {NONE = 0; ID = 1198;}
+    int32 warn_code = 1;
+}
+
+message RED_DOT{
+	int32 type = 1;
+	int32 count = 2;
+}
+
+message CS_RED_DOT{
+	enum MsgID { Nil = 0; ID = 1199;}
+}
+
+message SC_RED_DOT{
+	enum MsgID { Nil = 0; ID = 1200;}
+	repeated RED_DOT red_dots = 1;
+}

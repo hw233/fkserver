@@ -146,8 +146,6 @@ local function incr_club_money(club,money_id,money,why)
         return
     end
 
-    dump(res)
-
     local oldmoney = res[3] and res[3][1] and res[3][1].money or nil
     local newmoney = res[5] and res[5][1] and res[5][1].money or nil
 
