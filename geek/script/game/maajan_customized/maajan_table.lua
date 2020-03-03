@@ -1785,6 +1785,7 @@ end
 
 function maajan_table:on_game_balance()
     local fan_pai_tile,ji_tiles = self:gen_ji_tiles()
+    dump(ji_tiles)
     local items = self:game_balance(ji_tiles)
     dump(items,9)
     local scores = {}
