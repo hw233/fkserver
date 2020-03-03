@@ -372,7 +372,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        
+        -- [1] = {21,21,21,22,22,22,23,23,23,24,24,24,25}
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -2460,7 +2460,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
             send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         end
 
-        if self.chu_pai_player_index == player.chair_id then
+        if self.chu_pai_player_index == player.chair_id and not player.ting then
             send2client_pb(player,"SC_Maajan_Draw",{
                 chair_id = player.chair_id,
                 tile = player.mo_pai,
