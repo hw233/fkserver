@@ -372,7 +372,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        -- [1] = {21,21,21,22,22,22,23,23,23,24,24,24,25}
+        -- [1] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -1483,11 +1483,11 @@ function maajan_table:get_ji_items(p,ji_tiles)
     for _,s in pairs(p.pai.ming_pai) do
         local tile = s.tile
         local c = (s.type == SECTION_TYPE.PENG and 3 or 4)
-        if tile == 21 and p.ji.zhe_ren.normal then
+        if tile == 21 and p.ji.zhe_ren.normal and ji_tiles[21] then
             local t = HU_TYPE.ZHE_REN_JI
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1,whoee = s.whoee,}
-        elseif tile == 18 and p.ji.zhe_ren.wu_gu then
+        elseif tile == 18 and p.ji.zhe_ren.wu_gu and ji_tiles[18] then
             local t = HU_TYPE.ZHE_REN_WU_GU
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1,whoee = s.whoee,}
@@ -1501,7 +1501,7 @@ function maajan_table:get_ji_items(p,ji_tiles)
 
     local desk_tiles = {}
     for _,tile in pairs(p.pai.desk_tiles) do
-        if tile == 21 and p.ji.chong_feng.normal then
+        if tile == 21 and p.ji.chong_feng.normal and ji_tiles[21] then
             local t = HU_TYPE.CHONG_FENG_JI
             if ji_tiles[21][HU_TYPE.JING_JI] then
                 t = HU_TYPE.CHONG_FENG_JING_JI
@@ -1510,7 +1510,7 @@ function maajan_table:get_ji_items(p,ji_tiles)
             p_ji_tiles[t] = p_ji_tiles[t] or {}
             p_ji_tiles[t][tile] = {count = 1}
             p.ji.chong_feng.normal = false
-        elseif tile == 18 and p.ji.chong_feng.wu_gu then
+        elseif tile == 18 and p.ji.chong_feng.wu_gu and ji_tiles[18] then
             local t = HU_TYPE.CHONG_FENG_WU_GU
             if ji_tiles[18] and ji_tiles[18][HU_TYPE.JING_WU_GU_JI] then
                 t = HU_TYPE.CHONG_FENG_JING_WU_GU
