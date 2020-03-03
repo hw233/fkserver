@@ -213,6 +213,8 @@ function base_table:commit_dismiss(player,agree)
 		return enum.ERROR_NONE
 	end
 
+	self:on_final_game_overed()
+	
 	local result = self:dismiss()
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		return result
@@ -695,7 +697,7 @@ function base_table:on_private_pre_dismiss()
 end
 
 function base_table:on_private_dismissed()
-	
+
 end
 
 function base_table:dismiss()

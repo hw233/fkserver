@@ -90,10 +90,6 @@ function maajan_table:on_private_inited()
     self.tiles = chair_count_tiles[self.chair_count or 4]
 end
 
-function maajan_table:on_private_pre_dismiss()
-
-end
-
 function maajan_table:on_private_dismissed()
     self.cur_round = nil
     self.zhuang = nil
@@ -1897,29 +1893,26 @@ function maajan_table:on_game_overed()
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
 
-    for _,v in ipairs(self.players) do
-        v.hu = nil
-        v.men = nil
-        v.ting = nil
-        v.jiao = nil
-        v.pai = {
-            ming_pai = {},
-            shou_pai = {},
-            desk_tiles = {},
-        }
-        if v.deposit then
-            v:forced_exit()
-        elseif v:is_android() then
-            self:ready(v)
+    if not self.private_id then
+        for _,v in ipairs(self.players) do
+            v.hu = nil
+            v.men = nil
+            v.ting = nil
+            v.jiao = nil
+            v.pai = {
+                ming_pai = {},
+                shou_pai = {},
+                desk_tiles = {},
+            }
+            if v.deposit then
+                v:forced_exit()
+            elseif v:is_android() then
+                self:ready(v)
+            end
         end
     end
 
     base_table.on_game_overed(self)
-end
-
-
-function maajan_table:on_private_pre_dismiss()
-    self:on_final_game_overed()
 end
 
 function maajan_table:on_final_game_overed()
