@@ -1823,14 +1823,12 @@ function maajan_table:on_game_balance()
             shou_pai = shou_pai,
             ming_pai = ming_pai,
         }
-        local win_money = self:calc_score_money(p_score)
+        
         p.total_score = (p.total_score or 0) + p_score
-        p.total_money = (p.total_money or 0) + win_money
         log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
         p_log.score = p_score
         p_log.describe = p.describe
-        p_log.win_money = win_money
-        p_log.total_money = p.total_money
+        
         p_log.finish_task = p.finish_task
 
         table.insert(msg.players,{
@@ -1862,12 +1860,24 @@ function maajan_table:on_game_balance()
             hu_tile = p.hu and p.hu.tile or nil,
         })
 
+        local win_money = self:calc_score_money(p_score)
         chair_money[chair_id] = win_money
+    end
+
+    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+    for _,b in pairs(msg.player_balance) do
+        local p = self.players[b.chair_id]
+        local p_log = self.game_log.players[b.chair_id]
+        local m = chair_money[b.chair_id]
+        b.round_money = m
+        p.total_money = (b.total_money or 0) + m
+        b.total_money = p.total_money
+        p_log.total_money = p.total_money
+        p_log.win_money = m
     end
 
     dump(msg,9)
 
-    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self:notify_game_money()
