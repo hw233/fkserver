@@ -52,6 +52,42 @@ local club_op = {
     CLOSE_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CLOSE_CLUB"),
 }
 
+function on_bs_club_create(owner,name)
+    local guid = owner
+    -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
+    --     local p_club = base_clubs[msg.parent]
+    --     if not p_club then
+    --         log.error("on_cs_club_create no parent club,%s.",msg.parent)
+    --         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+    --             result = enum.ERROR_CLUB_NOT_FOUND,
+    --         })
+    --         return
+    --     end
+    -- end
+
+    local player = base_players[guid]
+    if not player then
+        log.error("internal error,recv msg but no player.")
+        return
+    end
+
+    local id = math.random(1000000,9999999)
+    for _ = 1,1000 do
+        if not base_clubs[id] then break end
+        id = math.random(1000000,9999999)
+    end
+
+    base_club:create(id,name or "","",player,enum.CT_UNION)
+
+    -- 初始送分 金币
+    base_clubs[id]:incr_money({
+        money_id = club_money_type[id],
+        money = math.floor(global_cfg.union_init_money),
+    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+
+    return id
+end
+
 function on_cs_club_create(msg,guid)
     local club_info = msg.info
     -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
@@ -76,12 +112,6 @@ function on_cs_club_create(msg,guid)
     end
 
     dump(player)
-
-    -- if not player:has_club_rights() then
-	-- 	return {
-    --         result = CLUB_OP_RESULT_NO_RIGHTS,
-    --     }
-    -- end
 
     local id = math.random(1000000,9999999)
     for _ = 1,1000 do

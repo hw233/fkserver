@@ -7,11 +7,13 @@ local base_players = require "game.lobby.base_players"
 local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
 local error = require "gm.errorcode"
+local enum = require "pb_enums"
+local base_clubs = require "game.club.base_clubs"
+local club_money_type = require "game.club.club_money_type"
+local log = require "log"
+local base_club = require "game.club.base_club"
 
 local reddb = redisopt.default
-
-
-local GMmessageRetCode_GmParamMiss = pb.enum("GMmessageRetCode","GMmessageRetCode_GmParamMiss")
 
 local gmd = {}
 
@@ -332,24 +334,155 @@ function gmd.ServerCmd(data)
     return result_code(msg.result)
 end
 
-function gmd.recharge(data)
-    local guid = tonumber(data.uid)
-    if not guid then
+local function recharge_team(team_id,coin_type,count)
+    local team = base_clubs[team_id]
+    if not team then
         return {
             errcode = error.DATA_ERROR,
-            errstr = "player guid can not be nil."
+            errstr = string.format("team [%d] not exists.",team_id),
         }
     end
 
-    local os = onlineguid[guid]
-    if os then
-        return channel.call("service."..os.server,"msg","GM_NotifyRecharge",guid)
+    if coin_type ~= 0 then
+        local money_id = club_money_type[team_id]
+        if money_id ~= coin_type then
+            return {
+                errcode = error.DATA_ERROR,
+                errstr = string.format("coin type is wrong."),
+            }
+        end
     end
 
-    reddb.hincrby("player:info:"..data.guid,data.type == 1 and "diamond" or "room_card",tonumber(data.number))
+    if count == 0 then
+        return {
+            errcode = error.SUCCESS,
+        }
+    end
+
+    team:incr_money({
+        money_id = coin_type,
+        money = count
+    },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
+
     return {
         errcode = error.SUCCESS,
     }
+end
+
+local function recharge_player(guid,coin_type,count)
+    local os = onlineguid[guid]
+    if os and os.server then
+        return channel.call("service."..os.server,"msg","GM_NotifyRecharge",guid)
+    end
+
+    -- if coin_type ~= 2 then
+    --     return {
+    --         errcode = error.DATA_ERROR,
+    --         errstr = "coin type can not be 1(gold).",
+    --     }
+    -- end
+
+    local player = base_players[guid]
+    if not player then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",guid)
+        }
+    end
+
+    count = tonumber(count)
+    if count == 0 then
+        return {
+            errcode = error.SUCCESS,
+        }
+    end
+
+    player:incr_money({
+        money_id = 0,
+        money = count,
+    },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.recharge(data)
+    local target_id = tonumber(data.target_id)
+    if not target_id then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "target id can not be nil."
+        }
+    end
+
+    local coin_type = tonumber(data.coin_type)
+    if not coin_type then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "coin_type is nil.",
+        }
+    end
+
+    local count = tonumber(data.count)
+    if not count or count == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "count is nil.",
+        }
+    end
+
+    local is_team = data.is_team
+    if is_team then
+        return recharge_team(target_id,coin_type,count)
+    else
+        return recharge_player(target_id,coin_type,count)
+    end
+end
+
+function gmd.create_club(data)
+    local owner_id = data.owner_id
+    if not owner_id or owner_id == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("owner id is illigal.")
+        }
+    end
+
+    local player = base_players[owner_id]
+    if not player then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("owner [%d] not exists.",owner_id)
+        }
+    end
+
+    local name = data.name
+    local club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name)
+    return {
+        errcode = error.SUCCESS,
+        club_id = club_id,
+    }
+end
+
+function gmd.force_dismiss_club(data)
+
+end
+
+function gmd.block_club(data)
+
+end
+
+function gmd.block_player(data)
+    
+end
+
+function gmd.agency_create(data)
+
+end
+
+function gmd.agency_remove(data)
+
 end
 
 gmd["info"] = gmd.RequestGameServerInfo
@@ -364,5 +497,9 @@ gmd["Maintain-switch"] = gmd.LuaCmdQueryMaintain
 gmd["update-db-cfg"] = gmd.UpdateDbConfig
 gmd["lua_change_player_money"] = gmd.ChangePlayersMoneyForLuaCmd
 gmd["gm_server_cmd"] = gmd.ServerCmd
+gmd["club/create"] = gmd.create_club
+gmd["player/block"] = gmd.block_palyer
+gmd["agency/create"] = gmd.agency_create
+gmd["agency/remove"] = gmd.agency_remove
 
 return gmd

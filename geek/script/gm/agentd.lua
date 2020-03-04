@@ -54,8 +54,8 @@ skynet.start(function()
             body = "{}"
         end
 
-        local data = json.decode(body)
-        if not data then
+        local ok,data = pcall(json.decode,body)
+        if not ok or not data then
             response:write(404,nil,json.encode({
                 errcode = error.DATA_ERROR,
             }))
@@ -81,7 +81,9 @@ skynet.start(function()
         end
 
         local rep = gmd[cmd](data)
-        response:write(200,nil,json.encode(rep or {errcode = error.SUCCESS}))
+        response:write(200,nil,json.encode(rep or {
+            errcode = error.SUCCESS
+        }))
         response:close()
     end)
 end)
