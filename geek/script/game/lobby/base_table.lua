@@ -406,6 +406,8 @@ function base_table:cost_tax(winlose)
 	end
 
 	if taxconf.big_win and winlose then
+		dump(winlose)
+		dump(taxconf)
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
@@ -420,13 +422,13 @@ function base_table:cost_tax(winlose)
 			local change = c.change
 			if change == maxwin then
 				local bigwin = taxconf.big_win
-				if change > 0 and change <= bigwin[1][1] then
+				if change > 0 and change <= (bigwin[1] and bigwin[1][1] or 0) then
 					totalwin = totalwin + bigwin[1][2]
 					tax[c.guid] = bigwin[1][2]
-				elseif change > bigwin[1][1] and change <= bigwin[2][1] then
+				elseif change > (bigwin[1] and bigwin[1][1] or 0) and change <= (bigwin[2] and bigwin[2][1] or 0) then
 					totalwin = totalwin + bigwin[2][2]
 					tax[c.guid] = bigwin[2][2]
-				elseif change > bigwin[2][1] and change <= bigwin[3][1] then
+				elseif change > (bigwin[2] and bigwin[2][1] or 0) and change <= (bigwin[3] and bigwin[3][1] or 0) then
 					totalwin = totalwin + bigwin[3][2]
 					tax[c.guid] = bigwin[3][2]
 				else
@@ -476,11 +478,14 @@ end
 
 function base_table:on_game_overed()
 	if self.private_id then
-		local bankruptcy = self:check_bankruptcy()
-		dump(bankruptcy)
-		local is_bankruptcy = table.logic_or(bankruptcy,function(v) return v end)
-		if is_bankruptcy  then
-			self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+		local is_bankruptcy = false
+		local private_table = base_private_table[self.private_id]
+		local club = base_clubs[private_table.club_id]
+		if club.type == enum.CT_UNION then
+			is_bankruptcy = table.logic_or(self:check_bankruptcy(),function(v) return v end)
+			if is_bankruptcy  then
+				self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+			end
 		end
 
 		if (self.cur_round and self.cur_round >= self.conf.round) or is_bankruptcy then
