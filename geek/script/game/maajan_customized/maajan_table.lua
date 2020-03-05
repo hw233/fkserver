@@ -1866,15 +1866,15 @@ function maajan_table:on_game_balance()
     end
 
     chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
-    for _,b in pairs(msg.player_balance) do
-        local p = self.players[b.chair_id]
-        local p_log = self.game_log.players[b.chair_id]
-        local m = chair_money[b.chair_id]
-        b.round_money = m
-        p.total_money = (b.total_money or 0) + m
-        b.total_money = p.total_money
+    for _,balance in pairs(msg.player_balance) do
+        local p = self.players[balance.chair_id]
+        local p_log = self.game_log.players[balance.chair_id]
+        local money = chair_money[balance.chair_id]
+        balance.round_money = money
+        p.total_money = (p.total_money or 0) + money
+        balance.total_money = p.total_money
         p_log.total_money = p.total_money
-        p_log.win_money = m
+        p_log.win_money = money
     end
 
     dump(msg,9)
@@ -1946,6 +1946,12 @@ function maajan_table:on_final_game_overed()
     end
     
     self:cost_tax(total_winlose)
+
+    for _,p in pairs(self.players) do
+        p.total_money = nil
+        p.round_money = nil
+        p.total_score = nil
+    end
 end
 
 function maajan_table:ding_zhuang()
