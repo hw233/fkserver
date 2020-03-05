@@ -41,16 +41,6 @@ enum ERROR_CODE {
     ERROR_CREATE_ROOM_CLUB_JOIN_DELETE = 124;   //该亲友群已解散 不存在
     ERROR_CLUB_ADD_PLAYER_NO = 125; //没有此玩家
 
-    ERROR_ZJH_ROOM_DISCARD_REPEAT = 130;   //已弃牌 重复操作
-    ERROR_ZJH_ROOM_DISCARD_GAMESTARTED = 131;   //游戏未开始
-    ERROR_ZJH_ROOM_DISCARD_SEECARD = 132;   //已看牌 重复操作  followBet
-    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_REPEATVERSYS = 133; //已和该玩家比牌  重复比牌
-    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_REPEAT = 134;    //已操作  重复操作
-    ERROR_ZJH_ROOM_DISCARD_VERSUSCARD_ISLOCK = 135;     //对方为中途加入玩家  不能比牌
-    ERROR_ZJH_ROOM_DISCARD_ADDBET_REPEAT = 136;     //已加注  重复操作
-    ERROR_ZJH_ROOM_DISCARD_FOLLOWBET_REPEAT = 137;  //已跟注  重复操作
-    ERROR_ZJH_ROOM_DISMIS_NO = 138; //30秒后才能申请解散
-
     ERROR_PRODUCT_CHANGE_NO = 200;  //改商品已过期  请刷新商城
     ERROR_PRODUCT_CHANGE_UP = 201;  //暂未开放
     ERROR_PRODUCT_CHANGE_MONEY_NO = 202;  //余额不足
@@ -61,11 +51,6 @@ enum ERROR_CODE {
     ERROR_BINDING_CHECK_ME = 213;   //不能绑定自己
     ERROR_BINDING_CHECK_MUTUAL = 214; //不能相互绑定
 
-    ERROR_ACTIVITY_CHECK_NO = 220;  //已领过该奖励
-    ERROR_ACTIVITY_CHECK_OUT = 221; //该活动已关闭
-    ERROR_ACTIVITY_CHECK_DISMIS = 222; //未达到领取条件
-    ERROR_ACTIVITY_HAS_NO_ACTIVITY = 223; //暂时没有活动
-
     ERROR_PLAYER_IS_LOCKED = 224;//玩家已经被封号，限制登录
 
     ERROR_UNABLE_TO_CREATE_ROOM = 225;//即将进入维护，禁止创建房间,传回消息参数(游戏类型 (0:所有游戏  1:拼三张   2：山西推倒胡麻将))
@@ -73,11 +58,9 @@ enum ERROR_CODE {
     ERROR_HAS_PLYAERS_IN_CLUB_ROOM = 226;//俱乐部中有玩家在房间中，不能修改玩法
     ERROR_CREATE_CLUB_FAILED_HAS_NO_RULE_ARGS = 227;//创建俱乐部失败，没有玩法参数
 
-    ERROR_AGENT_HAS_NO_ZJH_AUTH = 228;//代理没有金花权限
     ERROR_CLUB_FORBID_PLAY_GAME = 229;//俱乐部成员禁止游戏
 
     ERROR_PLAYER_NOT_EXIST = 230;//玩家不存在
-    ERROR_DESK_LOCKED = 231;//桌子已经加锁
     ERROR_AREADY_MEMBER = 232;//已经是成员
 
     ERROR_PLAYER_NOT_IN_ROOM = 233; //成员已不在房间内
@@ -104,12 +87,6 @@ enum ERROR_CODE {
     ERROR_PLAYER_LEAVE = 246;//有玩家离开
 
     ERROR_PLAYER_IN_ROOM = 247;//玩家在房间中
-
-    ERROR_LESS_GOLDS_SEND_MAJIC_PROPS = 248;//玩家发送魔法表情，金币不足，无法发送
-
-    ERROR_UN_READY_PLAYER_LEAVE = 249;//玩家没有准备，有人离开
-
-    ERROR_DO_REQ_MATCH_NO_TIPS = 250;//玩家请求准备，服务器提示重新匹配
 
     ERORR_PARAMETER_ERROR = 251;//参数非法
 
