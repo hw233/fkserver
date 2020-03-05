@@ -6,21 +6,7 @@ local log = require "log"
 local skynet = require "skynetproto"
 local mysql = require "skynet.db.mysql"
 
-local function table2sql(tb)
-	local strtb = {}
-	for k,v in pairs(tb) do
-		local t = type(v)
-		if t == "number" or t == "boolean" then
-			table.insert(strtb,k.."="..v)
-		elseif t == "string" then
-			table.insert(strtb,k.."=''"..v.."''")
-		elseif t == "table" then
-			table.insert(strtb,k.."="..table2sql(v))
-		end
-	end
 
-	return table.concat(strtb,",")
-end
 
 local waiting = {}
 
@@ -66,10 +52,6 @@ function db_conn:close()
 
 	self.db:disconnect()
 	self.db = nil
-end
-
-function db_conn:execute(sql, tb)
-	self.db:query(string.gsub(sql, '%$FIELD%$', table2sql(tb)))
 end
 
 function db_conn:query(sqlfmt,...)

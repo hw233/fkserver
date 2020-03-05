@@ -389,14 +389,15 @@ function base_player:get_header_icon()
 end
 
 
-function base_player:log_money(money_id,why,old,now,where)
+function base_player:log_money(money_id,old,now,why,why_ext,where)
 	channel.publish("db.?","msg","SD_LogMoney", {
 		guid = self.guid,
 		money_id = money_id,
 		old_money = old,
 		new_money = now,
 		where = where,
-		opt_type = why,
+		reason = why,
+		reason_ext = why_ext,
 	})
 end
 
@@ -410,7 +411,7 @@ function base_player:decrby(field,value)
 	return tonumber(v)
 end
 
-function base_player:incr_money(item,why)
+function base_player:incr_money(item,why,why_ext)
 	if not why then
 		log.error("base_player:incr_money [%d] why can not be nil.",self.guid)
 		return
@@ -453,13 +454,14 @@ function base_player:incr_money(item,why)
 	
 	log.info("base_player:incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
 	self:notify_money(item.money_id)
+	self:log_money(item.money_id,oldmoney,newmoney,why,why_ext)
 	return oldmoney,newmoney
 end
 
 -- 花钱
-function base_player:cost_money(price, why)
+function base_player:cost_money(price, why,why_ext)
 	for _, item in ipairs(price) do
-		log.info("guid[%d] money_id[%d]  money[%d] why[%d]" ,self.guid, item.money_id, item.money,why)
+		log.info("guid[%d] money_id[%d]  money[%d] why[%d] why_ext[%s]" ,self.guid, item.money_id, item.money,why,why_ext)
 		if item.money < 0 then 
 			log.error("cost_money but got minus money values.")
 			return
@@ -468,7 +470,7 @@ function base_player:cost_money(price, why)
 		item.money_id = item.money_id or 0
 		item.where = item.where or 0
 		item.money = - item.money
-		local oldmoney,_ = self:incr_money(item,why)
+		local oldmoney,_ = self:incr_money(item,why,why_ext)
 		if not oldmoney then
 			return
 		end
@@ -491,7 +493,7 @@ function base_player:notify_money(money_id)
 end
 
 -- 加钱
-function base_player:add_money(price,why)
+function base_player:add_money(price,why,why_ext)
 	for _, item in ipairs(price) do
 		log.info("guid[%d] add money[%d],money_type:%d",self.guid , p.money,p.money_type)
 		if item.money < 0 then 
@@ -501,7 +503,7 @@ function base_player:add_money(price,why)
 
 		item.money_id = item.money_id or 0
 		item.where = item.where or 0
-		local oldmoney,_ = self:incr_money(item,why)
+		local oldmoney,_ = self:incr_money(item,why,why_ext)
 		if not oldmoney then return end
 	end
 

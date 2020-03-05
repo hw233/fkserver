@@ -6,6 +6,22 @@ local skynet = require "skynet"
 
 local mysqld
 
+local function table2sql(tb)
+	local strtb = {}
+	for k,v in pairs(tb) do
+		local t = type(v)
+		if t == "number" or t == "boolean" then
+			table.insert(strtb,k.."="..v)
+		elseif t == "string" then
+			table.insert(strtb,k.."='"..v.."'")
+		elseif t == "table" then
+			table.insert(strtb,k.."="..table2sql(v))
+		end
+	end
+
+	return table.concat(strtb,",")
+end
+
 local transaction = {}
 
 function transaction:begin()
@@ -31,7 +47,9 @@ function db:query(sql,...)
 end
 
 function db:execute(sql,tb)
-	return skynet.call(mysqld,"lua","execute",self.name,sql,tb)
+	sql = string.gsub(sql,"%$FIELD%$",table2sql(tb))
+	dump(sql)
+	return skynet.call(mysqld,"lua","query",self.name,sql)
 end
 
 function db:transaction()

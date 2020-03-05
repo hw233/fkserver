@@ -381,15 +381,12 @@ function base_table:cost_tax(winlose)
 		for _,p in pairs(self.players) do
 			local guid = p.guid
 			local change = taxes[guid] or 0
-			local old_money = player_money[guid][money_id]
 
 			if change ~= 0 then
 				p:cost_money({{
 					money_id = money_id,
 					money = change,
-				}},enum.LOG_MONEY_OPT_TYPE_GAME_TAX)
-
-				self:player_money_log(p,money_id,old_money,change)
+				}},enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
 			end
 		end
 
@@ -405,6 +402,8 @@ function base_table:cost_tax(winlose)
 		for _,p in pairs(self.players) do
 			tax[p.guid] = taxconf.AA
 		end
+
+		dump(self.round_id)
 		do_cost_tax_money(tax)
 		self:do_commission(tax)
 		return
@@ -554,10 +553,10 @@ end
 
 function  base_table:save_game_log(gamelog)
 	log.info("==============================base_table:save_game_log")
-	local slog = json.encode(gamelog)
-	log.info(slog)
+	log.info(json.encode(gamelog))
 	local nMsg = {
-		type = def_game_name,
+		game_id = def_game_id,
+		game_name = def_game_name,
 		log = gamelog,
 		starttime = self.start_time,
 		endtime = os.time(),
@@ -565,22 +564,6 @@ function  base_table:save_game_log(gamelog)
 		ext_round_id = self.ext_round_id,
 	}
 	channel.publish("db.?","msg","SL_Log_Game",nMsg)
-end
-
-function base_table:player_money_log(player,money_id,old_money,change_money)
-	local nMsg = {
-		guid = player.guid,
-		type = change_money > 0 and 2 or 1,
-		gameid = def_game_id,
-		game_name = def_game_name,
-		money_id = money_id,
-		old_money = old_money,
-		new_money = old_money + change_money,
-		change_money = change_money,
-		id = self.round_id,
-		platform_id = player.platform_id,
-	}
-	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
 end
 
 function base_table:player_bet_flow_log(player,money)
@@ -1137,13 +1120,10 @@ function base_table:balance(moneies,why)
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
-			local old_money = player_money[p.guid][money_id]
 			p:incr_money({
 				money_id = money_id,
 				money = math.floor(money),
-			},why)
-
-			self:player_money_log(p,money_id,old_money,money)
+			},why,self.round_id)
 		end
 	end
 

@@ -10,10 +10,6 @@ local enum = require "pb_enums"
 -- 钱日志
 function on_sd_log_money(msg)
 	dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$;", msg)
-	-- if msg.opt_type == enum.LOG_MONEY_OPT_TYPE_RESET_ACCOUNT then
-    --     local sql = string.format("update t_player set bind_gold = %d , bind_time = current_timestamp where guid = %d", msg.new_money - msg.old_money ,msg.guid )
-    --     dbopt.game:query(sql)
-    -- end
 	log.info("...................... on_sd_log_money")
 end
 
@@ -52,10 +48,10 @@ end
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
     local sql = string.format([[
-        INSERT INTO `log`.`t_log_game` (`round_id`, `type`, `log`, `ext_round_id`, `start_time`,`end_time`)
-        VALUES ('%s', '%s', '%s','%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
+        INSERT INTO `log`.`t_log_game` (`round_id`, `game_id`,`game_name`, `log`, `ext_round_id`, `start_time`,`end_time`)
+        VALUES ('%s',%d, '%s', '%s','%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
         ]],
-        msg.round_id,msg.type,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime)
+        msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime)
     local ret = dbopt.log:query(sql)
     if ret.errno then
         log.error(ret.err)

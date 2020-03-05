@@ -2678,8 +2678,6 @@ local function incr_player_money(guid,money_id,money,where,why)
 		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = %d;]],guid,money_id,where),
 		"COMMIT;",
 	}
-	
-	dump(sqls)
 
 	local tran = dbopt.game:transaction()
 	local res = tran:execute(table.concat(sqls,"\n"))
