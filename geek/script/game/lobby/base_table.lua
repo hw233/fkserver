@@ -269,7 +269,7 @@ function base_table:calc_score_money(score)
 	return score * 100 * base_multi
 end
 
-function base_table:do_commission(taxes)
+function base_table:do_commission(taxes,commission_root)
 	local money_id = self:get_money_id()
 	if not money_id then
 		log.error("base_table:do_commission [%d] got nil private money id.",self.private_id)
@@ -300,6 +300,7 @@ function base_table:do_commission(taxes)
 			local r = club_utils.root(club_id)
 			if maxlevel < level and root.id == r.id then
 				max_level_club_id = club_id
+				maxlevel = level
 			end
 		end
 
@@ -308,23 +309,27 @@ function base_table:do_commission(taxes)
 
 	local root = club_utils.root(private_table.club_id)
 
-	local commissions = {}
-	for guid,tax in pairs(taxes) do
-		local club_id = get_belong_club(root,guid,enum.CT_UNION)
-		local last_rate = 0
-		while club_id and club_id ~= 0 do
-			local club = base_clubs[club_id]
-			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
-			local commission = math.floor(tax * (commission_rate - last_rate))
-			last_rate = commission_rate
-			commissions[club] = (commissions[club] or 0) + commission
-			club_id = club.parent
+	if commission_root then
+		local total = table.sum(taxes)
+		root:incr_commission(total,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+	else
+		local commissions = {}
+		for guid,tax in pairs(taxes) do
+			local club_id = get_belong_club(root,guid,enum.CT_UNION)
+			local last_rate = 0
+			while club_id and club_id ~= 0 do
+				local club = base_clubs[club_id]
+				local commission_rate = calc_club_template_commission_rate(club,private_table.template)
+				local commission = math.floor(tax * (commission_rate - last_rate))
+				last_rate = commission_rate
+				commissions[club] = (commissions[club] or 0) + commission
+				club_id = club.parent
+			end
 		end
-	end
-
-	for club,commission in pairs(commissions) do
-		if commission > 0 then
-			club:incr_commission(commission,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+		for club,commission in pairs(commissions) do
+			if commission > 0 then
+				club:incr_commission(commission,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+			end
 		end
 	end
 end
@@ -415,6 +420,7 @@ function base_table:cost_tax(winlose)
 
 		table.sort(winloselist,function(l,r) return l.change > r.change end)
 
+		local commission_root = false
 		local maxwin = winloselist[1].change
 		local tax = {}
 		local totalwin = 0
@@ -425,14 +431,17 @@ function base_table:cost_tax(winlose)
 				if change > 0 and change <= (bigwin[1] and bigwin[1][1] or 0) then
 					totalwin = totalwin + bigwin[1][2]
 					tax[c.guid] = bigwin[1][2]
+					commission_root = true
 				elseif change > (bigwin[1] and bigwin[1][1] or 0) and change <= (bigwin[2] and bigwin[2][1] or 0) then
 					totalwin = totalwin + bigwin[2][2]
 					tax[c.guid] = bigwin[2][2]
+					commission_root = true
 				elseif change > (bigwin[2] and bigwin[2][1] or 0) and change <= (bigwin[3] and bigwin[3][1] or 0) then
 					totalwin = totalwin + bigwin[3][2]
 					tax[c.guid] = bigwin[3][2]
 				else
 					totalwin = totalwin + 0
+					commission_root = true
 				end
 			end
 		end
@@ -444,7 +453,7 @@ function base_table:cost_tax(winlose)
 		end
 
 		do_cost_tax_money(tax)
-		self:do_commission(commission_tax)
+		self:do_commission(commission_tax,commission_root)
 		return
 	end
 end
@@ -482,9 +491,17 @@ function base_table:on_game_overed()
 		local private_table = base_private_table[self.private_id]
 		local club = base_clubs[private_table.club_id]
 		if club.type == enum.CT_UNION then
-			is_bankruptcy = table.logic_or(self:check_bankruptcy(),function(v) return v end)
-			if is_bankruptcy  then
-				self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+			local bankruptcy = self:check_bankruptcy()
+			for guid,is in pairs(bankruptcy) do
+				is_bankruptcy = is_bankruptcy or is
+				if is_bankruptcy  then
+					self:notify_bankruptcy(
+						player_money[guid][self:get_money_id()] <= 0 and
+							enum.ERROR_BANKRUPTCY_WARNING or
+							enum.ERROR_CHIP_LESS_THAN_TABLE_MIN_CHIP
+					)
+					break
+				end
 			end
 		end
 
@@ -1274,7 +1291,7 @@ end
 -- 破产检测
 function base_table:check_bankruptcy()
 	local money_id = self:get_money_id()
-	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
+	local limit = self.private_id and self.conf and self.conf.conf.union and self.conf.conf.union.min_score or 0
 	local bankruptcy = {}
 	for _,p in pairs(self.players) do
 		local money = player_money[p.guid][money_id]
