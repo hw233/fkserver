@@ -311,7 +311,7 @@ function base_table:do_commission(taxes,commission_root)
 
 	if commission_root then
 		local total = table.sum(taxes)
-		root:incr_commission(total,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+		root:incr_commission(total,self.round_id)
 	else
 		local commissions = {}
 		for guid,tax in pairs(taxes) do
@@ -328,7 +328,7 @@ function base_table:do_commission(taxes,commission_root)
 		end
 		for club,commission in pairs(commissions) do
 			if commission > 0 then
-				club:incr_commission(commission,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+				club:incr_commission(commission,self.round_id)
 			end
 		end
 	end
