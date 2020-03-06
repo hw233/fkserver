@@ -659,7 +659,7 @@ end
 
 function table.foreach(tb,op)
     for k,v in pairs(tb) do
-        op(k,v)
+        op(v,k)
     end
 end
 
@@ -687,6 +687,14 @@ function table.walk_on(tb,op,cond)
 	table.walk(tb,function(v,k) 
 		if cond(v,k) then op(v,k)  end 
 	end)
+end
+
+function table.get(tb,field,default)
+    if not tb[field] then
+        tb[field] = default
+    end
+
+    return tb[field]
 end
 
 string._htmlspecialchars_set = {}
@@ -757,6 +765,7 @@ end
 local function urlencodechar(char)
     return "%" .. string.format("%02X", string.byte(char))
 end
+
 function string.urlencode(input)
     -- convert line endings
     input = string.gsub(tostring(input), "\n", "\r\n")

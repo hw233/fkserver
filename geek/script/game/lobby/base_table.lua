@@ -545,8 +545,8 @@ end
 
 function base_table:foreach_except(except, func)
 	for i, p in pairs(self.players) do
-		if i ~= except then
-			func(p)
+		if i ~= except and p ~= except then
+			func(p,i)
 		end
 	end
 end
