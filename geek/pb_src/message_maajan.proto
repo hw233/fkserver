@@ -128,6 +128,7 @@ enum ACTION{
 	ACTION_MO_PAI = 0x8000;
 	ACTION_MEN_ZI_MO = 0x10000;
 	ACTION_FREE_BA_GANG = 0x20000;
+	ACTION_FREE_AN_GANG = 0x40000;
 }
 
 enum SECTION_TYPE {
@@ -143,6 +144,7 @@ enum SECTION_TYPE {
 	MidChi = 9;
 	RightChi = 10;
 	FreeBaGang = 11;
+	FreeAnGang = 12;
 }
 
 enum FSM_STATE {

@@ -131,6 +131,7 @@ function maajan_table:on_started()
 
         v.mo_pai = nil
         v.chu_pai = nil
+        v.free_an_gang_tiles = nil
     end
 
     self.timer = {}
@@ -372,7 +373,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        -- [2] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
+        [2] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -448,6 +449,15 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         actions[ACTION.FREE_BA_GANG] = nil
     end
 
+    if actions[ACTION.AN_GANG] and p.free_an_gang_tiles then
+        for tile,_ in pairs(actions[ACTION.AN_GANG]) do
+            if p.free_an_gang_tiles[tile] then
+                actions[ACTION.AN_GANG][tile] = nil
+                table.get(actions,ACTION.FREE_AN_GANG,{})[tile] = true
+            end
+        end
+    end
+
     return actions
 end
 
@@ -488,6 +498,7 @@ local action_name_str = {
     [ACTION.MEN] = "Men",
     [ACTION.MO_PAI] = "Draw",
     [ACTION.MEN_ZI_MO] = "ZiMoMen",
+    [ACTION.FREE_AN_GANG] = "FreeAnGang",
 }
 
 function maajan_table:log_game_action(player,action,tile)
@@ -637,21 +648,23 @@ function maajan_table:on_action_after_mo_pai(evt)
         return
     end
 
+    local self_waiting_actions = self.waiting_player_actions[player.chair_id] and self.waiting_player_actions[player.chair_id].actions
+    local waiting_an_gang_tiles = self_waiting_actions[ACTION.AN_GANG] or self_waiting_actions[ACTION.FREE_AN_GANG]
+
+
     self.waiting_player_actions = {}--只能写在此处，do_mo_pai有可能会覆盖此值
     
     if do_action == ACTION.BA_GANG or do_action == ACTION.FREE_BA_GANG then
         local qiang_gang_hu_actions = {}
-        for _,p in pairs(self.players) do
-            if p ~= player then
-                local actions = self:get_actions(p,nil,tile)
-                if actions[ACTION.HU] then
-                    actions[ACTION.MEM] = nil
-                    actions[ACTION.MEN_ZI_MO] = nil
-                    actions[ACTION.TING] = nil
-                    qiang_gang_hu_actions[p.chair_id] = actions
-                end
+        self:foreach_except(player,function(p)
+            local actions = self:get_actions(p,nil,tile)
+            if actions[ACTION.HU] then
+                actions[ACTION.MEM] = nil
+                actions[ACTION.MEN_ZI_MO] = nil
+                actions[ACTION.TING] = nil
+                qiang_gang_hu_actions[p.chair_id] = actions
             end
-        end
+        end)
 
         if table.nums(qiang_gang_hu_actions) == 0 then
             self:adjust_shou_pai(player,do_action,tile)
@@ -663,7 +676,7 @@ function maajan_table:on_action_after_mo_pai(evt)
         end
     end
 
-    if do_action == ACTION.AN_GANG then
+    if do_action == ACTION.AN_GANG or do_action == ACTION.FREE_AN_GANG then
         self:adjust_shou_pai(player,do_action,tile)
         self:log_game_action(player,do_action,tile)
         self:jump_to_player_index(player)
@@ -716,9 +729,16 @@ function maajan_table:on_action_after_mo_pai(evt)
             tiles = ting_tiles[tile],
             ruan_bao = true,
         }
+
+        if waiting_an_gang_tiles then
+            player.free_an_gang_tiles = waiting_an_gang_tiles
+        end
     end
 
     if do_action == ACTION.PASS then
+        if waiting_an_gang_tiles then
+            player.free_an_gang_tiles = waiting_an_gang_tiles
+        end
         self:wait_chu_pai()
     end
 
@@ -2146,10 +2166,10 @@ function maajan_table:adjust_shou_pai(player, action, tile)
     local shou_pai = player.pai.shou_pai
     local ming_pai = player.pai.ming_pai
 
-    if action == ACTION.AN_GANG then
+    if action == ACTION.AN_GANG or action == ACTION.FREE_AN_GANG then
         table.decr(shou_pai,tile,4)
         table.insert(ming_pai,{
-            type = SECTION_TYPE.AN_GANG,
+            type = action == ACTION.AN_GANG and SECTION_TYPE.AN_GANG or SECTION_TYPE.FREE_AN_GANG,
             tile = tile,
             area = TILE_AREA.MING_TILE,
         })

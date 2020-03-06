@@ -68,6 +68,7 @@ local SECTION_TILES = {
 	[SECTION_TYPE.LEFT_CHI] = section_tiles_left_chi,
 	[SECTION_TYPE.MID_CHI] = section_tiles_mid_chi,
 	[SECTION_TYPE.RIGHT_CHI] = section_tiles_right_chi,
+	[SECTION_TYPE.FREE_AN_GANG] = section_tiles_gang,
 }
 
 local function hu(state)

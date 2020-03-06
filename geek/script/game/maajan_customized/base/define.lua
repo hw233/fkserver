@@ -34,6 +34,7 @@ define.ACTION = {
 	MO_PAI = pb.enum("ACTION","ACTION_MO_PAI"),
 	MEN_ZI_MO = pb.enum("ACTION","ACTION_MEN_ZI_MO"),
 	FREE_BA_GANG = pb.enum("ACTION","ACTION_FREE_BA_GANG"),
+	FREE_AN_GANG = pb.enum("ACTION","ACTION_FREE_AN_GANG"),
 }
 
 local TILE_TYPE = {
@@ -61,6 +62,7 @@ local SECTION_TYPE = {
 	MID_CHI = pb.enum("SECTION_TYPE","MidChi"),
 	RIGHT_CHI = pb.enum("SECTION_TYPE","RightChi"),
 	FREE_BA_GANG = pb.enum("SECTION_TYPE","FreeBaGang"),
+	FREE_AN_GANG = pb.enum("SECTION_TYPE","FreeAnGang"),
 }
 
 define.SECTION_TYPE = SECTION_TYPE
