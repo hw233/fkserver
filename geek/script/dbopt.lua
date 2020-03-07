@@ -48,7 +48,6 @@ end
 
 function db:execute(sql,tb)
 	sql = string.gsub(sql,"%$FIELD%$",table2sql(tb))
-	dump(sql)
 	return skynet.call(mysqld,"lua","query",self.name,sql)
 end
 
