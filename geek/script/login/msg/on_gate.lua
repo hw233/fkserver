@@ -91,12 +91,12 @@ local function reg_account(msg)
     
     channel.call("db.?","msg","LD_RegAccount",info)
 
-    -- 测试注册时加默认房卡
-    local player = base_players[guid]
-    player:incr_money({
-        money_id = 0,
-        money = 1000000,
-    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    -- -- 测试注册时加默认房卡
+    -- local player = base_players[guid]
+    -- player:incr_money({
+    --     money_id = 0,
+    --     money = 1000000,
+    -- },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     player_money[guid] = nil
 
