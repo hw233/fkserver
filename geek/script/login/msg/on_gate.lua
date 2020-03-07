@@ -77,16 +77,13 @@ local function reg_account(msg)
         version = msg.version,
         login_ip = msg.ip,
         phone = msg.phone or "",
-        status = 0,
-        user_type = 1,
-        tickets = 0,
         level = 0,
-        bank = 0,
         imei = "",
         is_guest = true,
         login_time = os.time(),
         package_name = msg.package_name,
         phone_type = msg.phone_type,
+        role = 0,
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
@@ -120,6 +117,11 @@ local function open_id_login(msg,gate)
     local info = base_players[guid]
     if ip then
         reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
+    end
+
+    dump(info)
+    if info.status == 0 then
+        return enum.ERROR_PLAYER_IS_LOCKED,info
     end
 
     return enum.LOGIN_RESULT_SUCCESS,info
@@ -419,6 +421,10 @@ local function h5_login(msg,gate)
     end
 
     local info = base_players[tonumber(guid)]
+    dump(info)
+    if info.status == 0 then
+        return enum.ERROR_PLAYER_IS_LOCKED,info
+    end
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
@@ -537,6 +543,7 @@ function on_cl_reg_account(msg,gate)
     info.is_guest = true
     info.login_ip = info.ip
     info.register_time = os.time()
+    info.role = 0
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(info.account),guid)
     if info.inviter_guid then

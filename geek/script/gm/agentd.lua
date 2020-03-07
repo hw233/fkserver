@@ -20,10 +20,11 @@ local function check_sign_code(sign,data)
     for _,k in ipairs(keys) do
         local v = data[k]
         if type(v) == "number" then v = string.format("%d",v) end
-        table.insert(source,k.."="..v)
+        table.insert(source,k.."="..tostring(v))
     end
     table.insert(source,"appkey="..appkey)
     local s = table.concat(source,"&")
+    dump(s)
     return sign:upper() == md5.sumhexa(s):upper()
 end
 
@@ -66,6 +67,7 @@ skynet.start(function()
         if not sign then
             response:write(404,nil,json.encode({
                 errcode = error.SIGNATURE_ERROR,
+                errstr = "SIGNATURE ERROR",
             }))
             return
         end
@@ -76,6 +78,7 @@ skynet.start(function()
         if not check_sign_code(sign,data) then
             response:write(404,nil,json.encode({
                 errcode = error.SIGNATURE_ERROR,
+                errstr = "SIGNATURE ERROR",
             }))
             return
         end

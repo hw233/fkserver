@@ -36,6 +36,7 @@ message PlayerBaseInfo {
 	bool   sex = 14;
 	int32  type = 15;
 	string 	nickname = 16; 	// 昵称
+	int32  role = 17; //角色 0玩家 1代理
 }
 
 // 其他玩家可见信息

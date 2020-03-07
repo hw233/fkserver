@@ -13,7 +13,7 @@ setmetatable(player_manager,{
             return
         end
 		
-		local p = reddb:hgetall("player:info:"..tostring(guid))
+		local p = reddb:hgetall(string.format("player:info:%d",math.floor(guid)))
 		if not p then
 			return nil
 		end

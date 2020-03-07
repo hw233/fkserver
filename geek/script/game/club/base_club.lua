@@ -68,7 +68,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
         id = id,
         owner = owner_guid,
         type = tp,
-        parent = parent,
+        parent = parent or 0,
     }
 
     local money_info

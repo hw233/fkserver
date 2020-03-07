@@ -1,6 +1,5 @@
 
 local channel = require "channel"
-local pb = require "pb_files"
 require "table_func"
 local md5 = require "md5"
 local base_players = require "game.lobby.base_players"
@@ -11,7 +10,7 @@ local enum = require "pb_enums"
 local base_clubs = require "game.club.base_clubs"
 local club_money_type = require "game.club.club_money_type"
 local log = require "log"
-local base_club = require "game.club.base_club"
+
 
 local reddb = redisopt.default
 
@@ -384,13 +383,14 @@ local function recharge_player(guid,coin_type,count)
 
     local player = base_players[guid]
     if not player then
+        log.error("recharge_player player [%d] not exists.",guid)
         return {
             errcode = error.DATA_ERROR,
             errstr = string.format("player [%d] not exists.",guid)
         }
     end
 
-    count = tonumber(count)
+    count = math.floor(tonumber(count))
     if count == 0 then
         return {
             errcode = error.SUCCESS,
@@ -416,6 +416,8 @@ function gmd.recharge(data)
         }
     end
 
+    target_id = math.floor(target_id)
+
     local coin_type = tonumber(data.coin_type)
     if not coin_type then
         return {
@@ -423,6 +425,8 @@ function gmd.recharge(data)
             errstr = "coin_type is nil.",
         }
     end
+
+    coin_type = math.floor(coin_type)
 
     local count = tonumber(data.count)
     if not count or count == 0 then
@@ -449,6 +453,8 @@ function gmd.create_club(data)
         }
     end
 
+    owner_id = math.floor(owner_id)
+
     local player = base_players[owner_id]
     if not player then
         return {
@@ -457,7 +463,7 @@ function gmd.create_club(data)
         }
     end
 
-    local name = data.name
+    local name = data.club_name
     local club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name)
     return {
         errcode = error.SUCCESS,
@@ -470,19 +476,100 @@ function gmd.force_dismiss_club(data)
 end
 
 function gmd.block_club(data)
-
+    return {
+        errcode = error.SUCCESS
+    }
 end
 
 function gmd.block_player(data)
-    
+    local guid = tonumber(data.uid)
+    if not guid then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("uid [%s] illegal.",data.uid),
+        }
+    end
+
+    guid = math.floor(guid)
+
+    local player = base_players[guid]
+    if  not player then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",data.uid),
+        }
+    end
+
+    local status = data.status
+    if not status or (status ~= 0 and status ~= 1) then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("parameter illigle for [%d].",guid),
+        }
+    end
+
+    reddb:hset(string.format("player:info:%d",guid),"status",status)
+    return {
+        errcode = error.SUCCESS
+    }
 end
 
 function gmd.agency_create(data)
+    local guid = tonumber(data.uid)
+    if not guid then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("uid [%s] illegal.",data.uid),
+        }
+    end
 
+    guid = math.floor(guid)
+
+    local player = base_players[guid]
+    if  not player then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",data.uid),
+        }
+    end
+
+    reddb:hset(string.format("player:info:%d",guid),"role",1)
+    return {
+        errcode = error.SUCCESS
+    }
 end
 
 function gmd.agency_remove(data)
+    local guid = tonumber(data.uid)
+    if not guid then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("uid [%s] illegal.",data.uid),
+        }
+    end
 
+    guid = math.floor(guid)
+
+    local player = base_players[guid]
+    if  not player then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",data.uid),
+        }
+    end
+
+    reddb:hset(string.format("player:info:%d",guid),"role",0)
+    return {
+        errcode = error.SUCCESS
+    }
+end
+
+function gmd.online_player(data)
+    local count = reddb:get("player:online:count")
+    return {
+        result = error.SUCCESS,
+        count = tonumber(count),
+    }
 end
 
 gmd["info"] = gmd.RequestGameServerInfo
@@ -498,8 +585,9 @@ gmd["update-db-cfg"] = gmd.UpdateDbConfig
 gmd["lua_change_player_money"] = gmd.ChangePlayersMoneyForLuaCmd
 gmd["gm_server_cmd"] = gmd.ServerCmd
 gmd["club/create"] = gmd.create_club
-gmd["player/block"] = gmd.block_palyer
+gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove
+gmd["online/player"] = gmd.online_player
 
 return gmd

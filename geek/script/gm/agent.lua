@@ -60,7 +60,7 @@ end
 function agent.start(proto,handle)
     protocol = proto
     skynet.dispatch("lua",function(_,_,fd,addr)
-        print(fd,addr)
+        log.info("gm request:%d,%s",fd,addr)
         socket.start(fd)
         local interface = gen_interface(protocol, fd)
         if interface.init then
@@ -68,7 +68,6 @@ function agent.start(proto,handle)
         end
     
         local code, url, method, header, body = httpd.read_request(interface.read)
-
         if not code then
             error("accept request error,%d",url)
             return
