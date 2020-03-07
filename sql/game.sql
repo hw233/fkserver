@@ -11,7 +11,7 @@
  Target Server Version : 50728
  File Encoding         : 65001
 
- Date: 03/03/2020 18:53:47
+ Date: 07/03/2020 17:06:30
 */
 
 SET NAMES utf8mb4;
@@ -25,7 +25,7 @@ CREATE TABLE `t_bag`  (
   `guid` int(11) NOT NULL COMMENT '全局唯一标识符',
   `pb_items` blob NULL COMMENT '所有物品',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '背包表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '背包表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_bank_save_back
@@ -42,7 +42,7 @@ CREATE TABLE `t_bank_save_back`  (
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `guid_status`(`guid`, `status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_bank_statement
@@ -58,7 +58,7 @@ CREATE TABLE `t_bank_statement`  (
   `bank_balance` int(11) NOT NULL DEFAULT 0 COMMENT '当前剩余的钱',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `index_guid`(`guid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '银行流水表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '银行流水表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_bonus_activity
@@ -75,7 +75,7 @@ CREATE TABLE `t_bonus_activity`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `index_start_time`(`start_time`) USING BTREE,
   INDEX `index_end_time`(`end_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '红包活动表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '红包活动表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_bonus_game_statistics
@@ -92,7 +92,7 @@ CREATE TABLE `t_bonus_game_statistics`  (
   INDEX `guid_index`(`guid`) USING BTREE,
   INDEX `bonus_activity_index`(`bonus_activity_id`) USING BTREE,
   INDEX `game_name_index`(`first_game_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '玩家红包法动期间玩游戏情况统计';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '玩家红包法动期间玩游戏情况统计' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_bonus_pool
@@ -102,14 +102,13 @@ CREATE TABLE `t_bonus_pool`  (
   `bonus_pool_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '奖池的名字',
   `money` bigint(20) NULL DEFAULT 0 COMMENT '奖池的钱',
   PRIMARY KEY (`bonus_pool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_bonus_pool
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_bonus_pool` VALUES ('slotma_bonus_pool', 4150), ('zhajinhua_bonus_pool', 0);
-COMMIT;
+INSERT INTO `t_bonus_pool` VALUES ('slotma_bonus_pool', 4150);
+INSERT INTO `t_bonus_pool` VALUES ('zhajinhua_bonus_pool', 0);
 
 -- ----------------------------
 -- Table structure for t_channel_invite_tax
@@ -120,7 +119,7 @@ CREATE TABLE `t_channel_invite_tax`  (
   `guid` int(11) NOT NULL COMMENT 'guid',
   `val` int(11) NOT NULL DEFAULT 0 COMMENT '获得的收益',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_club
@@ -131,18 +130,24 @@ CREATE TABLE `t_club`  (
   `name` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
   `owner` int(4) NOT NULL,
   `icon` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  `type` smallint(1) NULL DEFAULT NULL,
+  `type` smallint(1) NULL DEFAULT 0 COMMENT '0是群 1联盟',
   `parent` int(4) NULL DEFAULT NULL,
-  `status` smallint(1) NOT NULL DEFAULT 0,
+  `status` smallint(1) NOT NULL DEFAULT 0 COMMENT '营业状态 0正常 1打烊',
+  `created_at` int(11) NULL DEFAULT 0,
+  `updated_at` int(11) NULL DEFAULT 0,
   PRIMARY KEY (`id`, `owner`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟表';
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of t_club
+-- Table structure for t_club_commission
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_club` VALUES (1192297, '???', 6, '', 1, 2595952, 0), (1442736, '????? ', 13, '', 1, 7707296, 0), (2466970, '', 8, '', 1, 1192297, 0), (2595952, 'guest_5??', 5, '', 1, 0, 0), (3086132, '???', 7, '', 1, 2595952, 0), (3575195, 'guest_2??', 2, '', 0, 0, 0), (3680314, '???', 11, '', 1, 2595952, 0), (4723620, 'guest_2??', 2, '', 1, 0, 0), (5873902, '??????', 14, '', 1, 7707296, 0), (7156238, 'llll', 3, '', 1, 4723620, 0), (7707296, 'guest_1??', 1, '', 1, 0, 0);
-COMMIT;
+DROP TABLE IF EXISTS `t_club_commission`;
+CREATE TABLE `t_club_commission`  (
+  `id` int(4) NOT NULL AUTO_INCREMENT,
+  `club` int(4) NOT NULL,
+  `commission` bigint(8) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`, `club`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_club_member
@@ -154,14 +159,7 @@ CREATE TABLE `t_club_member`  (
   `status` smallint(2) NOT NULL DEFAULT 0 COMMENT '成员状态 0：正常 1：已移除',
   PRIMARY KEY (`club`, `guid`) USING BTREE,
   INDEX `idx_club_id`(`club`, `guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟成员';
-
--- ----------------------------
--- Records of t_club_member
--- ----------------------------
-BEGIN;
-INSERT INTO `t_club_member` VALUES (1192297, 6, 0), (1192297, 8, 0), (1442736, 13, 0), (2466970, 8, 0), (2466970, 9, 0), (2595952, 5, 0), (3086132, 7, 0), (3575195, 2, 0), (3680314, 11, 0), (4723620, 2, 0), (5873902, 14, 0), (7156238, 3, 0), (7156238, 4, 0), (7156238, 10, 0), (7707296, 1, 0);
-COMMIT;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟成员' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_club_money
@@ -172,14 +170,7 @@ CREATE TABLE `t_club_money`  (
   `money_id` smallint(2) NOT NULL,
   `money` int(4) NOT NULL,
   PRIMARY KEY (`club`, `money_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟金钱';
-
--- ----------------------------
--- Records of t_club_money
--- ----------------------------
-BEGIN;
-INSERT INTO `t_club_money` VALUES (1192297, 0, 0), (1192297, 3, 622865), (1442736, 0, 0), (1442736, 1, 0), (2466970, 0, 0), (2466970, 3, 336266), (2595952, 0, 0), (2595952, 3, 198001500), (3086132, 0, 0), (3086132, 3, 996366), (3575195, 0, 0), (3575195, 4, 200000000), (3680314, 0, 0), (3680314, 3, 0), (4723620, 0, 0), (4723620, 2, 198952998), (5873902, 0, 0), (5873902, 1, 0), (7156238, 0, 0), (7156238, 2, 1031998), (7707296, 0, 0), (7707296, 1, 200000000);
-COMMIT;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '亲友群或联盟金钱' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_club_money_type
@@ -189,14 +180,7 @@ CREATE TABLE `t_club_money_type`  (
   `money_id` int(4) NOT NULL,
   `club` int(4) NOT NULL,
   PRIMARY KEY (`money_id`, `club`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
--- ----------------------------
--- Records of t_club_money_type
--- ----------------------------
-BEGIN;
-INSERT INTO `t_club_money_type` VALUES (1, 1442736), (1, 5873902), (1, 7707296), (2, 4723620), (2, 7156238), (3, 1192297), (3, 2466970), (3, 2595952), (3, 3086132), (3, 3680314), (4, 3575195);
-COMMIT;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_daily_earnings_rank
@@ -208,7 +192,7 @@ CREATE TABLE `t_daily_earnings_rank`  (
   `nickname` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `money` int(11) NOT NULL DEFAULT 0 COMMENT '钱',
   PRIMARY KEY (`rank`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '日盈利榜表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '日盈利榜表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_earnings
@@ -220,7 +204,7 @@ CREATE TABLE `t_earnings`  (
   `weekly_earnings` bigint(20) NOT NULL DEFAULT 0 COMMENT '周盈利',
   `monthly_earnings` bigint(20) NOT NULL DEFAULT 0 COMMENT '月盈利',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '盈利榜表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '盈利榜表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_fortune_rank
@@ -232,7 +216,7 @@ CREATE TABLE `t_fortune_rank`  (
   `nickname` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `money` int(11) NOT NULL DEFAULT 0 COMMENT '钱',
   PRIMARY KEY (`rank`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '总财富榜表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '总财富榜表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_mail
@@ -249,7 +233,7 @@ CREATE TABLE `t_mail`  (
   `pb_attachment` blob NULL COMMENT '附件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `index_expiration_time_guid`(`expiration_time`, `guid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '邮件表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '邮件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_many_ox_server_config
@@ -276,7 +260,7 @@ CREATE TABLE `t_many_ox_server_config`  (
   `ExtendA` int(11) NOT NULL COMMENT '预留字段A',
   `ExtendB` int(11) NOT NULL COMMENT '预留字段B',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '百人牛牛基础配置表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '百人牛牛基础配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_monthly_earnings_rank
@@ -288,7 +272,7 @@ CREATE TABLE `t_monthly_earnings_rank`  (
   `nickname` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `money` int(11) NOT NULL DEFAULT 0 COMMENT '钱',
   PRIMARY KEY (`rank`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '月盈利榜表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '月盈利榜表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_notice
@@ -310,7 +294,7 @@ CREATE TABLE `t_notice`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `index_name`(`name`) USING BTREE,
   INDEX `index_time_type`(`end_time`, `type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_notice_platform
@@ -320,7 +304,7 @@ CREATE TABLE `t_notice_platform`  (
   `notice_id` int(11) NOT NULL COMMENT '通知id',
   `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '消息对应的平台id',
   INDEX `index_notice_id`(`notice_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_notice_private
@@ -344,7 +328,7 @@ CREATE TABLE `t_notice_private`  (
   INDEX `index_guid`(`guid`) USING BTREE,
   INDEX `index_guid_time_type`(`guid`, `end_time`, `type`) USING BTREE,
   INDEX `index_guid_id`(`guid`, `id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '私信通知表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '私信通知表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_notice_read
@@ -356,7 +340,7 @@ CREATE TABLE `t_notice_read`  (
   `is_read` tinyint(1) NULL DEFAULT 1 COMMENT '是否阅读 1：已读， 0：未读',
   `read_time` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
   PRIMARY KEY (`guid`, `n_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知阅读明细表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知阅读明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_ox_player_info
@@ -375,7 +359,7 @@ CREATE TABLE `t_ox_player_info`  (
   `tax` int(11) NOT NULL COMMENT '玩家台费',
   `curtime` int(11) NOT NULL COMMENT '当前时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '百人牛牛收益表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '百人牛牛收益表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player
@@ -389,19 +373,20 @@ CREATE TABLE `t_player`  (
   `level` int(11) NOT NULL DEFAULT 0 COMMENT '玩家等级',
   `bank` bigint(20) NOT NULL DEFAULT 0 COMMENT '银行存款',
   `head_url` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '0' COMMENT '头像',
+  `phone` char(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '手机号',
   `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '平台id',
   `is_collapse` tinyint(5) NULL DEFAULT 0 COMMENT '是否破产，1破产，0不破产',
+  `status` tinyint(1) NULL DEFAULT 1 COMMENT '是否可用 1可用 0封号',
+  `created_time` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`guid`) USING BTREE,
   UNIQUE INDEX `index_account`(`account`, `platform_id`) USING BTREE,
   INDEX `index_is_android`(`is_android`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '玩家表';
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '玩家表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_player
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_player` VALUES (1, 0, '11', 'guest_1', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (2, 0, 'ddc1', 'guest_2', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (3, 0, 'ddc2', 'guest_3', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (4, 0, 'ddc3', 'guest_4', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (5, 0, '111', 'guest_5', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (6, 0, '222', 'guest_6', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (7, 0, '333', 'guest_7', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (8, 0, '444', 'guest_8', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (9, 0, '555', 'guest_9', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (10, 0, 'ddc4', 'guest_10', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (11, 0, '777', 'guest_11', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (12, 0, 'ddc`', 'guest_12', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (13, 0, '22', 'guest_13', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0), (14, 0, '33', 'guest_14', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '0', 0);
-COMMIT;
+INSERT INTO `t_player` VALUES (1, 0, '222', 'guest_1', 0, 0, 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', NULL, '0', 0, 1, '2020-03-07 16:51:22');
 
 -- ----------------------------
 -- Table structure for t_player_award
@@ -415,7 +400,7 @@ CREATE TABLE `t_player_award`  (
   `online_award_num` int(8) NULL DEFAULT NULL,
   `relief_payment_count` int(8) NULL DEFAULT NULL,
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '玩家奖励';
+) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '玩家奖励' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_binding
@@ -424,7 +409,7 @@ DROP TABLE IF EXISTS `t_player_binding`;
 CREATE TABLE `t_player_binding`  (
   `guid` int(4) NOT NULL,
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '玩家绑定银行卡或支付宝等';
+) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '玩家绑定银行卡或支付宝等' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_bonus
@@ -442,7 +427,7 @@ CREATE TABLE `t_player_bonus`  (
   INDEX `index_guid`(`guid`) USING BTREE,
   INDEX `index_bonus_activity`(`bonus_activity_id`) USING BTREE,
   INDEX `index_get_time`(`get_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '玩家获得红包记录表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '玩家获得红包记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_bonus_activity_limit
@@ -458,7 +443,7 @@ CREATE TABLE `t_player_bonus_activity_limit`  (
   PRIMARY KEY (`guid`, `activity_id`) USING BTREE,
   INDEX `guid_index`(`guid`) USING BTREE,
   INDEX `activity_index`(`activity_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_game_conf
@@ -468,7 +453,7 @@ CREATE TABLE `t_player_game_conf`  (
   `guid` int(11) NOT NULL,
   `slotma_addition` int(8) NULL DEFAULT NULL,
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_money
@@ -480,14 +465,12 @@ CREATE TABLE `t_player_money`  (
   `money` int(4) NOT NULL DEFAULT 0 COMMENT '数量',
   `where` smallint(2) NOT NULL DEFAULT 0 COMMENT '存在哪儿 0玩家身上 1保险箱',
   PRIMARY KEY (`guid`, `money_id`, `where`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '玩家金钱';
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '玩家金钱' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_player_money
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_player_money` VALUES (1, 0, -400, 0), (1, 1, 0, 0), (2, 0, -2000, 0), (2, 2, 0, 0), (2, 4, 0, 0), (3, 0, 0, 0), (3, 2, 8855, 0), (4, 0, 0, 0), (4, 2, 0, 0), (5, 0, -700, 0), (5, 3, 0, 0), (6, 0, 1000000, 0), (6, 3, 82200, 0), (7, 0, 1000000, 0), (7, 3, 76900, 0), (8, 0, 1000000, 0), (8, 3, -30500, 0), (9, 0, 1000000, 0), (9, 3, -92600, 0), (10, 0, 1000000, 0), (10, 2, 4144, 0), (11, 0, 1000000, 0), (11, 3, 0, 0), (12, 0, 1000000, 0), (13, 0, 1000000, 0), (13, 1, 0, 0), (14, 0, 1000000, 0), (14, 1, 0, 0);
-COMMIT;
+INSERT INTO `t_player_money` VALUES (1, 0, 1000000, 0);
 
 -- ----------------------------
 -- Table structure for t_pool_activity
@@ -513,7 +496,7 @@ CREATE TABLE `t_pool_activity`  (
   INDEX `index_time_start_end`(`time_start`, `time_end`) USING BTREE,
   INDEX `index_time_crated_updated`(`created_at`, `updated_at`) USING BTREE,
   INDEX `index_game_id`(`game_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_rank_update_time
@@ -523,7 +506,7 @@ CREATE TABLE `t_rank_update_time`  (
   `rank_type` int(11) NOT NULL COMMENT '排行榜类型',
   `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '上次更新时间',
   PRIMARY KEY (`rank_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '排行榜更新时间表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '排行榜更新时间表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_weekly_earnings_rank
@@ -535,7 +518,7 @@ CREATE TABLE `t_weekly_earnings_rank`  (
   `nickname` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `money` int(11) NOT NULL DEFAULT 0 COMMENT '钱',
   PRIMARY KEY (`rank`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '周盈利榜表';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '周盈利榜表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Procedure structure for bank_transfer

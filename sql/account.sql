@@ -11,7 +11,7 @@
  Target Server Version : 50728
  File Encoding         : 65001
 
- Date: 03/03/2020 18:53:35
+ Date: 07/03/2020 17:06:07
 */
 
 SET NAMES utf8mb4;
@@ -27,7 +27,7 @@ CREATE TABLE `black_alipay`  (
   `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`alipay`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for black_guid
@@ -41,7 +41,7 @@ CREATE TABLE `black_guid`  (
   `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cash_ali_account
@@ -54,14 +54,12 @@ CREATE TABLE `cash_ali_account`  (
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   `admin_account` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of cash_ali_account
 -- ----------------------------
-BEGIN;
 INSERT INTO `cash_ali_account` VALUES (1, 'rojmloj', '2019-08-15 00:14:26', '2019-08-15 00:14:26', 'admin@163.com');
-COMMIT;
 
 -- ----------------------------
 -- Table structure for feedback
@@ -80,7 +78,7 @@ CREATE TABLE `feedback`  (
   `author` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
   `processing_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for feng_guid
@@ -94,7 +92,7 @@ CREATE TABLE `feng_guid`  (
   `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for feng_guid_copy
@@ -108,7 +106,7 @@ CREATE TABLE `feng_guid_copy`  (
   `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for feng_ip
@@ -121,7 +119,7 @@ CREATE TABLE `feng_ip`  (
   `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`ip`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for imei_update_fail_list
@@ -137,7 +135,7 @@ CREATE TABLE `imei_update_fail_list`  (
   PRIMARY KEY (`guid`, `created_at`) USING BTREE,
   INDEX `index_imei`(`imei`) USING BTREE,
   INDEX `index_deprecated_imei`(`deprecated_imei`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for kill_guid
@@ -149,14 +147,13 @@ CREATE TABLE `kill_guid`  (
   `created_at` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`guid`) USING BTREE,
   INDEX `idx_created_at`(`created_at`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of kill_guid
 -- ----------------------------
-BEGIN;
-INSERT INTO `kill_guid` VALUES (21, 'admin@163.com', '2019-08-15 22:21:41'), (24, 'admin@163.com', '2019-08-15 11:16:58');
-COMMIT;
+INSERT INTO `kill_guid` VALUES (21, 'admin@163.com', '2019-08-15 22:21:41');
+INSERT INTO `kill_guid` VALUES (24, 'admin@163.com', '2019-08-15 11:16:58');
 
 -- ----------------------------
 -- Table structure for menus
@@ -175,14 +172,52 @@ CREATE TABLE `menus`  (
   `pid` int(11) NULL DEFAULT NULL,
   `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of menus
 -- ----------------------------
-BEGIN;
-INSERT INTO `menus` VALUES (1, '0', '/account/index', '玩家管理', '1', '2019-08-17 13:08:16', '2019-08-17 13:08:16', NULL, 'account.index', NULL, NULL), (2, '0', '/index/index', '系统管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'index.index', NULL, NULL), (3, '0', '/users/index', '用户列表', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'users.index', NULL, NULL), (4, '0', '/roles/index', '角色管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'roles.index', NULL, NULL), (5, '0', '/permissions/index', '权限管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:16', NULL, 'permissions.index', NULL, NULL), (6, '0', '/version/view', '版本管理', '1', '2019-08-17 13:08:15', '2019-08-17 13:08:15', NULL, 'version.view', NULL, NULL), (7, '0', '/client/gameTax', '房间管理', NULL, '2019-08-17 13:21:03', '2019-08-17 13:21:03', NULL, 'client.gametax', NULL, NULL), (8, '0', '/cash/index', '提现管理', '1', '2019-08-17 13:07:32', '2019-08-17 13:07:32', NULL, 'cash.index', NULL, NULL), (12, '0', '/cash/index', '提现列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.index', 8, NULL), (13, '0', '/cash/risk', '风控列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.risk', 8, NULL), (14, '0', '/cash/riskSystem', '风控比例', '1', '2019-08-17 13:20:57', '2019-08-17 13:20:57', NULL, 'cash.risksystem', 8, NULL), (15, '0', '/cash/servers', '服务器列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.servers', 8, NULL), (16, '0', '/cash/aliAccount', '支付宝黑名单', '1', '2019-08-17 13:20:51', '2019-08-17 13:20:51', NULL, 'cash.aliaccount', 8, NULL), (17, '0', '/notice/index', '通知管理', '1', '2019-08-17 13:08:14', '2019-08-17 13:08:14', NULL, 'notice.index', NULL, NULL), (18, '0', '/notice/system', '通知列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'notice.system', 17, NULL), (19, '0', '/notice/specify', '私信列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:17', NULL, 'notice.specify', 17, NULL), (20, '0', '/notice/sms', '短信列表', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'notice.sms', 17, NULL), (21, '0', '/feedback/index', '反馈管理', '1', '2019-08-17 13:08:15', '2019-08-17 13:08:15', NULL, 'feedback.index', NULL, NULL), (22, '0', '/feedback/index', '反馈列表', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'feedback.index', 21, NULL), (23, '0', '/feedback/quickReplyType', '快捷回复', '1', '2019-08-17 13:21:08', '2019-08-17 13:21:08', NULL, 'feedback.quickreplytype', 21, NULL), (24, '0', '/feedback/banSay', '玩家禁言', '1', '2019-08-17 13:20:44', '2019-08-17 13:20:44', NULL, 'feedback.bansay', 21, NULL), (25, '0', '/version/view', '添加版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.view', 6, NULL), (26, '0', '/version/frame', '框架版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.frame', 6, NULL), (27, '0', '/version/hall', '大厅版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.hall', 6, NULL), (28, '0', '/version/game', '游戏版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.game', 6, NULL), (29, '0', '/client/index', '客户端配置', '1', '2019-08-17 13:08:19', '2019-08-17 13:08:19', NULL, 'client.index', NULL, NULL), (30, '0', '/client/viewConfig', '创建配置', NULL, '2019-08-17 13:20:30', '2019-08-17 13:20:30', NULL, 'client.viewconfig', 29, NULL), (31, '0', '/client/listConfig', '配置列表', NULL, '2019-08-17 13:20:34', '2019-08-17 13:20:34', NULL, 'client.listconfig', 29, NULL), (32, '0', '/client/template', '模版列表', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:18', NULL, 'client.template', 29, NULL), (33, '0', '/client/templateCreate', '创建模板', NULL, '2019-08-17 13:20:27', '2019-08-17 13:20:27', NULL, 'client.templatecreate', 29, NULL), (34, '0', '/client/templateConfigCreate', '导入模板', NULL, '2019-08-17 13:20:22', '2019-08-17 13:20:22', NULL, 'client.templateconfigcreate', 29, NULL), (35, '0', '/client/gameTax', '税收配置', NULL, '2019-08-17 13:20:40', '2019-08-17 13:20:40', NULL, 'client.gametax', 29, NULL), (36, '0', '/cash/customer', '客服提现管理', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:18', NULL, 'cash.customer', 8, NULL), (37, '0', '/rechargeorder/index', '充值列表', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:19', NULL, 'rechargeorder.index', NULL, NULL), (38, '0', '/distribution/index', '渠道商管理', NULL, '2019-08-17 00:18:17', '2019-08-17 00:18:19', NULL, 'distribution.index', NULL, NULL), (39, '0', '/account/index', '玩家列表', NULL, '2019-08-17 00:18:17', '2019-08-17 00:18:19', NULL, 'account.index', 1, NULL), (40, '0', '/account/riskStar', '星级关注', NULL, '2019-08-17 13:19:57', '2019-08-17 13:19:57', NULL, 'account.riskstar', 1, NULL), (41, '0', '/account/logLogin', '登陆日志', NULL, '2019-08-17 13:19:51', '2019-08-17 13:19:51', NULL, 'account.loglogin', 1, NULL), (42, '0', '/gameConfig/index', '游戏配置', '1', '2019-08-17 13:19:33', '2019-08-17 13:19:33', NULL, 'gameconfig.index', NULL, NULL), (43, '0', '/gameConfig/index', '配置首页', NULL, '2019-08-17 13:20:08', '2019-08-17 13:20:08', NULL, 'gameconfig.index', 42, NULL), (44, '0', '/fengBlack/fengIp', 'IP封禁列表', NULL, '2019-08-17 13:19:46', '2019-08-17 13:19:46', NULL, 'fengblack.fengIp', 1, NULL);
-COMMIT;
+INSERT INTO `menus` VALUES (1, '0', '/account/index', '玩家管理', '1', '2019-08-17 13:08:16', '2019-08-17 13:08:16', NULL, 'account.index', NULL, NULL);
+INSERT INTO `menus` VALUES (2, '0', '/index/index', '系统管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'index.index', NULL, NULL);
+INSERT INTO `menus` VALUES (3, '0', '/users/index', '用户列表', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'users.index', NULL, NULL);
+INSERT INTO `menus` VALUES (4, '0', '/roles/index', '角色管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'roles.index', NULL, NULL);
+INSERT INTO `menus` VALUES (5, '0', '/permissions/index', '权限管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:16', NULL, 'permissions.index', NULL, NULL);
+INSERT INTO `menus` VALUES (6, '0', '/version/view', '版本管理', '1', '2019-08-17 13:08:15', '2019-08-17 13:08:15', NULL, 'version.view', NULL, NULL);
+INSERT INTO `menus` VALUES (7, '0', '/client/gameTax', '房间管理', NULL, '2019-08-17 13:21:03', '2019-08-17 13:21:03', NULL, 'client.gametax', NULL, NULL);
+INSERT INTO `menus` VALUES (8, '0', '/cash/index', '提现管理', '1', '2019-08-17 13:07:32', '2019-08-17 13:07:32', NULL, 'cash.index', NULL, NULL);
+INSERT INTO `menus` VALUES (12, '0', '/cash/index', '提现列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.index', 8, NULL);
+INSERT INTO `menus` VALUES (13, '0', '/cash/risk', '风控列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.risk', 8, NULL);
+INSERT INTO `menus` VALUES (14, '0', '/cash/riskSystem', '风控比例', '1', '2019-08-17 13:20:57', '2019-08-17 13:20:57', NULL, 'cash.risksystem', 8, NULL);
+INSERT INTO `menus` VALUES (15, '0', '/cash/servers', '服务器列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'cash.servers', 8, NULL);
+INSERT INTO `menus` VALUES (16, '0', '/cash/aliAccount', '支付宝黑名单', '1', '2019-08-17 13:20:51', '2019-08-17 13:20:51', NULL, 'cash.aliaccount', 8, NULL);
+INSERT INTO `menus` VALUES (17, '0', '/notice/index', '通知管理', '1', '2019-08-17 13:08:14', '2019-08-17 13:08:14', NULL, 'notice.index', NULL, NULL);
+INSERT INTO `menus` VALUES (18, '0', '/notice/system', '通知列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:16', NULL, 'notice.system', 17, NULL);
+INSERT INTO `menus` VALUES (19, '0', '/notice/specify', '私信列表', '1', '2019-08-17 00:18:14', '2019-08-17 00:18:17', NULL, 'notice.specify', 17, NULL);
+INSERT INTO `menus` VALUES (20, '0', '/notice/sms', '短信列表', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'notice.sms', 17, NULL);
+INSERT INTO `menus` VALUES (21, '0', '/feedback/index', '反馈管理', '1', '2019-08-17 13:08:15', '2019-08-17 13:08:15', NULL, 'feedback.index', NULL, NULL);
+INSERT INTO `menus` VALUES (22, '0', '/feedback/index', '反馈列表', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'feedback.index', 21, NULL);
+INSERT INTO `menus` VALUES (23, '0', '/feedback/quickReplyType', '快捷回复', '1', '2019-08-17 13:21:08', '2019-08-17 13:21:08', NULL, 'feedback.quickreplytype', 21, NULL);
+INSERT INTO `menus` VALUES (24, '0', '/feedback/banSay', '玩家禁言', '1', '2019-08-17 13:20:44', '2019-08-17 13:20:44', NULL, 'feedback.bansay', 21, NULL);
+INSERT INTO `menus` VALUES (25, '0', '/version/view', '添加版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.view', 6, NULL);
+INSERT INTO `menus` VALUES (26, '0', '/version/frame', '框架版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.frame', 6, NULL);
+INSERT INTO `menus` VALUES (27, '0', '/version/hall', '大厅版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.hall', 6, NULL);
+INSERT INTO `menus` VALUES (28, '0', '/version/game', '游戏版本', '1', '2019-08-17 00:18:15', '2019-08-17 00:18:17', NULL, 'version.game', 6, NULL);
+INSERT INTO `menus` VALUES (29, '0', '/client/index', '客户端配置', '1', '2019-08-17 13:08:19', '2019-08-17 13:08:19', NULL, 'client.index', NULL, NULL);
+INSERT INTO `menus` VALUES (30, '0', '/client/viewConfig', '创建配置', NULL, '2019-08-17 13:20:30', '2019-08-17 13:20:30', NULL, 'client.viewconfig', 29, NULL);
+INSERT INTO `menus` VALUES (31, '0', '/client/listConfig', '配置列表', NULL, '2019-08-17 13:20:34', '2019-08-17 13:20:34', NULL, 'client.listconfig', 29, NULL);
+INSERT INTO `menus` VALUES (32, '0', '/client/template', '模版列表', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:18', NULL, 'client.template', 29, NULL);
+INSERT INTO `menus` VALUES (33, '0', '/client/templateCreate', '创建模板', NULL, '2019-08-17 13:20:27', '2019-08-17 13:20:27', NULL, 'client.templatecreate', 29, NULL);
+INSERT INTO `menus` VALUES (34, '0', '/client/templateConfigCreate', '导入模板', NULL, '2019-08-17 13:20:22', '2019-08-17 13:20:22', NULL, 'client.templateconfigcreate', 29, NULL);
+INSERT INTO `menus` VALUES (35, '0', '/client/gameTax', '税收配置', NULL, '2019-08-17 13:20:40', '2019-08-17 13:20:40', NULL, 'client.gametax', 29, NULL);
+INSERT INTO `menus` VALUES (36, '0', '/cash/customer', '客服提现管理', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:18', NULL, 'cash.customer', 8, NULL);
+INSERT INTO `menus` VALUES (37, '0', '/rechargeorder/index', '充值列表', NULL, '2019-08-17 00:18:16', '2019-08-17 00:18:19', NULL, 'rechargeorder.index', NULL, NULL);
+INSERT INTO `menus` VALUES (38, '0', '/distribution/index', '渠道商管理', NULL, '2019-08-17 00:18:17', '2019-08-17 00:18:19', NULL, 'distribution.index', NULL, NULL);
+INSERT INTO `menus` VALUES (39, '0', '/account/index', '玩家列表', NULL, '2019-08-17 00:18:17', '2019-08-17 00:18:19', NULL, 'account.index', 1, NULL);
+INSERT INTO `menus` VALUES (40, '0', '/account/riskStar', '星级关注', NULL, '2019-08-17 13:19:57', '2019-08-17 13:19:57', NULL, 'account.riskstar', 1, NULL);
+INSERT INTO `menus` VALUES (41, '0', '/account/logLogin', '登陆日志', NULL, '2019-08-17 13:19:51', '2019-08-17 13:19:51', NULL, 'account.loglogin', 1, NULL);
+INSERT INTO `menus` VALUES (42, '0', '/gameConfig/index', '游戏配置', '1', '2019-08-17 13:19:33', '2019-08-17 13:19:33', NULL, 'gameconfig.index', NULL, NULL);
+INSERT INTO `menus` VALUES (43, '0', '/gameConfig/index', '配置首页', NULL, '2019-08-17 13:20:08', '2019-08-17 13:20:08', NULL, 'gameconfig.index', 42, NULL);
+INSERT INTO `menus` VALUES (44, '0', '/fengBlack/fengIp', 'IP封禁列表', NULL, '2019-08-17 13:19:46', '2019-08-17 13:19:46', NULL, 'fengblack.fengIp', 1, NULL);
 
 -- ----------------------------
 -- Table structure for permission_role
@@ -195,14 +230,48 @@ CREATE TABLE `permission_role`  (
   `permission_id` int(11) NULL DEFAULT NULL,
   `role_id` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of permission_role
 -- ----------------------------
-BEGIN;
-INSERT INTO `permission_role` VALUES (8, '2019-08-16 23:44:35', '2019-08-16 23:44:35', 409, 5), (9, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 409, 4), (10, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 410, 4), (11, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 411, 4), (12, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 375, 4), (13, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 376, 4), (14, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 377, 4), (15, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 378, 4), (16, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 395, 4), (17, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 396, 4), (18, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 397, 4), (19, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 398, 4), (20, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 405, 4), (21, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 399, 4), (22, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 400, 4), (23, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 401, 4), (24, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 402, 4), (25, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 403, 4), (26, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 404, 4), (27, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 382, 4), (28, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 383, 4), (29, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 384, 4), (30, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 385, 4), (31, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 386, 4), (32, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 406, 4), (33, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 387, 4), (34, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 388, 4), (35, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 389, 4), (36, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 390, 4), (37, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 392, 4), (38, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 393, 4), (39, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 394, 4), (40, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 407, 4), (41, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 408, 4), (42, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 413, 4), (43, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 414, 4), (44, '2019-08-21 23:23:03', '2019-08-21 23:23:03', 415, 4);
-COMMIT;
+INSERT INTO `permission_role` VALUES (8, '2019-08-16 23:44:35', '2019-08-16 23:44:35', 409, 5);
+INSERT INTO `permission_role` VALUES (9, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 409, 4);
+INSERT INTO `permission_role` VALUES (10, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 410, 4);
+INSERT INTO `permission_role` VALUES (11, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 411, 4);
+INSERT INTO `permission_role` VALUES (12, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 375, 4);
+INSERT INTO `permission_role` VALUES (13, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 376, 4);
+INSERT INTO `permission_role` VALUES (14, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 377, 4);
+INSERT INTO `permission_role` VALUES (15, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 378, 4);
+INSERT INTO `permission_role` VALUES (16, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 395, 4);
+INSERT INTO `permission_role` VALUES (17, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 396, 4);
+INSERT INTO `permission_role` VALUES (18, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 397, 4);
+INSERT INTO `permission_role` VALUES (19, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 398, 4);
+INSERT INTO `permission_role` VALUES (20, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 405, 4);
+INSERT INTO `permission_role` VALUES (21, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 399, 4);
+INSERT INTO `permission_role` VALUES (22, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 400, 4);
+INSERT INTO `permission_role` VALUES (23, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 401, 4);
+INSERT INTO `permission_role` VALUES (24, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 402, 4);
+INSERT INTO `permission_role` VALUES (25, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 403, 4);
+INSERT INTO `permission_role` VALUES (26, '2019-08-17 13:02:49', '2019-08-17 13:02:49', 404, 4);
+INSERT INTO `permission_role` VALUES (27, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 382, 4);
+INSERT INTO `permission_role` VALUES (28, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 383, 4);
+INSERT INTO `permission_role` VALUES (29, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 384, 4);
+INSERT INTO `permission_role` VALUES (30, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 385, 4);
+INSERT INTO `permission_role` VALUES (31, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 386, 4);
+INSERT INTO `permission_role` VALUES (32, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 406, 4);
+INSERT INTO `permission_role` VALUES (33, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 387, 4);
+INSERT INTO `permission_role` VALUES (34, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 388, 4);
+INSERT INTO `permission_role` VALUES (35, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 389, 4);
+INSERT INTO `permission_role` VALUES (36, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 390, 4);
+INSERT INTO `permission_role` VALUES (37, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 392, 4);
+INSERT INTO `permission_role` VALUES (38, '2019-08-17 13:02:50', '2019-08-17 13:02:50', 393, 4);
+INSERT INTO `permission_role` VALUES (39, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 394, 4);
+INSERT INTO `permission_role` VALUES (40, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 407, 4);
+INSERT INTO `permission_role` VALUES (41, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 408, 4);
+INSERT INTO `permission_role` VALUES (42, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 413, 4);
+INSERT INTO `permission_role` VALUES (43, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 414, 4);
+INSERT INTO `permission_role` VALUES (44, '2019-08-21 23:23:03', '2019-08-21 23:23:03', 415, 4);
 
 -- ----------------------------
 -- Table structure for permission_user
@@ -215,14 +284,12 @@ CREATE TABLE `permission_user`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of permission_user
 -- ----------------------------
-BEGIN;
 INSERT INTO `permission_user` VALUES (1, 3, 409, '2019-08-16 23:58:51', NULL);
-COMMIT;
 
 -- ----------------------------
 -- Table structure for permissions
@@ -238,14 +305,217 @@ CREATE TABLE `permissions`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 416 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 416 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of permissions
 -- ----------------------------
-BEGIN;
-INSERT INTO `permissions` VALUES (210, '玩家管理', 'account.index', '', 'account', 0, '2019-08-16 21:12:10', '2019-08-23 10:05:29'), (211, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19'), (212, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19'), (213, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19'), (214, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19'), (215, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (216, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (217, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (218, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (219, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (220, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (221, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (222, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (223, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (224, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (225, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (226, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (227, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20'), (228, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (229, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (230, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (231, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (232, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (233, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (234, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (235, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (236, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (237, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (238, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (239, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21'), (240, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (241, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (242, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (243, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (244, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (245, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (246, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (247, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (248, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (249, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (250, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22'), (251, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36'), (252, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36'), (253, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36'), (254, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36'), (255, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (256, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (257, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (258, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (259, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (260, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (261, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (262, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (263, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (264, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (265, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (266, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (267, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37'), (268, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (269, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (270, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (271, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (272, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (273, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (274, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (275, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (276, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (277, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (278, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (279, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (280, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38'), (281, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (282, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (283, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (284, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (285, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (286, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (287, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (288, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (289, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (290, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (291, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39'), (292, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:16', '2019-08-16 21:13:16'), (293, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:13:16', '2019-08-16 21:13:16'), (294, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (295, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (296, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (297, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (298, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (299, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (300, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (301, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (302, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (303, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (304, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (305, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17'), (306, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (307, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (308, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (309, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (310, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (311, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (312, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (313, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (314, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (315, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (316, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (317, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (318, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18'), (319, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (320, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (321, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (322, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (323, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (324, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (325, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (326, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (327, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (328, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (329, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (330, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19'), (331, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:20', '2019-08-16 21:13:20'), (332, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:13:20', '2019-08-16 21:13:20'), (333, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26'), (334, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26'), (335, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26'), (336, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26'), (337, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (338, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (339, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (340, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (341, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (342, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (343, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (344, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (345, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (346, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (347, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (348, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27'), (349, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (350, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (351, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (352, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (353, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (354, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (355, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (356, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (357, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (358, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (359, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (360, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (361, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28'), (362, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (363, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (364, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (365, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (366, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (367, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (368, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (369, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (370, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (371, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (372, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (373, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29'), (374, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:14:15', '2019-08-16 21:14:15'), (375, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (376, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (377, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (378, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (379, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (380, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (381, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (382, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (383, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (384, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16'), (385, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (386, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (387, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (388, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (389, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (390, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (391, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (392, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (393, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (394, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (395, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (396, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17'), (397, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (398, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (399, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (400, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (401, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (402, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (403, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (404, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (405, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (406, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (407, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (408, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18'), (409, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (410, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (411, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (412, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (413, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (414, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19'), (415, '牌局记录', 'record.board', '查看牌局记录', 'record', 0, '2019-08-21 23:21:51', '2019-08-22 00:16:10');
-COMMIT;
+INSERT INTO `permissions` VALUES (210, '玩家管理', 'account.index', '', 'account', 0, '2019-08-16 21:12:10', '2019-08-23 10:05:29');
+INSERT INTO `permissions` VALUES (211, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
+INSERT INTO `permissions` VALUES (212, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
+INSERT INTO `permissions` VALUES (213, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
+INSERT INTO `permissions` VALUES (214, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
+INSERT INTO `permissions` VALUES (215, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (216, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (217, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (218, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (219, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (220, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (221, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (222, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (223, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (224, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (225, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (226, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (227, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:20', '2019-08-16 21:12:20');
+INSERT INTO `permissions` VALUES (228, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (229, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (230, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (231, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (232, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (233, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (234, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (235, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (236, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (237, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (238, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (239, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:12:21', '2019-08-16 21:12:21');
+INSERT INTO `permissions` VALUES (240, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (241, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (242, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (243, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (244, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (245, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (246, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (247, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (248, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (249, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (250, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:12:22', '2019-08-16 21:12:22');
+INSERT INTO `permissions` VALUES (251, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36');
+INSERT INTO `permissions` VALUES (252, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36');
+INSERT INTO `permissions` VALUES (253, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36');
+INSERT INTO `permissions` VALUES (254, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:12:36', '2019-08-16 21:12:36');
+INSERT INTO `permissions` VALUES (255, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (256, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (257, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (258, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (259, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (260, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (261, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (262, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (263, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (264, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (265, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (266, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (267, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:12:37', '2019-08-16 21:12:37');
+INSERT INTO `permissions` VALUES (268, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (269, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (270, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (271, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (272, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (273, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (274, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (275, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (276, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (277, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (278, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (279, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (280, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:12:38', '2019-08-16 21:12:38');
+INSERT INTO `permissions` VALUES (281, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (282, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (283, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (284, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (285, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (286, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (287, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (288, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (289, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (290, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (291, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:12:39', '2019-08-16 21:12:39');
+INSERT INTO `permissions` VALUES (292, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:16', '2019-08-16 21:13:16');
+INSERT INTO `permissions` VALUES (293, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:13:16', '2019-08-16 21:13:16');
+INSERT INTO `permissions` VALUES (294, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (295, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (296, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (297, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (298, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (299, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (300, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (301, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (302, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (303, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (304, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (305, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:13:17', '2019-08-16 21:13:17');
+INSERT INTO `permissions` VALUES (306, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (307, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (308, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (309, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (310, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (311, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (312, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (313, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (314, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (315, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (316, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (317, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (318, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:13:18', '2019-08-16 21:13:18');
+INSERT INTO `permissions` VALUES (319, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (320, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (321, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (322, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (323, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (324, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (325, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (326, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (327, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (328, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (329, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (330, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:19', '2019-08-16 21:13:19');
+INSERT INTO `permissions` VALUES (331, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:20', '2019-08-16 21:13:20');
+INSERT INTO `permissions` VALUES (332, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:13:20', '2019-08-16 21:13:20');
+INSERT INTO `permissions` VALUES (333, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26');
+INSERT INTO `permissions` VALUES (334, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26');
+INSERT INTO `permissions` VALUES (335, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26');
+INSERT INTO `permissions` VALUES (336, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:13:26', '2019-08-16 21:13:26');
+INSERT INTO `permissions` VALUES (337, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (338, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (339, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (340, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (341, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (342, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (343, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (344, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (345, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (346, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (347, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (348, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:13:27', '2019-08-16 21:13:27');
+INSERT INTO `permissions` VALUES (349, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (350, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (351, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (352, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (353, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (354, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (355, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (356, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (357, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (358, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (359, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (360, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (361, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:13:28', '2019-08-16 21:13:28');
+INSERT INTO `permissions` VALUES (362, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (363, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (364, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (365, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (366, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (367, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (368, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (369, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (370, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (371, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (372, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (373, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:13:29', '2019-08-16 21:13:29');
+INSERT INTO `permissions` VALUES (374, '玩家管理', 'account.index', NULL, 'account', 0, '2019-08-16 21:14:15', '2019-08-16 21:14:15');
+INSERT INTO `permissions` VALUES (375, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (376, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (377, '角色管理', 'roles.index', NULL, 'roles', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (378, '权限管理', 'permissions.index', NULL, 'permissions', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (379, '版本管理', 'version.view', NULL, 'version', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (380, '房间管理', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (381, '提现管理', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (382, '提现列表', 'cash.index', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (383, '风控列表', 'cash.risk', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (384, '风控比例', 'cash.risksystem', NULL, 'cash', 0, '2019-08-16 21:14:16', '2019-08-16 21:14:16');
+INSERT INTO `permissions` VALUES (385, '服务器列表', 'cash.servers', NULL, 'cash', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (386, '支付宝黑名单', 'cash.aliaccount', NULL, 'cash', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (387, '通知管理', 'notice.index', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (388, '通知列表', 'notice.system', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (389, '私信列表', 'notice.specify', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (390, '短信列表', 'notice.sms', NULL, 'notice', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (391, '反馈管理', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (392, '反馈列表', 'feedback.index', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (393, '快捷回复', 'feedback.quickreplytype', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (394, '玩家禁言', 'feedback.bansay', NULL, 'feedback', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (395, '添加版本', 'version.view', NULL, 'version', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (396, '框架版本', 'version.frame', NULL, 'version', 0, '2019-08-16 21:14:17', '2019-08-16 21:14:17');
+INSERT INTO `permissions` VALUES (397, '大厅版本', 'version.hall', NULL, 'version', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (398, '游戏版本', 'version.game', NULL, 'version', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (399, '客户端配置', 'client.index', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (400, '创建配置', 'client.viewconfig', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (401, '配置列表', 'client.listconfig', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (402, '模版列表', 'client.template', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (403, '创建模板', 'client.templatecreate', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (404, '导入模板', 'client.templateconfigcreate', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (405, '税收配置', 'client.gametax', NULL, 'client', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (406, '客服提现管理', 'cash.customer', NULL, 'cash', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (407, '充值列表', 'rechargeorder.index', NULL, 'rechargeorder', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (408, '渠道商管理', 'distribution.index', NULL, 'distribution', 0, '2019-08-16 21:14:18', '2019-08-16 21:14:18');
+INSERT INTO `permissions` VALUES (409, '玩家列表', 'account.index', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (410, '星级关注', 'account.riskstar', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (411, '登陆日志', 'account.loglogin', NULL, 'account', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (412, '游戏配置', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (413, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (414, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
+INSERT INTO `permissions` VALUES (415, '牌局记录', 'record.board', '查看牌局记录', 'record', 0, '2019-08-21 23:21:51', '2019-08-22 00:16:10');
 
 -- ----------------------------
 -- Table structure for plant_statistics
@@ -263,7 +533,7 @@ CREATE TABLE `plant_statistics`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for plant_statistics_detail
@@ -281,7 +551,7 @@ CREATE TABLE `plant_statistics_detail`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for promoter_own_ips
@@ -295,7 +565,7 @@ CREATE TABLE `promoter_own_ips`  (
   PRIMARY KEY (`bag_id`, `ip`) USING BTREE,
   INDEX `idx_ip_bag_id`(`ip`, `bag_id`) USING BTREE,
   INDEX `idx_promoter_id`(`promoter_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for quick_reply_type
@@ -308,14 +578,12 @@ CREATE TABLE `quick_reply_type`  (
   `updated_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of quick_reply_type
 -- ----------------------------
-BEGIN;
 INSERT INTO `quick_reply_type` VALUES (5, 1, NULL, NULL, '测试');
-COMMIT;
 
 -- ----------------------------
 -- Table structure for role_user
@@ -328,14 +596,14 @@ CREATE TABLE `role_user`  (
   `created_at` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `updated_at` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of role_user
 -- ----------------------------
-BEGIN;
-INSERT INTO `role_user` VALUES (2, 1, 4, '2019-08-16 21:17:16', NULL), (3, 2, 5, '2019-08-16 22:02:43', '2019-08-17 16:15:26'), (4, 3, 5, '2019-08-16 23:58:51', NULL);
-COMMIT;
+INSERT INTO `role_user` VALUES (2, 1, 4, '2019-08-16 21:17:16', NULL);
+INSERT INTO `role_user` VALUES (3, 2, 5, '2019-08-16 22:02:43', '2019-08-17 16:15:26');
+INSERT INTO `role_user` VALUES (4, 3, 5, '2019-08-16 23:58:51', NULL);
 
 -- ----------------------------
 -- Table structure for roles
@@ -350,14 +618,13 @@ CREATE TABLE `roles`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roles
 -- ----------------------------
-BEGIN;
-INSERT INTO `roles` VALUES (00000000004, 'admin', 'admin', '测试', 0, '2019-08-16 21:14:13', '2019-08-21 23:23:03'), (00000000005, 'admin1', 'admin1', 'admin1', 0, '2019-08-16 23:44:34', '2019-08-17 00:00:38');
-COMMIT;
+INSERT INTO `roles` VALUES (00000000004, 'admin', 'admin', '测试', 0, '2019-08-16 21:14:13', '2019-08-21 23:23:03');
+INSERT INTO `roles` VALUES (00000000005, 'admin1', 'admin1', 'admin1', 0, '2019-08-16 23:44:34', '2019-08-17 00:00:38');
 
 -- ----------------------------
 -- Table structure for sms
@@ -372,14 +639,27 @@ CREATE TABLE `sms`  (
   `created_at` timestamp(0) NULL DEFAULT NULL,
   `updated_at` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sms
 -- ----------------------------
-BEGIN;
-INSERT INTO `sms` VALUES (10, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.2/sid:0824222328639185', '2019-08-24 22:23:28', '2019-08-24 22:23:28'), (11, '15328200638', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.1/sid:0824223035782227', '2019-08-24 22:30:35', '2019-08-24 22:30:35'), (12, '18808165675', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88/sid:0824223214325105', '2019-08-24 22:32:14', '2019-08-24 22:32:14'), (13, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.9/sid:0824223647905783', '2019-08-24 22:36:48', '2019-08-24 22:36:48'), (14, '15328200638', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.8/sid:0824223653376493', '2019-08-24 22:36:53', '2019-08-24 22:36:53'), (15, '13733414639', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.7/sid:0824223844264544', '2019-08-24 22:38:44', '2019-08-24 22:38:44'), (16, '16606911141', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.6/sid:0825095742682193', '2019-08-25 09:57:42', '2019-08-25 09:57:42'), (17, '18583968687', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.5/sid:0825104325984363', '2019-08-25 10:43:26', '2019-08-25 10:43:26'), (18, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.3/sid:0825141841964238', '2019-08-25 14:18:42', '2019-08-25 14:18:42'), (19, '16606911142', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.2/sid:0825144143519146', '2019-08-25 14:41:43', '2019-08-25 14:41:43'), (20, '15328200638', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.1/sid:0825144711449757', '2019-08-25 14:47:11', '2019-08-25 14:47:11'), (21, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87/sid:0825145031584582', '2019-08-25 14:50:31', '2019-08-25 14:50:31'), (22, '15608008806', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.9/sid:0825155649355426', '2019-08-25 15:56:49', '2019-08-25 15:56:49'), (23, '18728483303', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.8/sid:0825155851855526', '2019-08-25 15:58:51', '2019-08-25 15:58:51'), (24, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.7/sid:0825172318142773', '2019-08-25 17:23:18', '2019-08-25 17:23:18'), (25, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.6/sid:0825174306293789', '2019-08-25 17:43:06', '2019-08-25 17:43:06');
-COMMIT;
+INSERT INTO `sms` VALUES (10, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.2/sid:0824222328639185', '2019-08-24 22:23:28', '2019-08-24 22:23:28');
+INSERT INTO `sms` VALUES (11, '15328200638', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.1/sid:0824223035782227', '2019-08-24 22:30:35', '2019-08-24 22:30:35');
+INSERT INTO `sms` VALUES (12, '18808165675', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88/sid:0824223214325105', '2019-08-24 22:32:14', '2019-08-24 22:32:14');
+INSERT INTO `sms` VALUES (13, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.9/sid:0824223647905783', '2019-08-24 22:36:48', '2019-08-24 22:36:48');
+INSERT INTO `sms` VALUES (14, '15328200638', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.8/sid:0824223653376493', '2019-08-24 22:36:53', '2019-08-24 22:36:53');
+INSERT INTO `sms` VALUES (15, '13733414639', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.7/sid:0824223844264544', '2019-08-24 22:38:44', '2019-08-24 22:38:44');
+INSERT INTO `sms` VALUES (16, '16606911141', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.6/sid:0825095742682193', '2019-08-25 09:57:42', '2019-08-25 09:57:42');
+INSERT INTO `sms` VALUES (17, '18583968687', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.5/sid:0825104325984363', '2019-08-25 10:43:26', '2019-08-25 10:43:26');
+INSERT INTO `sms` VALUES (18, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.3/sid:0825141841964238', '2019-08-25 14:18:42', '2019-08-25 14:18:42');
+INSERT INTO `sms` VALUES (19, '16606911142', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.2/sid:0825144143519146', '2019-08-25 14:41:43', '2019-08-25 14:41:43');
+INSERT INTO `sms` VALUES (20, '15328200638', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.1/sid:0825144711449757', '2019-08-25 14:47:11', '2019-08-25 14:47:11');
+INSERT INTO `sms` VALUES (21, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87/sid:0825145031584582', '2019-08-25 14:50:31', '2019-08-25 14:50:31');
+INSERT INTO `sms` VALUES (22, '15608008806', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.9/sid:0825155649355426', '2019-08-25 15:56:49', '2019-08-25 15:56:49');
+INSERT INTO `sms` VALUES (23, '18728483303', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.8/sid:0825155851855526', '2019-08-25 15:58:51', '2019-08-25 15:58:51');
+INSERT INTO `sms` VALUES (24, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.7/sid:0825172318142773', '2019-08-25 17:23:18', '2019-08-25 17:23:18');
+INSERT INTO `sms` VALUES (25, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.6/sid:0825174306293789', '2019-08-25 17:43:06', '2019-08-25 17:43:06');
 
 -- ----------------------------
 -- Table structure for t_account
@@ -455,14 +735,28 @@ CREATE TABLE `t_account`  (
   INDEX `index_bank_card_num`(`bank_card_num`) USING BTREE,
   INDEX `index_type_level`(`type`, `level`) USING BTREE,
   INDEX `index_seniorpromoter`(`seniorpromoter`, `guid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '账号表';
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '账号表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_account
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_account` VALUES (1, '11', NULL, 0, 'guest_1', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '11', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:21:36', '2020-03-02 14:21:36', '2020-03-03 17:01:38', '2020-03-03 16:12:53', 96898, 9, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (2, 'ddc1', NULL, 0, 'guest_2', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc1', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:00', '2020-03-02 14:22:00', '2020-03-03 17:39:08', '2020-03-03 17:26:51', 737712, 29, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (3, 'ddc2', NULL, 0, 'guest_3', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc2', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:01', '2020-03-02 14:22:01', '2020-03-03 17:38:34', '2020-03-03 14:40:40', 261153, 29, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (4, 'ddc3', NULL, 0, 'guest_4', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc3', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:02', '2020-03-02 14:22:02', '2020-03-03 17:38:55', '2020-03-03 14:40:41', 174767, 28, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (5, '111', NULL, 0, 'guest_5', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '111', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-03 18:40:43', 965414, 60, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (6, '222', NULL, 0, 'guest_6', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '222', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:04', '2020-03-02 14:31:04', '2020-03-03 18:43:39', '2020-03-03 18:43:28', 330667, 19, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (7, '333', NULL, 0, 'guest_7', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '333', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:09', '2020-03-02 14:31:09', '2020-03-03 18:43:42', '2020-03-03 18:43:29', 154930, 17, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (8, '444', NULL, 0, 'guest_8', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '444', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:13', '2020-03-02 14:31:13', '2020-03-02 18:49:07', '2020-03-02 18:16:57', 53374, 15, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (9, '555', NULL, 0, 'guest_9', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '555', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:27', '2020-03-02 14:31:27', '2020-03-02 18:49:07', '2020-03-02 18:20:18', 262810, 40, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (10, 'ddc4', NULL, 0, 'guest_10', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc4', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 18:23:17', '2020-03-02 18:23:17', '2020-03-03 17:39:00', '2020-03-03 17:29:11', 312119, 28, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (11, '777', NULL, 0, 'guest_11', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '777', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 11:15:07', 9366, 19, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (12, 'ddc`', NULL, 0, 'guest_12', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc`', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:52', 6, 2, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.20', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (13, '22', NULL, 0, 'guest_13', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '22', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:21', '2020-03-03 16:06:21', '2020-03-03 17:01:38', '2020-03-03 16:12:52', 391, 5, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL), (14, '33', NULL, 0, 'guest_14', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '33', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:24', '2020-03-03 16:06:24', '2020-03-03 17:01:38', '2020-03-03 16:12:53', 389, 5, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-COMMIT;
+INSERT INTO `t_account` VALUES (1, '11', NULL, 0, 'guest_1', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '11', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:21:36', '2020-03-02 14:21:36', '2020-03-06 17:51:19', '2020-03-06 14:54:31', 1646881, 75, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (2, 'ddc1', NULL, 0, 'guest_2', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc1', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:00', '2020-03-02 14:22:00', '2020-03-07 13:48:06', '2020-03-07 13:48:06', 7146871, 57, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (3, 'ddc2', NULL, 0, 'guest_3', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc2', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:01', '2020-03-02 14:22:01', '2020-03-02 14:22:01', '2020-03-07 14:40:59', 2804095, 85, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (4, 'ddc3', NULL, 0, 'guest_4', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc3', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:02', '2020-03-02 14:22:02', '2020-03-07 14:53:07', '2020-03-06 19:17:26', 1248313, 82, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (5, '111', NULL, 0, 'guest_5', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '111', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-06 19:17:36', 11295000, 100, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (6, '222', NULL, 0, 'guest_6', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '222', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:04', '2020-03-02 14:31:04', '2020-03-06 17:35:04', '2020-03-06 14:48:59', 2604785, 56, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (7, '333', NULL, 0, 'guest_7', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '333', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:09', '2020-03-02 14:31:09', '2020-03-06 17:35:03', '2020-03-06 14:56:41', 927811, 52, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (8, '444', NULL, 0, 'guest_8', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '444', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:13', '2020-03-02 14:31:13', '2020-03-07 14:58:07', '2020-03-06 14:56:42', 645965, 48, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (9, '555', NULL, 0, 'guest_9', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '555', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:27', '2020-03-02 14:31:27', '2020-03-06 17:35:03', '2020-03-06 17:33:33', 8238652, 96, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (10, 'ddc4', NULL, 0, 'guest_10', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc4', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 18:23:17', '2020-03-02 18:23:17', '2020-03-02 18:23:17', '2020-03-07 14:39:50', 1936868, 77, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (11, '777', NULL, 0, 'guest_11', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '777', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 11:15:07', 9366, 19, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (12, 'ddc`', NULL, 0, 'guest_12', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc`', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:52', 6, 2, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.20', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (13, '22', NULL, 0, 'guest_13', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '22', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:21', '2020-03-03 16:06:21', '2020-03-06 19:25:37', '2020-03-06 14:54:31', 1000862, 113, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (14, '33', NULL, 0, 'guest_14', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '33', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:24', '2020-03-03 16:06:24', '2020-03-06 19:25:37', '2020-03-06 14:54:31', 1181113, 113, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (15, 'ddc5', NULL, 0, 'guest_15', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc5', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-04 19:17:26', '2020-03-04 19:17:26', '2020-03-06 18:05:50', '2020-03-06 14:53:51', 156985, 29, NULL, 'H5', '0.4.25', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.25', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (16, '44', NULL, 0, 'guest_16', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '44', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-05 09:59:21', '2020-03-05 09:59:21', '2020-03-05 09:59:21', '2020-03-05 16:32:03', 61321, 16, NULL, 'H5', '0.4.25', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.25', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (17, 'ddc', NULL, 0, 'guest_17', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-07 13:52:47', '2020-03-07 13:52:47', '2020-03-07 13:52:47', '2020-03-07 14:46:55', 3248, 2, NULL, 'H5', '0.4.28', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.28', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for t_account_bank
@@ -471,7 +765,7 @@ DROP TABLE IF EXISTS `t_account_bank`;
 CREATE TABLE `t_account_bank`  (
   `id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci;
+) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_account_extend_info
@@ -485,7 +779,7 @@ CREATE TABLE `t_account_extend_info`  (
   `updated_at` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`guid`, `key`) USING BTREE,
   INDEX `idx_key`(`key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_channel_invite
@@ -498,7 +792,7 @@ CREATE TABLE `t_channel_invite`  (
   `big_lock` tinyint(3) NULL DEFAULT 1 COMMENT '1开启 0关闭',
   `tax_rate` int(11) UNSIGNED NOT NULL DEFAULT 1 COMMENT '税率 百分比',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_channel_validatebox
@@ -511,7 +805,7 @@ CREATE TABLE `t_channel_validatebox`  (
   `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '添加验证码原因',
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_globle_append_info
@@ -525,14 +819,12 @@ CREATE TABLE `t_globle_append_info`  (
   `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '平台id',
   `created_time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`globle_key`, `created_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_globle_append_info
 -- ----------------------------
-BEGIN;
 INSERT INTO `t_globle_append_info` VALUES ('risk', '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0}', 1, NULL, '', '2019-08-22 15:28:26');
-COMMIT;
 
 -- ----------------------------
 -- Table structure for t_guest_id
@@ -543,14 +835,12 @@ CREATE TABLE `t_guest_id`  (
   `id_key` int(11) NOT NULL DEFAULT 0 COMMENT '用于更新',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `index_id_key`(`id_key`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10071 CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 10071 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_guest_id
 -- ----------------------------
-BEGIN;
 INSERT INTO `t_guest_id` VALUES (10070, 0);
-COMMIT;
 
 -- ----------------------------
 -- Table structure for t_member
@@ -579,14 +869,12 @@ CREATE TABLE `t_member`  (
   `created_at` int(11) NULL DEFAULT 0,
   `updated_at` int(11) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '会员表';
+) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '会员表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_member
 -- ----------------------------
-BEGIN;
 INSERT INTO `t_member` VALUES (1, '1', '1', '15046676081', '1', '123', 1, 0.00, 'https://wx.qlogo.cn/mmopen/vi_32/DYAIOgq83erFVWKCQECibWxDPfrbEr5icT5XZNc5VFoRwjErM4lgztdFQOZFYSd9IBtWjX2Lmb5ic9icpK0QPK3JAg/132', 1, 100.00, 0, '1', 1, '1', '123123', 1, 1, 0, 0, 0);
-COMMIT;
 
 -- ----------------------------
 -- Table structure for t_online_account
@@ -600,14 +888,15 @@ CREATE TABLE `t_online_account`  (
   `in_game` int(11) NOT NULL DEFAULT 0 COMMENT '1在玩游戏，0在大厅',
   PRIMARY KEY (`guid`) USING BTREE,
   INDEX `index_guid_game_id`(`guid`, `game_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线账号表';
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线账号表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_online_account
 -- ----------------------------
-BEGIN;
-INSERT INTO `t_online_account` VALUES (54, 27, 1, 27001, 1), (65, 25, 1, 15001, 1), (66, 25, 1, 15001, 1), (77, 25, 1, 15001, 0);
-COMMIT;
+INSERT INTO `t_online_account` VALUES (54, 27, 1, 27001, 1);
+INSERT INTO `t_online_account` VALUES (65, 25, 1, 15001, 1);
+INSERT INTO `t_online_account` VALUES (66, 25, 1, 15001, 1);
+INSERT INTO `t_online_account` VALUES (77, 25, 1, 15001, 0);
 
 -- ----------------------------
 -- Table structure for t_player_bankcard
@@ -625,7 +914,7 @@ CREATE TABLE `t_player_bankcard`  (
   `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '平台id',
   `created_time` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_player_proxy
@@ -637,7 +926,7 @@ CREATE TABLE `t_player_proxy`  (
   `proxy_guid` int(11) NULL DEFAULT NULL COMMENT '创建的代理商账号guid',
   `status` tinyint(4) NULL DEFAULT 0 COMMENT ' 创建代理商账号状态：0未创建 ，1 account创建成功等待创建t_player 2创建完毕',
   PRIMARY KEY (`proxy_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_promote
@@ -657,14 +946,12 @@ CREATE TABLE `t_promote`  (
   `created_at` int(10) NULL DEFAULT NULL,
   `updated_at` int(10) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '推广员表';
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '推广员表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of t_promote
 -- ----------------------------
-BEGIN;
 INSERT INTO `t_promote` VALUES (1, '17500000000', '$2y$10$Z1CWneAuCFTbuz5OVg2QsuYBQe4ViQAr9lHDLKHXfJwApgQjuSYlK', '17500000000', 'laoz', 0, 0, 0, 100, NULL, NULL, NULL);
-COMMIT;
 
 -- ----------------------------
 -- Table structure for t_validatebox_feng_ip
@@ -675,7 +962,7 @@ CREATE TABLE `t_validatebox_feng_ip`  (
   `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
   `enabled` int(11) NOT NULL DEFAULT 1 COMMENT '是否开启此功能(1开启 0不开启)',
   PRIMARY KEY (`ip`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for tj_update_password_log
@@ -688,7 +975,7 @@ CREATE TABLE `tj_update_password_log`  (
   `uptime` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`uptime`, `guid`) USING BTREE,
   INDEX `guid`(`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for users
@@ -704,14 +991,14 @@ CREATE TABLE `users`  (
   `deleted_at` timestamp(0) NULL DEFAULT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-BEGIN;
-INSERT INTO `users` VALUES (1, 'admin@163.com', '$2y$10$fF68LHYl.d5YjMH.qhcyROSKruKT.7opZF0jK8rBuGV4L./bZPkQ2', '3KV0pTT1uNMXEzGbDPfRk1tOSsIUJEr8d7HxAyN6QP63BIhEFzVKmQviXYDh', NULL, '2019-08-19 15:54:45', NULL, 'admin@163.com'), (2, 'test', '$2y$10$WD8Rntg9Zh6YXPoWc6ZQ0ulfX8eySvxIO6yAa93FmeHUIU5Pkfhvq', 'VACIKPdpwPIaRdNfLdSxjJ1L7WxWajW4vXNHv2QfhRVE6x8bxv3WGf7omRi9', '2019-08-16 22:02:42', '2019-08-17 23:37:35', NULL, 'test@163.com'), (3, 'test1', '$2y$10$Zftw380CEpeZTI.YFl0nY.VNYiX4ODsKdIZ6jIY4sBlzMdkYz2/bK', '6e8q6hp3ddqK3UkeoheRz3pRLwlLrvxDVWU8Yxw1Ct4pQVD9MAkciqAlmdrm', '2019-08-16 23:58:50', '2019-08-17 00:23:14', NULL, 'test1@163.com');
-COMMIT;
+INSERT INTO `users` VALUES (1, 'admin@163.com', '$2y$10$fF68LHYl.d5YjMH.qhcyROSKruKT.7opZF0jK8rBuGV4L./bZPkQ2', '3KV0pTT1uNMXEzGbDPfRk1tOSsIUJEr8d7HxAyN6QP63BIhEFzVKmQviXYDh', NULL, '2019-08-19 15:54:45', NULL, 'admin@163.com');
+INSERT INTO `users` VALUES (2, 'test', '$2y$10$WD8Rntg9Zh6YXPoWc6ZQ0ulfX8eySvxIO6yAa93FmeHUIU5Pkfhvq', 'VACIKPdpwPIaRdNfLdSxjJ1L7WxWajW4vXNHv2QfhRVE6x8bxv3WGf7omRi9', '2019-08-16 22:02:42', '2019-08-17 23:37:35', NULL, 'test@163.com');
+INSERT INTO `users` VALUES (3, 'test1', '$2y$10$Zftw380CEpeZTI.YFl0nY.VNYiX4ODsKdIZ6jIY4sBlzMdkYz2/bK', '6e8q6hp3ddqK3UkeoheRz3pRLwlLrvxDVWU8Yxw1Ct4pQVD9MAkciqAlmdrm', '2019-08-16 23:58:50', '2019-08-17 00:23:14', NULL, 'test1@163.com');
 
 -- ----------------------------
 -- Procedure structure for charge_rate
