@@ -29,7 +29,6 @@ local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
 local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
-local club_money = require "game.club.club_money"
 local club_money_type = require "game.club.club_money_type"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
@@ -181,6 +180,8 @@ function on_ls_login_notify(guid,reconnect)
 	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	reddb:incr("player:online:count")
+
+	onlineguid[player.guid] = nil
 
 	log.info("test .................. on_les_login_notify %s", player.h_bank_password)
 end
@@ -750,6 +751,8 @@ function on_cs_change_game(msg,guid)
 				room_id = def_game_id,
 			})
 
+			onlineguid[player.guid] = nil
+
 			log.info("change step this ok,account=%s", player.account)
 		else
 			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
@@ -974,9 +977,12 @@ local function find_best_room(first_game_type,second_game_type)
 end
 
 
-local function check_create_table_limit(player,payopt,club)
+local function check_create_table_limit(player,rule,club)
+	local payopt = rule.pay.option
+	local roundopt = (rule.round.option or 0) + 1
+	local roomfee = g_room.conf.private_conf.fee[roundopt]
 	if payopt == enum.PAY_OPTION_AA then
-		if player:check_money_limit(g_room.conf.private_conf.fee,0) then 
+		if player:check_money_limit(roomfee,0) then 
 			return enum.ERROR_LESS_MIN_LIMIT 
 		end
 	elseif payopt == enum.PAY_OPTION_BOSS then
@@ -989,7 +995,7 @@ local function check_create_table_limit(player,payopt,club)
 		end
 
 		local boss = base_players[root.owner]
-		if boss:check_money_limit(g_room.conf.private_conf.fee,0) then
+		if boss:check_money_limit(roomfee,0) then
 			return enum.ERROR_LESS_MIN_LIMIT
 		end
 	end
@@ -1004,8 +1010,15 @@ function on_cs_create_private_room(msg,guid)
 	local rule = msg.rule
 	local template_id = msg.template_id
 
-	local player = base_players[guid]
+	local os = onlineguid[guid]
+	if os.table then
+		onlineguid.send(guid,"SC_CreateRoom",{
+			result = enum.GAME_SERVER_RESULT_IN_ROOM,
+		})
+		return
+	end
 
+	local player = base_players[guid]
 	if player.table_id then
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.GAME_SERVER_RESULT_IN_ROOM,
@@ -1082,7 +1095,7 @@ function on_cs_create_private_room(msg,guid)
 	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
 
 	local club = club_id and base_clubs[club_id] or nil
-	local errno = check_create_table_limit(player,pay_option,club)
+	local errno = check_create_table_limit(player,rule,club)
 	if errno then
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = errno,

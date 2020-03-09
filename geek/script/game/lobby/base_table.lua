@@ -1072,8 +1072,7 @@ function base_table:cost_private_fee()
 		end
 
 		local boss = base_players[root.owner]
-
-		local money = self.room_.conf.private_conf.fee
+		local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
 		boss:cost_money({{
 			money_id = 0,
 			money = money,

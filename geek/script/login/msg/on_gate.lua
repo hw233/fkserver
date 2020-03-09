@@ -55,6 +55,8 @@ function on_s_logout(msg)
 
     reddb:hdel("player:online:guid:"..tostring(guid),"gate")
 
+    onlineguid[guid] = nil
+
     return true
 end
 
@@ -509,6 +511,8 @@ function on_cl_login(msg,gate)
     log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
 
     info.result = enum.LOGIN_RESULT_SUCCESS
+
+    onlineguid[info.guid] = nil
  
     return info,game_id
 end

@@ -782,6 +782,8 @@ function base_room:player_enter_room(player)
 		second_game_type = def_second_game_type,
 		server = def_game_id,
 	})
+
+	onlineguid[player.guid] = nil
 end
 
 -- 玩家退出房间
