@@ -373,7 +373,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        [2] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
+        -- [2] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -421,6 +421,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         actions[ACTION.MING_GANG] = nil
         actions[ACTION.BA_GANG] = nil
         actions[ACTION.FREE_BA_GANG] = nil
+        actions[ACTION.FREE_AN_GANG] = nil
         if (actions[ACTION.MEN] or actions[ACTION.MEN_ZI_MO]) and not self.conf.rule.bao_ting_ke_men then
             actions[ACTION.MEN] = nil
             actions[ACTION.MEN_ZI_MO] = nil
@@ -447,6 +448,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         actions[ACTION.MING_GANG] = nil
         actions[ACTION.BA_GANG] = nil
         actions[ACTION.FREE_BA_GANG] = nil
+        actions[ACTION.FREE_AN_GANG] = nil
     end
 
     if actions[ACTION.AN_GANG] and p.free_an_gang_tiles then
