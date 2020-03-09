@@ -546,35 +546,4 @@ function on_ls_addmoney( msg )
 		send2login_pb("SL_AddMoney",fmsg)
 	end
 	print "end...................................on_ls_addmoney"
-
-end
-
-function on_s_notify_recharge(msg)
-	local guid = tonumber(msg.guid)
-	if not guid then
-		return {
-			errcode = error.DATA_ERROR,
-			errstr = string.format("player guid can not be nil.",guid) 
-		}
-	end
-
-	local player = base_players[guid]
-	if not player then
-		return {
-			errcode = error.DATA_ERROR,
-			errstr = string.format("player guid[%d] not exists.",guid)
-		}
-	end
-
-	local now_count = reddb.hincrby("player:info:"..msg.guid,msg.type == 1 and "diamond" or "room_card",tonumber(msg.number))
-	now_count = tonumber(now_count)
-	if player.online then
-		if msg.type == 1 then player.diamond = now_count
-		elseif msg.type == 2 then player.room_card = now_count
-		end
-	end
-
-	return {
-		errcode = error.SUCCESS,
-	}
 end

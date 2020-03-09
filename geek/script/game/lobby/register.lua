@@ -178,6 +178,5 @@ skynet.start(function()
 	register_dispatcher("CS_DismissTableCommit",on_cs_dismiss_table_commit)
 
 	register_dispatcher("GetTableStatusInfo",on_s_get_table_status_info)
-	register_dispatcher("GM_NotifyRecharge",on_s_notify_recharge)
 	register_dispatcher("C2S_EDIT_TABLE_TEMPLATE",on_cs_edit_table_template)
 end)

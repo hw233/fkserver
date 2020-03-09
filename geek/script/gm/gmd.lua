@@ -369,11 +369,6 @@ local function recharge_team(team_id,coin_type,count)
 end
 
 local function recharge_player(guid,coin_type,count)
-    local os = onlineguid[guid]
-    if os and os.server then
-        return channel.call("service."..os.server,"msg","GM_NotifyRecharge",guid)
-    end
-
     -- if coin_type ~= 2 then
     --     return {
     --         errcode = error.DATA_ERROR,
