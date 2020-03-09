@@ -979,19 +979,19 @@ end
 
 local function check_create_table_limit(player,rule,club)
 	local payopt = rule.pay.option
-	local roundopt = (rule.round.option or 0) + 1
-	local roomfee = g_room.conf.private_conf.fee[roundopt]
-	if payopt == enum.PAY_OPTION_AA then
-		if player:check_money_limit(roomfee,0) then 
-			return enum.ERROR_LESS_MIN_LIMIT 
+	local roomfee = g_room.conf.private_conf.fee[(rule.round.option or 0) + 1]
+	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
+		if player:check_money_limit(roomfee,0) then
+			return enum.ERROR_LESS_MIN_LIMIT
 		end
 	elseif payopt == enum.PAY_OPTION_BOSS then
-		if not club then return 
-			enum.ERORR_PARAMETER_ERROR 
+		if not club then return
+			enum.ERORR_PARAMETER_ERROR
 		end
+		
 		local root = club_utils.root(club)
-		if not root then return 
-			enum.ERORR_PARAMETER_ERROR 
+		if not root then return
+			enum.ERORR_PARAMETER_ERROR
 		end
 
 		local boss = base_players[root.owner]
@@ -1083,6 +1083,8 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
+	dump(rule)
+
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
 		onlineguid.send(guid,"SC_CreateRoom",{
@@ -1117,6 +1119,8 @@ function on_cs_create_private_room(msg,guid)
 		
 		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 	elseif pay_option == enum.PAY_OPTION_AA then
+		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
+	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
 	else
 		result = enum.ERORR_PARAMETER_ERROR
@@ -1312,6 +1316,8 @@ function on_cs_join_private_room(msg,guid)
 
 		result,tb = club:join_table(player,private_table,chair_count)
 	elseif pay_option == enum.PAY_OPTION_AA then
+		result,tb = g_room:join_private_table(player,private_table,chair_count)
+	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		result,tb = g_room:join_private_table(player,private_table,chair_count)
 	else
 		result = enum.ERORR_PARAMETER_ERROR

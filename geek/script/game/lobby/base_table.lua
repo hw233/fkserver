@@ -1055,9 +1055,10 @@ function base_table:cost_private_fee()
 
 	dump(rule)
 
+	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
 	local pay = rule.pay
 	if pay.option == enum.PAY_OPTION_AA then
-		local money_each = math.floor(self.room_limit / self.chair_count)
+		local money_each = money
 		for _,p in pairs(self.players) do
 			p:cost_money({{
 				money_id = 0,
@@ -1072,8 +1073,18 @@ function base_table:cost_private_fee()
 		end
 
 		local boss = base_players[root.owner]
-		local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
 		boss:cost_money({{
+			money_id = 0,
+			money = money,
+		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+	elseif pay.option == enum.PAY_OPTION_ROOM_OWNER then
+		local owner = base_players[private_table.owner]
+		if not owner then
+			log.error("base_table:cost_private_fee [%d] got nil owner [%d].",self.private_id,private_table.owner)
+			return
+		end
+
+		owner:cost_money({{
 			money_id = 0,
 			money = money,
 		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
