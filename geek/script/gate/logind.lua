@@ -403,6 +403,7 @@ function MSG.CL_Auth(msg,session)
         result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
         netmsgopt.send(fd,"LC_Auth",{
             result = result,
+            errmsg = userinfo,
         })
         logining[fd] = nil
         return
