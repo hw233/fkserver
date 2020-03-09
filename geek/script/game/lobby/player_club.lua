@@ -12,7 +12,6 @@ setmetatable(player_club,{
                 for _,club in pairs(clubs) do
                     cs[tonumber(club)] = true
                 end
-                tb[guid] = cs
                 return cs
             end
         })
