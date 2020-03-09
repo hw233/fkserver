@@ -568,7 +568,7 @@ function gmd.online_player(data)
     local count = reddb:get("player:online:count")
     return {
         result = error.SUCCESS,
-        count = tonumber(count),
+        count = tonumber(count) or 0,
     }
 end
 
