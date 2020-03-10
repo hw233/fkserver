@@ -71,10 +71,17 @@ function on_bs_club_create(owner,name)
         return
     end
 
-    local id = math.random(1000000,9999999)
+    if player.role ~= 1 then
+        return enum.ERROR_PLAYER_NO_RIGHT
+    end
+
+    local id_head = math.random(10) > 5 and 6 or 8
+    local id_begin = id_head * 10000000
+    local id_end = id_begin + 9999999
+    local id = math.random(id_begin,id_end)
     for _ = 1,1000 do
         if not base_clubs[id] then break end
-        id = math.random(1000000,9999999)
+        id = math.random(id_begin,id_end)
     end
 
     base_club:create(id,name or "","",player,enum.CT_UNION)
@@ -85,7 +92,7 @@ function on_bs_club_create(owner,name)
         money = math.floor(global_cfg.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
-    return id
+    return enum.ERROR_NONE,id
 end
 
 function on_cs_club_create(msg,guid)
@@ -113,10 +120,13 @@ function on_cs_club_create(msg,guid)
 
     dump(player)
 
-    local id = math.random(1000000,9999999)
+    local id_head = math.random(10) > 5 and 6 or 8
+    local id_begin = id_head * 100000
+    local id_end = id_begin + 99999
+    local id = math.random(id_begin,id_end)
     for _ = 1,1000 do
         if not base_clubs[id] then break end
-        id = math.random(1000000,9999999)
+        id = math.random(id_begin,id_end)
     end
 
     base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
@@ -166,24 +176,36 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
+    if player.role ~= 1 then
+        onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+            result = enum.CLUB_OP_RESULT_SUCCESS,
+        })
+        return
+    end
+
     local role = club_role[inviter_club_id][guid]
     if role == enum.CRT_BOSS then
         return
     end
 
-    local id = math.random(1000000,9999999)
+    local id_head = math.random(10) > 5 and 6 or 8
+    local id_begin = id_head * 10000000
+    local id_end = id_begin + 9999999
+    local id = math.random(id_begin,id_end)
     for _ = 1,1000 do
         if not base_clubs[id] then break end
-        id = math.random(1000000,9999999)
+        id = math.random(id_begin,id_end)
     end
 
     local club_info = msg.club_info
 
     base_club:create(id,club_info.name,club_info.icon,player,enum.CT_UNION,inviter_club.id)
 	if not id then
-		return {
+        onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
             result = enum.CLUB_OP_RESULT_FAILED,
-        }
+            id = id,
+        })
+        return
     end
 
     local _ = base_clubs[id]
@@ -238,9 +260,9 @@ function on_cs_club_invite_join_club(msg,guid)
     --     end
     -- end
 
-    club:invite_join(invitee,guid,club,invite_type)
+    local code = club:invite_join(invitee,guid,club,invite_type)
     onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-        result = enum.ERROR_NONE,
+        result = code,
     })
 
     player_request[club.owner] = nil

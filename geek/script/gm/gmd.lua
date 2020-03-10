@@ -459,9 +459,9 @@ function gmd.create_club(data)
     end
 
     local name = data.club_name
-    local club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name)
+    local code,club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name)
     return {
-        errcode = error.SUCCESS,
+        errcode = code ~= enum.ERROR_PLAYER_NO_RIGHT and error.SUCCESS or error.PARAMETER_ERROR,
         club_id = club_id,
     }
 end
