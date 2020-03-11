@@ -1098,6 +1098,21 @@ function base_table:on_started()
 
 	self.cur_round = (self.cur_round or 0) + 1
 
+	local privatetb = base_private_table[self.private_id]
+	if privatetb and privatetb.club_id then
+		local club = base_clubs[privatetb.club_id]
+		if club then
+			local root = club_utils.root(club)
+			root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+				root_club = root.id,
+				club_id = club.id,
+				room_info = self:global_status_info(),
+				sync_table_id = self.private_id,
+				sync_type = enum.SYNC_UPDATE,
+			})
+		end
+	end
+
 	if self.cur_round == 1 then
 		self:cost_private_fee()
 		self:cost_tax()
