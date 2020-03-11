@@ -183,6 +183,17 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
+    local root = club_utils.root(inviter_club)
+    for cid,_ in pairs(player_club[guid][enum.CT_UNION]) do
+        local c = base_clubs[cid]
+        if c and club_utils.root(c) == root then
+            onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
+                result = enum.ERROR_CLUB_JOIN_REPEATED
+            })
+            return
+        end
+    end
+
     local role = club_role[inviter_club_id][guid]
     if role == enum.CRT_BOSS then
         return
@@ -250,15 +261,44 @@ function on_cs_club_invite_join_club(msg,guid)
         return
     end
 
-    -- for req_id,_ in pairs(player_request[club.owner]) do
-    --     local req = base_request[req_id]
-    --     if req.who == guid and req.type == invite_type then
-    --         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-    --             result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
-    --         })
-    --         return
-    --     end
-    -- end
+    if invite_type == "invite_join" then
+        local root = club_utils.root(club)
+        for cid,_ in pairs(player_club[invitee][enum.CT_UNION]) do
+            local c = base_clubs[cid]
+            if c and club_utils.root(c) == root then
+                onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                    result = enum.ERROR_CLUB_JOIN_REPEATED
+                })
+                return
+            end
+        end
+    elseif invite_type == "invite_create" then
+        local p = base_players[invitee]
+        if not p then
+            onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                result = enum.ERROR_PLAYER_NOT_EXIST,
+            })
+            return
+        end
+
+        if p.role ~= 1 then
+            onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                result = enum.ERROR_PLAYER_NO_RIGHT,
+            })
+            return
+        end
+
+        local root = club_utils.root(club)
+        for cid,_ in pairs(player_club[invitee][enum.CT_UNION]) do
+            local c = base_clubs[cid]
+            if c and club_utils.root(c) == root then
+                onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                    result = enum.ERROR_CLUB_JOIN_REPEATED
+                })
+                return
+            end
+        end
+    end
 
     local code = club:invite_join(invitee,guid,club,invite_type)
     onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{

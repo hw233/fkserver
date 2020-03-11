@@ -157,21 +157,14 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
         if inviter_role ~= enum.CRT_ADMIN and inviter_role ~= enum.CRT_PARTNER and inviter_role ~= enum.CRT_BOSS then
             return enum.ERORR_PARAMETER_ERROR
         end
+
+
         self:join(invitee,inviter)
         club_member[self.id] = nil
         return enum.ERROR_NONE
     end
 
     if string.lower(type) == "invite_create" then
-        local p = base_players[invitee]
-        if  not p then
-            return enum.ERROR_PLAYER_NOT_EXIST
-        end
-
-        if p.role ~= 1 then
-            return enum.ERROR_PLAYER_NO_RIGHT
-        end
-
         local mail_info = base_mail.create_mail(inviter_club.owner,invitee,"联盟邀请...",{
             type = type,
             club_id = self.id,
