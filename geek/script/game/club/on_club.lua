@@ -704,13 +704,20 @@ local function on_cs_club_administrator(msg,guid)
     end
 
     local self_role = club_role[club_id][guid]
-    if self_role ~= enum.CRT_BOSS then
+    if self_role ~= enum.CRT_BOSS or self_role == enum.CRT_ADMIN  then
         res.result = enum.ERROR_NOT_IS_CLUB_BOSS
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
 
+
     if msg.op == club_op.ADD_ADMIN then
+        if not club_member[club_id][target_guid] then
+            res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+            return
+        end
+
         local role = club_role[club_id][target_guid]
         if role == enum.CRT_BOSS or role == enum.CRT_PARTNER or role == enum.CRT_ADMIN then
             res.result = enum.ERROR_NOT_SET_ADMIN
@@ -725,6 +732,12 @@ local function on_cs_club_administrator(msg,guid)
     end
 
     if msg.op == club_op.REMOVE_ADMIN then
+        if not club_member[club_id][target_guid] then
+            res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+            return
+        end
+
         local role = club_role[club_id][target_guid]
         if role ~= enum.CRT_ADMIN then
             res.result = enum.ERROR_NOT_SET_ADMIN
@@ -925,12 +938,84 @@ local function on_cs_club_partner(msg,guid)
     end
 end
 
+
+function on_cs_club_kickout(msg,guid)
+    local club_id = msg.club_id
+    local target_guid = msg.target_id
+
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_NOT_IS_CLUB_BOSS
+        })
+        return
+    end
+
+    local target_role = club_role[club_id][target_guid]
+    if target_role == enum.CRT_ADMIN or target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local target = base_players[target_guid]
+    if not target then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+        return
+    end
+
+    if not club_member[club_id][target_guid] then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        })
+        return
+    end
+
+    local os = onlineguid[target_guid]
+    if os.first_game_type ~= 1 then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_IN_ROOM
+        })
+        return
+    end
+
+    reddb:srem(string.format("player:club:%d:%d",target_guid,club.type),club_id)
+    player_club[target_guid] = nil
+    reddb:srem(string.format("club:member:%d",club_id),target_guid)
+    club_member[club_id] = nil
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = club_op.OP_EXIT_AGREED,
+        target_id = target_guid,
+    })
+end
+
 local operator = {
     [club_op.ADD_ADMIN] = on_cs_club_administrator,
     [club_op.REMOVE_ADMIN] = on_cs_club_administrator,
     [club_op.OP_JOIN_AGREED] = on_cs_club_agree_request,
     [club_op.OP_JOIN_REJECTED] = on_cs_club_reject_request,
-    [club_op.OP_EXIT_AGREED] = on_cs_club_agree_request,
+    [club_op.OP_EXIT_AGREED] = on_cs_club_kickout,
     [club_op.OP_APPLY_EXIT] = on_cs_club_exit,
     [club_op.ADD_PARTNER] = on_cs_club_partner,
     [club_op.REMOVE_PARTNER] = on_cs_club_partner,
@@ -943,10 +1028,6 @@ function on_cs_club_operation(msg,guid)
     end
 end
 
-
-function on_cs_club_kickout(msg,guid)
-
-end
 
 function on_cs_club_dismiss_table(msg,guid)
 

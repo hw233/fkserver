@@ -69,6 +69,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
         owner = owner_guid,
         type = tp,
         parent = parent or 0,
+        status = 0,
     }
 
     local money_info
@@ -166,7 +167,7 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
         if  not p then
             return enum.ERROR_PLAYER_NOT_EXIST
         end
-        
+
         if p.role ~= 1 then
             return enum.ERROR_PLAYER_NO_RIGHT
         end
