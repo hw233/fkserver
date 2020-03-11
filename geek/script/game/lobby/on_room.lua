@@ -194,18 +194,14 @@ end
 function on_cs_dismiss_table_req(msg,guid)
 	local player = base_players[guid]
 	if not player or not player.online then
+		dump(player)
 		send2client_pb(guid,"SC_DismissTableReq",{
 			result = enum.ERROR_PLAYER_NOT_EXIST,
 		})
 		return
 	end
 
-	local result = g_room:request_dismiss_private_table(player)
-	if result ~= enum.ERROR_NONE then
-		send2client_pb(guid,"SC_DismissTableReq",{
-			result = result
-		})
-	end
+	g_room:request_dismiss_private_table(player)
 end
 
 function on_cs_dismiss_table_commit(msg,guid)

@@ -144,6 +144,13 @@ function base_table:request_dismiss(player)
 		end)
 	end)
 
+	if self.dismiss_request then
+		send2client_pb(player.guid,"SC_DismissTableReq",{
+			result = enum.ERROR_OPERATOR_REPEATED
+		})
+		return
+	end
+
 	self.dismiss_request = {
 		commissions = {},
 		requester = player,
@@ -188,11 +195,6 @@ function base_table:commit_dismiss(player,agree)
 	local commissions = self.dismiss_request.commissions
 	agree = agree and agree == true or false
 
-	if not agree then
-		self:broadcast2client("SC_DismissTable",{success = false,})
-		return enum.ERROR_NONE
-	end
-
 	commissions[player.chair_id] = agree and agree == true or false
 
 	self:broadcast2client("SC_DismissTableCommit",{
@@ -208,10 +210,21 @@ function base_table:commit_dismiss(player,agree)
 		self.dismiss_request = nil
 	end
 
-	if not table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
-	then
+	local succ = table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
+	if not succ then
+		self:broadcast2client("SC_DismissTable",{
+			success = false,
+		})
 		return enum.ERROR_NONE
 	end
+
+	self:broadcast2client("SC_DismissTable",{
+		success = true,
+	})
+
+	self.dismiss_request.timer:kill()
+	self.dismiss_request.timer = nil
+	self.dismiss_request = nil
 
 	self:on_final_game_overed()
 	
@@ -634,18 +647,16 @@ end
 
 
 -- 广播桌子中所有人消息
-function base_table:broadcast2client(msg_name, msg)
-	self:foreach(function(p) 
-		if p.online and p.in_game then
-			send2client_pb(p, msg_name, msg)
-		end
-	end)
+function base_table:broadcast2client(msgname, msg)
+	local guids = {}
+	self:foreach(function(p) table.insert(guids,p.guid) end)
+	onlineguid.broadcast(guids,msgname,msg)
 end
 
-function base_table:broadcast2client_except(except, msg_name, msg)
-	self:foreach_except(except,function(p)
-		send2client_pb(p, msg_name, msg)
-	end)
+function base_table:broadcast2client_except(except,msgname, msg)
+	local guids = {}
+	self:foreach_except(except,function(p) table.insert(guids,p.guid) end)
+	onlineguid.broadcast(guids,msgname,msg)
 end
 
 -- 玩家坐下
