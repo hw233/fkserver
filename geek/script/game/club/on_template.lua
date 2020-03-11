@@ -87,21 +87,14 @@ local function get_club_team_template_conf(club,template)
     return conf
 end
 
-local function recusive_get_club_templates(club,visiable)
+local function recusive_get_club_templates(club)
     if not club then return end
 
     local templates = {}
     for tid,_ in pairs(club_template[club.id]) do
         local template = table_template[tid]
         if template then
-            if not visiable then
-                local teamconf = club_team_template_conf[club.id][tid]
-                if not teamconf or teamconf.visual then
-                    table.insert(templates,template)
-                end
-            else
-                table.insert(templates,template)
-            end
+            table.insert(templates,template)
         end
     end
 
@@ -155,8 +148,8 @@ function on_cs_get_club_template_commission(msg,guid)
     local confs = {}
     local template_id = msg.template_id
     if not template_id or template_id == 0 then
-        for _,template in pairs(recusive_get_club_templates(team)) do
-            dump(template)
+        local templates = recusive_get_club_templates(team)
+        for _,template in pairs(templates) do
             table.insert(confs,{
                 template_id = template.template_id,
                 commission = calc_club_template_commission(base_clubs[club_id],template),
@@ -360,8 +353,7 @@ function on_cs_get_club_team_template_conf(msg,guid)
 
     local confs = {}
     if not template_id or template_id == 0 then
-        local templates = recusive_get_club_templates(club,true)
-        dump(templates)
+        local templates = recusive_get_club_templates(club)
         for _,template in pairs(templates) do
             local teamconf = club_team_template_conf[club.id][template.template_id]
             table.insert(confs,{
