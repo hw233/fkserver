@@ -265,7 +265,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.PENG_PENG_HU]			= {name = "PENG_PENG_HU",score = 6},			--碰碰胡
 	[HU_TYPE.SAN_GANG]				= {name = "SAN_GANG",score = 32},				--三杠
 	[HU_TYPE.QUAN_DAI_YAO]			= {name = "QUAN_DAI_YAO",score = 4},			--全带幺
-	[HU_TYPE.QIANG_GANG_HU]			= {name = "QIANG_GANG_HU",score = 8},			--抢杠胡
+	[HU_TYPE.QIANG_GANG_HU]			= {name = "QIANG_GANG_HU",score = 9},			--抢杠胡
 	[HU_TYPE.HUA_PAI]				= {name = "HUA_PAI",score = 1},				--花牌
 	[HU_TYPE.DA_QI_XIN]				= {name = "DA_QI_XIN",score = 88},			--大七星
 	[HU_TYPE.LIAN_QI_DUI] 			= {name = "LIAN_QI_DUI",score = 88},			--连七对

@@ -373,7 +373,8 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        -- [2] = {22,21,21,22,22,22,23,23,23,24,24,24,25}
+        -- [1] = {11,11,11,12,12,12,21,22,23,24,25,26,27},
+        -- [2] = {22,22,23,23,24,24,25,25,26,26,27,27,28},
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -672,12 +673,13 @@ function maajan_table:on_action_after_mo_pai(evt)
         else
             for chair,_ in pairs(qiang_gang_hu) do
                 local p = self.players[chair]
-                self:log_game_action(p,do_action,tile)
+                self:log_game_action(p,ACTION.HU,tile)
                 p.hu = {
                     time = os.time(),
                     tile = tile,
-                    types = mj_util.hu(player.pai,tile),
+                    types = mj_util.hu(p.pai,tile),
                     whoee = player.chair_id,
+                    qiang_gang = true,
                 }
                 self:broadcast_player_hu(p,do_action)
             end
@@ -1150,6 +1152,22 @@ function maajan_table:calculate_hu(p,hu)
                 typescore = {},
             }).typescore,{
                 type = HU_TYPE.GANG_SHANG_PAO, score = - HU_TYPE_INFO[HU_TYPE.GANG_SHANG_PAO].score,count = 1,
+            })
+        end
+
+        if hu.qiang_gang then
+            table.insert(table.get(types,p.chair_id,{
+                type = BalanceItemType.Hu,
+                typescore = {},
+            }).typescore,{
+                type = HU_TYPE.QIANG_GANG_HU, score = HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].score,count = 1,
+            })
+
+            table.insert(table.get(types,hu.whoee,{
+                type = BalanceItemType.Hu,
+                typescore = {},
+            }).typescore,{
+                type = HU_TYPE.QIANG_GANG_HU, score = - HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].score,count = 1,
             })
         end
 
