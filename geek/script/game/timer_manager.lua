@@ -1,5 +1,6 @@
 require "functions"
 local log = require "log"
+local skynet = require "skynetproto"
 
 local timer_manager = {
 	last_tick = os.clock(),
@@ -115,12 +116,12 @@ function timer_manager:get_timer(name_or_id_or_timer)
 end
 
 function timer_manager:tick()
-    local now_second = os.clock()
+    local now_second = skynet.time()
     local delta = now_second - self.last_tick
     self.last_tick = now_second
     for i,timer in pairs(self.timers) do
         if timer and not timer.paused then
-            timer.remainder = timer.remainder - delta
+			timer.remainder = timer.remainder - delta
             if timer.remainder <= 0 then 
 				timer.callback() 
 				if timer.repeated then  timer.remainder = timer.interval
