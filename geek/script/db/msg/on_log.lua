@@ -49,7 +49,7 @@ function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
     local sql = string.format([[
         INSERT INTO `log`.`t_log_game` (`round_id`, `game_id`,`game_name`, `log`, `ext_round_id`, `start_time`,`end_time`)
-        VALUES ('%s',%d, '%s', '%s','%s', FROM_UNIXTIME(%d), FROM_UNIXTIME(%d));
+        VALUES ('%s',%d, '%s', '%s','%s', %d, %d);
         ]],
         msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime)
     local ret = dbopt.log:query(sql)
