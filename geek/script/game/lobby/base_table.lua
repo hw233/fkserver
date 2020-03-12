@@ -162,6 +162,10 @@ end
 
 function base_table:request_dismiss(player)
 	local timer = timer_manager:new_timer(dismiss_timeout,function()
+		if not self.dismiss_request then
+			return
+		end
+
 		self:foreach(function(p)
 			if self.dismiss_request.commissions[p.chair_id] == nil then
 				self:commit_dismiss(p,false)
