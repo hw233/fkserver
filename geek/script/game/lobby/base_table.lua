@@ -232,12 +232,15 @@ function base_table:commit_dismiss(player,agree)
 		agree = agree and agree == true,
 	})
 
-	if table.logic_and(self.players,function(p) return not p.online or commissions[p.chair_id] ~= nil end)
-	then
-		self.dismiss_request.timer:kill()
-		self.dismiss_request.timer = nil
-		self.dismiss_request = nil
+	if not table.logic_and(self.players,function(p) 
+		return not p.online or commissions[p.chair_id] ~= nil end
+	) then
+		return
 	end
+
+	self.dismiss_request.timer:kill()
+	self.dismiss_request.timer = nil
+	self.dismiss_request = nil
 
 	local succ = table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
 	if not succ then
