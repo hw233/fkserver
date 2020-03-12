@@ -653,28 +653,36 @@ function maajan_table:on_action_after_mo_pai(evt)
     local self_waiting_actions = self.waiting_player_actions[player.chair_id] and self.waiting_player_actions[player.chair_id].actions
     local waiting_an_gang_tiles = self_waiting_actions[ACTION.AN_GANG] or self_waiting_actions[ACTION.FREE_AN_GANG]
 
-
     self.waiting_player_actions = {}--只能写在此处，do_mo_pai有可能会覆盖此值
     
     if do_action == ACTION.BA_GANG or do_action == ACTION.FREE_BA_GANG then
-        local qiang_gang_hu_actions = {}
+        local qiang_gang_hu = {}
         self:foreach_except(player,function(p)
             local actions = self:get_actions(p,nil,tile)
             if actions[ACTION.HU] then
-                actions[ACTION.MEM] = nil
-                actions[ACTION.MEN_ZI_MO] = nil
-                actions[ACTION.TING] = nil
-                qiang_gang_hu_actions[p.chair_id] = actions
+                qiang_gang_hu[p.chair_id] = true
             end
         end)
 
-        if table.nums(qiang_gang_hu_actions) == 0 then
+        self:log_game_action(player,do_action,tile)
+        if table.nums(qiang_gang_hu) == 0 then
             self:adjust_shou_pai(player,do_action,tile)
-            self:log_game_action(player,do_action,tile)
             self:jump_to_player_index(player)
             self:do_mo_pai()
         else
-            self:wait_qiang_gang_hu(qiang_gang_hu_actions)
+            for chair,_ in pairs(qiang_gang_hu) do
+                local p = self.players[chair]
+                self:log_game_action(p,do_action,tile)
+                p.hu = {
+                    time = os.time(),
+                    tile = tile,
+                    types = mj_util.hu(player.pai,tile),
+                    whoee = player.chair_id,
+                }
+                self:broadcast_player_hu(p,do_action)
+            end
+            
+            self:on_game_balance()
         end
     end
 
@@ -2481,9 +2489,10 @@ end
 
 function maajan_table:reconnect(player)
 	log.info("player reconnect : ".. player.chair_id)
-    base_table.reconnect(self,player)
+    
     player.deposit = nil
     self:send_data_to_enter_player(player,true)
+    base_table.reconnect(self,player)
 end
 
 --获取当前出牌玩家手上花牌的位置
@@ -2507,9 +2516,10 @@ function maajan_table:can_hu(player,in_pai)
     end
 
     local hu_type = self:max_hu_score(hu_types)
-    local gang = table.sum(player.pai.ming_pai,function(s) 
+    local gang = table.sum(player.pai.ming_pai,function(s)
         return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
-                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG) and 1 or 0
+                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG or 
+                s.type == SECTION_TYPE.FREE_AN_GANG) and 1 or 0
     end)
 
     local chu_pai_player = self:chu_pai_player()

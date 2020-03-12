@@ -135,6 +135,31 @@ function base_table:get_free_chair_id()
 	return nil
 end
 
+function base_table:on_reconnect(player)
+	if not self.dismiss_request then return end
+
+	local status = {}
+	for chair,is in pairs(self.dismiss_request.commissions) do
+		local p = self.players[chair]
+		table.insert(status,{
+			guid = p.guid,
+			chair_id = chair,
+			agree = is,
+		})
+	end
+
+	local requester = self.dismiss_request.requester
+
+	send2client_pb(player,"SC_DismissTableRequestInfo",{
+		result = enum.ERROR_NONE,
+		request_guid = requester.guid,
+		request_chair_id = requester.chair_id,
+		datetime = os.time(),
+		timeout = dismiss_timeout,
+		status = status,
+	})
+end
+
 function base_table:request_dismiss(player)
 	local timer = timer_manager:new_timer(dismiss_timeout,function()
 		self:foreach(function(p)
@@ -218,20 +243,20 @@ function base_table:commit_dismiss(player,agree)
 		return enum.ERROR_NONE
 	end
 
-	self:broadcast2client("SC_DismissTable",{
-		success = true,
-	})
-
-	self.dismiss_request.timer:kill()
-	self.dismiss_request.timer = nil
-	self.dismiss_request = nil
-
 	self:on_final_game_overed()
 	
 	local result = self:dismiss()
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		self:broadcast2client("SC_DismissTable",{
+			success = result == enum.ERROR_NONE,
+		})
+
 		return result
 	end
+
+	self:broadcast2client("SC_DismissTable",{
+			success = true,
+		})
 
 	self:foreach(function(p)
 		p:forced_exit()
@@ -964,6 +989,7 @@ function base_table:reconnect(player)
 	player.online = true
 	log.info("set player[%d] in_game true" ,player.guid)
 	player.in_game = true
+	self:on_reconnect(player)
 end
 
 -- 检查是否可准备
