@@ -2481,16 +2481,18 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     end
 
     send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+
     if is_reconnect then
         if self.dealer then
             send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         end
 
-        local has_waiting_ting = false
-        for _,act in pairs(self.waiting_player_actions) do
-            has_waiting_ting = has_waiting_ting or (act.actions[ACTION.TING] ~= nil)
-        end
-        if self.chu_pai_player_index == player.chair_id and not has_waiting_ting then
+        local has_waiting_ting = table.logic_or(self.waiting_player_actions or {},function(act)
+            return act.actions[ACTION.TING] ~= nil
+        end)
+
+        if self.chu_pai_player_index == player.chair_id and
+            (not has_waiting_ting or self.zhuang ~= player.chair_id) then
             send2client_pb(player,"SC_Maajan_Draw",{
                 chair_id = player.chair_id,
                 tile = player.mo_pai,
