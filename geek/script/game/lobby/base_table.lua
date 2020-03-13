@@ -28,7 +28,7 @@ local util = require "util"
 
 local reddb = redisopt.default
 
-local dismiss_timeout = 30
+local dismiss_timeout = 60
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
 -- 奖池
@@ -149,13 +149,14 @@ function base_table:on_reconnect(player)
 	end
 
 	local requester = self.dismiss_request.requester
+	local timer = self.dismiss_request.timer
 
 	send2client_pb(player,"SC_DismissTableRequestInfo",{
 		result = enum.ERROR_NONE,
 		request_guid = requester.guid,
 		request_chair_id = requester.chair_id,
 		datetime = os.time(),
-		timeout = dismiss_timeout,
+		timeout = timer and math.ceil(timer.remainder) or 0,
 		status = status,
 	})
 end
@@ -168,7 +169,7 @@ function base_table:request_dismiss(player)
 			end
 
 			if self.dismiss_request.commissions[p.chair_id] == nil then
-				self:commit_dismiss(p,false)
+				self:commit_dismiss(p,true)
 			end
 		end)
 	end)
