@@ -218,7 +218,7 @@ end
 function base_table:commit_dismiss(player,agree)
 	if not self.dismiss_request then
 		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
-		return
+		return enum.ERROR_CLUB_OP_EXPIRE
 	end
 
 	local commissions = self.dismiss_request.commissions
@@ -229,26 +229,28 @@ function base_table:commit_dismiss(player,agree)
 	self:broadcast2client("SC_DismissTableCommit",{
 		chair_id = player.chair_id,
 		guid = player.guid,
-		agree = agree and agree == true,
+		agree = agree,
 	})
 
-	if not table.logic_and(self.players,function(p) 
-		return not p.online or commissions[p.chair_id] ~= nil end
-	) then
+	if not agree then
+		self:broadcast2client("SC_DismissTable",{
+			success = false,
+		})
+
+		self.dismiss_request.timer:kill()
+		self.dismiss_request.timer = nil
+		self.dismiss_request = nil
+		return
+	end
+
+	local succ = table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
+	if not succ then
 		return
 	end
 
 	self.dismiss_request.timer:kill()
 	self.dismiss_request.timer = nil
 	self.dismiss_request = nil
-
-	local succ = table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
-	if not succ then
-		self:broadcast2client("SC_DismissTable",{
-			success = false,
-		})
-		return enum.ERROR_NONE
-	end
 
 	self:on_final_game_overed()
 	
@@ -258,7 +260,7 @@ function base_table:commit_dismiss(player,agree)
 			success = result == enum.ERROR_NONE,
 		})
 
-		return result
+		return
 	end
 
 	self:broadcast2client("SC_DismissTable",{
@@ -268,8 +270,6 @@ function base_table:commit_dismiss(player,agree)
 	self:foreach(function(p)
 		p:forced_exit()
 	end)
-
-	return enum.ERROR_NONE
 end
 
 

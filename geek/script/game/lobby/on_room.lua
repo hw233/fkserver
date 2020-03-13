@@ -214,7 +214,7 @@ function on_cs_dismiss_table_commit(msg,guid)
 	end
 
 	local result = g_room:commit_dismiss_private_table(player,msg.agree)
-	if result ~= enum.ERROR_NONE then
+	if result ~= nil then
 		send2client_pb(guid,"SC_DismissTableCommit",{
 			result = result,
 		})
