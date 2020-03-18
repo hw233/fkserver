@@ -25,7 +25,6 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
 local club_commission = require "game.club.club_commission"
-local club_template_conf = require "game.club.club_template_conf"
 local club_team_template_conf = require "game.club.club_team_template_conf"
 local util = require "util"
 local enum = require "pb_enums"
@@ -1167,12 +1166,19 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
         return
     end
 
+    local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+        source_id = source_guid,
+        target_id = target_club_id,
+        type = 2,
+        operator = guid,
+    })
+
     -- reddb:multi()
 
     if not p:incr_money({
         money_id = money_id,
         money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB) then
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1182,7 +1188,7 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
     if not club:incr_money({
         money_id = money_id,
         money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB) then
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1260,12 +1266,19 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
         return
     end
 
+    local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+        source_id = source_club_id,
+        target_id = target_club_id,
+        type = 3,
+        operator = guid,
+    })
+
     -- reddb:multi()
 
     if not sourceclub:incr_money({
         money_id = money_id,
         money = -money,
-    },why) then
+    },why,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1275,7 +1288,7 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
     if not targetclub:incr_money({
         money_id = money_id,
         money = money,
-    },why) then
+    },why,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1348,12 +1361,19 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
         return
     end
 
+    local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+        source_id = source_club_id,
+        target_id = target_guid,
+        type = 1,
+        operator = guid,
+    })
+
     -- reddb:multi()
 
     if not p:incr_money({
         money_id = money_id,
         money = money,
-    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB) then
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1363,7 +1383,7 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
     if not club:incr_money({
         money_id = money_id,
         money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB) then
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,recharge_id) then
         -- reddb:discard()
         res.result = enum.ERROR_CLUB_UNKOWN
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)

@@ -124,4 +124,24 @@ function on_sd_log_club_commission(msg)
     end
 end
 
+function on_sd_log_recharge(msg)
+    local sqls = {
+        string.format("INSERT INTO t_log_recharge(source_id,target_id,type,operator,created_time) VALUES(%d,%d,%d,%d,%d);",
+                msg.source_id,msg.target_id,msg.type,msg.operator,os.time()),
+        string.format("SELECT LAST_INSERT_ID() AS id;")
+    }
+
+    dump(sqls)
+    local trans = dbopt.log:transaction()
+    local res = trans:execute(table.concat(sqls,"\n"))
+    if res.errno then
+        log.error("on_sd_log_club_commission insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
+        return
+    end
+
+    dump(res)
+
+    return res[2][1].id
+end
+
 

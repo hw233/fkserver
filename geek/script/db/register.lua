@@ -95,6 +95,8 @@ register_dispatcher("SD_ReqQueryPlayerBonus",on_sd_query_bonus_hongbao)
 register_dispatcher("SD_QueryPlayerCurrentBonusLimitInfo",on_sd_query_bonus_activity_limit_info)
 register_dispatcher("SD_UpdatePlayerCurrentBonusLimitInfo",on_sd_update_bonus_activity_limit_info)
 
+register_dispatcher("SD_LogRecharge",on_sd_log_recharge)
+
 register_dispatcher("SD_CreateClub",on_sd_create_club)
 register_dispatcher("SD_DismissClub",on_sd_dismiss_club)
 register_dispatcher("SD_JoinClub",on_sd_join_club)

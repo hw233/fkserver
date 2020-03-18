@@ -126,7 +126,7 @@ function on_sd_add_club_member(msg)
     dbopt.game:query("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_id,guid)
 end
 
-local function incr_club_money(club,money_id,money,why)
+local function incr_club_money(club,money_id,money,why,why_ext)
     local sqls = {
         "SET AUTOCOMMIT = 0;",
         "BEGIN;",
@@ -150,8 +150,14 @@ local function incr_club_money(club,money_id,money,why)
     local newmoney = res[5] and res[5][1] and res[5][1].money or nil
 
     if oldmoney and newmoney then
-        res = dbopt.log:query("INSERT INTO log.t_log_money_club(club,money_id,old_money,new_money,opt_type) VALUES(%d,%d,%d,%d,%d)",
-            club,money_id,oldmoney,newmoney,why)
+        res = dbopt.log:execute("INSERT INTO t_log_money_club SET $FIELD$;", {
+            club = club,
+            money_id = money_id,
+            old_money = oldmoney,
+            new_money = newmoney,
+            opt_type = why,
+            opt_ext = why_ext,
+        })
         if res.errno then
             log.error("incr_club_money insert log.t_log_money_club error,errno:%d,err:%s",res.errno,res.err)
             return
@@ -161,11 +167,11 @@ local function incr_club_money(club,money_id,money,why)
 	return oldmoney,newmoney
 end
 
-function on_sd_change_club_money(items,why)
+function on_sd_change_club_money(items,why,why_ext)
     dump(items)
 	local changes = {}
 	for _,item in pairs(items) do
-		local oldmoney,newmoney = incr_club_money(item.club,item.money_id,item.money,why)
+		local oldmoney,newmoney = incr_club_money(item.club,item.money_id,item.money,why,why_ext)
 		table.insert(changes,{
 			oldmoney = oldmoney,
 			newmoney = newmoney,

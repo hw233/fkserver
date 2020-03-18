@@ -475,7 +475,7 @@ function base_club:exchange_commission(count)
     return enum.ERROR_NONE
 end
 
-function base_club:incr_money(item,why)
+function base_club:incr_money(item,why,why_ext)
     dump(item)
 	local oldmoney = tonumber(club_money[self.id][item.money_id]) or 0
 	log.info("base_club:incr_money club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
@@ -490,7 +490,7 @@ function base_club:incr_money(item,why)
 		club = self.id,
 		money = item.money,
 		money_id = item.money_id,
-	}},why)
+	}},why,why_ext)
 
 	if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
 		log.error("db incr_money error,club[%d] money_id[%d] oldmoney[%d]",self.id,item.money_id,oldmoney)
