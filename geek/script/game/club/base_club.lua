@@ -353,6 +353,14 @@ function base_club:create_table_template(game_id,desc,rule)
     club_template_conf[self.id][id] = nil
     club_template[self.id] = nil
     local _ = table_template[id]
+
+    channel.publish("db.?","msg","SD_CreateClubTemplate",{
+        club_id = self.id,
+        rule = json.encode(rule),
+        description = desc,
+        game_id = game_id,
+        id = id,
+    })
     
     return enum.ERROR_NONE,info
 end
@@ -375,6 +383,10 @@ function base_club:remove_table_template(template_id)
     table_template[template_id] = nil
     club_template[self.id][template_id] = nil
     club_template_conf[self.id][template_id] = nil
+
+    channel.publish("db.?","msg","SD_RemoveClubTemplate",{
+        id = template_id,
+    })
 
     return enum.ERROR_NONE
 end
@@ -418,6 +430,14 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
     table_template[template_id] = nil
     club_template[self.id][template_id] = nil
 
+    channel.publish("db.?","msg","SD_EditClubTemplate",{
+        club_id = self.id,
+        rule = json.encode(rule),
+        description = desc,
+        game_id = game_id,
+        id = template_id,
+    })
+
     return enum.ERROR_NONE,info
 end
 
@@ -446,6 +466,7 @@ function base_club:incr_commission(money,round_id)
     club_commission[self.id] = nil
 
     channel.call("db.?","msg","SD_LogClubCommission",{
+        parent = self.parent,
         club = self.id,
         commission = money,
         round_id = round_id or "",

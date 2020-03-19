@@ -116,8 +116,16 @@ function on_ld_log_login(msg)
     end
 end
 
+function on_sd_log_logout(msg)
+
+end
+
 function on_sd_log_club_commission(msg)
-    local res = dbopt.log:query("INSERT INTO t_log_commission(club,money_id,commission,round_id) VALUES(%d,%d,%d,'%s')",msg.club,msg.money_id,msg.commission,msg.round_id)
+    local parent = msg.parent
+    local club = msg.club
+    local commission = msg.commission
+    local res = dbopt.log:query("INSERT INTO t_log_commission(club,money_id,commission,round_id) VALUES(%d,%d,%d,'%s')",
+        club,msg.money_id,commission,msg.round_id)
     if res.errno then
         log.error("on_sd_log_club_commission insert into t_log_commission info throw exception.[%d],[%s]",res.errno,res.err)
         return
@@ -142,6 +150,25 @@ function on_sd_log_recharge(msg)
     dump(res)
 
     return res[2][1].id
+end
+
+function on_sd_log_club_commission_contribution(msg)
+    local parent = msg.parent
+    local club = msg.club
+    local commission = msg.commission
+    local template =  msg.template
+    if not parent or parent == 0 then
+        return
+    end
+
+    local date_timestamp = math.floor(os.time() / 86400) * 86400
+    local res = dbopt.log:query([[INSERT INTO t_log_club_commission_daily_contribute(club_parent,club_son,commission,template,date)
+        VALUES(%d,%d,%d,%d,%d)
+        ON DUPLICATE KEY UPDATE commission = commission + %d;]],
+        parent,club,commission,template,date_timestamp,commission)
+    if res.errno then
+        log.error("on_sd_log_club_commission INSERT INTO t_log_club_commission_daily_contribute errno:%d,errstr:%s.",res.errno,res.err)
+    end
 end
 
 

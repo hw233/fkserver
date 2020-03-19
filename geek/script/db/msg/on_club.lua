@@ -180,3 +180,32 @@ function on_sd_change_club_money(items,why,why_ext)
 
 	return changes
 end
+
+function on_sd_create_club_template(msg)
+    dump(msg)
+    local res = dbopt.game:query([[
+        INSERT INTO t_template(id,club,rule,description,game_id,created_time,status)
+        VALUES(%d,%d,'%s','%s',%d,%d,0);
+        ]],msg.id,msg.club_id,msg.rule,msg.description,msg.game_id,os.time())
+    if res.errno then
+        log.error("on_sd_create_club_template INSERT template errno:%d,errstr:%s",res.errno,res.err)
+    end
+end
+
+function on_sd_remove_club_template(msg)
+    dump(msg)
+    local res = dbopt.game:query([[UPDATE t_template SET status = 1 WHERE id = %d;]],msg.id)
+    if res.errno then
+        log.error("on_sd_remove_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)
+    end
+end
+
+function on_sd_edit_club_template(msg)
+    local res = dbopt.game:query([[
+        UPDATE t_template SET club = %d,rule = '%s',description = '%s',game_id = %d
+        WHERE id = %d;
+        ]],msg.club_id,msg.rule,msg.description,msg.game_id,msg.id)
+    if res.errno then
+        log.error("on_sd_edit_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)
+    end
+end

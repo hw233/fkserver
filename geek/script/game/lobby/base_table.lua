@@ -369,6 +369,21 @@ function base_table:do_commission(taxes,commission_root)
 				local commission = math.floor(tax * (commission_rate - last_rate))
 				last_rate = commission_rate
 				commissions[club] = (commissions[club] or 0) + commission
+
+				if club.parent ~= 0 then
+					local parent = base_clubs[club.parent]
+					local parent_rate = calc_club_template_commission_rate(parent,private_table.template)
+					local comission_contribution = math.floor(tax * (parent_rate - commission_rate))
+					channel.publish("db.?","msg","SD_LogClubCommissionContributuion",{
+						parent = club.parent,
+						club = club_id,
+						commission = comission_contribution,
+						template = private_table.template,
+					})
+
+					log.info("club:%d,parent:%d,commission:%d",club_id,club.parent,comission_contribution)
+				end
+
 				club_id = club.parent
 			end
 		end
