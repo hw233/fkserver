@@ -520,6 +520,15 @@ function table.filter(t, fn)
     end
 end
 
+function table.select(t,fn)
+    local tb = {}
+    for k,v in pairs(t) do
+        if fn(v,k) then tb[k] = v end
+    end
+
+    return tb
+end
+
 function table.unique(t, bArray)
     local check = {}
     local n = {}
