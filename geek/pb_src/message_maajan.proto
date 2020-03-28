@@ -105,6 +105,10 @@ enum HU_TYPE{
 	ZHE_REN_JING_JI			= 100;	//责任金鸡
 	ZHE_REN_JING_WU_GU		= 101;	//责任金乌骨
 	GANG_SHANG_PAO			= 102;	//杠上炮
+	JIANG_DUI				= 103;  //将对
+	JIANG_QI_DUI			= 104;	//将七对
+	QUAN_YAO_JIU			= 105;	//全幺九
+	DAI_GOU 				= 106;	//带根
 }
 
 
@@ -129,6 +133,8 @@ enum ACTION{
 	ACTION_MEN_ZI_MO = 0x10000;
 	ACTION_FREE_BA_GANG = 0x20000;
 	ACTION_FREE_AN_GANG = 0x40000;
+	ACTION_DING_QUE = 0x80000;
+	ACTION_HUAN_PAI = 0x100000;
 }
 
 enum SECTION_TYPE {
@@ -158,7 +164,15 @@ enum FSM_STATE {
 	WAIT_QIANG_GANG_HU			= 8;
 	GAME_BALANCE			= 15;	//结算
 	GAME_CLOSE				= 16;	//关闭游戏
+	HUAN_PAI				= 17;	//换牌
+	DING_QUE				= 18;	//定缺
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
+}
+
+enum HUAN_PAI_ORDER{
+	CLOCK_WISE = 0;				//顺时针
+	COUNTER_CLOCK_WISE = 1; 	//逆时针
+	DIAGONAL = 2;				//对角换
 }
 
 message Maajan_Tiles {
@@ -262,6 +276,7 @@ message Maajan_Balance_Score{
 	int32 type = 2;
 	int32 tile = 3;
 	int32 count = 4;
+	int32 fan = 5;
 }
 
 message Maajan_Balance_Item{
@@ -366,4 +381,73 @@ message TingTiles{
 message SC_WaitingTing{
 	enum MsgID { Nil = 0; ID = 23122;}
 	repeated TingTiles ting = 1;
+}
+
+message HuanPaiStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_AllowHuanPai{
+	enum MsgID { Nil = 0; ID = 23123;}
+}
+
+message CS_HuanPai{
+	enum MsgID { Nil = 0; ID = 23124;}
+	repeated int32 tiles = 1;
+}
+
+message SC_HuanPai{
+	enum MsgID { Nil = 0; ID = 23125;}
+	int32 result = 1;
+	int32 chair_id = 2;
+	bool  done = 3;
+}
+
+message SC_HuanPaiCommit{
+	enum MsgID { Nil = 0; ID = 23126;}
+	repeated int32 new_shou_pai = 1;
+	int32 huan_order = 2;
+}
+
+message SC_HuanPaiStatus{
+	enum MsgID { Nil = 0; ID = 23127;}
+	repeated int32 self_choice = 1;
+	repeated HuanPaiStatus status = 2;
+}
+
+message DingQueInfo{
+	int32 chair_id = 1;
+	int32 men = 2;
+}
+
+message DingQueStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_AllowDingQue{
+	enum MsgID { Nil = 0; ID = 23128;}
+}
+
+message CS_DingQue{
+	enum MsgID { Nil = 0; ID = 23129;}
+	int32 men = 1;
+}
+
+message SC_DingQue{
+	enum MsgID { Nil = 0; ID = 23130;}
+	int32 result = 1;
+	DingQueStatus status = 2;
+}
+
+message SC_DingQueStatus{
+	enum MsgID { Nil = 0; ID = 23131;}
+	repeated DingQueStatus que_status = 1;
+	repeated DingQueInfo   que_info = 2;
+}
+
+message SC_DingQueCommit{
+	enum MsgID { Nil = 0; ID = 23132;}
+	repeated DingQueInfo ding_ques = 1;
 }

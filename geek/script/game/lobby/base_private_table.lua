@@ -13,8 +13,7 @@ setmetatable(private_table,{
         
         tb = redismetadata.privatetable.info:decode(tb)
 
-        -- t[tid] = table.nums(tb) > 0 and tb or nil
-        return tb
+        return table.nums(tb) > 0 and tb or nil
     end,
 })
 

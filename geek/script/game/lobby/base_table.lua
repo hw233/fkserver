@@ -1153,9 +1153,10 @@ function base_table:cost_private_fee()
 	end
 end
 
-function base_table:on_started()
+function base_table:on_started(player_count)
 	if not self.private_id then return end
 
+	self.chair_count = player_count
 	self.cur_round = (self.cur_round or 0) + 1
 
 	local privatetb = base_private_table[self.private_id]
@@ -1254,7 +1255,7 @@ function base_table:start(player_count)
 
 	self:broadcast2client("SC_ShowTax", self.notify_msg)
 
-	self:on_started()
+	self:on_started(player_count)
 	return ret
 end
 

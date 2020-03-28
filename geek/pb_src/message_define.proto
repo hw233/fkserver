@@ -1503,3 +1503,58 @@ message SC_RED_DOT{
 	enum MsgID { Nil = 0; ID = 1200;}
 	repeated RED_DOT red_dots = 1;
 }
+
+//游戏内部玩家发起投票请求
+message CS_VoteTableReq{
+	enum MsgID{Nil = 0; ID = 1201;}
+	int32 	table_id = 1;
+	string 	vote_type = 2;
+}
+
+// 收到投票请求
+message SC_VoteTableReq{
+	enum MsgID{Nil = 0; ID = 1202;}
+	int32 result = 1;
+	int32 vote_type = 2;
+	int32 request_guid = 3;
+	int32 request_chair_id = 4;
+	int32 datetime = 5;
+	int32 timeout = 6;
+}
+
+message VoteCommitStatus{
+	int32 guid = 1;
+	int32 chair_id = 2;
+	bool  agree = 3;
+}
+
+// 重连时的投票详情
+message SC_VoteTableRequestInfo{
+	enum MsgID { Nil = 0; ID = 1203;}
+	int32 vote_type = 1;
+	int32 request_guid = 2; 
+	int32 request_chair_id = 3;
+	int32 datetime = 4;
+	int32 timeout = 5;
+	repeated VoteCommitStatus status= 6;
+}
+
+//同意
+message CS_VoteTableCommit{
+	enum MsgID{Nil = 0; ID = 1204;}
+	bool agree = 1;
+}
+
+message SC_VoteTableCommit{
+	enum MsgID { Nil = 0; ID = 1205;}
+	int32 result = 1;
+	int32 chair_id = 2;
+	int32 guid = 3;
+	bool  agree = 4;
+}
+
+//快速开始结果
+message SC_VoteTable{
+	enum MsgID{Nil = 0; ID = 1206;}
+	bool success = 1;
+}
