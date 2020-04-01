@@ -459,22 +459,17 @@ message MaajanXueZhanBalanceType{
 }
 
 message MaajanXueZhanBlanacePlayer{
-	enum BalanceStatus{
-		Nil = 0;
-		Hu = 1;
-		JiaoPai = 2;
-		WeiJiao = 3;
-	}
 	int32 chair_id 			= 1;
-	bool  hu 				= 2;	//是否胡了
+	int32 hu 				= 2;	//是否胡了
 	int32 hu_fan	 		= 3; 	//番数
 	int32 total_score 		= 4;
 	int32 round_score 		= 5;
 	repeated MaajanXueZhanBalanceType  items = 6;
-	BalanceStatus 			status = 7;
+	int32 status = 7;
 	int32 hu_tile 			= 8;
 	int32 round_money 		= 9;
 	int32 total_money  		= 10;
+	int32 hu_index  		= 11;	
 }
 
 //结算
@@ -500,8 +495,3 @@ message SC_TingTips{
 	repeated TingTips ting = 1;
 }
 
-// 操作限时回复
-message SC_TimeOutNotify{
-	enum MsgID{Nil = 0; ID = 1209;}
-	int32 timeout = 2;
-}

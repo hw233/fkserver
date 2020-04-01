@@ -1023,52 +1023,35 @@ end
 
 function maajan_table:get_max_fan()
     local fan_opt = self.conf.conf.fan.max_option
-    return self.room_.conf.private_conf.fan.fan_option[fan_opt]
+    return self.room_.conf.private_conf.fan.max_option[fan_opt]
 end
 
 function maajan_table:do_balance()
-    local typefans,scores = self:game_balance()
-    local max_fan = self:get_max_fan() or 3
-    local fans = table.agg(typefans,{},function(tb,v,chair)
-        local fan = table.sum(v,function(t) return t.fan * t.count end)
-        tb[chair] = fan > max_fan and max_fan or fan
-        return tb
-    end)
-
-    self:foreach(function(p)
-        if not p.hu then return end
-
-        local chair_id = p.chair_id
-        local fan = fans[chair_id]
-        local fan_score = 2 ^ math.abs(fan)
-        if not p.hu.zi_mo then
-            local whoee = p.hu.whoee
-            scores[whoee] = (scores[whoee] or 0) - fan_score
-            scores[chair_id] = (scores[chair_id] or 0) + fan_score
-            return
-        end
-
-        if self.conf.conf.play.zi_mo_jia_di then
-            fan_score = fan_score + 1
-        end
-
-        self:foreach_except(p,function(pi)
-            if pi.hu and pi.hu.time <= p.hu.time then return end
-
-            local chair_i = pi.chair_id
-            scores[chair_i] = (scores[chair_i] or 0) - fan_score
-            scores[chair_id] = (scores[chair_id] or 0) + fan_score
-        end)
-    end)
-
+    local typefans,fanscores = self:game_balance()
     local msg = {
         players = {},
         player_balance = {},
     }
 
+    local ps = table.agg(self.players,{},function(tb,p,chair)
+        table.insert(tb,p)
+        return tb
+    end)
+
+    table.sort(ps,function(l,r)
+        if l.hu and not r.hu then return true end
+        if not l.hu and r.hu then return false end
+        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        return false
+    end)
+
+    table.foreach(ps,function(p,i) 
+        if p.hu then p.hu.index = i end
+    end)
+
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
-        local p_score = (scores[chair_id] or 0)
+        local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         local ming_pai = table.values(p.pai.ming_pai)
         local desk_pai = table.values(p.pai.desk_tiles)
@@ -1100,8 +1083,10 @@ function maajan_table:do_balance()
             round_score = p_score,
             items = typefans[chair_id],
             hu_tile = p.hu and p.hu.tile or nil,
-            hu_fan = fans[chair_id],
-            hu = p.hu ~= nil,
+            hu_fan = fanscores[chair_id].fan,
+            hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
+            status = p.hu and 1 or (p.jiao and 2 or 0),
+            hu_index = p.hu and p.hu.index or nil,
         })
 
         local win_money = self:calc_score_money(p_score)
@@ -1111,7 +1096,7 @@ function maajan_table:do_balance()
 
     dump(msg)
 
-    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+    chair_money = self:balance(chair_money,enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN)
     for _,balance in pairs(msg.player_balance) do
         local p = self.players[balance.chair_id]
         local p_log = self.game_log.players[balance.chair_id]
@@ -1369,59 +1354,56 @@ function maajan_table:get_hu_items(hu)
     return self:max_hu_score(hu.types).types
 end
 
-function maajan_table:calculate_hu(p)
+function maajan_table:calculate_hu(hu)
     local types = {}
 
-    if p.hu then
-        local hu = p.hu
-        if hu.qiang_gang then
-            local t = HU_TYPE.QIANG_GANG_HU
+    if hu.qiang_gang then
+        local t = HU_TYPE.QIANG_GANG_HU
+        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    end
+
+    if hu.gang_hua then
+        local t = HU_TYPE.GANG_SHANG_HUA
+        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    end
+
+    if self.conf.conf.play.tian_di_hu then
+        if hu.tian_hu then
+            local t = HU_TYPE.TIAN_HU
             table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
         end
 
-        if hu.gang_hua then
-            local t = HU_TYPE.GANG_SHANG_HUA
+        if hu.di_hu then
+            local t = HU_TYPE.DI_HU
             table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
         end
+    end
 
-        if self.conf.conf.play.tian_di_hu then
-            if hu.tian_hu then
-                local t = HU_TYPE.TIAN_HU
-                table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    if hu.hai_di then
+        local t = HU_TYPE.HAI_DI_LAO_YUE
+        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    end
+
+    if hu.zi_mo and self.conf.conf.play.zi_mo_jia_fan then
+        local t = HU_TYPE.ZI_MO
+        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    end
+
+    if hu.gang_pao then
+        local t = HU_TYPE.GANG_SHANG_PAO
+        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+    end
+
+    local ts = self:get_hu_items(hu)
+    for _,t in pairs(ts) do
+        repeat
+            if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.conf.conf.play.yao_jiu) or
+                (t.type == HU_TYPE.MEN_QING and not self.conf.conf.play.men_qing) then
+                break
             end
 
-            if hu.di_hu then
-                local t = HU_TYPE.DI_HU
-                table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-            end
-        end
-
-        if hu.hai_di then
-            local t = HU_TYPE.HAI_DI_LAO_YUE
-            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-        end
-
-        if hu.zi_mo and self.conf.conf.play.zi_mo_jia_fan then
-            local t = HU_TYPE.ZI_MO
-            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-        end
-
-        if hu.gang_pao then
-            local t = HU_TYPE.GANG_SHANG_PAO
-            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-        end
-
-        local ts = self:get_hu_items(hu)
-        for _,t in pairs(ts) do
-            repeat
-                if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.conf.conf.play.yao_jiu) or
-                    (t.type == HU_TYPE.MEN_QING and not self.conf.conf.play.men_qing) then
-                    break
-                end
-
-                table.insert(types,{type = t.type,fan = t.fan,count = t.count})
-            until true
-        end
+            table.insert(types,{type = t.type,fan = t.fan,count = t.count})
+        until true
     end
 
     return types
@@ -1473,22 +1455,33 @@ function maajan_table:calculate_gang(p)
     return fans,scores
 end
 
-function maajan_table:calculate_wei_hu(p)
-    local types = {}
-    local hu_count = table.sum(self.players,function(pi) return pi.hu and 1 or 0 end)
-    if hu_count == 0 then
-        if p.jiao then
-            self:foreach_except(p,function(pi)
-                if not (pi.jiao or pi.hu) then
-                    table.insert(table.get(types,p.chair_id,{
-                        types = {}
-                    }).types,{type = HU_TYPE.JIAO_PAI,count = 1})
-                end
-            end)
-        end
+function maajan_table:calculate_jiao(p)
+    if not p.jiao then return end
+
+    local jiao_tiles = p.jiao.tiles
+    if table.nums(jiao_tiles) == 0 then 
+        return {} 
     end
 
-    return types
+    local type_fans = {}
+    for tile,_ in pairs(jiao_tiles) do
+        local hu = {
+            types = mj_util.hu(p.pai,tile),
+        }
+        dump(hu)
+        local hu_fans = self:calculate_hu(hu)
+        dump(hu_fans)
+        local fan = table.sum(hu_fans,function(t) return (t.count or 1) * (t.fan or 0) end)
+        table.insert(type_fans,{types = hu_fans,hu = hu,fan = fan,tile = tile})
+    end
+
+    if self.conf.conf.play.cha_da_jao then
+        table.sort(type_fans,function(l,r) return l.fan > r.fan end)
+    elseif self.conf.conf.play.cha_xiao_jao then
+        table.sort(type_fans,function(l,r) return l.fan < r.fan end)
+    end
+
+    return type_fans[1]
 end
 
 
@@ -1502,15 +1495,74 @@ function maajan_table:game_balance()
         end
     end)
 
-    local fans,scores = {},{}
+    local typefans,scores = {},{}
     self:foreach(function(p)
-        local hu = self:calculate_hu(p)
-        local gangfans,gangscores = self:calculate_gang(p)
-        fans[p.chair_id] = table.union(hu or {},gangfans or {})
+        local hu
+        if p.hu then
+            hu = self:calculate_hu(p.hu)
+        elseif p.jiao then
+            local jiao = self:calculate_jiao(p)
+            hu = jiao.types
+            p.jiao.tile = jiao.tile
+        end
+        
+        local gangfans,gangscores
+        if p.jiao or p.hu then
+            gangfans,gangscores = self:calculate_gang(p)
+        end
+
+        typefans[p.chair_id] = table.union(hu or {},gangfans or {})
         table.mergeto(scores,gangscores or {},function(l,r) return (l or 0) + (r or 0) end)
     end)
 
-    return fans,scores
+    local max_fan = self:get_max_fan() or 3
+    local fans = table.agg(typefans,{},function(tb,v,chair)
+        local fan = table.sum(v,function(t) return t.fan * t.count end)
+        tb[chair] = fan > max_fan and max_fan or fan
+        return tb
+    end)
+
+    self:foreach(function(p)
+        local chair_id = p.chair_id
+        local fan = fans[chair_id]
+        local fan_score = 2 ^ math.abs(fan)
+        if p.hu then
+            if not p.hu.zi_mo then
+                local whoee = p.hu.whoee
+                scores[whoee] = (scores[whoee] or 0) - fan_score
+                scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                return
+            end
+
+            if self.conf.conf.play.zi_mo_jia_di then
+                fan_score = fan_score + 1
+            end
+
+            self:foreach_except(p,function(pi)
+                if pi.hu and pi.hu.time <= p.hu.time then return end
+
+                local chair_i = pi.chair_id
+                scores[chair_i] = (scores[chair_i] or 0) - fan_score
+                scores[chair_id] = (scores[chair_id] or 0) + fan_score
+            end)
+        elseif p.jiao then
+            self:foreach_except(p,function(pi)
+                if p.hu or p.jiao then return end
+                local chair_i = pi.chair_id
+                scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                scores[chair_i] = (scores[chair_i] or 0) - fan_score
+            end)
+        end
+    end)
+
+    local fanscores = table.merge(fans,scores,function(fan,score) 
+        return {
+            fan = fan or 0,
+            score = score or 0,
+        } 
+    end)
+
+    return typefans,fanscores
 end
 
 function maajan_table:on_game_overed()
@@ -1595,8 +1647,8 @@ function maajan_table:ding_zhuang()
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
-        if not l.hu and not r.hu then return true end
-        return l.hu.time < r.hu.time
+        if l.hu and r.hu then return l.hu.time < r.hu.time end
+        return true
     end)
 
     self.zhuang = ps[1].chair_id
