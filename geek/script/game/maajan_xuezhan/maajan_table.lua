@@ -1048,6 +1048,10 @@ function maajan_table:do_balance()
             return
         end
 
+        if self.conf.conf.play.zi_mo_jia_di then
+            fan_score = fan_score + 1
+        end
+
         self:foreach_except(p,function(pi)
             if pi.hu and pi.hu.time <= p.hu.time then return end
 
