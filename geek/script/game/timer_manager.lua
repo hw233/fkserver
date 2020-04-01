@@ -138,7 +138,7 @@ function timer_manager:tick()
 end
 
 function timer_manager:calllater(s,func)
-	self:new_timer(s,func)
+	return self:new_timer(s,func)
 end
 
 return timer_manager

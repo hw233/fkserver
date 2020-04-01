@@ -41,6 +41,7 @@ define.ACTION = {
 	HUAN_PAI = pb.enum("ACTION","ACTION_HUAN_PAI"),
 	CLOSE = -1,
 	RECONNECT = -2,
+	TRUSTEE = -3,
 }
 
 local TILE_TYPE = {
@@ -217,107 +218,107 @@ local HU_TYPE = {
 define.HU_TYPE = HU_TYPE
 
 local HU_TYPE_INFO = {
-	[HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0},				--未胡
-	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 88},			--天胡
-	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 88},				--地胡
-	[HU_TYPE.REN_HU]				= {name = "REN_HU",score = 64},				--人胡
-	[HU_TYPE.TIAN_TING]				= {name = "TIAN_TING",score = 32},			--天听
-	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 10},			--清一色
-	[HU_TYPE.QUAN_HUA]				= {name = "QUAN_HUA",score = 16},				--全花
-	[HU_TYPE.ZI_YI_SE]				= {name = "ZI_YI_SE",score = 64},				--字一色
-	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {name = "MIAO_SHOU_HUI_CHUN",score = 8},	--妙手回春
-	[HU_TYPE.HAI_DI_LAO_YUE]		= {name = "HAI_DI_LAO_YUE",score = 8},		--海底捞月
-	[HU_TYPE.GANG_SHANG_HUA]		= {name = "GANG_SHANG_HUA",score = 1},		--杠上开花
-	[HU_TYPE.QUAN_QIU_REN]			= {name = "QUAN_QIU_REN",score = 8},			--全求人
-	[HU_TYPE.SHUANG_AN_GANG]		= {name = "SHUANG_AN_GANG",score = 6},		--双暗杠
-	[HU_TYPE.SHUANG_JIAN_KE]		= {name = "SHUANG_JIAN_KE",score = 6},		--双箭刻
-	[HU_TYPE.HUN_YI_SE]				= {name = "HUN_YI_SE",score = 6},				--混一色
-	[HU_TYPE.BU_QIU_REN]			= {name = "BU_QIU_REN",score = 4},			--不求人
-	[HU_TYPE.SHUANG_MING_GANG]		= {name = "SHUANG_MING_GANG",score = 4},		--双明杠
-	[HU_TYPE.HU_JUE_ZHANG]			= {name = "HU_JUE_ZHANG",score = 4},			--胡绝张
-	[HU_TYPE.JIAN_KE]				= {name = "JIAN_KE",score = 2},				--箭刻
-	[HU_TYPE.MEN_QING]				= {name = "MEN_QING",score = 2},				--门前清
-	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 3},				--暗杠
-	[HU_TYPE.DUAN_YAO]				= {name = "DUAN_YAO",score = 2},				--断幺
-	[HU_TYPE.SI_GUI_YI]				= {name = "SI_GUI_YI",score = 2},				--四归一
-	[HU_TYPE.PING_HU]				= {name = "PING_HU",score = 1},				--平胡
-	[HU_TYPE.SHUANG_AN_KE]			= {name = "SHUANG_AN_KE",score = 2},			--双暗刻
-	[HU_TYPE.SAN_AN_KE]				= {name = "SAN_AN_KE",score = 16},			--三暗刻
-	[HU_TYPE.SI_AN_KE]				= {name = "SI_AN_KE",score = 64},				--四暗刻
-	[HU_TYPE.BAO_TING]				= {name = "BAO_TING",score = 2},				--报听
-	[HU_TYPE.MEN_FENG_KE]			= {name = "MEN_FENG_KE",score = 2},			--门风刻
-	[HU_TYPE.QUAN_FENG_KE]			= {name = "QUAN_FENG_KE",score = 2},			--圈风刻
+	[HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0,fan = 0},				--未胡
+	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 3},			--天胡
+	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 2},				--地胡
+	[HU_TYPE.REN_HU]				= {name = "REN_HU",score = 0,fan = 0},				--人胡
+	[HU_TYPE.TIAN_TING]				= {name = "TIAN_TING",score = 0,fan = 0},			--天听
+	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 2},			--清一色
+	[HU_TYPE.QUAN_HUA]				= {name = "QUAN_HUA",score = 0,fan = 0},				--全花
+	[HU_TYPE.ZI_YI_SE]				= {name = "ZI_YI_SE",score = 0,fan = 0},				--字一色
+	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {name = "MIAO_SHOU_HUI_CHUN",score = 0,fan = 0},	--妙手回春
+	[HU_TYPE.HAI_DI_LAO_YUE]		= {name = "HAI_DI_LAO_YUE",score = 0,fan = 1},		--海底捞月
+	[HU_TYPE.GANG_SHANG_HUA]		= {name = "GANG_SHANG_HUA",score = 0,fan = 1},		--杠上开花
+	[HU_TYPE.QUAN_QIU_REN]			= {name = "QUAN_QIU_REN",score = 0,fan = 0},			--全求人
+	[HU_TYPE.SHUANG_AN_GANG]		= {name = "SHUANG_AN_GANG",score = 0,fan = 0},		--双暗杠
+	[HU_TYPE.SHUANG_JIAN_KE]		= {name = "SHUANG_JIAN_KE",score = 0,fan = 0},		--双箭刻
+	[HU_TYPE.HUN_YI_SE]				= {name = "HUN_YI_SE",score = 0,fan = 0},				--混一色
+	[HU_TYPE.BU_QIU_REN]			= {name = "BU_QIU_REN",score = 0,fan = 0},			--不求人
+	[HU_TYPE.SHUANG_MING_GANG]		= {name = "SHUANG_MING_GANG",score = 0,fan = 0},		--双明杠
+	[HU_TYPE.HU_JUE_ZHANG]			= {name = "HU_JUE_ZHANG",score = 0,fan = 0},			--胡绝张
+	[HU_TYPE.JIAN_KE]				= {name = "JIAN_KE",score = 0,fan = 0},				--箭刻
+	[HU_TYPE.MEN_QING]				= {name = "MEN_QING",score = 0,fan = 1},				--门前清
+	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 2,fan = 1},				--暗杠
+	[HU_TYPE.DUAN_YAO]				= {name = "DUAN_YAO",score = 0,fan = 1},				--断幺
+	[HU_TYPE.SI_GUI_YI]				= {name = "SI_GUI_YI",score = 0,fan = 0},				--四归一
+	[HU_TYPE.PING_HU]				= {name = "PING_HU",score = 1,fan = 0},				--平胡
+	[HU_TYPE.SHUANG_AN_KE]			= {name = "SHUANG_AN_KE",score = 0,fan = 0},			--双暗刻
+	[HU_TYPE.SAN_AN_KE]				= {name = "SAN_AN_KE",score = 0,fan = 0},			--三暗刻
+	[HU_TYPE.SI_AN_KE]				= {name = "SI_AN_KE",score = 0,fan = 0},				--四暗刻
+	[HU_TYPE.BAO_TING]				= {name = "BAO_TING",score = 0,fan = 0},				--报听
+	[HU_TYPE.MEN_FENG_KE]			= {name = "MEN_FENG_KE",score = 0,fan = 0},			--门风刻
+	[HU_TYPE.QUAN_FENG_KE]			= {name = "QUAN_FENG_KE",score = 0,fan = 0},			--圈风刻
 	[HU_TYPE.ZI_MO]					= {name = "ZI_MO",fan = 1,score = 1},		--自摸
-	[HU_TYPE.DAN_DIAO_JIANG]		= {name = "DAN_DIAO_JIANG",score = 10},		--单钓将
-	[HU_TYPE.YI_BAN_GAO]	 		= {name = "YI_BAN_GAO",score = 1},			--一般高
-	[HU_TYPE.LAO_SHAO_FU]	 		= {name = "LAO_SHAO_FU",score = 1},			--老少副
-	[HU_TYPE.LIAN_LIU]	 			= {name = "LIAN_LIU",score = 1},				--连六
-	[HU_TYPE.YAO_JIU_KE]	 		= {name = "YAO_JIU_KE",score = 1},			--幺九刻
-	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 3},				--明杠
-	[HU_TYPE.DA_SAN_FENG]			= {name = "DA_SAN_FENG",score = 24},			--大三风
-	[HU_TYPE.XIAO_SAN_FENG]			= {name = "XIAO_SAN_FENG",score = 24},		--小三风
-	[HU_TYPE.PENG_PENG_HU]			= {name = "PENG_PENG_HU",score = 6},			--碰碰胡
-	[HU_TYPE.SAN_GANG]				= {name = "SAN_GANG",score = 32},				--三杠
-	[HU_TYPE.QUAN_DAI_YAO]			= {name = "QUAN_DAI_YAO",score = 4},			--全带幺
-	[HU_TYPE.QIANG_GANG_HU]			= {name = "QIANG_GANG_HU",score = 9},			--抢杠胡
-	[HU_TYPE.HUA_PAI]				= {name = "HUA_PAI",score = 1},				--花牌
-	[HU_TYPE.DA_QI_XIN]				= {name = "DA_QI_XIN",score = 88},			--大七星
-	[HU_TYPE.LIAN_QI_DUI] 			= {name = "LIAN_QI_DUI",score = 88},			--连七对
-	[HU_TYPE.SAN_YUAN_QI_DUI]		= {name = "SAN_YUAN_QI_DUI",score = 48},		--三元七对子
-	[HU_TYPE.SI_XI_QI_DUI]			= {name = "SI_XI_QI_DUI",score = 48},			--四喜七对子
-	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 5},				--普通七对
-	[HU_TYPE.DA_YU_WU] 				= {name = "DA_YU_WU",score = 88},				--大于五
-	[HU_TYPE.XIAO_YU_WU] 			= {name = "XIAO_YU_WU",score = 88},			--小于五
-	[HU_TYPE.DA_SI_XI]				= {name = "DA_SI_XI",score = 88},				--大四喜
-	[HU_TYPE.XIAO_SI_XI]			= {name = "XIAO_SI_XI",score = 64},			--小四喜
-	[HU_TYPE.DA_SAN_YUAN]			= {name = "DA_SAN_YUAN",score = 88},			--大三元
-	[HU_TYPE.XIAO_SAN_YUAN]			= {name = "XIAO_SAN_YUAN",score = 64},		--小三元
-	[HU_TYPE.JIU_LIAN_BAO_DENG]		= {name = "JIU_LIAN_BAO_DENG",score = 88},	--九莲宝灯
-	[HU_TYPE.LUO_HAN_18]			= {name = "LUO_HAN_18",score = 88},			--18罗汉
-	[HU_TYPE.SHUANG_LONG_HUI]		= {name = "SHUANG_LONG_HUI",score = 64},		--一色双龙会
-	[HU_TYPE.YI_SE_SI_TONG_SHUN]	= {name = "YI_SE_SI_TONG_SHUN",score = 48},	--一色四同顺
-	[HU_TYPE.YI_SE_SI_JIE_GAO]		= {name = "YI_SE_SI_JIE_GAO",score = 48},		--一色四节高
-	[HU_TYPE.YI_SE_SI_BU_GAO]		= {name = "YI_SE_SI_BU_GAO",score = 32},		--一色四步高
-	[HU_TYPE.HUN_YAO_JIU]			= {name = "HUN_YAO_JIU",score = 32},			--混幺九
-	[HU_TYPE.YI_SE_SAN_JIE_GAO]		= {name = "YI_SE_SAN_JIE_GAO",score = 24},	--一色三节高
-	[HU_TYPE.YI_SE_SAN_TONG_SHUN]	= {name = "YI_SE_SAN_TONG_SHUN",score = 24},	--一色三同顺
-	[HU_TYPE.SI_ZI_KE]				= {name = "SI_ZI_KE",score = 24},				--四字刻
-	[HU_TYPE.QING_LONG]				= {name = "QING_LONG",score = 16},			--清龙
-	[HU_TYPE.YI_SE_SAN_BU_GAO]		= {name = "YI_SE_SAN_BU_GAO",score = 16},		--一色三步高
-	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 5},				--大对子
-	[HU_TYPE.LONG_QI_DUI] 			= {name = "LONG_QI_DUI",score = 10},			--龙七对
-	[HU_TYPE.QING_QI_DUI] 			= {name = "QING_QI_DUI",score = 15},			--清七对
-	[HU_TYPE.QING_LONG_BEI] 		= {name = "QING_LONG_BEI",score = 20},		--清龙背
-	[HU_TYPE.QING_DA_DUI] 			= {name = "QING_DA_DUI",score = 15},			--清大对
-	[HU_TYPE.QING_DAN_DIAO]			= {name = "QING_DAN_DIAO",score = 20},		--清单吊
-	[HU_TYPE.BA_GANG]				= {name = "BA_GANG",score = 3},				--把杠
+	[HU_TYPE.DAN_DIAO_JIANG]		= {name = "DAN_DIAO_JIANG",score = 0,fan = 1},		--单钓将
+	[HU_TYPE.YI_BAN_GAO]	 		= {name = "YI_BAN_GAO",score = 0,fan = 0},			--一般高
+	[HU_TYPE.LAO_SHAO_FU]	 		= {name = "LAO_SHAO_FU",score = 0,fan = 0},			--老少副
+	[HU_TYPE.LIAN_LIU]	 			= {name = "LIAN_LIU",score = 0,fan = 0},				--连六
+	[HU_TYPE.YAO_JIU_KE]	 		= {name = "YAO_JIU_KE",score = 0,fan = 0},			--幺九刻
+	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 2,fan = 1},				--明杠
+	[HU_TYPE.DA_SAN_FENG]			= {name = "DA_SAN_FENG",score = 0,fan = 0},			--大三风
+	[HU_TYPE.XIAO_SAN_FENG]			= {name = "XIAO_SAN_FENG",score = 0,fan = 0},		--小三风
+	[HU_TYPE.PENG_PENG_HU]			= {name = "PENG_PENG_HU",score = 0,fan = 0},			--碰碰胡
+	[HU_TYPE.SAN_GANG]				= {name = "SAN_GANG",score = 0,fan = 0},				--三杠
+	[HU_TYPE.QUAN_DAI_YAO]			= {name = "QUAN_DAI_YAO",score = 0,fan = 0},			--全带幺
+	[HU_TYPE.QIANG_GANG_HU]			= {name = "QIANG_GANG_HU",score = 0,fan = 1},			--抢杠胡
+	[HU_TYPE.HUA_PAI]				= {name = "HUA_PAI",score = 0,fan = 0},				--花牌
+	[HU_TYPE.DA_QI_XIN]				= {name = "DA_QI_XIN",score = 0,fan = 0},			--大七星
+	[HU_TYPE.LIAN_QI_DUI] 			= {name = "LIAN_QI_DUI",score = 0,fan = 0},			--连七对
+	[HU_TYPE.SAN_YUAN_QI_DUI]		= {name = "SAN_YUAN_QI_DUI",score = 0,fan = 0},		--三元七对子
+	[HU_TYPE.SI_XI_QI_DUI]			= {name = "SI_XI_QI_DUI",score = 0,fan = 0},			--四喜七对子
+	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 0,fan = 2},				--普通七对
+	[HU_TYPE.DA_YU_WU] 				= {name = "DA_YU_WU",score = 0,fan = 0},				--大于五
+	[HU_TYPE.XIAO_YU_WU] 			= {name = "XIAO_YU_WU",score = 0,fan = 0},			--小于五
+	[HU_TYPE.DA_SI_XI]				= {name = "DA_SI_XI",score = 0,fan = 0},				--大四喜
+	[HU_TYPE.XIAO_SI_XI]			= {name = "XIAO_SI_XI",score = 0,fan = 0},			--小四喜
+	[HU_TYPE.DA_SAN_YUAN]			= {name = "DA_SAN_YUAN",score = 0,fan = 0},			--大三元
+	[HU_TYPE.XIAO_SAN_YUAN]			= {name = "XIAO_SAN_YUAN",score = 0,fan = 0},		--小三元
+	[HU_TYPE.JIU_LIAN_BAO_DENG]		= {name = "JIU_LIAN_BAO_DENG",score = 0,fan = 0},	--九莲宝灯
+	[HU_TYPE.LUO_HAN_18]			= {name = "LUO_HAN_18",score = 0,fan = 0},			--18罗汉
+	[HU_TYPE.SHUANG_LONG_HUI]		= {name = "SHUANG_LONG_HUI",score = 0,fan = 0},		--一色双龙会
+	[HU_TYPE.YI_SE_SI_TONG_SHUN]	= {name = "YI_SE_SI_TONG_SHUN",score = 0,fan = 0},	--一色四同顺
+	[HU_TYPE.YI_SE_SI_JIE_GAO]		= {name = "YI_SE_SI_JIE_GAO",score = 0,fan = 0},		--一色四节高
+	[HU_TYPE.YI_SE_SI_BU_GAO]		= {name = "YI_SE_SI_BU_GAO",score = 0,fan = 0},		--一色四步高
+	[HU_TYPE.HUN_YAO_JIU]			= {name = "HUN_YAO_JIU",score = 0,fan = 0},			--混幺九
+	[HU_TYPE.YI_SE_SAN_JIE_GAO]		= {name = "YI_SE_SAN_JIE_GAO",score = 0,fan = 0},	--一色三节高
+	[HU_TYPE.YI_SE_SAN_TONG_SHUN]	= {name = "YI_SE_SAN_TONG_SHUN",score = 0,fan = 0},	--一色三同顺
+	[HU_TYPE.SI_ZI_KE]				= {name = "SI_ZI_KE",score = 0,fan = 0},				--四字刻
+	[HU_TYPE.QING_LONG]				= {name = "QING_LONG",score = 0,fan = 0},			--清龙
+	[HU_TYPE.YI_SE_SAN_BU_GAO]		= {name = "YI_SE_SAN_BU_GAO",score = 0,fan = 0},		--一色三步高
+	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 0,fan = 1},				--大对子
+	[HU_TYPE.LONG_QI_DUI] 			= {name = "LONG_QI_DUI",score = 0,fan = 3},			--龙七对
+	[HU_TYPE.QING_QI_DUI] 			= {name = "QING_QI_DUI",score = 0,fan = 4},			--清七对
+	[HU_TYPE.QING_LONG_BEI] 		= {name = "QING_LONG_BEI",score = 0,fan = 5},		--清龙背
+	[HU_TYPE.QING_DA_DUI] 			= {name = "QING_DA_DUI",score = 0,fan = 3},			--清大对
+	[HU_TYPE.QING_DAN_DIAO]			= {name = "QING_DAN_DIAO",score = 0,fan = 0},		--清单吊
+	[HU_TYPE.BA_GANG]				= {name = "BA_GANG",score = 1,fan = 1},				--把杠
 
-	[HU_TYPE.NORMAL_JI]				= {name = "NORMAL_JI",score = 1},				--鸡牌
-	[HU_TYPE.WU_GU_JI]				= {name = "WU_GU_JI",score = 2},				--乌骨鸡
-	[HU_TYPE.FAN_PAI_JI]			= {name = "FAN_PAI_JI",score = 1},				--翻牌鸡
-	[HU_TYPE.CHUI_FENG_JI]			= {name = "CHUI_FENG_JI",score = 0},			--吹风鸡
-	[HU_TYPE.ZHE_REN_JI]			= {name = "ZHE_REN_JI",score = 1},				--责任鸡
-	[HU_TYPE.CHONG_FENG_JI]			= {name = "CHONG_FENG_JI",score = 2},				--冲锋鸡
-	[HU_TYPE.XING_QI_JI]			= {name = "XING_QI_JI",score = 1},				--星期鸡
-	[HU_TYPE.DIAN_PAO]				= {name = "DIAN_PAO",score = 0},				--点炮
-	[HU_TYPE.WEI_JIAO]				= {name = "WEI_JIAO",score = 0},				--未叫牌
-	[HU_TYPE.JIAO_PAI]				= {name = "JIAO_PAI",score = 0},				--叫牌
-	[HU_TYPE.MEN]					= {name = "MEN",score = 0},						--闷
-	[HU_TYPE.MEN_ZI_MO]				= {name = "MEN_ZI_MO",score = 0},				--自摸闷
-	[HU_TYPE.LIAN_ZHUANG]			= {name = "LIAN_ZHUANG",score = 1},				--连庄
-	[HU_TYPE.ZHUANG]				= {name = "ZHUANG",score = 1},				--庄家
-	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 20},		--硬报
-	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 10},		--软报
-	[HU_TYPE.HONG_ZHONG]			= {name = "HONG_ZHONG",score = 1},		--红中
-	[HU_TYPE.CHONG_FENG_WU_GU]		= {name = "CHONG_FENG_WU_GU",score = 2}, --冲锋乌骨鸡
-	[HU_TYPE.ZHE_REN_WU_GU]			= {name = "ZHE_REN_WU_GU",score = 2}, --责任乌骨鸡
-	[HU_TYPE.JING_JI]				= {name = "JING_JI",fan = 0,score = 2}, --金鸡
-	[HU_TYPE.JING_WU_GU_JI]			= {name = "JING_WU_GU_JI",score = 4},	--金乌骨鸡
-	[HU_TYPE.CHONG_FENG_JING_JI]	= {name = "CHONG_FENG_JING_JI",fan = 1,score = 4}, -- 冲锋金鸡
-	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 1,score = 8}, -- 冲锋金乌骨鸡
-	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 2},	--责任金鸡
-	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 4}, --责任金乌骨
-	[HU_TYPE.GANG_SHANG_PAO]		= {name = "GANG_SHANG_PAO",score = 1}, --杠上炮
+	[HU_TYPE.NORMAL_JI]				= {name = "NORMAL_JI",score = 0,fan = 0},				--鸡牌
+	[HU_TYPE.WU_GU_JI]				= {name = "WU_GU_JI",score = 0,fan = 0},				--乌骨鸡
+	[HU_TYPE.FAN_PAI_JI]			= {name = "FAN_PAI_JI",score = 0,fan = 0},				--翻牌鸡
+	[HU_TYPE.CHUI_FENG_JI]			= {name = "CHUI_FENG_JI",score = 0,fan = 0},			--吹风鸡
+	[HU_TYPE.ZHE_REN_JI]			= {name = "ZHE_REN_JI",score = 0,fan = 0},				--责任鸡
+	[HU_TYPE.CHONG_FENG_JI]			= {name = "CHONG_FENG_JI",score = 0,fan = 0},				--冲锋鸡
+	[HU_TYPE.XING_QI_JI]			= {name = "XING_QI_JI",score = 0,fan = 0},				--星期鸡
+	[HU_TYPE.DIAN_PAO]				= {name = "DIAN_PAO",score = 0,fan = 0},				--点炮
+	[HU_TYPE.WEI_JIAO]				= {name = "WEI_JIAO",score = 0,fan = 0},				--未叫牌
+	[HU_TYPE.JIAO_PAI]				= {name = "JIAO_PAI",score = 0,fan = 0},				--叫牌
+	[HU_TYPE.MEN]					= {name = "MEN",score = 0,fan = 0},						--闷
+	[HU_TYPE.MEN_ZI_MO]				= {name = "MEN_ZI_MO",score = 0,fan = 0},				--自摸闷
+	[HU_TYPE.LIAN_ZHUANG]			= {name = "LIAN_ZHUANG",score = 0,fan = 0},				--连庄
+	[HU_TYPE.ZHUANG]				= {name = "ZHUANG",score = 0,fan = 0},				--庄家
+	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 0,fan = 0},		--硬报
+	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 0,fan = 0},		--软报
+	[HU_TYPE.HONG_ZHONG]			= {name = "HONG_ZHONG",score = 0,fan = 0},		--红中
+	[HU_TYPE.CHONG_FENG_WU_GU]		= {name = "CHONG_FENG_WU_GU",score = 0,fan = 0}, --冲锋乌骨鸡
+	[HU_TYPE.ZHE_REN_WU_GU]			= {name = "ZHE_REN_WU_GU",score = 0,fan = 0}, --责任乌骨鸡
+	[HU_TYPE.JING_JI]				= {name = "JING_JI",score = 0,fan = 0}, --金鸡
+	[HU_TYPE.JING_WU_GU_JI]			= {name = "JING_WU_GU_JI",score = 0,fan = 0},	--金乌骨鸡
+	[HU_TYPE.CHONG_FENG_JING_JI]	= {name = "CHONG_FENG_JING_JI",fan = 1,score = 0}, -- 冲锋金鸡
+	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 1,score = 0}, -- 冲锋金乌骨鸡
+	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 0,fan = 0},	--责任金鸡
+	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 0,fan = 0}, --责任金乌骨
+	[HU_TYPE.GANG_SHANG_PAO]		= {name = "GANG_SHANG_PAO",score = 0,fan = 1}, --杠上炮
 	[HU_TYPE.JIANG_DUI]				= {name = "JIANG_DUI",fan = 3,score = 0,},	--将对
 	[HU_TYPE.JIANG_QI_DUI]			= {name = "JIANG_QI_DUI",fan = 4,score = 0,},	--将七对
 	[HU_TYPE.QUAN_YAO_JIU]			= {name = "QUAN_YAO_JIU",fan = 3,score = 0},	--全幺九

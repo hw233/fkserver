@@ -1558,3 +1558,25 @@ message SC_VoteTable{
 	enum MsgID{Nil = 0; ID = 1206;}
 	bool success = 1;
 }
+
+// 托管请求
+message CS_Trustee{
+	enum MsgID{Nil = 0; ID = 1207;}
+	bool is_trustee = 1;
+}
+
+// 托管状态
+message SC_Trustee{
+	enum MsgID{Nil = 0; ID = 1208;}
+	int32 result = 1;
+	int32 chair_id = 2;	
+	bool is_trustee = 3;				//最終托管狀態 true托管 false 非托管
+}
+
+// 操作限时回复
+message SC_TimeOutNotify{
+	enum MsgID{Nil = 0; ID = 1209;}
+	int32  left_time = 1;
+	int32  total_time = 2;
+	string extend = 3;
+}

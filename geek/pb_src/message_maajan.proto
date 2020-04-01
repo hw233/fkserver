@@ -402,6 +402,7 @@ message SC_HuanPai{
 	int32 result = 1;
 	int32 chair_id = 2;
 	bool  done = 3;
+	repeated int32 self_choice = 4;
 }
 
 message SC_HuanPaiCommit{
@@ -450,4 +451,57 @@ message SC_DingQueStatus{
 message SC_DingQueCommit{
 	enum MsgID { Nil = 0; ID = 23132;}
 	repeated DingQueInfo ding_ques = 1;
+}
+
+message MaajanXueZhanBalanceType{
+	int32 type = 1;
+	int32 count = 2;
+}
+
+message MaajanXueZhanBlanacePlayer{
+	enum BalanceStatus{
+		Nil = 0;
+		Hu = 1;
+		JiaoPai = 2;
+		WeiJiao = 3;
+	}
+	int32 chair_id 			= 1;
+	bool  hu 				= 2;	//是否胡了
+	int32 hu_fan	 		= 3; 	//番数
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	repeated MaajanXueZhanBalanceType  items = 6;
+	BalanceStatus 			status = 7;
+	int32 hu_tile 			= 8;
+	int32 round_money 		= 9;
+	int32 total_money  		= 10;
+}
+
+//结算
+message SC_MaajanXueZhanGameFinish {
+	enum MsgID { Nil = 0; ID = 23133; }
+	repeated Maajan_Player_Info 			players = 1;
+	repeated MaajanXueZhanBlanacePlayer 	player_balance = 2;
+}
+
+message TingTilesInfo{ 
+	int32 tile = 1;
+	int32 fan = 2;
+}
+
+message TingTips{
+	int32 discard = 1;
+	repeated TingTilesInfo tiles_info = 2;
+}
+
+// 听牌提示
+message SC_TingTips{
+	enum MsgID { Nil = 0; ID = 23124;}
+	repeated TingTips ting = 1;
+}
+
+// 操作限时回复
+message SC_TimeOutNotify{
+	enum MsgID{Nil = 0; ID = 1209;}
+	int32 timeout = 2;
 }

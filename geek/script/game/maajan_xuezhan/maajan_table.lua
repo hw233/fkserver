@@ -9,6 +9,7 @@ local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
 local profile = require "skynet.profile"
 local skynet = require "skynetproto"
+local timer_manager = require "game.timer_manager"
 
 local yield = profile.yield
 local resume = profile.resume
@@ -93,6 +94,19 @@ function maajan_table:clear_event_pump()
     self.co = nil
 end
 
+function maajan_table:get_trustee_conf()
+    local trustee = self.conf and self.conf.conf and self.conf.conf.trustee or nil
+    if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
+        local trstee_conf = self.room_.conf.private_conf.trustee
+        local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
+        local type = trstee_conf.type_opt[trustee.type_opt + 1]
+        log.info("%d,%d",seconds,type)
+        return type,seconds
+    end
+
+    return nil
+end
+
 function maajan_table:on_started(player_count)
     base_table.on_started(self,player_count)
 	for _,v in pairs(self.players) do
@@ -118,7 +132,6 @@ function maajan_table:on_started(player_count)
 
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
-    self.waiting_player_actions    = {}
 	self:update_state(FSM_S.PER_BEGIN)
     local game_log_players = {}
     for i = 1,self.chair_count do game_log_players[i] = {} end
@@ -137,6 +150,17 @@ function maajan_table:on_started(player_count)
     self.co = skynet.fork(function()
         self:main()
     end)
+end
+
+function maajan_table:set_trusteeship(player,trustee)
+    if player.trustee and trustee then
+        return 
+    end
+
+    trustee = trustee and true or false
+    base_table.set_trusteeship(self,player,trustee)
+    player.trustee = trustee and true or nil
+    self:safe_event({player = player,type = ACTION.TRUSTEE,trustee = trustee})
 end
 
 function maajan_table:xi_pai()
@@ -184,8 +208,10 @@ function maajan_table:huan_pai()
     
         local huan_type = self:get_huan_type()
         if huan_type == 1 then
-            local mens = {}
-            table.foreach(tiles,function(t) table.incr(mens,math.floor(t / 10)) end)
+            local mens = table.agg(tiles,{},function(tb,t)
+                table.incr(tb,math.floor(t / 10))
+                return tb
+            end)
             local men_count = table.nums(mens)
             if men_count ~= 1 then
                 send2client_pb(player.guid,"SC_HuanPai",{
@@ -197,16 +223,104 @@ function maajan_table:huan_pai()
         end
 
         player.pai.huan = {old = tiles,}
-        self:broadcast2client("SC_HuanPai",{
+
+        send2client_pb(player,"SC_HuanPai",{
+            result = enum.ERROR_NONE,
+            chair_id = player.chair_id,
+            done = true,
+            self_choice = tiles,
+        })
+
+        self:broadcast2client_except(player,"SC_HuanPai",{
             result = enum.ERROR_NONE,
             chair_id = player.chair_id,
             done = true,
         })
     end
-    
+
+    local timer
+    local action_timers = {}
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function random_choice(tilecounts,count)
+            local counts = tilecounts
+            local tiles = {}
+            for _ = 1,count do
+                local c = 0
+                local tile
+                repeat
+                    tile,c = table.choice(counts)
+                until c > 0
+
+                table.decr(counts,tile)
+                table.insert(tiles,tile)
+            end
+
+            for _,tile in pairs(tiles) do
+                table.incr(counts,tile)
+            end
+
+            return tiles
+        end
+
+        local function auto_huan_pai(p,huan_type,huan_count)
+            if huan_type ~= 1 then
+                local huan_pai = random_choice(p.pai.shou_pai,huan_count)
+                dump(huan_pai)
+                self:safe_event({player = p,type = ACTION.HUAN_PAI,msg = {tiles = huan_pai}})
+                return
+            end
+
+            local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
+                table.get(tb,math.floor(tile / 10),{})[tile] = c
+                return tb
+            end)
+
+            local c = 0
+            local tiles
+            repeat
+                local men,_ = table.choice(men_tiles)
+                tiles = men_tiles[men]
+                c = table.sum(tiles)
+            until c > huan_count
+
+            local huan_tiles = random_choice(tiles,huan_count)
+            self:safe_event({player = p,type = ACTION.HUAN_PAI,msg = {tiles = huan_tiles}})
+            return
+        end
+
+        local huan_count = self:get_huan_count()
+        local huan_type = self:get_huan_type()
+        log.info("%s,%s",huan_type,huan_count)
+        timer = timer_manager:new_timer(trustee_seconds,function()
+            self:foreach(function(p)
+                if p.pai.huan then return end
+
+                self:set_trusteeship(p,true)
+                auto_huan_pai(p,huan_type,huan_count)
+            end)
+        end)
+
+        self:begin_clock(trustee_seconds)
+
+        self:foreach(function(p)
+            if not p.trustee then return end
+            
+            local act_timer = timer_manager:calllater(math.random(1,2),function()
+                auto_huan_pai(p,huan_type,huan_count)
+            end)
+
+            action_timers[p.chair_id] = act_timer
+        end)
+    end
+
     repeat
         local evt = yield()
         if evt.type == ACTION.CLOSE then
+            if timer then timer:kill() end
+            for _,timer in pairs(action_timers) do
+                timer:kill()
+            end
             self:clear_event_pump()
             return
         end
@@ -215,10 +329,27 @@ function maajan_table:huan_pai()
             local player = evt.player
             send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
             self:send_huan_pai_status(player)
+            if timer then
+                self:begin_clock(timer.remainder,player)
+            end
+        elseif evt.type == ACTION.TRUSTEE then
+            if not evt.trustee then
+                local chair = evt.player.chair_id
+                if action_timers[chair] then
+                    action_timers[chair]:kill()
+                end
+            end
         else
-            on_huan_pai(evt.player,evt.msg)
+            local player = evt.player
+            local chair = player.chair_id
+            on_huan_pai(player,evt.msg)
+            if action_timers[chair] then
+                action_timers[chair]:kill()
+            end
         end
     until table.logic_and(self.players,function(p) return p.pai.huan ~= nil end)
+
+    if timer then timer:kill() end
 
     local order = self:do_huan_pai()
     self:foreach(function(p)
@@ -239,7 +370,7 @@ function maajan_table:ding_que()
 
     local function on_ding_que(player,msg)
         local men = msg.men
-        if men < 0 or men > 3 then
+        if not men or men < 0 or men > 3 then
             send2client_pb(player,"SC_DingQue",{
                 result = enum.PARAMETER_ERROR
             })
@@ -256,10 +387,51 @@ function maajan_table:ding_que()
         })
     end
 
+    local timer
+    local action_timers = {}
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_ding_que(p)
+            local men_count = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
+                table.incr(tb,math.floor(tile / 10),c)
+                return tb
+            end)
+
+            dump(men_count)
+
+            local min_men,c = table.min(men_count)
+            log.info("%s,%s",min_men,c)
+            self:safe_event({player = p,type = ACTION.DING_QUE,msg = {men = min_men}})
+        end
+        timer = timer_manager:new_timer(trustee_seconds,function()
+            self:foreach(function(p)
+                if p.que then return end
+
+                self:set_trusteeship(p,true)
+                auto_ding_que(p)
+            end)
+        end)
+
+        self:begin_clock(trustee_seconds)
+
+        self:foreach(function(p)
+            if not p.trustee then return end
+            local act_timer = timer_manager:calllater(math.random(1,2),function() 
+                auto_ding_que(p)
+            end)
+
+            action_timers[p.chair_id] = act_timer
+        end)
+    end
+
     repeat
         local evt = yield()
         repeat
             if evt.type == ACTION.CLOSE then
+                if timer then timer:kill() end
+                for _,timer in pairs(action_timers) do
+                    timer:kill()
+                end
                 self:clear_event_pump()
                 return
             end
@@ -268,12 +440,29 @@ function maajan_table:ding_que()
                 local player = evt.player
                 send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
                 self:send_ding_que_status(player)
+                if timer then
+                    self:begin_clock(timer.remainder,player)
+                end
                 break
             end
 
+            if evt.type == ACTION.TRUSTEE then
+                local chair = evt.player.chair_id
+                if not evt.trustee and action_timers[chair] then
+                    action_timers[chair]:kill()
+                end
+                break
+            end
+
+            local chair = evt.player.chair_id
             on_ding_que(evt.player,evt.msg)
+            if action_timers[chair] then
+                action_timers[chair]:kill()
+            end
         until true
     until table.logic_and(self.players,function(p) return p.que ~= nil end)
+
+    if timer then timer:kill() end
 
     local p_ques = {}
     self:foreach(function(p)
@@ -364,12 +553,16 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         end
 
         if do_action == ACTION.ZI_MO then
+            local ming_pai_count = table.sum(player.pai.ming_pai,function(_) return 1 end)
             player.hu = {
                 time = os.time(),
                 tile = tile,
                 types = mj_util.hu(player.pai),
                 zi_mo = true,
-                gang_hua = def.is_action_gang(player.last_action or 0),
+                tian_hu = (player.chair_id == self.zhuang and player.mo_pai_count == 1) and true or nil,
+                di_hu = (player.chair_id ~= self.zhuang and player.mo_pai_count == 1 and ming_pai_count == 0) and true or nil,
+                hai_di = self.dealer.remain_count == 0 and true or nil,
+                gang_hua = player.last_action and def.is_action_gang(player.last_action.action or 0)  or nil,
             }
 
             self:log_game_action(player,do_action,tile)
@@ -384,23 +577,75 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         end
 
         if do_action == ACTION.PASS then
+            self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action})
             self:gotofunc(function() self:chu_pai() end)
         end
 
-        self:done_last_action(player,do_action)
+        self:done_last_action(player,{action = do_action,tile = tile,})
+    end
+
+    local timer
+    local action_timers = {}
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_action(p,action)
+            local act = action.actions[ACTION.ZI_MO] and ACTION.ZI_MO or ACTION.PASS
+            local tile = p.mo_pai
+            self:safe_event({chair_id = p.chair_id,type = act,tile = tile})
+        end
+
+        timer = timer_manager:new_timer(trustee_seconds,function()
+            dump(waiting_actions)
+            table.foreach(waiting_actions,function(action,_) 
+                if action.done then return end
+
+                local p = self.players[action.chair_id]
+                self:set_trusteeship(p,true)
+                auto_action(p,action)
+            end)
+        end)
+
+        self:begin_clock(trustee_seconds)
+
+        table.foreach(waiting_actions,function(action,_) 
+            dump(waiting_actions)
+            local p = self.players[action.chair_id]
+            if not p.trustee then return end
+
+            local act_timer = timer_manager:calllater(math.random(1,2),function() 
+                auto_action(p,action)
+            end)
+
+            action_timers[action.chair_id] = act_timer
+        end)
     end
 
     while true do
         local evt = yield()
         if evt.type == ACTION.CLOSE then
+            if timer then timer:kill() end
             self:clear_event_pump()
             return
         end
 
         if evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
+            if timer then
+                self:begin_clock(timer.remainder,player)
+            end
+        elseif evt.type == ACTION.TRUSTEE then
+            local chair = evt.player.chair_id
+            if not evt.trustee and action_timers[chair] then
+                action_timers[chair]:kill()
+            end
         else
+            if timer then timer:kill() end
+            local chair = evt.chair_id
+            if action_timers[chair] then
+                action_timers[chair]:kill()
+            end
             on_action(evt)
+
             break
         end
     end
@@ -422,13 +667,57 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
     end
 
+    local timer
+    local action_timers = {}
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_action(p,action)
+            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
+            local tile = self:chu_pai_player().chu_pai
+            self:safe_event({chair_id = p.chair_id,type = act,tile = tile})
+        end
+
+        timer = timer_manager:new_timer(trustee_seconds,function()
+            table.foreach(waiting_actions,function(action,_) 
+                local p = self.players[action.chair_id]
+                self:set_trusteeship(p,true)
+                auto_action(p,action)
+            end)
+        end)
+
+        self:begin_clock(trustee_seconds)
+
+        table.foreach(waiting_actions,function(action,_) 
+            local p = self.players[action.chair_id]
+            if not p.trustee then return end
+
+            local act_timer = timer_manager:calllater(math.random(1,2),function() 
+                auto_action(p,action)
+            end)
+        
+            action_timers[p.chair_id] = act_timer
+        end)
+    end
+
     repeat
         local evt = yield()
         if evt.type == ACTION.CLOSE then
+            if timer then timer:kill() end
+            for _,timer in pairs(action_timers) do
+                timer:kill()
+            end
             self:clear_event_pump()
             return
         elseif evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
+            if timer then
+                self:begin_clock(timer.remainder,player)
+            end
+        elseif evt.type == ACTION.TRUSTEE then
+            local chair = evt.player.chair_id
+            if not evt.trustee and action_timers[chair] then
+                action_timers[chair]:kill()
+            end
         else
             local action = self:check_action_before_do(waiting_actions,evt)
             if action then
@@ -437,13 +726,17 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     tile = evt.tile,
                 }
             end
+
+            local chair = action.chair_id
+            if action_timers[chair] then
+                action_timers[chair]:kill()
+            end
         end
     until table.logic_and(waiting_actions,function(action) return action.done ~= nil end)
 
-    local all_actions = table.values(
-            table.select(waiting_actions,function(action) return action.done.action ~= ACTION.PASS end)
-        )
+    if timer then timer:kill() end
 
+    local all_actions = table.values(waiting_actions)
     if table.nums(all_actions) == 0 then
         self:next_player_index()
         self:gotofunc(function() self:mo_pai()  end)
@@ -492,8 +785,9 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     tile = tile,
                     types = mj_util.hu(p.pai,tile),
                     zi_mo = false,
+                    hai_di = self.dealer.remain_count == 0 and true or nil,
                     whoee = self.chu_pai_player_index,
-                    gang_pao = def.is_action_gang(chu_pai_player.last_action or 0),
+                    gang_pao = chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) or nil,
                 }
 
                 self:log_game_action(p,act.done.action,tile)
@@ -527,11 +821,12 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
 
         if action.done.action == ACTION.PASS then
+            self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = ACTION.PASS})
             self:next_player_index()
             self:gotofunc(function() self:mo_pai() end)
         end
 
-        self:done_last_action(player,action.done.action)
+        self:done_last_action(player,{action = action.done.action,tile = tile})
     end
 
     local top_action
@@ -610,20 +905,72 @@ function maajan_table:chu_pai()
         end
     end
 
-    local evt = yield()
+    local timer
+    local chu_pai_timer
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_chu_pai(p)
+            local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
+                if c == 0 then return tb end
+                table.get(tb,math.floor(tile / 10),{})[tile] = c
+                return tb
+            end)
+
+            local chu_pai = p.mo_pai
+            if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
+                local c
+                repeat
+                    chu_pai,c = table.choice(men_tiles[p.que])
+                    log.info("%d,%d",chu_pai,c)
+                until c and c > 0
+            end
+
+            log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_pai)
+            self:safe_event({chair_id = p.chair_id,type = ACTION.CHU_PAI,tile = chu_pai})
+        end
+
+        local player = self:chu_pai_player()
+
+        timer = timer_manager:new_timer(trustee_seconds,function()
+            self:set_trusteeship(player,true)
+            auto_chu_pai(player)
+        end)
+
+        self:begin_clock(trustee_seconds)
+
+        if player.trustee then
+            chu_pai_timer = timer_manager:calllater(math.random(1,2),function()
+                auto_chu_pai(player)
+            end)
+        end
+    end
+
+    local evt
     while true do
+        evt = yield()
         if evt.type == ACTION.CLOSE then
+            if timer then timer:kill() end
+            if chu_pai_timer then chu_pai_timer:kill() end
             self:clear_event_pump()
             return
         end
 
         if evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
-            evt = yield()
+            if timer then
+                self:begin_clock(timer.remainder,player)
+            end
+        elseif evt.type == ACTION.TRUSTEE then
+            if not evt.trustee and evt.player.chair_id == self.chu_pai_player_index then
+                chu_pai_timer:kill()
+            end
         else
             break
         end
     end
+
+    if timer then timer:kill() end
+    if chu_pai_timer then chu_pai_timer:kill() end
 
     local chu_pai_val = evt.tile
 
@@ -674,28 +1021,34 @@ function maajan_table:chu_pai()
     end
 end
 
-local BalanceStatus = {
-    Hu = pb.enum("Maajan_Blanace_Player.BalanceStatus","Hu"),
-    JiaoPai = pb.enum("Maajan_Blanace_Player.BalanceStatus","JiaoPai"),
-    WeiJiao = pb.enum("Maajan_Blanace_Player.BalanceStatus","WeiJiao"),
-}
-
-local function player_balance_status(p)
-    if p.hu then return BalanceStatus.Hu end
-    if p.ting or p.men or p.jiao then return BalanceStatus.JiaoPai end
-    return BalanceStatus.WeiJiao
-end
-
 function maajan_table:do_balance()
-    local items = self:game_balance()
-    local scores = {}
-    for chair_id,item in pairs(items) do
-        scores[chair_id] =
-            table.sum(item.hu or {},function(t)
-                return table.sum(t.typescore,function(ts) return (ts.score or 0) * (ts.count or 0) end)
-            end) +
-            table.sum(item.gang or {},function(t) return (t.score or 0) * (t.count or 0) end)
-    end
+    local typefans,scores = self:game_balance()
+    local fans = table.agg(typefans,{},function(tb,v,chair)
+        tb[chair] = table.sum(v,function(t) return t.fan * t.count end)
+        return tb
+    end)
+
+    self:foreach(function(p)
+        if not p.hu then return end
+
+        local chair_id = p.chair_id
+        local fan = fans[chair_id]
+        local fan_score = 2 ^ math.abs(fan)
+        if not p.hu.zi_mo then
+            local whoee = p.hu.whoee
+            scores[whoee] = (scores[whoee] or 0) - fan_score
+            scores[chair_id] = (scores[chair_id] or 0) + fan_score
+            return
+        end
+
+        self:foreach_except(p,function(pi)
+            if pi.hu and pi.hu.time <= p.hu.time then return end
+
+            local chair_i = pi.chair_id
+            scores[chair_i] = (scores[chair_i] or 0) - fan_score
+            scores[chair_id] = (scores[chair_id] or 0) + fan_score
+        end)
+    end)
 
     local msg = {
         players = {},
@@ -717,12 +1070,11 @@ function maajan_table:do_balance()
             desk_pai = desk_pai,
             shou_pai = shou_pai,
             ming_pai = ming_pai,
+            huan = p.pai.huan,
         }
 
         p.total_score = (p.total_score or 0) + p_score
-        log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
         p_log.score = p_score
-        p_log.describe = p.describe
 
         table.insert(msg.players,{
             chair_id = chair_id,
@@ -731,36 +1083,36 @@ function maajan_table:do_balance()
             pb_ming_pai = ming_pai,
         })
 
-        local balance_item = items[chair_id]
         table.insert(msg.player_balance,{
             chair_id = chair_id,
             total_score = p.total_score,
             round_score = p_score,
-            gang = balance_item and balance_item.gang or {},
-            items = balance_item and balance_item.hu or {},
-            status = player_balance_status(p),
+            items = typefans[chair_id],
             hu_tile = p.hu and p.hu.tile or nil,
+            hu_fan = fans[chair_id],
+            hu = p.hu ~= nil,
         })
 
         local win_money = self:calc_score_money(p_score)
         chair_money[chair_id] = win_money
+        log.info("player hu %s,%s,%s",chair_id,p_score,win_money)
     end
 
     dump(msg)
 
-    -- chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
-    -- for _,balance in pairs(msg.player_balance) do
-    --     local p = self.players[balance.chair_id]
-    --     local p_log = self.game_log.players[balance.chair_id]
-    --     local money = chair_money[balance.chair_id]
-    --     balance.round_money = money
-    --     p.total_money = (p.total_money or 0) + money
-    --     balance.total_money = p.total_money
-    --     p_log.total_money = p.total_money
-    --     p_log.win_money = money
-    -- end
+    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_CUSTOMIZE)
+    for _,balance in pairs(msg.player_balance) do
+        local p = self.players[balance.chair_id]
+        local p_log = self.game_log.players[balance.chair_id]
+        local money = chair_money[balance.chair_id]
+        balance.round_money = money
+        p.total_money = (p.total_money or 0) + money
+        balance.total_money = p.total_money
+        p_log.total_money = p.total_money
+        p_log.win_money = money
+    end
 
-    self:broadcast2client("SC_Maajan_Game_Finish",msg)
+    self:broadcast2client("SC_MaajanXueZhanGameFinish",msg)
 
     self:notify_game_money()
 
@@ -965,7 +1317,7 @@ function maajan_table:check_action_before_do(waiting_actions,event)
     local tile = event.tile
     local player_actions = waiting_actions[chair_id]
     if not player_actions then
-        log.error("no action waiting when check_action_before_do,chair_id,action:%s,tile:",chair_id,action,tile)
+        log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
         return
     end
 
@@ -1006,199 +1358,120 @@ function maajan_table:get_hu_items(hu)
     return self:max_hu_score(hu.types).types
 end
 
-local BalanceItemType = {
-    Hu = pb.enum("Maajan_Balance_Item.ItemType","Hu"),
-    ZiMo = pb.enum("Maajan_Balance_Item.ItemType","ZiMo"),
-    Men = pb.enum("Maajan_Balance_Item.ItemType","Men"),
-    MenZiMo = pb.enum("Maajan_Balance_Item.ItemType","MenZiMo"),
-}
-
-function maajan_table:calculate_hu(p,hu)
+function maajan_table:calculate_hu(p)
     local types = {}
-    local ts = self:get_hu_items(hu)
-    if not hu.zi_mo then
-        if hu.gang_pao then
-            table.insert(table.get(types,p.chair_id,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                type = HU_TYPE.GANG_SHANG_PAO, score = HU_TYPE_INFO[HU_TYPE.GANG_SHANG_PAO].score,
-                fan = HU_TYPE_INFO[HU_TYPE.GANG_SHANG_PAO].fan,count = 1,
-            })
 
-            table.insert(table.get(types,hu.whoee,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                type = HU_TYPE.GANG_SHANG_PAO, score = - HU_TYPE_INFO[HU_TYPE.GANG_SHANG_PAO].score,
-                fan = - HU_TYPE_INFO[HU_TYPE.GANG_SHANG_PAO].fan,count = 1,
-            })
-        end
-
+    if p.hu then
+        local hu = p.hu
         if hu.qiang_gang then
-            table.insert(table.get(types,p.chair_id,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                type = HU_TYPE.QIANG_GANG_HU, score = HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].score,
-                fan = - HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].fan,count = 1,
-            })
-
-            table.insert(table.get(types,hu.whoee,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                type = HU_TYPE.QIANG_GANG_HU, score = - HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].score,
-                fan = - HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU].fan,count = 1,
-            })
+            local t = HU_TYPE.QIANG_GANG_HU
+            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
         end
-
-        for _,t in pairs(ts) do
-            table.insert(table.get(types,p.chair_id,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                score = t.score * t.count,fan = t.fan * t.count,type = t.type,tile = hu.tile,count = 1,
-            })
-
-            table.insert(table.get(types,hu.whoee,{
-                type = BalanceItemType.Hu,
-                typescore = {},
-            }).typescore,{
-                score = -t.score * t.count,fan = -t.fan * t.count,type = t.type,tile = hu.tile,count = 1,
-            })
-        end
-    else
-        for chair_id,_ in pairs(self.players) do
-            types[chair_id] = {
-                type = BalanceItemType.ZiMo,
-                typescore = {},
-            }
-        end
-
-        local kill_count = table.sum(self.players,function(pj)
-            return (pj ~= p and (not pj.hu or pj.hu.time < pj.hu.time)) and 1 or 0
-        end)
 
         if hu.gang_hua then
             local t = HU_TYPE.GANG_SHANG_HUA
-            local gang_hua_score = HU_TYPE_INFO[t].score
-            local gang_hua_fan = HU_TYPE_INFO[t].fan
-            for chair_id,pj in pairs(self.players) do
-                if pj ~= p and ((pj.hu and pj.hu.time < p.hu.time) or not pj.hu) then
-                    table.insert(types[chair_id].typescore,{fan = - gang_hua_fan,score = - gang_hua_score,type = t,count = 1})
-                else
-                    table.insert(types[chair_id].typescore,{fan = gang_hua_fan,score = gang_hua_score,type = t,count = kill_count})
-                end
+            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+        end
+
+        if self.conf.conf.play.tian_di_hu then
+            if hu.tian_hu then
+                local t = HU_TYPE.TIAN_HU
+                table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+            end
+
+            if hu.di_hu then
+                local t = HU_TYPE.DI_HU
+                table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
             end
         end
 
+        if hu.hai_di then
+            local t = HU_TYPE.HAI_DI_LAO_YUE
+            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+        end
+
+        if hu.zi_mo and self.conf.conf.play.zi_mo_jia_fan then
+            local t = HU_TYPE.ZI_MO
+            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+        end
+
+        if hu.gang_pao then
+            local t = HU_TYPE.GANG_SHANG_PAO
+            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+        end
+
+        local ts = self:get_hu_items(hu)
         for _,t in pairs(ts) do
-            for chair_id,pj in pairs(self.players) do
-                if p == pj then
-                    table.insert(types[chair_id].typescore,{
-                        fan = t.fan * t.count,score = t.score * t.count,type = t.type,tile = hu.tile,count = kill_count,
-                    })
-                elseif (not pj.hu or pj.hu.time < p.hu.time) then
-                    table.insert(types[chair_id].typescore,{
-                        fan = - t.fan * t.count,score = -t.score * t.count,type = t.type,tile = hu.tile,count = 1,
-                    })
+            repeat
+                if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.conf.conf.play.yao_jiu) or
+                    (t.type == HU_TYPE.MEN_QING and not self.conf.conf.play.men_qing) then
+                    break
                 end
-            end
+
+                table.insert(types,{type = t.type,fan = t.fan,count = t.count})
+            until true
         end
     end
 
     return types
 end
-
-function maajan_table:get_gang_items(p)
-    local items = {}
-    for _,s in pairs(p.pai.ming_pai or {}) do
-        if s.type == SECTION_TYPE.AN_GANG then
-            table.insert(items,{
-                fan = HU_TYPE_INFO[HU_TYPE.AN_GANG].fan,score = HU_TYPE_INFO[HU_TYPE.AN_GANG].score,
-                type = HU_TYPE.AN_GANG,tile = s.tile,count = 1,time = s.time
-            })
-        end
-
-        if s.type == SECTION_TYPE.MING_GANG then
-            table.insert(items,{
-                fan = HU_TYPE_INFO[HU_TYPE.MING_GANG].fan,score = HU_TYPE_INFO[HU_TYPE.MING_GANG].score,
-                type = HU_TYPE.MING_GANG, tile = s.tile,whoee = s.whoee,count = 1,player_count = 1
-            })
-        end
-
-        if s.type == SECTION_TYPE.BA_GANG then
-            table.insert(items,{
-                fan = HU_TYPE_INFO[HU_TYPE.BA_GANG].fan, score = HU_TYPE_INFO[HU_TYPE.BA_GANG].score,
-                type = HU_TYPE.BA_GANG,tile = s.tile,count = 1,time = s.time,
-            })
-        end
-    end
-
-    return items
-end
-
 
 function maajan_table:calculate_gang(p)
-    if table.sum(self.players,function(pi) return pi.hu and 1 or 0 end) == 0 then
-        return {}
-    end
+    if not p.hu and not p.jiao then return end
 
-    local is_dian_gang_pao = table.logic_or(self.players,function(pi)
-        return p ~= pi and pi.hu and pi.hu.gang_pao and pi.hu.whoee == p
+    local s2hu_type = {
+        [SECTION_TYPE.MING_GANG] = HU_TYPE.MING_GANG,
+        [SECTION_TYPE.AN_GANG] = HU_TYPE.AN_GANG,
+        [SECTION_TYPE.BA_GANG] = HU_TYPE.BA_GANG,
+    }
+
+    local gangfans = table.agg(p.pai.ming_pai,{},function(tb,s)
+        local t = s2hu_type[s.type]
+        if not t then return tb end
+        local v = table.get(tb,t,{fan = 0,count = 0})
+        v.fan = v.fan + HU_TYPE_INFO[t].fan
+        v.count = v.count + 1
+        return tb
     end)
 
-    local types = {}
-    table.walk(self:get_gang_items(p),function(t)
-        if t.whoee then
-            if p.hu or p.jiao and not is_dian_gang_pao then
-                table.insert(table.get(types,p.chair_id,{}),{
-                    type = t.type,score = t.score, fan = t.fan,tile = t.tile,count = 1
-                })
-                table.insert(table.get(types,t.whoee,{}),{
-                    type = t.type,score = -t.score,fan = -t.fan,tile = t.tile,count = 1
-                })
-            end
-            return
-        end
+    local scores = table.agg(p.pai.ming_pai,{},function(tb,s)
+        local t = s2hu_type[s.type]
+        if not t then return tb end
+        local hu_type_info = HU_TYPE_INFO[t]
 
-        local player_count = table.sum(self.players,function(pj)
-            return (pj ~= p and (not pj.hu or pj.hu.time > t.time)) and 1 or 0
-        end)
-        if p.hu or p.jiao and not is_dian_gang_pao then
-            table.insert(table.get(types,p.chair_id,{}),{
-                fan = t.fan,type = t.type,score = t.score * player_count * t.count,tile = t.tile,count = 1
-            })
-            self:foreach_except(p,function(pj,i)
-                if not pj.hu or pj.hu.time > t.time then
-                    table.insert(table.get(types,i,{}),{
-                        fan = -t.fan,type = t.type,score = -t.score * t.count,tile = t.tile,count = 1
-                    })
-                end
+        if t == HU_TYPE.MING_GANG then
+            tb[p.chair_id] = (tb[p.chair_id] or 0) + hu_type_info.score
+            tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
+        elseif t == HU_TYPE.AN_GANG or t == HU_TYPE.BA_GANG then
+            self:foreach_except(p,function(pi)
+                if pi.hu and pi.hu.time < s.time then return end
+
+                tb[p.chair_id] = (tb[p.chair_id] or 0) + hu_type_info.score
+                tb[pi.chair_id] = (tb[pi.chair_id] or 0) - hu_type_info.score
             end)
         end
+
+        return tb
     end)
 
-    return types
+    local fans = table.agg(gangfans,{},function(tb,v,t)
+        table.insert(tb,{type = t,fan = v.fan,count = v.count})
+        return tb
+    end)
+
+    return fans,scores
 end
 
 function maajan_table:calculate_wei_hu(p)
     local types = {}
     local hu_count = table.sum(self.players,function(pi) return pi.hu and 1 or 0 end)
-    local jiao_count = table.sum(self.players,function(pi) return (pi.hu or pi.men or pi.ting or pi.jiao) and 1 or 0 end)
-    if hu_count == 0 and jiao_count < self.chair_count then
-        if p.jiao or p.ting then
+    if hu_count == 0 then
+        if p.jiao then
             self:foreach_except(p,function(pi)
-                if not (pi.jiao or pi.ting or pi.men or pi.hu) then
+                if not (pi.jiao or pi.hu) then
                     table.insert(table.get(types,p.chair_id,{
-                        type = BalanceItemType.JiaoPai,
-                        typescore = {}
-                    }).typescore,{type = HU_TYPE.JIAO_PAI,score = 1,whoee = pi.chair_id,count = 1})
-                    table.insert(table.get(types,pi.chair_id,{
-                        type = BalanceItemType.WeiJiao,
-                        typescore = {}
-                    }).typescore,{type = HU_TYPE.WEI_JIAO,score = -1,count = 1})
+                        types = {}
+                    }).types,{type = HU_TYPE.JIAO_PAI,count = 1})
                 end
             end)
         end
@@ -1207,68 +1480,26 @@ function maajan_table:calculate_wei_hu(p)
     return types
 end
 
-function maajan_table:balance_player(p)
-    local hu_count = table.sum(self.players,function(v) return v.hu and 1 or 0 end)
-
-    local items = {}
-    if p.hu then
-        local hu_res = self:calculate_hu(p,p.hu)
-        for chair_id,item in pairs(hu_res) do
-            table.get(items,chair_id,{}).hu = item
-        end
-    end
-
-    if p.hu or p.jiao then
-        local gang_res = self:calculate_gang(p)
-        for chair_id,item in pairs(gang_res) do
-            table.get(items,chair_id,{}).gang = item
-        end
-    end
-
-    if not p.hu and hu_count == 0 then
-        local ting_res = self:calculate_wei_hu(p)
-        for chair_id,item in pairs(ting_res) do
-            table.get(items,chair_id,{}).hu = item
-        end
-    end
-
-    return items
-end
-
 
 function maajan_table:game_balance()
-    for _,p in pairs(self.players) do
-        if not p.hu then
-            local ting_tiles = mj_util.is_ting(p.pai)
-            if table.nums(ting_tiles) > 0 then
-                p.jiao = p.jiao or {tiles = ting_tiles}
-            end
+    self:foreach(function(p)
+        if p.hu then return end
+
+        local ting_tiles = mj_util.is_ting(p.pai)
+        if table.nums(ting_tiles) > 0 then
+            p.jiao = p.jiao or {tiles = ting_tiles}
         end
-    end
+    end)
 
-    local items = {}
+    local fans,scores = {},{}
+    self:foreach(function(p)
+        local hu = self:calculate_hu(p)
+        local gangfans,gangscores = self:calculate_gang(p)
+        fans[p.chair_id] = table.union(hu or {},gangfans or {})
+        table.mergeto(scores,gangscores or {},function(l,r) return (l or 0) + (r or 0) end)
+    end)
 
-    for c,_ in pairs(self.players) do
-        items[c] = {
-            hu = {},
-            gang = {},
-        }
-    end
-
-    for _,p in pairs(self.players) do
-        local p_item = self:balance_player(p)
-        for c,item in pairs(items) do
-            local p_item_c = p_item[c]
-            if p_item_c then
-                if p_item_c.hu then
-                    table.insert(item.hu,p_item_c.hu)
-                end
-                table.unionto(item.gang,p_item_c.gang or {})
-            end
-        end
-    end
-
-    return items
+    return fans,scores
 end
 
 function maajan_table:on_game_overed()
@@ -1281,14 +1512,14 @@ function maajan_table:on_game_overed()
     if not self.private_id then
         for _,v in ipairs(self.players) do
             v.hu = nil
-            v.men = nil
-            v.ting = nil
             v.jiao = nil
             v.pai = {
                 ming_pai = {},
                 shou_pai = {},
                 desk_tiles = {},
+                huan = nil,
             }
+            v.que = nil
             if v.deposit then
                 v:forced_exit()
             elseif v:is_android() then
@@ -1337,12 +1568,11 @@ function maajan_table:ding_zhuang()
         return
     end
 
-    local pao_counts = {}
-    for _,p in pairs(self.players) do
-        if p.hu then
-            table.incr(pao_counts,self.players[p.hu.zi_mo and p.chair_id or p.hu.whoee].chair_id)
-        end
-    end
+    local pao_counts = table.agg(self.players,{},function(tb,p) 
+        if not p.hu then return tb end
+        table.incr(tb,self.players[p.hu.zi_mo and p.chair_id or p.hu.whoee].chair_id)
+        return tb
+    end)
 
     local max_chair,max_c = table.max(pao_counts)
     if max_c and max_c > 1 then
@@ -1354,6 +1584,7 @@ function maajan_table:ding_zhuang()
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
+        if not l.hu and not r.hu then return true end
         return l.hu.time < r.hu.time
     end)
 
@@ -1372,8 +1603,13 @@ function maajan_table:tile_count_2_tiles(counts)
 end
 
 function maajan_table:load_lua_cfg()
-	local maajan_config = self.room_.room_cfg
-	self.mj_min_scale = maajan_config.mj_min_scale
+	
+end
+
+function maajan_table:on_offline(player)
+    self:set_trusteeship(player,true)
+    
+    base_table.on_offline(self,player)
 end
 
 -- 检查是否可取消准备
@@ -1388,7 +1624,7 @@ function maajan_table:can_stand_up(player, reason)
 end
 
 function maajan_table:is_play(...)
-	return self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE
+	return self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE and self.cur_state_FSM ~= FSM_S.PER_BEGIN
 end
 
 function maajan_table:clear_deposit_and_time_out(player)
@@ -1448,24 +1684,9 @@ function maajan_table:safe_event(evt)
         end
 
         if self.last_act ~= self.cur_state_FSM then
-            local states = {
-                [FSM_S.PER_BEGIN] = "PER_BEGIN",
-                [FSM_S.XI_PAI] = "XI_PAI",
-                [FSM_S.CHECK_TING] = "CHECK_TING",
-                [FSM_S.WAIT_MO_PAI] =  "WAIT_MO_PAI",
-                [FSM_S.WAIT_CHU_PAI] =  "WAIT_CHU_PAI",
-                [FSM_S.WAIT_ACTION_AFTER_CHU_PAI] = "WAIT_ACTION_AFTER_CHU_PAI",
-                [FSM_S.WAIT_ACTION_AFTER_MO_PAI] = "WAIT_ACTION_AFTER_MO_PAI",
-                [FSM_S.GAME_BALANCE] =	"GAME_BALANCE",
-                [FSM_S.DING_QUE] = "DING_QUE",
-                [FSM_S.HUAN_PAI] = "HUAN_PAI",
-                [FSM_S.GAME_CLOSE] = "GAME_CLOSE",
-            }
-
-            log.info("cur state is " .. states[self.cur_state_FSM])
             for _,p in pairs(self.players) do
                 if p and p.pai then 
-                    log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai)))
+                    log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai))) 
                 end
             end
             self.last_act = self.cur_state_FSM
@@ -1728,30 +1949,35 @@ function maajan_table:reconnect(player)
     player.deposit = nil
     self:send_data_to_enter_player(player,true)
 
-    self:safe_event({
-        type = ACTION.RECONNECT,
-        player = player,
-    })
+    if self:is_play() then
+        self:safe_event({
+            type = ACTION.RECONNECT,
+            player = player,
+        })
+    end
+
+    self:set_trusteeship(player)
 
     base_table.reconnect(self,player)
 end
 
-function maajan_table:can_hu(player,in_pai)
-    local hu_types = mj_util.hu(player.pai,in_pai)
-    if table.nums(hu_types) == 0 then
-        return false
+function maajan_table:begin_clock(timeout,player,total_time)
+    if player then 
+        send2client_pb(player,"SC_TimeOutNotify",{
+            left_time = timeout,
+            total_time = total_time,
+        })
+        return
     end
 
-    local hu_type = self:max_hu_score(hu_types)
-    local gang = table.sum(player.pai.ming_pai,function(s)
-        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
-                s.type == SECTION_TYPE.BA_GANG ) and 1 or 0
-    end)
+    self:broadcast2client("SC_TimeOutNotify",{
+        left_time = timeout,
+        total_time = total_time,
+    })
+end
 
-    local chu_pai_player = self:chu_pai_player()
-    return  def.is_action_gang(chu_pai_player.last_action or 0) or
-            gang > 0 or
-            hu_type.score > 1
+function maajan_table:can_hu(player,in_pai)
+    return mj_util.is_hu(player.pai,in_pai)
 end
 
 function maajan_table:hu_type_score(types)
@@ -1766,11 +1992,6 @@ function maajan_table:hu_type_score(types)
     end
 
     return hts
-end
-
-function maajan_table:hu_fan_match(hu)
-    local hu_type = self:max_hu_score(hu.types)
-    return hu_type.score >= self.mj_min_scale
 end
 
 function maajan_table:max_hu_score(hu_types)

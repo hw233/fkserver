@@ -707,6 +707,10 @@ function base_table:broadcast2client_except(except,msgname, msg)
 	onlineguid.broadcast(guids,msgname,msg)
 end
 
+function base_table:on_player_sit_down(player)
+
+end
+
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	player.table_id = self.table_id_
@@ -714,6 +718,9 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	self.players[chair_id] = player
 	log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
 			player.guid,player.table_id,player.chair_id)
+
+	self:on_player_sit_down(player,reconnect)
+	
 	if not player:is_android() then
 		for i, p in ipairs(self.players) do
 			if p == false then
@@ -874,6 +881,15 @@ function base_table:player_stand_up(player, reason)
 	log.info("base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s,offline:%s",
 			player.guid,player.table_id,player.chair_id,reason,reason == enum.STANDUP_REASON_OFFLINE)
 
+	log.info("guid %s,reason %s,offline:%s",player.guid,reason,reason == enum.STANDUP_REASON_OFFLINE)
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		self:on_offline(player)
+		player.is_offline = true -- 掉线了
+		self:foreach_except(player.chair_id,function(p)
+			p:notify_stand_up(player,true)
+		end)
+	end
+
 	if self:can_stand_up(player, reason) then
 		log.info("base_table:player_stand_up success")
 		local chairid = player.chair_id
@@ -881,6 +897,8 @@ function base_table:player_stand_up(player, reason)
 		local list_guid = p and p.guid or -1
 		log.info("set guid[%s] table_id[%s] players[%d] is false [ player_list is %s , player_list.guid [%s]]",
 			player.guid,player.table_id,chairid , self.players[chairid], list_guid)
+
+		self:on_player_stand_up(player,reason)
 
 		if self:is_ready(chairid) then
 			self:cancel_ready(chairid)
@@ -930,19 +948,24 @@ function base_table:player_stand_up(player, reason)
 		return true
 	end
 
-	log.info("guid %s,reason %s,offline:%s",player.guid,reason,reason == enum.STANDUP_REASON_OFFLINE)
-	if reason == enum.STANDUP_REASON_OFFLINE then
-		player.is_offline = true -- 掉线了
-		self:foreach_except(player.chair_id,function(p)
-			p:notify_stand_up(player,true)
-		end)
-	end
-
 	return false
 end
 
-function base_table:set_trusteeship(player)
+function base_table:on_player_stand_up(player,reason)
+
+end
+
+function base_table:on_offline(player)
+	player.is_offline = true
+end
+
+function base_table:set_trusteeship(player,trustee)
 	log.info("====================base_table:set_trusteeship")
+	self:broadcast2client("SC_Trustee",{
+        result = enum.ERROR_NONE,
+        chair_id = player.chair_id,
+        is_trustee = trustee and true or false,
+    })
 end
 
 -- 准备开始

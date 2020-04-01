@@ -638,10 +638,22 @@ function table.sum(tb,agg)
     return value
 end
 
+function table.min(tb,agg)
+    local mini,minv
+    for i,v in pairs(tb) do
+        local aggv = agg and agg(v,i) or v
+        if not minv or aggv < minv then
+            minv = aggv
+            mini = i
+        end
+    end
+    return mini,minv
+end
+
 function table.max(tb,agg)
     local maxi,maxv
     for i,v in pairs(tb) do
-        local aggv = agg and agg(v) or v
+        local aggv = agg and agg(v,i) or v
         if not maxv or aggv > maxv then
             maxv = aggv
             maxi = i

@@ -343,20 +343,24 @@ local function is_1_9(pai,cache)
 	end)
 end
 
+local function is_duan_yao(pai,cache)
+	local is_19 = table.logic_or(cache,function(_,tile)
+		local num = rule.tile_value(tile)
+		return num == 1 or num == 9
+	end) or table.logic_or(pai.ming_pai,function(s)
+		local num = rule.tile_value(s.tile)
+		return num == 1 or num == 9
+	end)
+
+	return not is_19
+end
+
 local function is_men_qing(pai,_)
 	return table.logic_and(pai.ming_pai,function(s) return s.type == SECTION_TYPE.AN_GANG end)
 end
 
-local function gou_count(pai,cache)
-	local all_tiles = clone(cache)
-	table.walk(pai.ming_pai,function(s)
-		if s.type == SECTION_TYPE.PENG then table.incr(all_tiles,s.tile,3) end
-		if s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or s.type == SECTION_TYPE.BA_GANG then 
-			table.incr(all_tiles,s.tile,4)
-		end
-	end)
-
-	return table.sum(all_tiles,function(c) return c == 4 and 1 or 0 end)
+local function gou_count(cache)
+	return table.sum(cache,function(c) return c == 4 and 1 or 0 end)
 end
 
 local function unique_hu_types(base_hu_types)
@@ -437,10 +441,10 @@ function rule.hu(pai,inPai)
 	local common_types = {}
 	local is_19 = is_1_9(pai,cache)
 	if is_19 then common_types[HU_TYPE.QUAN_YAO_JIU] = 1 end
-	if not is_19 then common_types[HU_TYPE.DUAN_YAO] = 1 end
+	if is_duan_yao(pai,cache) then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if is_men_qing(pai,cache) then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
-	local gou = gou_count(pai,cache)
+	local gou = gou_count(cache)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do

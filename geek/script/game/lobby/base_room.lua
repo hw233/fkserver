@@ -617,12 +617,12 @@ function base_room:enter_room(player)
 	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
-function base_room:cs_trusteeship(player)
+function base_room:cs_trusteeship(player,is_trustee)
 	local tb = self:find_table(player.table_id)
 	if not tb then
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
-	tb:set_trusteeship(player,true)
+	tb:set_trusteeship(player,is_trustee)
 end
 
 function base_room:is_play(player)

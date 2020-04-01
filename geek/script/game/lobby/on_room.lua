@@ -146,7 +146,7 @@ end
 function on_cs_trusteeship(msg,guid)
 	log.info ("test .................. on_cs_Trusteeship")
 	local player = base_players[guid]
-	g_room:cs_trusteeship(player)
+	g_room:cs_trusteeship(player,msg.is_trustee)
 end
 
 -- 加载玩家数据
