@@ -1021,10 +1021,17 @@ function maajan_table:chu_pai()
     end
 end
 
+function maajan_table:get_max_fan()
+    local fan_opt = self.conf.conf.fan.max_option
+    return self.room_.conf.private_conf.fan.fan_option[fan_opt]
+end
+
 function maajan_table:do_balance()
     local typefans,scores = self:game_balance()
+    local max_fan = self:get_max_fan() or 3
     local fans = table.agg(typefans,{},function(tb,v,chair)
-        tb[chair] = table.sum(v,function(t) return t.fan * t.count end)
+        local fan = table.sum(v,function(t) return t.fan * t.count end)
+        tb[chair] = fan > max_fan and max_fan or fan
         return tb
     end)
 
