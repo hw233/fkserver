@@ -210,7 +210,7 @@ function maajan_table:fast_start_vote(player)
         })
 
         if agree then
-            if not table.logic_or(self.players,function(_,chair) return vote_result[chair] ~= nil end) then
+            if not table.logic_and(self.players,function(_,chair) return vote_result[chair] ~= nil end) then
                 return
             end
         end
