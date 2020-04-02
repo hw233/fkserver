@@ -499,12 +499,16 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         self:send_ding_que_status(p)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
-        self:send_action_waiting(waiting_actions[p.chair_id])
         if self.chu_pai_player_index == p.chair_id then
             send2client_pb(p,"SC_Maajan_Draw",{
                 chair_id = p.chair_id,
                 tile = p.mo_pai,
             })
+        end
+
+        local action = waiting_actions[p.chair_id]
+        if action then
+            self:send_action_waiting(action)
         end
     end
 
