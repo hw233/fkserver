@@ -2,20 +2,6 @@ local define = {}
 
 local pb = require "pb_files"
 
---输入事件
-define.FSM_event = {
-    UPDATE          = 0,	--time update
-	TRUSTEE			= 1,	--托管
-	CHI				= 2,	--吃
-	PENG  			= 3,	--碰
-	GANG  			= 4,	--杠
-	HU	  			= 5,	--胡
-	PASS  			= 6,	--过
-	CHU_PAI			= 7,	--出牌
-	JIA_BEI			= 8,	--加倍
-	HUAN_PAI 		= 9,	--换牌
-	DING_QUE 		= 10,	--定缺
-}
 
 define.ACTION = {
 	TRUSTEE = pb.enum("ACTION","ACTION_TRUSTEE"),
@@ -42,6 +28,7 @@ define.ACTION = {
 	CLOSE = -1,
 	RECONNECT = -2,
 	TRUSTEE = -3,
+	VOTE = -4,
 }
 
 local TILE_TYPE = {
@@ -102,6 +89,7 @@ define.FSM_state = {
 	HUAN_PAI 					= pb.enum("FSM_STATE","HUAN_PAI"),	--换牌
 	DING_QUE 					= pb.enum("FSM_STATE","DING_QUE"),	--定缺
 	GAME_IDLE_HEAD				= pb.enum("FSM_STATE","GAME_IDLE_HEAD"), --用于客户端播放动画延迟				
+	FAST_START_VOTE 			= pb.enum("FSM_STATE","FAST_START_VOTE"), --快速开始投票
 }
 
 local HU_TYPE = {

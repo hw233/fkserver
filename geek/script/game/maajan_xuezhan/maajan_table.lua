@@ -16,7 +16,6 @@ local resume = profile.resume
 
 require "functions"
 
-local FSM_E  = def.FSM_event
 local FSM_S  = def.FSM_state
 
 local ACTION = def.ACTION
@@ -59,7 +58,6 @@ local all_tiles = {
         11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
     }
 }
-
 
 
 local maajan_table = base_table:new()
@@ -158,6 +156,116 @@ function maajan_table:on_started(player_count)
     self.co = skynet.fork(function()
         self:main()
     end)
+end
+
+function maajan_table:fast_start_vote_req(player,msg)
+    self.co = skynet.fork(function()
+        self:fast_start_vote(player)
+    end)
+end
+
+function maajan_table:fast_start_vote_commit(player,msg)
+    self:safe_event({player = player,type = ACTION.VOTE,agree = msg.agree})
+end
+
+function maajan_table:fast_start_vote(player)
+    self:update_state(FSM_S.FAST_START_VOTE)
+    local timeout = 60
+    self:broadcast2client("SC_VoteTableReq",{
+        vote_type = "FAST_START",
+        request_guid = player.guid,
+        request_chair_id = player.chair_id,
+        timeout = timeout,
+    })
+
+    local vote_result = {}
+
+    vote_result[player.chair_id] = true
+    self:broadcast2client("SC_VoteTableCommit",{
+        result = enum.ERROR_NONE,
+        chair_id = player.chair_id,
+        guid = player.guid,
+        agree = true,
+    })
+
+    local timer = timer_manager:new_timer(timeout,function() 
+        self:foreach(function(p)
+            if vote_result[p.chair_id] == nil then
+                self:safe_event({player = p,type = ACTION.VOTE,agree = false})
+            end
+        end)
+    end)
+
+    local function do_fast_start_vote(p,agree)
+        agree = agree and true or false
+        if not vote_result[p.chair_id] then
+            vote_result[p.chair_id] = agree
+        end
+
+        self:broadcast2client("SC_VoteTableCommit",{
+            result = enum.ERROR_NONE,
+            chair_id = p.chair_id,
+            guid = p.guid,
+            agree = agree,
+        })
+
+        if agree then
+            if not table.logic_or(self.players,function(_,chair) return vote_result[chair] ~= nil end) then
+                return
+            end
+        end
+
+        local all_agree = table.logic_and(vote_result,function(agree) return agree end)
+        self:broadcast2client("SC_VoteTable",{success = all_agree})
+        if not all_agree then
+            return
+        end
+
+        self:start(table.nums(self.players))
+
+        return true
+    end
+
+    local function reconnect(p)
+        local status = {}
+        for chair,r in pairs(vote_result) do
+            local pi = self.players[chair]
+            table.insert(status,{
+                chair_id = pi.chair_id,
+                guid = pi.guid,
+                agree = r,
+            })
+        end
+
+        send2client_pb(p,"SC_VoteTableRequestInfo",{
+            vote_type = "FAST_START",
+            request_guid = player.guid,
+            request_chair_id = player.chair_id,
+            timeout= math.ceil(timer and timer.remainder or timeout),
+            status = status
+        })
+    end
+
+    while true do
+        local evt = yield()
+        dump(evt)
+        if evt.type == ACTION.CLOSE then
+            self.co = nil
+            if timer then timer:kill() end
+            return
+        end
+
+        if evt.type == ACTION.RECONNECT then
+            reconnect(evt.player)
+        elseif evt.type == ACTION.VOTE then
+            local p = evt.player
+            local complete = do_fast_start_vote(p,evt.agree)
+            if complete then
+                timer:kill()
+                return 
+            end
+        end
+    end
 end
 
 function maajan_table:set_trusteeship(player,trustee)
@@ -1729,7 +1837,7 @@ function maajan_table:can_stand_up(player, reason)
         return true
     end
 
-    return not self:is_play()
+    return not self.cur_state_FSM
 end
 
 function maajan_table:is_play(...)
@@ -1785,26 +1893,21 @@ function maajan_table:on_cs_ding_que(player,msg)
 end
 
 function maajan_table:safe_event(evt)
-    if self.cur_state_FSM ~= FSM_S.GAME_CLOSE then
-        for k,v in pairs(FSM_E) do
-            if evt.type == v then
-                log.info("cur event is " .. k)
-            end
-        end
-
-        if self.last_act ~= self.cur_state_FSM then
-            for _,p in pairs(self.players) do
-                if p and p.pai then 
-                    log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai))) 
-                end
-            end
-            self.last_act = self.cur_state_FSM
-        end
-    end
+    -- if self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE then
+    --     if self.last_act ~= self.cur_state_FSM then
+    --         for _,p in pairs(self.players) do
+    --             if p and p.pai then 
+    --                 log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai))) 
+    --             end
+    --         end
+    --         self.last_act = self.cur_state_FSM
+    --     end
+    -- end
 
     local ret,msg = resume(self.co,evt)
     if not ret then
         error(debug.traceback(self.co,msg))
+        self.co = nil
     end
 end
 
@@ -2071,14 +2174,16 @@ end
 function maajan_table:reconnect(player)
 	log.info("player reconnect : ".. player.chair_id)
     
+    if self.cur_state_FSM == FSM_S.FAST_START_VOTE then
+        self:safe_event({type = ACTION.RECONNECT,player = player,})
+        return
+    end
+
     player.deposit = nil
     self:send_data_to_enter_player(player,true)
 
-    if self:is_play() then
-        self:safe_event({
-            type = ACTION.RECONNECT,
-            player = player,
-        })
+    if self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.PER_BEGIN then
+        self:safe_event({type = ACTION.RECONNECT,player = player,})
     end
 
     self:send_hu_status(player)

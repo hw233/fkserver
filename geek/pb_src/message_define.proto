@@ -1515,7 +1515,7 @@ message CS_VoteTableReq{
 message SC_VoteTableReq{
 	enum MsgID{Nil = 0; ID = 1202;}
 	int32 result = 1;
-	int32 vote_type = 2;
+	string vote_type = 2;
 	int32 request_guid = 3;
 	int32 request_chair_id = 4;
 	int32 datetime = 5;
@@ -1531,7 +1531,7 @@ message VoteCommitStatus{
 // 重连时的投票详情
 message SC_VoteTableRequestInfo{
 	enum MsgID { Nil = 0; ID = 1203;}
-	int32 vote_type = 1;
+	string vote_type = 1;
 	int32 request_guid = 2; 
 	int32 request_chair_id = 3;
 	int32 datetime = 4;

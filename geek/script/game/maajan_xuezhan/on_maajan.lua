@@ -170,3 +170,38 @@ function on_cs_ding_que(msg,guid)
 		tb:on_cs_ding_que(player, msg)
 	end
 end
+
+
+function on_cs_vote_table_req(msg,guid)
+	log.info ("test .................. on_cs_vote_table_req,guid:%s",guid)
+	local player = base_players[guid]
+	if not player then
+		log.error("on_cs_vote_table_req no player,guid:%s",guid)
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		if msg.vote_type == "FAST_START" then
+			tb:fast_start_vote_req(player, msg)
+		else
+			send2client_pb("SC_VoteTableReq",{
+				result = enum.ERORR_PARAMETER_ERROR
+			})
+		end
+	end
+end
+
+function on_cs_vote_table_commit(msg,guid)
+	log.info ("test .................. on_cs_vote_table_commit,guid:%s",guid)
+	local player = base_players[guid]
+	if not player then
+		log.error("on_cs_vote_table_commit no player,guid:%s",guid)
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:fast_start_vote_commit(player, msg)
+	end
+end
