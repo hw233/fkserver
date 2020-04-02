@@ -1197,7 +1197,7 @@ function maajan_table:do_balance()
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
-        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        if l.hu and r.hu then return l.hu.time < r.hu.time end
         return false
     end)
 
@@ -2096,7 +2096,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     dump(msg)
     
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
-    if is_reconnect then
+    if is_reconnect and last_chu_pai_player then
         msg.pb_rec_data = {
             last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
             last_chu_pai = last_tile
@@ -2113,7 +2113,7 @@ function maajan_table:send_hu_status(player)
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
-        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        if l.hu and r.hu then return l.hu.time < r.hu.time end
         return false
     end)
 
