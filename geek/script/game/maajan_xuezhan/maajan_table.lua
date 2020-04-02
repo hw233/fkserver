@@ -1073,12 +1073,14 @@ function maajan_table:chu_pai()
             end)
 
             local chu_pai = p.mo_pai
-            if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
-                local c
-                repeat
-                    chu_pai,c = table.choice(men_tiles[p.que])
-                    log.info("%d,%d",chu_pai,c)
-                until c and c > 0
+            if p.que then
+                if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
+                    local c
+                    repeat
+                        chu_pai,c = table.choice(men_tiles[p.que])
+                        log.info("%d,%d",chu_pai,c)
+                    until c and c > 0
+                end
             end
 
             log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_pai)
@@ -1416,6 +1418,9 @@ end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
+    
+    if not p.que then return actions end
+
     for act,tiles in pairs(actions) do
         for tile,_ in pairs(tiles) do
             if math.floor(tile / 10) == p.que then
