@@ -903,6 +903,38 @@ end
 function maajan_table:chu_pai()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
+    local function send_ting_tips(player)
+        if not player.trustee then
+            local ting_tips = {}
+            local pai = clone(player.pai)
+            local ting_tiles = mj_util.is_ting_full(pai)
+            if table.nums(ting_tiles) > 0 then
+                local discard_tings = {}
+                for discard,tiles in pairs(ting_tiles) do
+                    local tings = {}
+                    for tile,_ in pairs(tiles) do
+                        table.decr(pai.shou_pai,tile)
+                        local fans = self:calculate_hu({
+                            types = mj_util.hu(pai,tile),
+                            tile = tile,
+                        })
+                        local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+                        table.insert(tings,{tile = tile,fan = fan})
+                    end
+    
+                    table.insert(discard_tings,{
+                        discard = discard,
+                        tiles_info = tings,
+                    })
+                end
+    
+                send2client_pb(player,"SC_TingTips",{
+                    ting = discard_tings
+                })
+            end
+        end
+    end
+
     local function reconnect(p)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
@@ -913,6 +945,7 @@ function maajan_table:chu_pai()
                 tile = p.mo_pai,
             })
         end
+        send_ting_tips(p)
     end
 
     local player = self:chu_pai_player()
@@ -954,36 +987,7 @@ function maajan_table:chu_pai()
         end
     end
 
-    if not player.trustee then
-        local ting_tips = {}
-        local pai = clone(player.pai)
-        local ting_tiles = mj_util.is_ting_full(pai)
-        dump(ting_tiles)
-        if table.nums(ting_tiles) > 0 then
-            local discard_tings = {}
-            for discard,tiles in pairs(ting_tiles) do
-                local tings = {}
-                for tile,_ in pairs(tiles) do
-                    table.decr(pai.shou_pai,tile)
-                    local fans = self:calculate_hu({
-                        types = mj_util.hu(pai,tile),
-                        tile = tile,
-                    })
-                    local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
-                    table.insert(tings,{tile = tile,fan = fan})
-                end
-
-                table.insert(discard_tings,{
-                    discard = discard,
-                    tiles_info = tings,
-                })
-            end
-
-            send2client_pb(player,"SC_TingTips",{
-                ting = discard_tings
-            })
-        end
-    end
+    send_ting_tips(player)
 
     local evt
     while true do
