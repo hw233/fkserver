@@ -491,7 +491,19 @@ message TingTips{
 
 // 听牌提示
 message SC_TingTips{
-	enum MsgID { Nil = 0; ID = 23124;}
+	enum MsgID { Nil = 0; ID = 23134;}
 	repeated TingTips ting = 1;
 }
 
+message SC_PlayerHuStatus{
+	enum MsgID { Nil = 0; ID = 23135;}
+	int32 chair_id = 1;
+	int32 hu = 2;
+	int32 hu_tile = 3;
+	int32 hu_index = 4;
+}
+
+message SC_HuStatus{
+	enum MsgID { Nil = 0; ID = 23136;}
+	repeated SC_PlayerHuStatus status = 1;
+}

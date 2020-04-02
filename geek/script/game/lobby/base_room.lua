@@ -346,11 +346,6 @@ function base_room:create_private_table(player,chair_count,round, conf,club)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
 	end
 
-	-- if not self:check_entry_table_limit(player,conf,club) then
-	-- 	log.info("create private table:%s,%d money limit:%d",def_game_name,def_game_id,player.guid)
-	-- 	return enum.GAME_SERVER_RESULT_ROOM_LIMIT
-	-- end
-
 	local tb,table_id = self:find_empty_table()
 	if not tb then
 		log.info("create private table:%s,%d no found table",def_game_name,def_game_id,player.guid)
@@ -439,9 +434,12 @@ function base_room:join_private_table(player,private_table,chair_count)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
 	end
 
-	self:player_enter_room(player)
+	local result = tb:player_sit_down(player, chair_id)
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		return result
+	end
 
-	tb:player_sit_down(player, chair_id)
+	self:player_enter_room(player)
 
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table.table_id)
 

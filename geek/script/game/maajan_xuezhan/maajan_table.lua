@@ -107,6 +107,14 @@ function maajan_table:get_trustee_conf()
     return nil
 end
 
+function maajan_table:player_sit_down(player, chair_id,reconnect)
+    if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
+        return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
+    end
+
+    return base_table.player_sit_down(self,player,chair_id,reconnect)
+end
+
 function maajan_table:on_started(player_count)
     base_table.on_started(self,player_count)
 	for _,v in pairs(self.players) do
@@ -153,6 +161,10 @@ function maajan_table:on_started(player_count)
 end
 
 function maajan_table:set_trusteeship(player,trustee)
+    if not self.conf.conf.trustee or table.nums(self.conf.conf.trustee) == 0 then
+        return 
+    end
+
     if player.trustee and trustee then
         return 
     end
@@ -889,15 +901,13 @@ function maajan_table:close()
 end
 
 function maajan_table:chu_pai()
-    self:update_state(FSM_S.WAIT_CHU_PAI)
-    self:broadcast_desk_state()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     local function reconnect(p)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         self:send_ding_que_status(p)
-        if p.chair_id == self.chu_pai_player_index then
+        if p.chair_id == self.chu_pai_player_index and self.cur_state_FSM == FSM_S.WAIT_MO_PAI then
             send2client_pb(p,"SC_Maajan_Draw",{
                 chair_id = p.chair_id,
                 tile = p.mo_pai,
@@ -905,6 +915,7 @@ function maajan_table:chu_pai()
         end
     end
 
+    local player = self:chu_pai_player()
     local timer
     local chu_pai_timer
     local trustee_type,trustee_seconds = self:get_trustee_conf()
@@ -929,8 +940,6 @@ function maajan_table:chu_pai()
             self:safe_event({chair_id = p.chair_id,type = ACTION.CHU_PAI,tile = chu_pai})
         end
 
-        local player = self:chu_pai_player()
-
         timer = timer_manager:new_timer(trustee_seconds,function()
             self:set_trusteeship(player,true)
             auto_chu_pai(player)
@@ -942,6 +951,37 @@ function maajan_table:chu_pai()
             chu_pai_timer = timer_manager:calllater(math.random(1,2),function()
                 auto_chu_pai(player)
             end)
+        end
+    end
+
+    if not player.trustee then
+        local ting_tips = {}
+        local pai = clone(player.pai)
+        local ting_tiles = mj_util.is_ting_full(pai)
+        dump(ting_tiles)
+        if table.nums(ting_tiles) > 0 then
+            local discard_tings = {}
+            for discard,tiles in pairs(ting_tiles) do
+                local tings = {}
+                for tile,_ in pairs(tiles) do
+                    table.decr(pai.shou_pai,tile)
+                    local fans = self:calculate_hu({
+                        types = mj_util.hu(pai,tile),
+                        tile = tile,
+                    })
+                    local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+                    table.insert(tings,{tile = tile,fan = fan})
+                end
+
+                table.insert(discard_tings,{
+                    discard = discard,
+                    tiles_info = tings,
+                })
+            end
+
+            send2client_pb(player,"SC_TingTips",{
+                ting = discard_tings
+            })
         end
     end
 
@@ -958,11 +998,13 @@ function maajan_table:chu_pai()
         if evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
             if timer then
-                self:begin_clock(timer.remainder,player)
+                self:begin_clock(timer.remainder,evt.player)
             end
         elseif evt.type == ACTION.TRUSTEE then
             if not evt.trustee and evt.player.chair_id == self.chu_pai_player_index then
-                chu_pai_timer:kill()
+                if chu_pai_timer then
+                    chu_pai_timer:kill()
+                end
             end
         else
             break
@@ -1033,11 +1075,7 @@ function maajan_table:do_balance()
         player_balance = {},
     }
 
-    local ps = table.agg(self.players,{},function(tb,p,chair)
-        table.insert(tb,p)
-        return tb
-    end)
-
+    local ps = table.values(self.players)
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
@@ -1647,8 +1685,8 @@ function maajan_table:ding_zhuang()
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
-        if l.hu and r.hu then return l.hu.time < r.hu.time end
-        return true
+        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        return false
     end)
 
     self.zhuang = ps[1].chair_id
@@ -1764,15 +1802,6 @@ end
 
 function maajan_table:chu_pai_player()
     return self.players[self.chu_pai_player_index]
-end
-
-function maajan_table:broadcast_desk_state()
-    if  self.cur_state_FSM == FSM_S.PER_BEGIN or self.cur_state_FSM == FSM_S.XI_PAI or
-        self.cur_state_FSM == FSM_S.WAIT_MO_PAI or self.cur_state_FSM >= FSM_S.GAME_IDLE_HEAD then
-        return
-    end
-
-    self:broadcast2client("SC_Maajan_Desk_State",{state = self.cur_state_FSM})
 end
 
 function maajan_table:broadcast_player_hu(player,action)
@@ -1921,7 +1950,6 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         act_time_limit = def.ACTION_TIME_OUT,
         decision_time_limit = def.ACTION_TIME_OUT,
         is_reconnect = is_reconnect,
-        que_men = player.que or -1,
         pb_players = {},
     }
 
@@ -1959,7 +1987,33 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         }
     end
 
+    
+
     send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+end
+
+function maajan_table:send_hu_status(player)
+    local ps = table.values(self.players)
+    table.sort(ps,function(l,r)
+        if l.hu and not r.hu then return true end
+        if not l.hu and r.hu then return false end
+        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        return false
+    end)
+
+    local status = {}
+    table.foreach(ps,function(p,i) 
+        table.insert(status,{
+            chair_id = p.chair_id,
+            hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
+            hu_index = p.hu and i or nil,
+            hu_tile = p.hu and p.hu.tile or nil,
+        })
+    end)
+
+    send2client_pb(player,"SC_HuStatus",{
+        status = status,
+    })
 end
 
 function maajan_table:send_ding_que_status(player)
@@ -2018,6 +2072,8 @@ function maajan_table:reconnect(player)
             player = player,
         })
     end
+
+    self:send_hu_status(player)
 
     self:set_trusteeship(player)
 

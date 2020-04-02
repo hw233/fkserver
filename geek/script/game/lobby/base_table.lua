@@ -711,6 +711,33 @@ function base_table:on_player_sit_down(player)
 
 end
 
+function base_table:check_same_ip_net(player)
+	local function ipsec(ip)
+		local ips = {}
+		for s in ip:gmatch("%d+") do
+			table.insert(ips,tonumber(s))
+		end
+
+		return ips
+	end
+
+	local function same_ip_net(ip1,ip2)
+		local s1 = ipsec(ip1)
+		local s2 = ipsec(ip2)
+		if #s1 < 3 or #s2 < 3 then
+			return false
+		end
+	
+		return s1[1] == s2[1] and s1[2] == s2[2] and s1[3] == s2[3]
+	end
+
+	local login_ip = player.login_ip
+    return table.logic_or(self.players,function(p)
+        if p == player then return end
+        return same_ip_net(login_ip,p.login_ip)
+    end)
+end
+
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	player.table_id = self.table_id_
@@ -757,6 +784,8 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	end
 
 	onlineguid[player.guid] = nil
+
+	return enum.LOGIN_RESULT_SUCCESS
 end
 
 function base_table:player_sit_down_finished(player)
