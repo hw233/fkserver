@@ -859,7 +859,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         elseif evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
             if timer then
-                self:begin_clock(timer.remainder,player)
+                self:begin_clock(timer.remainder,evt.player)
             end
         elseif evt.type == ACTION.TRUSTEE then
             local chair = evt.player.chair_id
@@ -951,11 +951,8 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                 self:gotofunc(function() self:do_balance() end)
             else
                 local last_hu_player = nil
-                for _,p in ipairs(self.players) do
-                    if p.hu then last_hu_player = p end
-                end
-                self:jump_to_player_index(last_hu_player)
-                self:next_player_index()
+                self:foreach(function(p) if p.hu then last_hu_player = p end end)
+                self:next_player_index(last_hu_player)
                 self:gotofunc(function() self:mo_pai() end)
             end
         end
@@ -1040,42 +1037,91 @@ function maajan_table:close()
     self.co = nil
 end
 
+function maajan_table:ting(p)
+    if not self:is_no_que(p) then return {} end
+
+    local ting_tiles = mj_util.is_ting(p.pai) or {}
+    if p.que and ting_tiles then
+        ting_tiles = table.agg(ting_tiles,{},function(tb,b,tile)
+            tb[tile] = math.floor(tile / 10) ~= p.que and b or nil
+            return tb
+        end)
+    end
+
+    return ting_tiles
+end
+
+function maajan_table:is_no_que(p)
+    if not p.que then return true end
+
+    local men_counts = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
+        table.incr(tb,math.floor(tile / 10),c)
+        return tb
+    end)
+
+    local men_count = table.sum(men_counts,function(c,men) return (c > 0 and men < 3) and 1 or 0 end)
+    return men_count == 1
+end
+
+function maajan_table:ting_full(p)
+    if not self:is_no_que(p) then return {} end
+
+    local ting_tiles = mj_util.is_ting_full(p.pai)
+    if p.que then
+        ting_tiles = table.agg(ting_tiles,{},function(tb,tiles,discard)
+            local hu_tiles = {}
+            for tile,_ in pairs(tiles) do
+                hu_tiles[tile] = math.floor(tile / 10) ~= p.que and tile or nil
+            end
+
+            tb[discard] = table.nums(hu_tiles) > 0 and hu_tiles or nil
+            return tb
+        end)
+    end
+
+    return ting_tiles
+end
+
 function maajan_table:chu_pai()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
-    local function send_ting_tips(player)
-        if not player.trustee then
-            local pai = clone(player.pai)
-            local ting_tiles = mj_util.is_ting_full(pai)
-            if table.nums(ting_tiles) > 0 then
-                local discard_tings = {}
-                for discard,tiles in pairs(ting_tiles) do
-                    local tings = {}
-                    for tile,_ in pairs(tiles) do
-                        table.decr(pai.shou_pai,discard)
-                        local hu = mj_util.hu(pai,tile)
-                        local fans = self:calculate_hu({
-                            types = hu,
-                            tile = tile,
-                        })
+    local function send_ting_tips(p)
+        local hu_tips = self.conf and self.conf.conf and self.conf.conf.play.hu_tips or nil
+        if not hu_tips or p.trustee then return end
 
-                        local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
-                        table.insert(tings,{tile = tile,fan = fan})
-                        table.incr(pai.shou_pai,discard)
-                    end
-    
-                    table.insert(discard_tings,{
-                        discard = discard,
-                        tiles_info = tings,
+        local ting_tiles = self:ting_full(p)
+        dump(ting_tiles)
+        if table.nums(ting_tiles) > 0 then
+            local discard_tings = {}
+            local pai = clone(p.pai)
+            for discard,tiles in pairs(ting_tiles) do
+                local tings = {}
+                table.decr(pai.shou_pai,discard)
+                for tile,_ in pairs(tiles) do
+                    local hu = mj_util.hu(pai,tile)
+                    local fans = self:calculate_hu({
+                        types = hu,
+                        tile = tile,
                     })
-                end
 
-                dump(discard_tings)
-    
-                send2client_pb(player,"SC_TingTips",{
-                    ting = discard_tings
+                    dump(fans)
+
+                    local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+                    table.insert(tings,{tile = tile,fan = fan})
+                end
+                table.incr(pai.shou_pai,discard)
+
+                table.insert(discard_tings,{
+                    discard = discard,
+                    tiles_info = tings,
                 })
             end
+
+            dump(discard_tings)
+
+            send2client_pb(p,"SC_TingTips",{
+                ting = discard_tings
+            })
         end
     end
 
@@ -1242,7 +1288,7 @@ function maajan_table:do_balance()
         return false
     end)
 
-    table.foreach(ps,function(p,i) 
+    table.foreach(ps,function(p,i)
         if p.hu then p.hu.index = i end
     end)
 
@@ -1692,9 +1738,10 @@ function maajan_table:game_balance()
     self:foreach(function(p)
         if p.hu then return end
 
-        local ting_tiles = mj_util.is_ting(p.pai)
+        local ting_tiles = self:ting(p)
         if table.nums(ting_tiles) > 0 then
             p.jiao = p.jiao or {tiles = ting_tiles}
+            dump(p.jiao)
         end
     end)
 
@@ -1830,7 +1877,13 @@ function maajan_table:on_final_game_overed()
         end),
     })
 
-    self:foreach(function(p) p.statistics = nil end)
+    local trustee_type,_ = self:get_trustee_conf()
+    self:foreach(function(p)
+        p.statistics = nil
+        if trustee_type then
+            self:set_trusteeship(p)
+        end
+    end)
 
     local total_winlose = {}
     for _,p in pairs(self.players) do
@@ -1992,14 +2045,19 @@ function maajan_table:safe_event(evt)
     dump(evt)
     
     if not self.co then
-        log.warning("maajan_table:safe_event safe_event but no co")
+        log.warning("maajan_table:safe_event safe_event got nil co")
+        return
+    end
+
+    local status = coroutine.status(self.co)
+    if status ~= "suspended" then
+        log.warning("maajan_table:safe_event safe_event non suspend")
         return
     end
 
     local ret,msg = resume(self.co,evt)
     if not ret then
         error(debug.traceback(self.co,msg))
-        self.co = nil
     end
 end
 
@@ -2024,11 +2082,10 @@ function maajan_table:is_action_time_out()
     return time_out
 end
 
-function maajan_table:next_player_index()
-    local max_chair,_ = table.max(self.players,function(_,i) return i end)
-    local chair = self.chu_pai_player_index
+function maajan_table:next_player_index(from)
+    local chair = from and from.chair_id or self.chu_pai_player_index
     repeat
-        chair = (chair % max_chair) + 1
+        chair = (chair % self.chair_count) + 1
         local p = self.players[chair]
     until p and not p.hu
     self.chu_pai_player_index = chair
@@ -2290,8 +2347,8 @@ end
 function maajan_table:begin_clock(timeout,player,total_time)
     if player then 
         send2client_pb(player,"SC_TimeOutNotify",{
-            left_time = timeout,
-            total_time = total_time,
+            left_time = math.ceil(timeout),
+            total_time = total_time and math.floor(total_time) or nil,
         })
         return
     end
