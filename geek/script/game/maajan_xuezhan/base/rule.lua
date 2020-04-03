@@ -312,7 +312,7 @@ local function is_qing_yi_se(pai,cache)
 	end)
 
 	table.agg(pai.ming_pai,men_counts,function(tb,s)
-		table.incr(tb,rule.tile_men(#SECTION_TILES[s.type](s)))
+		table.incr(tb,rule.tile_men(s.tile))
 		return tb
 	end)
 
