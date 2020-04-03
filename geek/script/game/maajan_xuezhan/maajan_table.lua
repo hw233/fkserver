@@ -287,7 +287,7 @@ function maajan_table:set_trusteeship(player,trustee)
     end
 
     if player.trustee and trustee then
-        return 
+        return
     end
 
     trustee = trustee and true or false
@@ -1248,10 +1248,7 @@ function maajan_table:do_balance()
 
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
-        local p_score = 0
-        if fanscores[chair_id] and fanscores[chair_id].score then
-            p_score = fanscores[chair_id].score
-        end
+        local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         local ming_pai = table.values(p.pai.ming_pai)
         local desk_pai = table.values(p.pai.desk_tiles)
@@ -1764,11 +1761,12 @@ function maajan_table:game_balance()
         end
     end)
 
-    local fanscores = table.merge(fans,scores,function(fan,score) 
-        return {
-            fan = fan or 0,
-            score = score or 0,
-        } 
+    local fanscores = table.agg(self.players,{},function(tb,p,chair)
+        tb[chair] = {
+            fan = fans[chair] or 0,
+            score = scores[chair] or 0,
+        }
+        return tb 
     end)
 
     return typefans,fanscores
@@ -1782,8 +1780,8 @@ function maajan_table:on_game_overed()
     self:update_state(FSM_S.PER_BEGIN)
 
     if not self.private_id then
-        local trustee_type,trustee_seconds = self:get_trustee_conf()
-        self:foreach(function(p)
+        
+        self:foreach(function(v)
             v.hu = nil
             v.jiao = nil
             v.pai = {
@@ -1795,10 +1793,6 @@ function maajan_table:on_game_overed()
 
             v.que = nil
 
-            if trustee_type and trustee_type == 3 then
-                self:set_trusteeship(p)
-            end
-
             if v.deposit then
                 v:forced_exit()
             elseif v:is_android() then
@@ -1807,8 +1801,12 @@ function maajan_table:on_game_overed()
         end)
     end
 
-    
-
+    local trustee_type,_ = self:get_trustee_conf()
+    self:foreach(function(p)
+        if trustee_type and trustee_type == 3 then
+            self:set_trusteeship(p)
+        end
+    end)
 
     base_table.on_game_overed(self)
     self:clear_event_pump()
@@ -1993,6 +1991,11 @@ function maajan_table:safe_event(evt)
 
     dump(evt)
     
+    if not self.co then
+        log.warning("maajan_table:safe_event safe_event but no co")
+        return
+    end
+
     local ret,msg = resume(self.co,evt)
     if not ret then
         error(debug.traceback(self.co,msg))
