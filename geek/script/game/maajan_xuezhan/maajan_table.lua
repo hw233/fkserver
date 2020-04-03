@@ -1046,15 +1046,16 @@ function maajan_table:chu_pai()
                 for discard,tiles in pairs(ting_tiles) do
                     local tings = {}
                     for tile,_ in pairs(tiles) do
-                        table.decr(pai.shou_pai,tile)
+                        table.decr(pai.shou_pai,discard)
+                        local hu = mj_util.hu(pai,tile)
                         local fans = self:calculate_hu({
-                            types = mj_util.hu(pai,tile),
+                            types = hu,
                             tile = tile,
                         })
 
-                        dump(fans)
                         local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
                         table.insert(tings,{tile = tile,fan = fan})
+                        table.incr(pai.shou_pai,discard)
                     end
     
                     table.insert(discard_tings,{
