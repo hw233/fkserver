@@ -87,6 +87,7 @@ function base_table:init(room, table_id, chair_count)
 	self.room_ = room
 	self.table_id_ = table_id
 	self.chair_count = chair_count
+	self.player_count = 0
 	self.def_game_name = def_game_name
 	self.def_game_id = def_game_id
 	self.game_end_event = {}
@@ -599,8 +600,8 @@ end
 
 -- 遍历桌子
 function base_table:foreach(func)
-	for _, p in pairs(self.players) do
-		func(p)
+	for i, p in pairs(self.players) do
+		func(p,i)
 	end
 end
 
@@ -708,7 +709,7 @@ function base_table:broadcast2client_except(except,msgname, msg)
 end
 
 function base_table:on_player_sit_down(player)
-
+	
 end
 
 function base_table:check_same_ip_net(player)
@@ -746,6 +747,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
 			player.guid,player.table_id,player.chair_id)
 
+	self.player_count = self.player_count + 1
 	self:on_player_sit_down(player,reconnect)
 	
 	if not player:is_android() then
@@ -853,9 +855,8 @@ function base_table:transfer_owner()
 
 	local function next_player(owner)
 		local chair_id = owner.chair_id
-		local chair_count = self.chair_count
-		for i = chair_id,chair_id + chair_count - 2 do
-			local p = self.players[i % chair_count + 1]
+		for i = chair_id,chair_id + self.chair_count - 2 do
+			local p = self.players[i % self.chair_count + 1]
 			if p then
 				return p
 			end
@@ -926,7 +927,7 @@ function base_table:player_stand_up(player, reason)
 		local list_guid = p and p.guid or -1
 		log.info("set guid[%s] table_id[%s] players[%d] is false [ player_list is %s , player_list.guid [%s]]",
 			player.guid,player.table_id,chairid , self.players[chairid], list_guid)
-
+		self.player_count = self.player_count - 1
 		self:on_player_stand_up(player,reason)
 
 		if self:is_ready(chairid) then
@@ -1208,7 +1209,8 @@ end
 function base_table:on_started(player_count)
 	if not self.private_id then return end
 
-	self.chair_count = player_count
+	self.player_count = player_count
+	self.chair_count = table.max(self.players,function(_,i) return i end)
 	self.cur_round = (self.cur_round or 0) + 1
 
 	local privatetb = base_private_table[self.private_id]

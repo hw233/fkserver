@@ -134,18 +134,16 @@ function maajan_table:on_started(player_count)
         v.que = nil
     end
 
-    self.zhuang = self.private_id and self.zhuang or math.random(1,self.chair_count)
+    self:ding_zhuang()
 
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
 	self:update_state(FSM_S.PER_BEGIN)
-    local game_log_players = {}
-    for i = 1,self.chair_count do game_log_players[i] = {} end
     self.game_log = {
         start_game_time = os.time(),
         zhuang = self.zhuang,
         mj_min_scale = self.mj_min_scale,
-        players = game_log_players,
+        players = table.agg(self.players,{},function(tb,_,i) tb[i] = {} return tb end),
         action_table = {},
         rule = self.private_id and self.conf.conf or nil,
         table_id = self.private_id or nil,
@@ -188,7 +186,7 @@ function maajan_table:fast_start_vote(player)
         agree = true,
     })
 
-    local timer = timer_manager:new_timer(timeout,function() 
+    local timer = timer_manager:new_timer(timeout,function()
         self:foreach(function(p)
             if vote_result[p.chair_id] == nil then
                 self:safe_event({player = p,type = ACTION.VOTE,agree = false})
@@ -215,10 +213,10 @@ function maajan_table:fast_start_vote(player)
             end
         end
 
-        local all_agree = table.logic_and(vote_result,function(agree) return agree end)
+        local all_agree = table.logic_and(vote_result,function(a) return a end)
         self:broadcast2client("SC_VoteTable",{success = all_agree})
         if not all_agree then
-            return
+            return true
         end
 
         self:start(table.nums(self.players))
@@ -287,6 +285,7 @@ function maajan_table:xi_pai()
     self:update_state(FSM_S.XI_PAI)
     self:prepare_tiles()
 
+    dump(self.players)
     self:foreach(function(v)
         self:send_data_to_enter_player(v)
         self.game_log.players[v.chair_id].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
@@ -481,7 +480,7 @@ function maajan_table:huan_pai()
 end
 
 function maajan_table:ding_que()
-    if self.chair_count == 2 then
+    if self.player_count == 2 then
         return
     end
 
@@ -692,7 +691,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             self:log_game_action(player,do_action,tile)
             self:broadcast_player_hu(player,do_action)
             local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.chair_count - hu_count  == 1 then
+            if self.player_count - hu_count  == 1 then
                 self:gotofunc(function() self:do_balance() end)
             else
                 self:next_player_index()
@@ -785,7 +784,6 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         self:send_ding_que_status(p)
         local action = waiting_actions[p.chair_id]
-        dump(action)
         if action then 
             self:send_action_waiting(action)
         end
@@ -919,7 +917,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
             end
             table.pop_back(chu_pai_player.pai.desk_tiles)
             local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.chair_count - hu_count == 1 then
+            if self.player_count - hu_count == 1 then
                 self:gotofunc(function() self:do_balance() end)
             else
                 local last_hu_player = nil
@@ -1017,7 +1015,6 @@ function maajan_table:chu_pai()
 
     local function send_ting_tips(player)
         if not player.trustee then
-            local ting_tips = {}
             local pai = clone(player.pai)
             local ting_tiles = mj_util.is_ting_full(pai)
             if table.nums(ting_tiles) > 0 then
@@ -1030,6 +1027,8 @@ function maajan_table:chu_pai()
                             types = mj_util.hu(pai,tile),
                             tile = tile,
                         })
+
+                        dump(fans)
                         local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
                         table.insert(tings,{tile = tile,fan = fan})
                     end
@@ -1039,6 +1038,8 @@ function maajan_table:chu_pai()
                         tiles_info = tings,
                     })
                 end
+
+                dump(discard_tings)
     
                 send2client_pb(player,"SC_TingTips",{
                     ting = discard_tings
@@ -1333,7 +1334,7 @@ function maajan_table:do_huan_pai()
     end)
 
     local huan_order = math.random(0,1)
-    if self.chair_count == 4 then
+    if self.player_count == 4 then
         huan_order = math.random(0,2)
     end
 
@@ -1405,15 +1406,14 @@ function maajan_table:prepare_tiles()
         end
     end
 
-    for i = 1,self.chair_count do
+    self:foreach(function(p,i)
         if not pre_tiles[i] then
-            local p = self.players[i]
             local tiles = self.dealer:deal_tiles(13)
             for _,t in pairs(tiles) do
                 table.incr(p.pai.shou_pai,t)
             end
         end
-    end
+    end)
 end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
@@ -1785,6 +1785,22 @@ function maajan_table:on_final_game_overed()
 end
 
 function maajan_table:ding_zhuang()
+    local function random_zhuang()
+        local max_chair,_ = table.max(self.players,function(_,i) return i end)
+        local chair
+        repeat
+            chair = math.random(1,max_chair)
+            local p = self.players[chair]
+        until p
+
+        return chair
+    end
+
+    if not self.zhuang then
+        self.zhuang = random_zhuang()
+        return
+    end
+
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
     if hu_count == 0 then
         return
@@ -1933,15 +1949,17 @@ function maajan_table:update_state(new_state)
 end
 
 function maajan_table:is_action_time_out()
-    local time_out = (os.time() - self.last_action_change_time_stamp) >= def.ACTION_TIME_OUT 
+    local time_out = (os.time() - self.last_action_change_time_stamp) >= def.ACTION_TIME_OUT
     return time_out
 end
 
 function maajan_table:next_player_index()
+    local max_chair,_ = table.max(self.players,function(_,i) return i end)
     local chair = self.chu_pai_player_index
     repeat
-        chair = (chair % self.chair_count) + 1
-    until not self.players[chair].hu
+        chair = (chair % max_chair) + 1
+        local p = self.players[chair]
+    until p and not p.hu
     self.chu_pai_player_index = chair
 end
 
