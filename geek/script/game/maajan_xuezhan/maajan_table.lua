@@ -1248,7 +1248,10 @@ function maajan_table:do_balance()
 
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
-        local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
+        local p_score = 0
+        if fanscores[chair_id] and fanscores[chair_id].score then
+            p_score = fanscores[chair_id].score
+        end
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         local ming_pai = table.values(p.pai.ming_pai)
         local desk_pai = table.values(p.pai.desk_tiles)
@@ -1793,7 +1796,7 @@ function maajan_table:on_game_overed()
             v.que = nil
 
             if trustee_type and trustee_type == 3 then
-                v.trustee = nil
+                self:set_trusteeship(p)
             end
 
             if v.deposit then
