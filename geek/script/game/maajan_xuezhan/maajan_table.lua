@@ -111,6 +111,10 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
         return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
     end
 
+    if self.cur_round and self.cur_round > 0 or self:is_play() then
+        return enum.ERROR_JOIN_ROOM_NO_JOIN
+    end
+
     return base_table.player_sit_down(self,player,chair_id,reconnect)
 end
 
