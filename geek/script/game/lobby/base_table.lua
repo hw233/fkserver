@@ -1210,7 +1210,6 @@ function base_table:on_started(player_count)
 	if not self.private_id then return end
 
 	self.player_count = player_count
-	self.chair_count = table.max(self.players,function(_,i) return i end)
 	self.cur_round = (self.cur_round or 0) + 1
 
 	local privatetb = base_private_table[self.private_id]

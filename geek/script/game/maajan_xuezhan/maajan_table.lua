@@ -66,6 +66,7 @@ local maajan_table = base_table:new()
 function maajan_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
     self.cur_state_FSM = nil
+    self.start_count = self.chair_count
 end
 
 function maajan_table:on_private_inited()
@@ -113,7 +114,14 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
     return base_table.player_sit_down(self,player,chair_id,reconnect)
 end
 
+function base_table:check_start()
+    if table.nums(self.ready_list) == self.start_count then
+        self:start(self.start_count)
+    end
+end
+
 function maajan_table:on_started(player_count)
+    self.start_count = player_count
     base_table.on_started(self,player_count)
 	for _,v in pairs(self.players) do
         v.hu                    = nil
@@ -1760,6 +1768,7 @@ function maajan_table:on_game_overed()
 end
 
 function maajan_table:on_final_game_overed()
+    self.start_count = self.chair_count
     local final_scores = {}
     for chair_id,p in pairs(self.players) do
         table.insert(final_scores,{
