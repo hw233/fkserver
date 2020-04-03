@@ -216,6 +216,7 @@ function maajan_table:fast_start_vote(player)
         local all_agree = table.logic_and(vote_result,function(a) return a end)
         self:broadcast2client("SC_VoteTable",{success = all_agree})
         if not all_agree then
+            self:update_state(nil)
             return true
         end
 
@@ -1925,6 +1926,8 @@ function maajan_table:safe_event(evt)
     --     end
     -- end
 
+    dump(evt)
+    
     local ret,msg = resume(self.co,evt)
     if not ret then
         error(debug.traceback(self.co,msg))
