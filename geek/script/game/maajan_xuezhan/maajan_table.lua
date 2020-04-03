@@ -1334,25 +1334,29 @@ function maajan_table:do_huan_pai()
         pop_shou_pai(p,p.pai.huan.old)
     end)
 
-    local huan_order = math.random(0,1)
-    if self.player_count == 4 then
-        huan_order = math.random(0,2)
-    end
-
+    local huan_order = self.player_count == 4 and math.random(0,2) or math.random(0,1)
     if huan_order == 0 then
-        for i = 1,self.chair_count do
-            local p = self.players[i]
-            local p1 = self.players[(i - 2) % self.chair_count + 1]
+        self:foreach(function(p,i)
+            local j  = i
+            local p1
+            repeat
+                j = (j - 2) % self.chair_count + 1
+                p1 = self.players[j]
+            until p1
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
-        end
+        end)
     elseif huan_order == 1 then
-        for i = 1,self.chair_count do
-            local p = self.players[i]
-            local p1 = self.players[i % self.chair_count + 1]
+        self:foreach(function(p,i)
+            local j  = i
+            local p1
+            repeat
+                j = j % self.chair_count + 1
+                p1 = self.players[j]
+            until p1
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
-        end
+        end)
     elseif huan_order == 2 then
         local p1 = self.players[1]
         local p2 = self.players[2]
