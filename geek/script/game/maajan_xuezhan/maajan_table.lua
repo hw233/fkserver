@@ -144,6 +144,8 @@ function maajan_table:on_started(player_count)
         v.mo_pai = nil
         v.chu_pai = nil
         v.que = nil
+
+        v.statistics = v.statistics or {}
     end
 
     self:ding_zhuang()
@@ -672,6 +674,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 self:adjust_shou_pai(player,do_action,tile)
                 self:jump_to_player_index(player)
                 self:gotofunc(function() self:mo_pai() end)
+                player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
             else
                 self:action_after_chu_pai(qiang_gang_hu)
                 for chair,_ in pairs(qiang_gang_hu) do
@@ -686,6 +689,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             self:log_game_action(player,do_action,tile)
             self:jump_to_player_index(player)
             self:gotofunc(function() self:mo_pai() end)
+            player.statistics.an_gang = (player.statistics.an_gang or 0) + 1
         end
 
         if do_action == ACTION.ZI_MO then
@@ -700,6 +704,8 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 hai_di = self.dealer.remain_count == 0 and true or nil,
                 gang_hua = player.last_action and def.is_action_gang(player.last_action.action or 0)  or nil,
             }
+
+            player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
 
             self:log_game_action(player,do_action,tile)
             self:broadcast_player_hu(player,do_action)
@@ -910,6 +916,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
             self:log_game_action(player,action.done.action,tile)
             self:jump_to_player_index(player)
             self:gotofunc(function() self:mo_pai() end)
+            player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
         end
 
         if action.done.action == ACTION.HU then
@@ -927,8 +934,12 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
                 self:log_game_action(p,act.done.action,tile)
                 self:broadcast_player_hu(p,act.done.action)
+                p.statistics.hu = (p.statistics.hu or 0) + 1
+                chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
             end
+
             table.pop_back(chu_pai_player.pai.desk_tiles)
+
             local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
             if self.player_count - hu_count == 1 then
                 self:gotofunc(function() self:do_balance() end)
@@ -1202,6 +1213,8 @@ end
 
 function maajan_table:do_balance()
     local typefans,fanscores = self:game_balance()
+    dump(typefans)
+    dump(fanscores)
     local msg = {
         players = {},
         player_balance = {},
@@ -1727,6 +1740,9 @@ function maajan_table:game_balance()
                 local chair_i = pi.chair_id
                 scores[chair_id] = (scores[chair_id] or 0) + fan_score
                 scores[chair_i] = (scores[chair_i] or 0) - fan_score
+                if self.conf.conf.play.cha_da_jiao then
+                    pi.statistics.cha_da_jiao = (pi.statistics.cha_da_jiao or 0) + 1
+                end
             end)
         end
     end)
@@ -1773,18 +1789,23 @@ end
 
 function maajan_table:on_final_game_overed()
     self.start_count = self.chair_count
-    local final_scores = {}
-    for chair_id,p in pairs(self.players) do
-        table.insert(final_scores,{
-            chair_id = chair_id,
-            guid = p.guid,
-            score = p.total_score or 0,
-        })
-    end
 
-    self:broadcast2client("SC_Maajan_Final_Game_Over",{
-        player_scores = final_scores,
+    self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
+        players = table.agg(self.players,{},function(tb,p,chair) 
+            table.insert(tb,{
+                chair_id = chair,
+                guid = p.guid,
+                score = p.total_score or 0,
+                statistics = table.agg(p.statistics,{},function(tb,c,t) 
+                    table.insert(tb,{type = t,count = c})
+                    return tb
+                end),
+            })
+            return tb
+        end),
     })
+
+    self:foreach(function(p) p.statistics = nil end)
 
     local total_winlose = {}
     for _,p in pairs(self.players) do

@@ -480,6 +480,8 @@ message SC_MaajanXueZhanGameFinish {
 	repeated MaajanXueZhanBlanacePlayer 	player_balance = 2;
 }
 
+
+
 message TingTilesInfo{ 
 	int32 tile = 1;
 	int32 fan = 2;
@@ -507,4 +509,21 @@ message SC_PlayerHuStatus{
 message SC_HuStatus{
 	enum MsgID { Nil = 0; ID = 23136;}
 	repeated SC_PlayerHuStatus status = 1;
+}
+
+message MaajanXueZhanStatisticsItem{
+	string type = 1;
+	int32  count = 2;
+}
+
+message MaajanXueZhanFinalOverPlayerInfo{
+	int32 chair_id = 1;
+	int32 guid = 2;
+	int32 score = 3;
+	repeated MaajanXueZhanStatisticsItem statistics = 4;
+}
+
+message SC_MaajanXueZhanFinalGameOver{
+	enum MsgID { Nil = 0; ID = 23137;}
+	repeated MaajanXueZhanFinalOverPlayerInfo players = 1;
 }
