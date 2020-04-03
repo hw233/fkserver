@@ -94,12 +94,12 @@ function maajan_table:clear_event_pump()
 end
 
 function maajan_table:get_trustee_conf()
-    local trustee = self.conf and self.conf.conf and self.conf.conf.trustee or nil
+    local trustee = (self.conf and self.conf.conf) and self.conf.conf.trustee or nil
     if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
         local trstee_conf = self.room_.conf.private_conf.trustee
         local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
         local type = trstee_conf.type_opt[trustee.type_opt + 1]
-        log.info("%d,%d",seconds,type)
+        log.info("%s,%s",seconds,type)
         return type,seconds
     end
 
@@ -1779,7 +1779,8 @@ function maajan_table:on_game_overed()
     self:update_state(FSM_S.PER_BEGIN)
 
     if not self.private_id then
-        for _,v in ipairs(self.players) do
+        local trustee_type,trustee_seconds = self:get_trustee_conf()
+        self:foreach(function(p)
             v.hu = nil
             v.jiao = nil
             v.pai = {
@@ -1788,14 +1789,23 @@ function maajan_table:on_game_overed()
                 desk_tiles = {},
                 huan = nil,
             }
+
             v.que = nil
+
+            if trustee_type and trustee_type == 3 then
+                v.trustee = nil
+            end
+
             if v.deposit then
                 v:forced_exit()
             elseif v:is_android() then
                 self:ready(v)
             end
-        end
+        end)
     end
+
+    
+
 
     base_table.on_game_overed(self)
     self:clear_event_pump()
