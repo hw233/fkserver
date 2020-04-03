@@ -781,14 +781,17 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 action_timers[chair]:kill()
             end
         else
-            if timer then timer:kill() end
-            local chair = evt.chair_id
-            if action_timers[chair] then
-                action_timers[chair]:kill()
-            end
-            on_action(evt)
+            local action = self:check_action_before_do(waiting_actions,evt)
+            if action then
+                if timer then timer:kill() end
+                local chair = evt.chair_id
+                if action_timers[chair] then
+                    action_timers[chair]:kill()
+                end
+                on_action(evt)
 
-            break
+                break
+            end
         end
     end
 end
@@ -840,14 +843,18 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end)
     end
 
+    local function close()
+        if timer then timer:kill() end
+        for _,timer in pairs(action_timers) do
+            timer:kill()
+        end
+        self:clear_event_pump()
+    end
+
     repeat
         local evt = yield()
         if evt.type == ACTION.CLOSE then
-            if timer then timer:kill() end
-            for _,timer in pairs(action_timers) do
-                timer:kill()
-            end
-            self:clear_event_pump()
+            close()
             return
         elseif evt.type == ACTION.RECONNECT then
             reconnect(evt.player)
@@ -866,11 +873,10 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     action = evt.type,
                     tile = evt.tile,
                 }
-            end
-
-            local chair = action.chair_id
-            if action_timers[chair] then
-                action_timers[chair]:kill()
+                local chair = action.chair_id
+                if action_timers[chair] then
+                    action_timers[chair]:kill()
+                end
             end
         end
     until table.logic_and(waiting_actions,function(action) return action.done ~= nil end)
@@ -1127,15 +1133,19 @@ function maajan_table:chu_pai()
         end
     end
 
+    local function error()
+        if timer then timer:kill() end
+        if chu_pai_timer then chu_pai_timer:kill() end
+        self:clear_event_pump()
+    end
+
     send_ting_tips(player)
 
     local evt
     while true do
         evt = yield()
         if evt.type == ACTION.CLOSE then
-            if timer then timer:kill() end
-            if chu_pai_timer then chu_pai_timer:kill() end
-            self:clear_event_pump()
+            close()
             return
         end
 
@@ -1150,6 +1160,9 @@ function maajan_table:chu_pai()
                     chu_pai_timer:kill()
                 end
             end
+        elseif evt.type ~= ACTION.CHU_PAI then
+            close()
+            return
         else
             break
         end
