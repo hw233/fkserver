@@ -107,12 +107,14 @@ function maajan_table:get_trustee_conf()
 end
 
 function maajan_table:player_sit_down(player, chair_id,reconnect)
-    if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
-        return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
-    end
+    if not reconnect then
+        if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
+            return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
+        end
 
-    if self.cur_round and self.cur_round > 0 or self:is_play() then
-        return enum.ERROR_JOIN_ROOM_NO_JOIN
+        if self.cur_round and self.cur_round > 0 or self:is_play() then
+            return enum.ERROR_JOIN_ROOM_NO_JOIN
+        end
     end
 
     return base_table.player_sit_down(self,player,chair_id,reconnect)
@@ -845,8 +847,8 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
     local function close()
         if timer then timer:kill() end
-        for _,timer in pairs(action_timers) do
-            timer:kill()
+        for _,t in pairs(action_timers) do
+            t:kill()
         end
         self:clear_event_pump()
     end
@@ -1179,7 +1181,7 @@ function maajan_table:chu_pai()
         end
     end
 
-    local function error()
+    local function close()
         if timer then timer:kill() end
         if chu_pai_timer then chu_pai_timer:kill() end
         self:clear_event_pump()
