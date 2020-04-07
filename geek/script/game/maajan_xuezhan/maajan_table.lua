@@ -503,7 +503,7 @@ function maajan_table:huan_pai()
 end
 
 function maajan_table:ding_que()
-    if self.player_count == 2 then
+    if self.start_count == 2 then
         return
     end
 
@@ -719,7 +719,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             self:log_game_action(player,do_action,tile)
             self:broadcast_player_hu(player,do_action)
             local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.player_count - hu_count  == 1 then
+            if self.start_count - hu_count  == 1 then
                 self:gotofunc(function() self:do_balance() end)
             else
                 self:next_player_index()
@@ -960,7 +960,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
             table.pop_back(chu_pai_player.pai.desk_tiles)
 
             local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.player_count - hu_count == 1 then
+            if self.start_count - hu_count == 1 then
                 self:gotofunc(function() self:do_balance() end)
             else
                 local last_hu_player = nil
