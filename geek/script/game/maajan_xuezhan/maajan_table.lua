@@ -83,9 +83,7 @@ function maajan_table:on_private_dismissed()
     for _,p in pairs(self.players) do
         p.total_money = nil
     end
-    if self:is_play() then
-        self:safe_event({type = ACTION.CLOSE})
-    end
+    self:safe_event({type = ACTION.CLOSE})
 end
 
 function maajan_table:clear_event_pump()
@@ -893,6 +891,9 @@ function maajan_table:action_after_chu_pai(waiting_actions)
     until table.logic_and(waiting_actions,function(action) return action.done ~= nil end)
 
     if timer then timer:kill() end
+    for _,t in paris(action_timers) do
+        t:kill()
+    end
 
     local all_actions = table.values(waiting_actions)
     if table.nums(all_actions) == 0 then
