@@ -306,7 +306,8 @@ local function sms_login(msg,gate)
         last_login_version = version,
         last_login_channel_id = channel_id,
         last_login_imei = imei,
-        last_login_ip = ip,
+        last_login_ip = player.login_ip,
+        login_ip = ip,
         login_time = os.time(),
     })
 
@@ -373,7 +374,8 @@ local function account_login(msg,gate)
         last_login_version = version,
         last_login_channel_id = channel_id,
         last_login_imei = imei,
-        last_login_ip = ip,
+        last_login_ip = player.login_ip,
+        login_ip = ip,
         login_time = os.now(),
     })
 
