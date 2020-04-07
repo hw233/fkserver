@@ -891,7 +891,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
     until table.logic_and(waiting_actions,function(action) return action.done ~= nil end)
 
     if timer then timer:kill() end
-    for _,t in paris(action_timers) do
+    for _,t in pairs(action_timers) do
         t:kill()
     end
 
