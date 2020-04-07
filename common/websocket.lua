@@ -62,11 +62,12 @@ function ws.handshake(interface)
     log.info("websocket handshake")
     local code, url, _, header, _ = httpd.read_request(interface.read)
     if not code then
-        log.info(string.format("accept request error:%d,url:%s",code,url))
-        return 
+        log.warning(string.format("accept request error:%s,url:%s",code,url))
+        return
     end
 
-    local code,content = accept_connection(header)
+    local content
+    code,content = accept_connection(header)
     if code then
         httpd.write_response(interface.write,code,content)
         return true
