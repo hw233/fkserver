@@ -151,7 +151,6 @@ function maajan_table:on_started(player_count)
     end
 
     self:ding_zhuang()
-
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
 	self:update_state(FSM_S.PER_BEGIN)
@@ -297,10 +296,13 @@ function maajan_table:set_trusteeship(player,trustee)
         return
     end
 
-    trustee = trustee and true or false
     base_table.set_trusteeship(self,player,trustee)
-    player.trustee = trustee and true or nil
+    player.trustee = trustee
     self:safe_event({player = player,type = ACTION.TRUSTEE,trustee = trustee})
+end
+
+function maajan_table:clean_trusteeship()
+    self:foreach(function(p) p.trustee = nil end)
 end
 
 function maajan_table:xi_pai()
@@ -381,8 +383,9 @@ function maajan_table:huan_pai()
 
     local timer
     local action_timers = {}
+    local trusteeed = table.logic_and(self.players,function(p) return p.trustee ~= nil end)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type then
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and not trusteeed))  then
         local function random_choice(tilecounts,count)
             local counts = tilecounts
             local tiles = {}
@@ -413,7 +416,7 @@ function maajan_table:huan_pai()
             end
 
             local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-                table.get(tb,math.floor(tile / 10),{})[tile] = c
+                table.get(tb,mj_util.tile_men(tile),{})[tile] = c
                 return tb
             end)
 
@@ -531,14 +534,13 @@ function maajan_table:ding_que()
     local timer
     local action_timers = {}
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type then
+    local trusteeed = table.logic_and(self.players,function(p) return p.trustee ~= nil end)
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and not trusteeed))  then
         local function auto_ding_que(p)
             local men_count = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-                table.incr(tb,math.floor(tile / 10),c)
+                table.incr(tb,mj_util.tile_men(tile),c)
                 return tb
             end)
-
-            dump(men_count)
 
             local min_men,c = table.min(men_count)
             log.info("%s,%s",min_men,c)
@@ -570,8 +572,8 @@ function maajan_table:ding_que()
         repeat
             if evt.type == ACTION.CLOSE then
                 if timer then timer:kill() end
-                for _,timer in pairs(action_timers) do
-                    timer:kill()
+                for _,t in pairs(action_timers) do
+                    t:kill()
                 end
                 self:clear_event_pump()
                 return
@@ -682,6 +684,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 self:jump_to_player_index(player)
                 self:gotofunc(function() self:mo_pai() end)
                 player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
+                player.guo_zhuang_hu = nil
             else
                 self:action_after_chu_pai(qiang_gang_hu)
                 for chair,_ in pairs(qiang_gang_hu) do
@@ -697,6 +700,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             self:jump_to_player_index(player)
             self:gotofunc(function() self:mo_pai() end)
             player.statistics.an_gang = (player.statistics.an_gang or 0) + 1
+            player.guo_zhuang_hu = nil
         end
 
         if do_action == ACTION.ZI_MO then
@@ -745,7 +749,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
 
         timer = timer_manager:new_timer(trustee_seconds,function()
             dump(waiting_actions)
-            table.foreach(waiting_actions,function(action,_) 
+            table.foreach(waiting_actions,function(action,_)
                 if action.done then return end
 
                 local p = self.players[action.chair_id]
@@ -813,7 +817,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         self:send_ding_que_status(p)
         local action = waiting_actions[p.chair_id]
-        if action then 
+        if action then
             self:send_action_waiting(action)
         end
     end
@@ -829,7 +833,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
 
         timer = timer_manager:new_timer(trustee_seconds,function()
-            table.foreach(waiting_actions,function(action,_) 
+            table.foreach(waiting_actions,function(action,_)
                 local p = self.players[action.chair_id]
                 self:set_trusteeship(p,true)
                 auto_action(p,action)
@@ -838,11 +842,11 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
         self:begin_clock(trustee_seconds)
 
-        table.foreach(waiting_actions,function(action,_) 
+        table.foreach(waiting_actions,function(action,_)
             local p = self.players[action.chair_id]
             if not p.trustee then return end
 
-            local act_timer = timer_manager:calllater(math.random(1,2),function() 
+            local act_timer = timer_manager:calllater(math.random(1,2),function()
                 auto_action(p,action)
             end)
         
@@ -930,6 +934,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
             self:jump_to_player_index(player)
             self:gotofunc(function() self:mo_pai() end)
             player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
+            player.guo_zhuang_hu = nil
         end
 
         if action.done.action == ACTION.HU then
@@ -977,6 +982,12 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
 
         if action.done.action == ACTION.PASS then
+            if self.conf.conf.play.guo_zhuang_hu then
+                local hu_action = waiting_actions[player.chair_id].actions[ACTION.HU]
+                if hu_action then
+                    player.guo_zhuang_hu = self:max_hu(player,hu_action)
+                end
+            end
             self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = ACTION.PASS})
             self:next_player_index()
             self:gotofunc(function() self:mo_pai() end)
@@ -1016,6 +1027,8 @@ function maajan_table:mo_pai()
         return
     end
 
+    player.guo_zhuang_hu = nil
+
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     local actions = self:get_actions(player,mo_pai)
     dump(actions)
@@ -1050,7 +1063,7 @@ function maajan_table:ting(p)
     local ting_tiles = mj_util.is_ting(p.pai) or {}
     if p.que and ting_tiles then
         ting_tiles = table.agg(ting_tiles,{},function(tb,b,tile)
-            tb[tile] = math.floor(tile / 10) ~= p.que and b or nil
+            tb[tile] =mj_util.tile_men(tile) ~= p.que and b or nil
             return tb
         end)
     end
@@ -1062,7 +1075,7 @@ function maajan_table:is_no_que(p)
     if not p.que then return true end
 
     local men_counts = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-        table.incr(tb,math.floor(tile / 10),c)
+        table.incr(tb,mj_util.tile_men(tile),c)
         return tb
     end)
 
@@ -1078,7 +1091,7 @@ function maajan_table:ting_full(p)
         ting_tiles = table.agg(ting_tiles,{},function(tb,tiles,discard)
             local hu_tiles = {}
             for tile,_ in pairs(tiles) do
-                hu_tiles[tile] = math.floor(tile / 10) ~= p.que and tile or nil
+                hu_tiles[tile] = mj_util.tile_men(tile) ~= p.que and tile or nil
             end
 
             tb[discard] = table.nums(hu_tiles) > 0 and hu_tiles or nil
@@ -1102,20 +1115,11 @@ function maajan_table:chu_pai()
             local discard_tings = {}
             local pai = clone(p.pai)
             for discard,tiles in pairs(ting_tiles) do
-                local tings = {}
                 table.decr(pai.shou_pai,discard)
-                for tile,_ in pairs(tiles) do
-                    local hu = mj_util.hu(pai,tile)
-                    local fans = self:calculate_hu({
-                        types = hu,
-                        tile = tile,
-                    })
-
-                    dump(fans)
-
-                    local fan = table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
-                    table.insert(tings,{tile = tile,fan = fan})
-                end
+                local tings = table.agg(tiles,{},function(tb,_,tile)
+                    table.insert(tb,{tile = tile,fan = self:hu_fan(p,tile)})
+                    return tb
+                end)
                 table.incr(pai.shou_pai,discard)
 
                 table.insert(discard_tings,{
@@ -1153,7 +1157,7 @@ function maajan_table:chu_pai()
         local function auto_chu_pai(p)
             local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
                 if c == 0 then return tb end
-                table.get(tb,math.floor(tile / 10),{})[tile] = c
+                table.get(tb,mj_util.tile_men(tile),{})[tile] = c
                 return tb
             end)
 
@@ -1268,7 +1272,7 @@ function maajan_table:chu_pai()
 end
 
 function maajan_table:get_max_fan()
-    local fan_opt = self.conf.conf.fan.max_option
+    local fan_opt = self.conf.conf.fan.max_option + 1
     return self.room_.conf.private_conf.fan.max_option[fan_opt]
 end
 
@@ -1477,8 +1481,10 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        -- [1] = {11,11,11,12,12,12,21,22,23,24,25,26,27},
-        -- [2] = {22,22,23,23,24,24,25,25,26,26,27,27,28},
+        -- [1] = {1,1,1,2,3,4,5,6,7,8,9,9,9},
+        -- [2] = {11,11,12,12,13,13,14,14,15,15,16,16,29},
+        -- [3] = {11,11,12,12,13,13,14,14,15,15,16,16,29},
+        -- [4] = {21,21,22,22,23,23,24,24,25,25,26,26,4}
     }
 
     for i,pretiles in pairs(pre_tiles) do
@@ -1507,14 +1513,35 @@ function maajan_table:prepare_tiles()
     end)
 end
 
+function maajan_table:max_hu(p,tiles)
+    local fans = table.agg(tiles,{},function(tb,_,tile)
+        table.insert(tb,self:hu_fan(p,tile))
+        return tb
+    end)
+    table.sort(fans,function(l,r) return l > r end)
+    if table.nums(fans) > 0 then
+        return fans[1]
+    end
+end
+
+function maajan_table:hu_fan(p,tile)
+    local hu = mj_util.hu(p.pai,tile)
+    local fans = self:calculate_hu({
+        types = hu,
+        tile = tile,
+    })
+
+    return table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+end
+
 function maajan_table:get_actions(p,mo_pai,in_pai)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
-    
+
     if not p.que then return actions end
 
     for act,tiles in pairs(actions) do
         for tile,_ in pairs(tiles) do
-            if math.floor(tile / 10) == p.que then
+            if mj_util.tile_men(tile) == p.que then
                 tiles[tile] = nil
             end
         end
@@ -1523,6 +1550,14 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
             actions[act] = nil
         end
     end
+
+    if p.guo_zhuang_hu and actions[ACTION.HU] then
+        local max_hu_fan = self:max_hu(p,actions[ACTION.HU])
+        if max_hu_fan and max_hu_fan <= p.guo_zhuang_hu then
+            actions[ACTION.HU] = nil
+        end
+    end
+
     return actions
 end
 
@@ -2124,7 +2159,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
         for k,s in pairs(ming_pai) do
             if s.tile == tile and s.type == SECTION_TYPE.PENG then
                 table.insert(ming_pai,{
-                    type = (action == ACTION.BA_GANG and SECTION_TYPE.BA_GANG or SECTION_TYPE.FREE_BA_GANG),
+                    type = SECTION_TYPE.BA_GANG,
                     tile = tile,
                     area = TILE_AREA.MING_TILE,
                     whoee = s.whoee,
