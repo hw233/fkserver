@@ -172,7 +172,12 @@ function maajan_table:on_started(player_count)
     end)
 end
 
-function maajan_table:fast_start_vote_req(player,msg)
+function maajan_table:fast_start_vote_req(player)
+    local player_count = table.sum(self.players,function(p) return 1 end)
+    if player_count < 2 then
+        return
+    end
+
     self.co = skynet.fork(function()
         self:fast_start_vote(player)
     end)
@@ -1223,12 +1228,6 @@ function maajan_table:chu_pai()
 
     if not mj_util.check_tile(chu_pai_val) then
         log.error("player %d chu_pai,tile invalid error",self.chu_pai_player_index)
-        return
-    end
-
-    local player = self:chu_pai_player()
-    if not player then
-        log.error("player isn't exists when chu guid:%s,tile:%s",self.chu_pai_player_index,chu_pai_val)
         return
     end
 
