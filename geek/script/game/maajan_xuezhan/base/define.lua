@@ -27,7 +27,6 @@ define.ACTION = {
 	HUAN_PAI = pb.enum("ACTION","ACTION_HUAN_PAI"),
 	CLOSE = -1,
 	RECONNECT = -2,
-	TRUSTEE = -3,
 	VOTE = -4,
 }
 
