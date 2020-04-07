@@ -1059,7 +1059,7 @@ function maajan_table:close()
 end
 
 function maajan_table:ting(p)
-    if not self:is_no_que(p) then return {} end
+    if not self:is_que(p) then return {} end
 
     local ting_tiles = mj_util.is_ting(p.pai) or {}
     if p.que and ting_tiles then
@@ -1072,7 +1072,7 @@ function maajan_table:ting(p)
     return ting_tiles
 end
 
-function maajan_table:is_no_que(p)
+function maajan_table:is_que(p)
     if not p.que then return true end
 
     local men_counts = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
@@ -1081,11 +1081,11 @@ function maajan_table:is_no_que(p)
     end)
 
     local men_count = table.sum(men_counts,function(c,men) return (c > 0 and men < 3) and 1 or 0 end)
-    return men_count == 1
+    return men_count <= 2
 end
 
 function maajan_table:ting_full(p)
-    if not self:is_no_que(p) then return {} end
+    if not self:is_que(p) then return {} end
 
     local ting_tiles = mj_util.is_ting_full(p.pai)
     if p.que then
