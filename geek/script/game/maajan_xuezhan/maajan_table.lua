@@ -76,6 +76,7 @@ function maajan_table:on_private_inited()
 end
 
 function maajan_table:on_private_dismissed()
+    log.info("maajan_table:on_private_dismissed")
     self.cur_round = nil
     self.zhuang = nil
     self.tiles = nil
@@ -115,6 +116,64 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
     end
 
     return base_table.player_sit_down(self,player,chair_id,reconnect)
+end
+
+function maajan_table:commit_dismiss(player,agree)
+	if not self.dismiss_request then
+		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
+		return enum.ERROR_CLUB_OP_EXPIRE
+	end
+
+	local commissions = self.dismiss_request.commissions
+	agree = agree and agree == true or false
+
+	commissions[player.chair_id] = agree and agree == true or false
+
+	self:broadcast2client("SC_DismissTableCommit",{
+		chair_id = player.chair_id,
+		guid = player.guid,
+		agree = agree,
+	})
+
+	if not agree then
+		self:broadcast2client("SC_DismissTable",{
+			success = false,
+		})
+
+		self.dismiss_request.timer:kill()
+		self.dismiss_request.timer = nil
+		self.dismiss_request = nil
+		return
+    end
+
+    local agree_count = table.sum(self.players,function(p) return commissions[p.chair_id] and 1 or 0 end)
+    local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.ceil(table.nums(self.players) / 2)
+	if agree_count < agree_count_at_least then
+		return
+	end
+
+	self.dismiss_request.timer:kill()
+	self.dismiss_request.timer = nil
+	self.dismiss_request = nil
+
+	self:on_final_game_overed()
+	
+	local result = self:dismiss()
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		self:broadcast2client("SC_DismissTable",{
+			success = result == enum.ERROR_NONE,
+		})
+
+		return
+	end
+
+	self:broadcast2client("SC_DismissTable",{
+			success = true,
+		})
+
+	self:foreach(function(p)
+		p:forced_exit()
+	end)
 end
 
 function base_table:check_start()
@@ -317,6 +376,7 @@ end
 
 function maajan_table:huan_pai()
     if not self.conf.conf.huan or table.nums(self.conf.conf.huan) == 0 then
+        self:gotofunc(function() self:ding_que() end)
         return
     end
 
@@ -458,8 +518,8 @@ function maajan_table:huan_pai()
         local evt = yield()
         if evt.type == ACTION.CLOSE then
             if timer then timer:kill() end
-            for _,timer in pairs(action_timers) do
-                timer:kill()
+            for _,t in pairs(action_timers) do
+                t:kill()
             end
             self:clear_event_pump()
             return
@@ -498,10 +558,13 @@ function maajan_table:huan_pai()
             huan_order = order,
         })
     end)
+
+    self:gotofunc(function() self:ding_que() end)
 end
 
 function maajan_table:ding_que()
     if self.start_count == 2 then
+        self:gotofunc(function() self:mo_pai() end)
         return
     end
 
@@ -613,6 +676,8 @@ function maajan_table:ding_que()
     self:broadcast2client("SC_DingQueCommit",{
         ding_ques = p_ques,
     })
+
+    self:gotofunc(function() self:mo_pai() end)
 end
 
 function maajan_table:action_after_mo_pai(waiting_actions)
@@ -1382,8 +1447,6 @@ end
 function maajan_table:main()
     self:pre_begin()
     self:huan_pai()
-    self:ding_que()
-    self:mo_pai()
 
     while self.f do
         self.f()
@@ -1903,12 +1966,12 @@ function maajan_table:on_final_game_overed()
     self.start_count = self.chair_count
 
     self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
-        players = table.agg(self.players,{},function(tb,p,chair) 
+        players = table.agg(self.players,{},function(tb,p,chair)
             table.insert(tb,{
                 chair_id = chair,
                 guid = p.guid,
                 score = p.total_score or 0,
-                statistics = table.agg(p.statistics,{},function(tb,c,t) 
+                statistics = table.agg(p.statistics,{},function(tb,c,t)
                     table.insert(tb,{type = t,count = c})
                     return tb
                 end),
