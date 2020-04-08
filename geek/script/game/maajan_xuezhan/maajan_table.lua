@@ -97,7 +97,6 @@ function maajan_table:get_trustee_conf()
         local trstee_conf = self.room_.conf.private_conf.trustee
         local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
         local type = trstee_conf.type_opt[trustee.type_opt + 1]
-        log.info("%s,%s",seconds,type)
         return type,seconds
     end
 
@@ -1160,6 +1159,8 @@ function maajan_table:chu_pai()
                 return tb
             end)
 
+            dump(men_tiles)
+
             local chu_pai = p.mo_pai
             if p.que then
                 if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
@@ -1938,6 +1939,7 @@ function maajan_table:on_final_game_overed()
     end
 
     self.zhuang = nil
+    self.cur_state_FSM = nil
     base_table.on_final_game_overed(self)
 end
 
