@@ -1929,27 +1929,26 @@ function maajan_table:on_game_overed()
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
 
-    if not self.private_id then
-        
-        self:foreach(function(v)
-            v.hu = nil
-            v.jiao = nil
-            v.pai = {
-                ming_pai = {},
-                shou_pai = {},
-                desk_tiles = {},
-                huan = nil,
-            }
+    self:foreach(function(v)
+        v.hu = nil
+        v.jiao = nil
+        v.pai = {
+            ming_pai = {},
+            shou_pai = {},
+            desk_tiles = {},
+            huan = nil,
+        }
 
-            v.que = nil
+        v.que = nil
 
+        if not self.private_id then
             if v.deposit then
                 v:forced_exit()
             elseif v:is_android() then
                 self:ready(v)
             end
-        end)
-    end
+        end
+    end)
 
     local trustee_type,_ = self:get_trustee_conf()
     self:foreach(function(p)
