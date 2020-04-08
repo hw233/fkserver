@@ -80,6 +80,7 @@ function base_table:clear()
 	self:clear_ready()
 	self.round_id = nil
 	self.ext_round_id = nil
+	self.cur_round = nil
 end
 
 -- 初始化
@@ -543,7 +544,9 @@ function base_table:game_over()
 end
 
 function base_table:on_final_game_overed()
-
+	self.round_id = nil
+	self.ext_round_id = nil
+	self.cur_round = nil
 end
 
 function base_table:on_game_overed()
