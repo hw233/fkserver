@@ -359,8 +359,10 @@ local function is_men_qing(pai,_)
 	return table.logic_and(pai.ming_pai,function(s) return s.type == SECTION_TYPE.AN_GANG end)
 end
 
-local function gou_count(cache)
-	return table.sum(cache,function(c) return c == 4 and 1 or 0 end)
+local function gou_count(pai,cache)
+	local shou_gou = table.sum(cache,function(c) return c == 4 and 1 or 0 end)
+	local ming_gou = table.sum(pai.ming_pai,function(s) return (s.type == SECTION_TYPE.PENG and cache[s.tile] == 1) and 1 or 0 end)
+	return shou_gou + ming_gou
 end
 
 local function unique_hu_types(base_hu_types)
@@ -444,7 +446,7 @@ function rule.hu(pai,inPai)
 	if is_duan_yao(pai,cache) then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if is_men_qing(pai,cache) then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
-	local gou = gou_count(cache)
+	local gou = gou_count(pai,cache)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
