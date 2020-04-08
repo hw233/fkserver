@@ -110,7 +110,7 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
             return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
         end
 
-        if self.cur_round and self.cur_round > 0 or self:is_play() then
+        if (self.cur_round and self.cur_round > 0) or self:is_play() then
             return enum.ERROR_JOIN_ROOM_NO_JOIN
         end
     end
@@ -1559,6 +1559,10 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
+    if not self:is_que(p) and actions[ACTION.HU] then
+        actions[ACTION.HU] = nil
+    end
+
     return actions
 end
 
@@ -1936,6 +1940,7 @@ function maajan_table:on_final_game_overed()
     end
 
     self.zhuang = nil
+    base_table.on_final_game_overed(self)
 end
 
 function maajan_table:ding_zhuang()
