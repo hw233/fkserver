@@ -276,6 +276,7 @@ function base_room:stand_up_and_exit_room(player,reason)
 
 	local roomid = player.room_id
 	self:player_exit_room(player)
+	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 	return enum.GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
 end
 
@@ -385,7 +386,14 @@ function base_room:create_private_table(player,chair_count,round, conf,club)
 
 	self:player_enter_room(player)
 	
-	tb:player_sit_down(player, chair_id)
+	local result = tb:player_sit_down(player, chair_id)
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		tb:private_clear()
+		reddb:del("table:info:"..tostring(global_tid))
+		reddb:srem("player:table:"..tostring(player.guid),global_tid)
+		self:player_exit_room(player)
+		return result
+	end
 
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
 
@@ -643,6 +651,7 @@ function base_room:exit_server(player,offline)
 	if not player.table_id or not player.chair_id then
 		log.warning("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
 		self:player_exit_room(player,offline)
+		player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 		return false,enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
@@ -659,6 +668,7 @@ function base_room:exit_server(player,offline)
 	end
 
 	self:player_exit_room(player,offline)
+	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 
 	return false,enum.GAME_SERVER_RESULT_SUCCESS
 end
@@ -801,7 +811,6 @@ function base_room:player_exit_room(player,offline)
 
 	reddb:hdel("player:online:guid:"..tostring(player.guid),"server")
 	
-	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 	onlineguid[player.guid] = nil
 end
 
