@@ -381,9 +381,8 @@ function maajan_table:huan_pai()
 
     local timer
     local action_timers = {}
-    local trusteeed = table.logic_and(self.players,function(p) return p.trustee ~= nil end)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and not trusteeed))  then
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
         local function random_choice(tilecounts,count)
             local counts = tilecounts
             local tiles = {}
@@ -532,8 +531,7 @@ function maajan_table:ding_que()
     local timer
     local action_timers = {}
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    local trusteeed = table.logic_and(self.players,function(p) return p.trustee ~= nil end)
-    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and not trusteeed))  then
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
         local function auto_ding_que(p)
             local men_count = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
                 table.incr(tb,mj_util.tile_men(tile),c)
