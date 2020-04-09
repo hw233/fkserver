@@ -32,6 +32,8 @@ redismetadata.player.info = redismeta:create({
         user_type = "number",
         status = "number",
         role = "number",
+        gps_latitude = "number",
+        gps_longitude = "number",
     },
 })
 

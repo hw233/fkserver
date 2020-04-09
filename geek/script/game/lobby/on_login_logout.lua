@@ -119,12 +119,12 @@ function on_cs_update_location_gps(msg,guid)
 		return
 	end
 
-	log.info("on_cs_update_location_gps,longitude:%s,latitude:%s",longitude,latitude)
+	log.info("on_cs_update_location_gps,guid:%s longitude:%s,latitude:%s",guid,longitude,latitude)
 
-	player.gps = {
-		longitude = longitude,
-		latitude = latitude,
-	}
+	reddb:hmset("player:info:"..tostring(player.guid),{
+		gps_longitude = longitude,
+		gps_latitude = latitude,
+	})
 end
 
 -- 玩家登录通知 验证账号成功后会收到
