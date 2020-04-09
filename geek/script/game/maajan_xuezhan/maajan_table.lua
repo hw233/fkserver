@@ -104,10 +104,45 @@ function maajan_table:get_trustee_conf()
     return nil
 end
 
+function maajan_table:calculate_gps_distance(pos1,pos2)
+    local R = 6371393
+    local C = math.sin(pos1.latitude) * math.sin(pos2.latitude) * math.cos(pos1.longitude-pos2.longitude)
+        + math.cos(pos1.latitude) * math.cos(pos2.latitude)
+
+    return R*math.acos(C)*math.pi/180
+end
+
 function maajan_table:player_sit_down(player, chair_id,reconnect)
     if not reconnect then
         if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
             return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
+        end
+
+        if self.conf.conf.option.gps_distance >= 0 then
+            dump(player)
+            if not player.gps_latitude or not player.gps_longitude then
+                return enum.ERROR_JOIN_ROOM_NON_GPS_TREAT_ROOM
+            end
+
+            local player_gps = {
+                longitude = player.gps_longitude,
+                latitude = player.gps_latitude,
+            }
+
+            local limit = self.conf.conf.option.gps_distance
+            local is_gps_treat = table.logic_or(self.players,function(p)
+                local p_gps = {
+                    longitude = p.gps_longitude,
+                    latitude = p.gps_latitude,
+                }
+                local dist = self:calculate_gps_distance(p_gps,player_gps)
+                log.info("player %s,%s distance %s",p.guid,player.guid,dist)
+                return dist < limit
+            end)
+
+            if is_gps_treat then
+                return enum.ERROR_JOIN_ROOM_NON_GPS_TREAT_ROOM
+            end
         end
 
         if (self.cur_round and self.cur_round > 0) or self:is_play() then
@@ -2524,5 +2559,25 @@ function maajan_table:global_status_info()
 
     return info
 end
+
+local function test(pos1,pos2)
+    local R = 6371004
+    local C = math.sin(pos1.latitude) * math.sin(pos2.latitude) * math.cos(pos1.longitude-pos2.longitude) 
+        + math.cos(pos1.latitude) * math.cos(pos2.latitude)
+
+    return R * math.acos(C) * math.pi / 180
+end
+
+local posA = {
+    longitude = 100.0002,
+    latitude = 30.0005,
+}
+
+local posB = {
+    longitude = 100.0001,
+    latitude = 30.0008,
+}
+
+print(test(posA,posB))
 
 return maajan_table
