@@ -76,6 +76,8 @@ message SEAT_INFO {
     PLAYER_BASE_INFO player_info = 2; //玩家信息
     bool ready = 3; //准备状态
     MONEY_INFO money = 4;
+    float longitude = 5;
+    float latitude = 6;
 }
 
 message TABLE_INFO {

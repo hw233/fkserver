@@ -1178,6 +1178,8 @@ function on_cs_create_private_room(msg,guid)
 				nickname = player.nickname,
 				sex = player.sex,
 			},
+			longitude = player.gps_longitude,
+			latitude = player.gps_latitude,
 			ready = tb.ready_list[player.chair_id] and true or false,
 			money = {
 				money_id = money_id,
@@ -1362,6 +1364,8 @@ function on_cs_join_private_room(msg,guid)
 					nickname = p.nickname,
 					sex = p.sex,
 				},
+				longitude = p.gps_longitude,
+				latitude = p.gps_latitude,
 				ready = tb.ready_list[p.chair_id] and true or false,
 				money = {
 					money_id = money_id,
