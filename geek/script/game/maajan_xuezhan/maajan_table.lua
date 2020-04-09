@@ -182,7 +182,7 @@ function maajan_table:commit_dismiss(player,agree)
     end
 
     local agree_count = table.sum(self.players,function(p) return commissions[p.chair_id] and 1 or 0 end)
-    local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.ceil(table.nums(self.players) / 2)
+    local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.floor(table.nums(self.players) / 2) + 1
 	if agree_count < agree_count_at_least then
 		return
 	end
