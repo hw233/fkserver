@@ -746,7 +746,7 @@ message SC_SitDown {
 message SC_NotifySitDown {
 	enum MsgID { Nil = 0; ID = 1095; }
 	int32 table_id = 1;
-	PlayerVisualInfo pb_visual_info = 2;	// 坐下玩家
+	SEAT_INFO seat = 2;	// 坐下玩家
 	bool is_online = 3;					// 是重新上线
 }
 

@@ -267,11 +267,21 @@ end
 function base_player:notify_sit_down(player,reconnect,private_table)
 	log.info("notify_sit_down  player guid[%d] ip_area =%s",player.guid , player.ip_area)
 	
-	local visual_info = clone(player)
+	local seat = {
+		chair_id = player.chair_id,
+		player_info = {
+			guid = player.guid,
+			icon = player.icon,
+			nickname = player.nickname,
+			sex = player.sex,
+		},
+		longitude = player.gps_longitude,
+		latitude = player.gps_latitude,
+	}
 	if private_table then
 		local club_id = private_table.club_id
 		local money_id = club_id and club_money_type[club_id] or -1
-		visual_info.money = {{
+		seat.money = {{
 			money_id = money_id,
 			count = player:get_money(money_id),
 		}}
@@ -279,7 +289,7 @@ function base_player:notify_sit_down(player,reconnect,private_table)
 	
 	send2client_pb(self, "SC_NotifySitDown", {
 		table_id = player.table_id,
-		pb_visual_info = visual_info,
+		seat = seat,
 		is_online = reconnect,
 	})
 end
