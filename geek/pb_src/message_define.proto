@@ -1580,3 +1580,15 @@ message SC_TimeOutNotify{
 	int32  total_time = 2;
 	string extend = 3;
 }
+
+//更新gps位置
+message CS_UpdateLocation{
+	enum MsgID{Nil = 0; ID = 1210;}
+	float longitude = 1;
+	float latitude = 2;
+}
+
+message SC_UpdateLocation{
+	enum MsgID{Nil = 0; ID = 1211;}
+	int32 result = 1;
+}

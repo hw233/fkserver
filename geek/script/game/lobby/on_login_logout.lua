@@ -100,6 +100,33 @@ function  on_ls_DelMessage(msg)
 	end
 end
 
+function on_cs_update_location_gps(msg,guid)
+	local player = base_players[guid]
+	if not player then
+		send2client_pb(player,"SC_UpdateLocation",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	local longitude = msg.longitude
+	local latitude = msg.latitude
+
+	if not longitude or not latitude then
+		send2client_pb(player,"SC_UpdateLocation",{
+			result = enum.PARAMETER_ERROR
+		})
+		return
+	end
+
+	log.info("on_cs_update_location_gps,longitude:%s,latitude:%s",longitude,latitude)
+
+	player.gps = {
+		longitude = longitude,
+		latitude = latitude,
+	}
+end
+
 -- 玩家登录通知 验证账号成功后会收到
 function on_ls_login_notify(guid,reconnect)
 	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
