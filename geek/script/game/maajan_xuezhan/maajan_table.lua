@@ -800,11 +800,25 @@ function maajan_table:action_after_mo_pai(waiting_actions)
 
         if do_action == ACTION.ZI_MO then
             local ming_pai_count = table.sum(player.pai.ming_pai,function(_) return 1 end)
+            -- 点杠花算点炮
+            local is_zi_mo = true
+            local whoee = nil
+            if self.conf.conf.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
+                is_zi_mo = false
+                for _,s in pairs(player.pai.ming_pai) do
+                    if s.tile == player.last_action.tile and s.type == ACTION.MING_GANG then
+                        whoee = s.whoee
+                        break
+                    end
+                end
+            end
+
             player.hu = {
                 time = os.time(),
                 tile = tile,
                 types = mj_util.hu(player.pai),
-                zi_mo = true,
+                zi_mo = is_zi_mo,
+                whoee = whoee,
                 tian_hu = (player.chair_id == self.zhuang and player.mo_pai_count == 1) and true or nil,
                 di_hu = (player.chair_id ~= self.zhuang and player.mo_pai_count == 1 and ming_pai_count == 0) and true or nil,
                 hai_di = self.dealer.remain_count == 0 and true or nil,
