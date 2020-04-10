@@ -170,7 +170,7 @@ function maajan_table:commit_dismiss(player,agree)
 		agree = agree,
 	})
 
-	if not agree then
+	if not agree and self.conf.conf.room.dismiss_all_agree then
 		self:broadcast2client("SC_DismissTable",{
 			success = false,
 		})
