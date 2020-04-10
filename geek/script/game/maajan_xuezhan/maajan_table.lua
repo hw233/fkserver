@@ -1411,6 +1411,8 @@ function maajan_table:do_balance()
         if p.hu then p.hu.index = i end
     end)
 
+    local jiao_count = table.sum(self.players,function(p) return p.jiao and 1 or 0 end)
+
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
         local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
@@ -1447,7 +1449,7 @@ function maajan_table:do_balance()
             hu_tile = p.hu and p.hu.tile or nil,
             hu_fan = fanscores[chair_id].fan,
             hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
-            status = p.hu and 1 or (p.jiao and 2 or 0),
+            status = p.hu and 2 or (p.jiao and 3 or (jiao_count > 0 and 1 or nil)),
             hu_index = p.hu and p.hu.index or nil,
         })
 
@@ -1965,7 +1967,7 @@ function maajan_table:game_balance()
             fan = fans[chair] or 0,
             score = scores[chair] or 0,
         }
-        return tb 
+        return tb
     end)
 
     return typefans,fanscores
