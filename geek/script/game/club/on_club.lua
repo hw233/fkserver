@@ -1030,7 +1030,7 @@ function on_cs_club_kickout(msg,guid)
     end
 
     local os = onlineguid[target_guid]
-    if os.first_game_type ~= 1 then
+    if os and os.table then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_IN_ROOM
         })
