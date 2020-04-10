@@ -3,6 +3,8 @@
 local pb = require "pb_files"
 local log = require "log"
 require "game.net_func"
+require "game.common"
+
 local enum = require "pb_enums"
 local send2client_pb = send2client_pb
 

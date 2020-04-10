@@ -1,7 +1,5 @@
 -- 注册消息
 local skynet = require "skynetproto"
-local pb = require "pb_files"
-local msgopt = require "msgopt"
 local serviceconf = require "serviceconf"
 require "functions"
 
@@ -26,7 +24,6 @@ skynet.start(function()
 	require "game.lobby.on_award"
 	require "game.lobby.on_room"
 	require "game.lobby.on_chat"
-	require "game.lobby.on_recharge_cash"
 	require "game.club.on_club"
 	require "game.lobby.on_template"
 
@@ -36,74 +33,31 @@ skynet.start(function()
 	--------------------------------------------------------------------
 
 	-- 注册cfg发过来的消息分派函数
-	register_dispatcher("FS_ChangeGameCfg",on_fs_chang_config)
-	register_dispatcher("CS_QueryMaintain",on_cs_change_maintain)
-	register_dispatcher("S_ReplyPrivateRoomConfig",on_S_ReplyPrivateRoomConfig)
 	register_dispatcher("SS_JoinPrivateRoom",on_ss_join_private_room)
 	-- 注册DB发过来的消息分派函数
-	register_dispatcher("DS_Charge_Rate",on_ds_charge_rate)
 	register_dispatcher("DS_Player_Append_Info",on_ds_player_append_info)
 	register_dispatcher("DS_ResetAccount",on_ds_reset_account)
 	register_dispatcher("DS_SetPassword",on_ds_set_password)
 	register_dispatcher("DS_SetNickname",on_ds_set_nickname)
 	register_dispatcher("DS_BankChangePassword",on_ds_bank_change_password)
 	register_dispatcher("DS_ResetPW",on_ds_ResetPw)
-	register_dispatcher("DS_BankLogin",on_ds_bank_login)
-	register_dispatcher("DS_BankTransfer",on_ds_bank_transfer)
-	register_dispatcher("DS_BankTransferByGuid",on_ds_bank_transfer_by_guid)
-	register_dispatcher("DS_SaveBankStatement",on_ds_save_bank_statement)
-	register_dispatcher("DS_BankStatement",on_ds_bank_statement)
 	register_dispatcher("DS_LoadAndroidData",on_ds_load_android_data)
 	register_dispatcher("DS_QueryPlayerMsgData",on_ds_QueryPlayerMsgData)
-	register_dispatcher("DS_QueryPlayerMarquee",on_ds_QueryPlayerMarquee)
-	register_dispatcher("DS_CashMoneyType",on_ds_cash_money_type)
-	-- 代理提现
-	register_dispatcher("DS_ProxyCashToBank",on_ds_proxy_cash_money_to_bank)
 
-	register_dispatcher("DS_WithDrawCash",on_DS_WithDrawCash)
 	register_dispatcher("DS_BandAlipay",on_ds_bandalipay)
 	register_dispatcher("DS_BandAlipayNum",on_ds_bandalipaynum)
 	--register_dispatcher("DS_OxConfigData",on_ds_LoadOxConfigData)
-	register_dispatcher("DS_ServerConfig",on_ds_server_config)
 	register_dispatcher("DS_QueryPlayerInviteReward",on_ds_load_player_invite_reward)
 	register_dispatcher("DS_QueryChannelInviteCfg",on_ds_load_channel_invite_cfg)
-	register_dispatcher("DS_CheckCashTime",on_SD_CheckCashTime)
-	register_dispatcher("DS_NotifyClientBankerChange",on_ds_notifyclientbankchange)
-	register_dispatcher("DS_ChangeBank",on_ds_changebank)
-	register_dispatcher("DS_CheckBankTransferEnable",on_DS_CheckBankTransferEnable)
-	register_dispatcher("DS_PlayerBankTransfer",on_DS_PlayerBankTransfer)
-	register_dispatcher("DS_BandBankcard",on_ds_bandbankcard)
-	register_dispatcher("DS_BandBankcardNum",on_ds_bandbankcardnum)
-
 	--------------------------------------------------------------------
 	-- 注册Login发过来的消息分派函数
 	register_dispatcher("LS_LoginNotify",on_ls_login_notify)
 	register_dispatcher("S_Logout",on_s_logout)
-	register_dispatcher("LS_Player_Identiy",on_ls_player_identiy)
-	register_dispatcher("LS_Update_Risk",on_update_risk)
-	register_dispatcher("LS_Player_SeniorPromoter",on_ls_player_seniorpromoter)
 	register_dispatcher("SS_ChangeGame",on_ss_change_game)
-	-- register_dispatcher("LS_ChangeGameResult",on_LS_ChangeGameResult)
-	register_dispatcher("LS_BankTransferSelf",on_ls_bank_transfer_self)
-	register_dispatcher("LS_BankTransferTarget",on_ls_bank_transfer_target)
-	register_dispatcher("LS_BankTransferByGuid",on_ls_bank_transfer_by_guid)
 	register_dispatcher("LS_NewNotice",on_new_notice)
 	register_dispatcher("LS_GameNotice",on_game_notice)
 	register_dispatcher("LS_DelMessage",on_ls_DelMessage)
-	register_dispatcher("LS_CashDeal",on_cash_false_deal)
-	register_dispatcher("LS_ChangeTax",on_ls_set_tax)
-	register_dispatcher("LS_AlipayEdit",on_ls_AlipayEdit)
-	register_dispatcher("LS_CC_ChangeMoney",on_ls_cc_changemoney)
-	register_dispatcher("LS_FreezeAccount",on_ls_FreezeAccount)
-	register_dispatcher("LS_AddMoney",on_ls_addmoney)
-	register_dispatcher("LS_UpdatePlatformSwitch",on_cs_change_recharge_switch)
-	--register_dispatcher("LS_UpdatePlatformCashSwitch",on_cs_change_cash_switch)
-	--register_dispatcher("LS_UpdatePlatformPlayerToAgentCashSwitch",on_cs_change_playertoagent_cash_switch)
-	--register_dispatcher("LS_UpdatePlatformBankerTransferSwitch",on_cs_change_banker_transfer_switch)
 	register_dispatcher("LS_BankcardEdit",on_ls_BankcardEdit)
-	--register_dispatcher("LS_UpdatePlatformAllSwitchInfo",on_ls_update_platform_switch_info)
-	register_dispatcher("LS_UpdatePlatformAllCashSwitch",on_cs_change_all_cash_switch)
-	-- register_dispatcher("LS_UpdateBonusHongbao",on_ls_load_bonus_config)
 
 	--------------------------------------------------------------------
 	-- 注册客户端发过来的消息分派函?
@@ -123,10 +77,6 @@ skynet.start(function()
 	register_dispatcher("CS_BankLogin",on_cs_bank_login)
 	register_dispatcher("CS_BankDeposit",on_cs_bank_deposit)
 	register_dispatcher("CS_BankDraw",on_cs_bank_draw)
-	register_dispatcher("CS_BankTransfer",on_cs_bank_transfer)
-	register_dispatcher("CS_CheckBankTransferEnable",on_CS_CheckBankTransferEnable)
-	register_dispatcher("CS_BankTransferByGuid",on_cs_bank_transfer_by_guid)
-	register_dispatcher("CS_BankStatement",on_cs_bank_statement)
 	register_dispatcher("CS_BuyItem",on_cs_buy_item)
 	register_dispatcher("CS_DelItem",on_cs_del_item)
 	register_dispatcher("CS_UseItem",on_cs_use_item)
@@ -154,25 +104,15 @@ skynet.start(function()
 	register_dispatcher("CS_QueryPlayerMsgData",on_cs_QueryPlayerMsgData)
 	register_dispatcher("CS_QueryPlayerMarquee",on_cs_QueryPlayerMarquee)
 	register_dispatcher("CS_SetMsgReadFlag",on_cs_SetMsgReadFlag)
-	register_dispatcher("CS_CashMoney",on_cs_cash_money)
-	register_dispatcher("CS_ProxyCashMoneyToBank",on_cs_proxy_cash_money_to_bank)
-	register_dispatcher("CS_CashMoneyType",on_cs_cash_money_type)
 	register_dispatcher("CS_BandAlipay",on_cs_bandalipay)
 	register_dispatcher("CS_Trustee",on_cs_trusteeship)
 	register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
-	register_dispatcher("CS_RequestProxyConfig",on_CS_RequestProxyConfig)
-	register_dispatcher("CS_BandBankcard",on_cs_bandbankcard)
 	-- --红包
 	-- register_dispatcher("CS_QueryBonusActivity",on_cs_query_bonus_activities)
 	-- register_dispatcher("CS_QueryBonus",on_cs_query_bonus)
 	-- register_dispatcher("CS_PickBonus",on_cs_pick_bonus)
 
-	register_dispatcher("FS_ChangMoneyDeal",on_changmoney_deal)
-	register_dispatcher("GS_UpdatePlayerBank",on_GS_UpdatePlayerBank)
-	register_dispatcher("GS_ReCharge",on_gs_recharge)
 	-- register_dispatcher("SS_JoinPrivateRoom",on_SS_JoinPrivateRoom)
-	-- register_dispatcher("LS_CC_ChangeMoney",on_ls_cc_changemoney)
-	register_dispatcher("LG_UpdateBankMoney",on_lg_updatebankmoney)
 
 	register_dispatcher("CS_DismissTableReq",on_cs_dismiss_table_req)
 	register_dispatcher("CS_DismissTableCommit",on_cs_dismiss_table_commit)
