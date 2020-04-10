@@ -399,7 +399,6 @@ end
 function maajan_table:xi_pai()
     self:update_state(FSM_S.XI_PAI)
     self:prepare_tiles()
-
     dump(self.players)
     self:foreach(function(v)
         self:send_data_to_enter_player(v)
@@ -804,9 +803,9 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             local is_zi_mo = true
             local whoee = nil
             if self.conf.conf.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
-                is_zi_mo = false
+                is_zi_mo = nil
                 for _,s in pairs(player.pai.ming_pai) do
-                    if s.tile == player.last_action.tile and s.type == ACTION.MING_GANG then
+                    if s.tile == player.last_action.tile and s.type == SECTION_TYPE.MING_GANG then
                         whoee = s.whoee
                         break
                     end
@@ -1133,7 +1132,17 @@ function maajan_table:mo_pai()
         return
     end
 
-    local mo_pai = self.dealer:deal_one()
+    local mo_pai
+    if table.nums(self.pre_gong_tiles or {}) > 0 then
+        for i,tile in pairs(self.pre_gong_tiles) do
+            mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            self.pre_gong_tiles[i] = nil
+            break
+        end
+    else
+        mo_pai = self.dealer:deal_one()
+    end
+
     if not mo_pai then
         self:gotofunc(function() self:do_balance() end)
         return
@@ -1594,35 +1603,26 @@ end
 
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
-    local pre_tiles = {
-        -- [1] = {1,1,1,2,3,4,5,6,7,8,9,9,9},
-        -- [2] = {11,11,12,12,13,13,14,14,15,15,16,16,29},
-        -- [3] = {11,11,12,12,13,13,14,14,15,15,16,16,29},
-        -- [4] = {21,21,22,22,23,23,24,24,25,25,26,26,4}
+    self.pre_tiles = {
+        -- [1] = {1,1,2,2,3,3,4,4,5,5,6,6,7},
+        -- [2] = {11,12,13,14,15,16,17,18,19,8,8,8,7},
+        -- [3] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
+        -- [4] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
     }
 
-    for i,pretiles in pairs(pre_tiles) do
-        local p = self.players[i]
-        if not p then
-            log.error("prepare_tiles got nil player,chair_id:%d",i)
-            break
+    self:foreach(function(p)
+        local tiles = self.pre_tiles[p.chair_id]
+        if tiles then
+            self.dealer:pick_tiles(tiles)
         end
-        for _,tile in pairs(pretiles) do
-            local is = self.dealer:deal_one_on(function(t) return t == tile end)
-            if is > 0 then
-                table.incr(p.pai.shou_pai,tile)
-            else
-                log.error("prepare_tiles deal tile is 0")
-            end
-        end
-    end
 
-    self:foreach(function(p,i)
-        if not pre_tiles[i] then
-            local tiles = self.dealer:deal_tiles(13)
-            for _,t in pairs(tiles) do
-                table.incr(p.pai.shou_pai,t)
-            end
+        local c = table.nums(tiles or {})
+        if c < 13 then
+            tiles = table.union(tiles or {},self.dealer:deal_tiles(13 - c))
+        end
+
+        for _,t in pairs(tiles) do
+            table.incr(p.pai.shou_pai,t)
         end
     end)
 end
@@ -1871,9 +1871,7 @@ function maajan_table:calculate_jiao(p)
         local hu = {
             types = mj_util.hu(p.pai,tile),
         }
-        dump(hu)
         local hu_fans = self:calculate_hu(hu)
-        dump(hu_fans)
         local fan = table.sum(hu_fans,function(t) return (t.count or 1) * (t.fan or 0) end)
         table.insert(type_fans,{types = hu_fans,hu = hu,fan = fan,tile = tile})
     end
