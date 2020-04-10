@@ -953,17 +953,20 @@ function base_table:player_stand_up(player, reason)
 
 		if self.private_id then
 			local priv_tb = base_private_table[self.private_id]
-			if priv_tb and priv_tb.club_id then
-				local club = base_clubs[priv_tb.club_id]
-				if club then
-					local root = club_utils.root(club)
-					root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-						root_club = root.id,
-						club_id = club.id,
-						room_info = self:global_status_info(),
-						sync_table_id = self.private_id,
-						sync_type = enum.SYNC_UPDATE,
-					})
+			if priv_tb then 
+				reddb:hdel("player:online:guid:"..tostring(player.guid),"global_table")
+				if priv_tb.club_id then
+					local club = base_clubs[priv_tb.club_id]
+					if club then
+						local root = club_utils.root(club)
+						root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+							root_club = root.id,
+							club_id = club.id,
+							room_info = self:global_status_info(),
+							sync_table_id = self.private_id,
+							sync_type = enum.SYNC_UPDATE,
+						})
+					end
 				end
 			end
 		end

@@ -797,7 +797,7 @@ end
 -- 玩家退出房间
 function base_room:player_exit_room(player,offline)
 	log.info("base_room:player_exit_room, guid %s, room_id %s",player.guid,def_game_id)
-	
+	base_players[player.guid] = nil
 	self.players[player.guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
 	if offline then
@@ -807,20 +807,12 @@ function base_room:player_exit_room(player,offline)
 		reddb:hdel(online_key,"second_game_type")
 	else
 		log.info("player_exit_room not set guid[%d] onlineinfo",player.guid)
+		local room_id = find_best_room(1)
+		switch_room(player.guid,room_id)
 	end
 
-	reddb:hdel("player:online:guid:"..tostring(player.guid),"server")
-	
 	onlineguid[player.guid] = nil
 end
-
-function base_room:switch_room(player,room_id)
-	if room_id == def_game_id then return end
-
-	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",player.guid)
-	onlineguid.control(player.guid,"goserver",room_id)
-end
-
 
 function base_room:get_suitable_table(player,bool_change_table)
 	local player_count = -1

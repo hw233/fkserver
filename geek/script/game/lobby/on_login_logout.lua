@@ -227,7 +227,7 @@ function on_cs_login_validatebox(player, msg)
 			result = LOGIN_RESULT_SUCCESS,
 			})
 
-		reddb.del("login_validate_error_count:"..tostring(player.guid))
+		reddb:del("login_validate_error_count:"..tostring(player.guid))
 		return
 	end
 
@@ -799,7 +799,7 @@ function on_ss_change_game(guid)
 	log.info("player[%d] has_bank_password[%s] bankpwd[%s] platform_id[%s]",
 		player.guid,player.has_bank_password,player.bank_password,player.platform_id)
 
-	reddb:hmset("player:online:guid:"..tostring(player.guid),{
+	reddb:hmset(string.format("player:online:guid:%d",guid),{
 		first_game_type = def_first_game_type,
 		second_game_type = def_second_game_type,
 		server = def_game_id,
@@ -985,10 +985,7 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
-		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
-		onlineguid[guid] = nil
+		switch_room(player.guid,room_id)
 		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
 		return
 	end

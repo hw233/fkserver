@@ -1,5 +1,9 @@
 local serviceconf = require "serviceconf"
 local channel = require "channel"
+local onlineguid = require "netguidopt"
+local redisopt = require "redisopt"
+
+local reddb  = redisopt.default
 
 local function get_room_player_count(room_id)
 	return channel.call("game."..tostring(room_id),"lua","get_player_count")
@@ -24,4 +28,13 @@ function find_best_room(first_game_type,second_game_type)
 	end
 
 	return room_id
+end
+
+function switch_room(guid,room_id)
+	if room_id == def_game_id then return end
+
+	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
+	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	onlineguid[guid] = nil
 end

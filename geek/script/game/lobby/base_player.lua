@@ -162,11 +162,6 @@ function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, r
 			chair_id = chair_id_,
 			result = result_,
 			})
-
-		local onlinekey = string.format("player:online:guid:%d",self.guid)
-		reddb:hdel(onlinekey,"first_game_type")
-		reddb:hdel(onlinekey,"second_game_type")
-		reddb:hdel(onlinekey,"server")
 	else
 		log.info("send SC_StandUpAndExitRoom nil "..result_)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
@@ -230,7 +225,7 @@ end
 function base_player:on_exit_room(result_)
 	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		send2client_pb(self, "SC_ExitRoom", {
-			room_id = 0,
+			room_id = def_game_id,
 			result = result_,
 		})
 	else
