@@ -26,6 +26,37 @@ function maajan_tile_dealer:shuffle()
     self.remain_count = #self.tiles
 end
 
+function maajan_tile_dealer:arrange_tiles(tiles,begin)
+    begin = begin or 1
+    local k = self.remain_count
+    local function back_indexof(tile,start)
+        start = start or 1
+        for i = k,start,-1 do
+            if self.tiles[i] == tile then
+                return i
+            end
+        end
+    end
+
+    for i,t in pairs(tiles) do
+        local j = back_indexof(t)
+        local m = begin + i - 1
+        if j and j ~= m then
+            self.tiles[j], self.tiles[m] = self.tiles[m], self.tiles[j]
+        end
+    end
+
+    return
+end
+
+function maajan_tile_dealer:pick_tiles(tiles)
+    for _,tile in pairs(tiles) do
+        self:deal_one_on(function(t) return t == tile end)
+    end
+
+    return tiles
+end
+
 
 function maajan_tile_dealer:deal_one()
     local k = self.remain_count
