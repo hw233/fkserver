@@ -125,6 +125,9 @@ function on_cs_update_location_gps(msg,guid)
 		gps_longitude = longitude,
 		gps_latitude = latitude,
 	})
+
+	player.gps_latitude = latitude
+	player.gps_longitude = longitude
 end
 
 -- 玩家登录通知 验证账号成功后会收到
