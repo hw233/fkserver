@@ -368,14 +368,14 @@ local function deep_get_club_tables(club)
     return tables
 end
 
-
-local function get_club_template_team_conf(club,template)
-    club = base_clubs[club.parent]
-    if not club then return end
+local function is_template_visiable(club,template)
     local conf = club_team_template_conf[club.id][template.template_id]
-    if not conf then return end
-
-    return conf
+    local visiable = (not conf or conf.visual == nil) and true or conf.visual
+    if visiable and club.parent and club.parent ~= 0 then
+        local parent = base_clubs[club.parent]
+        visiable = visiable and is_template_visiable(parent,template)
+    end
+    return visiable
 end
 
 local function get_club_templates(club)
@@ -383,24 +383,23 @@ local function get_club_templates(club)
 
     local templates = {}
     for tid,_ in pairs(club_template[club.id]) do
-        local temp = table_template[tid]
-        local conf = get_club_template_team_conf(club,temp)
-        if temp and (not conf or conf.visual) then
-            table.insert(templates,{
-                template = {
-                    template_id = temp.template_id,
-                    game_id = temp.game_id,
-                    description = temp.description,
-                    rule = json.encode(temp.rule),
-                },
-                club_id = temp.club_id,
-            })
-        end
+        table.insert(templates,table_template[tid])
     end
 
     table.unionto(templates,get_club_templates(base_clubs[club.parent]) or {})
 
     return templates
+end
+
+local function get_visiable_club_templates(club,getter_role)
+    local templates = get_club_templates(club)
+    return table.agg(templates,{},function(tb,template)
+        if  is_template_visiable(club,template) or
+            getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
+            table.insert(tb,template)
+        end
+        return tb
+    end)
 end
 
 function on_cs_club_detail_info_req(msg,guid)
@@ -420,14 +419,6 @@ function on_cs_club_detail_info_req(msg,guid)
         })
         return
     end
-
-    -- local role = club_role[club_id][guid]
-    -- if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
-    --     onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
-    --         result = enum.ERROR_NOT_IS_CLUB_BOSS,
-    --     })
-    --     return
-    -- end
 
     local games = {}
     local info = channel.query()
@@ -492,7 +483,7 @@ function on_cs_club_detail_info_req(msg,guid)
         role = role or enum.CRT_PLAYER
     end
 
-    local templates = get_club_templates(club)
+    local templates = get_visiable_club_templates(club,role)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
     local myself = base_players[guid]
@@ -532,14 +523,25 @@ function on_cs_club_detail_info_req(msg,guid)
     }
 
     local club_info = {
-        root = club_utils.root(club).id,
+        root = root.id,
         result = enum.ERROR_NONE,
         self_info = team_info,
         my_team_info = my_team_info,
         status = club_status,
         table_list = tables,
         gamelist = real_games,
-        table_templates = templates,
+        table_templates = table.agg(templates,{},function(tb,template)
+            table.insert(tb,{
+                club_id = template.club_id,
+                template = {
+                    template_id = template.template_id,
+                    game_id = template.game_id,
+                    description = template.description,
+                    rule = json.encode(template.rule),
+                }
+            })
+            return tb
+        end),
     }
 
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)

@@ -313,11 +313,11 @@ function on_cs_config_club_team_template(msg,guid)
     end
 
     reddb:hmset(string.format("team_conf:%d:%d",club_id,template_id),{
-        club_id = club_id,
-        template_id = template_id,
-        visual = conf.visual,
-        commission_rate = conf.commission_rate,
-    })
+            club_id = club_id,
+            template_id = template_id,
+            visual = conf.visual and "true" or "false",
+            commission_rate = conf.commission_rate,
+        })
 
     club_team_template_conf[club_id][template_id] = nil
 
@@ -360,7 +360,7 @@ function on_cs_get_club_team_template_conf(msg,guid)
                 template_id = template.template_id,
                 commission = calc_club_template_commission(club,template),
                 commission_rate = teamconf and teamconf.commission_rate or 0,
-                visual = true,
+                visual = teamconf.visual,
             })
         end
     else
