@@ -73,6 +73,10 @@ function define.is_action_chi(action)
 	return action & (0x80 | 0x100 | 0x200) ~= 0
 end
 
+function define.is_section_gang(st)
+	return st == SECTION_TYPE.AN_GANG or st == SECTION_TYPE.MING_GANG or st == SECTION_TYPE.BA_GANG
+end
+
 --状态机  状态
 define.FSM_state = {
     PER_BEGIN       			= pb.enum("FSM_STATE","PER_BEGIN"),	--预开始

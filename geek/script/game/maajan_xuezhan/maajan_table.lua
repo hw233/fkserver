@@ -1050,6 +1050,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
         if action.done.action == ACTION.HU then
             for _,act in ipairs(actions_to_do) do
+                local is_gang_pao = chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) or nil
                 local p = self.players[act.chair_id]
                 p.hu = {
                     time = os.time(),
@@ -1058,8 +1059,17 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     zi_mo = false,
                     hai_di = self.dealer.remain_count == 0 and true or nil,
                     whoee = self.chu_pai_player_index,
-                    gang_pao = chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) or nil,
+                    gang_pao = is_gang_pao,
                 }
+
+                if is_gang_pao then
+                    local pai = chu_pai_player.pai
+                    for _,s in pairs(pai.ming_pai) do
+                        if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
+                            s.dian_pao = act.chair_id
+                        end
+                    end
+                end
 
                 self:log_game_action(p,act.done.action,tile)
                 self:broadcast_player_hu(p,act.done.action)
@@ -1099,6 +1109,14 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     player.guo_zhuang_hu = self:max_hu(player,hu_action)
                 end
             end
+
+            if self.conf.conf.play.guo_shou_peng then
+                local peng_action = waiting_actions[player.chair_id].actions[ACTION.PENG]
+                if peng_action then
+                    player.guo_shou_peng = peng_action.tile
+                end
+            end
+
             self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = ACTION.PASS})
             self:next_player_index()
             self:gotofunc(function() self:mo_pai() end)
@@ -1149,6 +1167,7 @@ function maajan_table:mo_pai()
     end
 
     player.guo_zhuang_hu = nil
+    player.guo_shou_peng = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     local actions = self:get_actions(player,mo_pai)
@@ -1672,6 +1691,13 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
+    if p.guo_shou_peng and actions[ACTION.PENG] then
+        local action = actions[ACTION.PENG]
+        if action[p.guo_shou_peng] then
+            actions[ACTION.PENG][p.guo_shou_peng] = nil
+        end
+    end
+
     if not self:is_que(p) and actions[ACTION.HU] then
         actions[ACTION.HU] = nil
     end
@@ -1835,11 +1861,13 @@ function maajan_table:calculate_gang(p)
         if not t then return tb end
         local hu_type_info = HU_TYPE_INFO[t]
 
+        local who = s.dian_pao and self.players[s.dian_pao] or p
+        
         if t == HU_TYPE.MING_GANG then
-            tb[p.chair_id] = (tb[p.chair_id] or 0) + hu_type_info.score
+            tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
             tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
         elseif t == HU_TYPE.AN_GANG or t == HU_TYPE.BA_GANG then
-            self:foreach_except(p,function(pi)
+            self:foreach_except(who,function(pi)
                 if pi.hu and pi.hu.time < s.time then return end
 
                 tb[p.chair_id] = (tb[p.chair_id] or 0) + hu_type_info.score
