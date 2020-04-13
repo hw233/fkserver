@@ -451,7 +451,9 @@ function rule.hu(pai,inPai)
 
 	for _,sections in pairs(state.hu) do
 		local types = get_hu_types(pai,cache,sections)
-		if table.sum(pai.shou_pai) == 1 and pai.shou_pai[inPai] == 1 then
+		local sum = table.sum(pai.shou_pai)
+		if (sum == 1 and pai.shou_pai[inPai] == 1) or
+			(sum == 2 and not inPai and table.logic_or(pai.shou_pai,function(c,_) return c == 2 end)) then
 			common_types[HU_TYPE.DAN_DIAO_JIANG] = 1
 		end
 
@@ -560,5 +562,18 @@ function rule.is_chi(pai,tile)
 		[ACTION.RIGHT_CHI] = (b1 > 0 and b2 > 0) and {tile} or nil,
 	}
 end
+
+
+local test_pai = {
+	shou_pai = {[12] = 1},
+	ming_pai = {
+		{type = SECTION_TYPE.PENG,tile = 5},
+		{type = SECTION_TYPE.MING_GANG,tile = 2},
+		{type = SECTION_TYPE.PENG,tile = 4},
+		{type = SECTION_TYPE.PENG,tile = 13},
+	},
+}
+
+dump(rule.hu(test_pai,12))
 
 return rule
