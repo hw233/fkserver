@@ -360,7 +360,7 @@ function on_cs_get_club_team_template_conf(msg,guid)
                 template_id = template.template_id,
                 commission = calc_club_template_commission(club,template),
                 commission_rate = teamconf and teamconf.commission_rate or 0,
-                visual = teamconf.visual,
+                visual = not teamconf and true or (teamconf.visual and true or false),
             })
         end
     else
