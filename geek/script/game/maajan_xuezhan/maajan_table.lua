@@ -586,7 +586,10 @@ function maajan_table:huan_pai()
     if timer then timer:kill() end
 
     local order = self:do_huan_pai()
+    self.game_log.huan_order = order
+    local log_players = self.game_log.players
     self:foreach(function(p)
+        log_players[p.chair_id].huan = p.pai.huan
         send2client_pb(p,"SC_HuanPaiCommit",{
             new_shou_pai = p.pai.huan.new,
             huan_order = order,
@@ -699,8 +702,10 @@ function maajan_table:ding_que()
 
     if timer then timer:kill() end
 
+    local log_players = self.game_log.players
     local p_ques = {}
     self:foreach(function(p)
+        log_players[p.chair_id].que = p.que
         table.insert(p_ques,{
             chair_id = p.chair_id,
             men = p.que,
