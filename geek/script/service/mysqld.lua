@@ -146,7 +146,7 @@ function dbmanager:open(cfg)
 end
 
 function dbmanager:close(dbname)
-	dump(dbname)
+	log.dump(dbname)
 
 	if not self.all[dbname] then return end
 

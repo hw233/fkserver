@@ -117,7 +117,7 @@ function on_cs_club_create(msg,guid)
         return
     end
 
-    dump(player)
+    log.dump(player)
 
     local id_head = math.random(10) > 5 and 6 or 8
     local id_begin = id_head * 100000
@@ -143,7 +143,7 @@ function on_cs_club_create(msg,guid)
 end
 
 function on_cs_club_create_club_with_mail(msg,guid)
-    dump(msg)
+    log.dump(msg)
     local mail = base_mails[msg.mail_id]
     if not mail or mail.status ~= 0 then
         log.error("on_cs_club_create_club_with_req no request,%s.",msg.mail_id)
@@ -587,7 +587,7 @@ function on_cs_club_edit_game_type(msg,guid)
 end
 
 function on_cs_club_join_req(msg,guid)
-    dump(msg)
+    log.dump(msg)
     local club_id = msg.club_id
     local club = base_clubs[club_id]
     if not club then
@@ -861,7 +861,7 @@ local function on_cs_club_agree_request(msg,guid)
 end
 
 local function on_cs_club_reject_request(msg,guid)
-    dump(msg)
+    log.dump(msg)
     local player = base_players[guid]
     if not player then
         log.error("unknown player when reject request request_id:%s",msg.request_id)

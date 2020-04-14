@@ -309,7 +309,7 @@ function maajan_table:on_action_when_check_ting(event)
 
         self:log_game_action(player,ACTION.TING,tile)
 
-        dump(self.waiting_player_actions)
+        log.dump(self.waiting_player_actions)
     end
 
     if not table.logic_and(self.waiting_player_actions,function(act) return act.done ~= nil end) then
@@ -638,7 +638,7 @@ function maajan_table:on_action_after_mo_pai(evt)
         return
     end
 
-    dump(self.waiting_player_actions)
+    log.dump(self.waiting_player_actions)
     local player = self:chu_pai_player()
     if not player then
         log.error("do action %s,but wrong player in chair %s",do_action,player.chair_id)
@@ -906,7 +906,7 @@ function maajan_table:do_mo_pai()
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     local actions = self:get_actions(player,mo_pai)
-    dump(actions)
+    log.dump(actions)
     table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
@@ -1222,7 +1222,7 @@ function maajan_table:calculate_hu(p,hu)
         end
     end
 
-    dump(types)
+    log.dump(types)
 
     local zhuang_typescores = self:calculate_zhuang(p,hu)
     for c,typescore in pairs(zhuang_typescores) do
@@ -1794,9 +1794,9 @@ end
 
 function maajan_table:on_game_balance()
     local fan_pai_tile,ji_tiles = self:gen_ji_tiles()
-    dump(ji_tiles)
+    log.dump(ji_tiles)
     local items = self:game_balance(ji_tiles)
-    -- dump(items,9)
+    -- log.dump(items,9)
     local scores = {}
     for chair_id,item in pairs(items) do
         scores[chair_id] =
@@ -1886,7 +1886,7 @@ function maajan_table:on_game_balance()
         p_log.win_money = money
     end
 
-    -- dump(msg,9)
+    -- log.dump(msg,9)
 
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
@@ -2116,7 +2116,7 @@ function maajan_table:increase_time_out_and_deposit(player)
 end
 
 function maajan_table:on_cs_do_action(player,msg)
-    dump(msg)
+    log.dump(msg)
     self:clear_deposit_and_time_out(player)
     self:safe_event({chair_id = player.chair_id,type = msg.action,tile = msg.value_tile})
 end
@@ -2411,7 +2411,7 @@ function maajan_table:do_chu_pai(chu_pai_val)
         end
     end)
 
-    dump(player_actions)
+    log.dump(player_actions)
     if table.nums(player_actions) == 0 then
         self:next_player_index()
         self:do_mo_pai()
@@ -2470,7 +2470,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         table.insert(msg.pb_players,tplayer)
     end
 
-    dump(msg)
+    log.dump(msg)
     
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect then

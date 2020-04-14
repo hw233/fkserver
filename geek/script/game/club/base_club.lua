@@ -178,7 +178,7 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
 end
 
 function base_club:agree_request(request)
-    dump(request)
+    log.dump(request)
     local who = request.who
     local whoee = request.whoee
 
@@ -497,7 +497,7 @@ function base_club:exchange_commission(count)
 end
 
 function base_club:incr_money(item,why,why_ext)
-    dump(item)
+    log.dump(item)
 	local oldmoney = tonumber(club_money[self.id][item.money_id]) or 0
 	log.info("base_club:incr_money club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
     log.info("base_club:incr_money money[%d] - p[%d]" , oldmoney,item.money)
@@ -520,16 +520,16 @@ function base_club:incr_money(item,why,why_ext)
 	
 	local dboldmoney = tonumber(changes[1].oldmoney)
 	local dbnewmoney = tonumber(changes[1].newmoney)
-    dump(dboldmoney)
-    dump(oldmoney)
+    log.dump(dboldmoney)
+    log.dump(oldmoney)
 	if dboldmoney ~= oldmoney then
 		log.error("db incrmoney error,club[%d] money_id[%d] dboldmoney[%d] oldmoney[%d] ",self.id,item.money_id,oldmoney,dboldmoney)
 		-- return
 	end
 
     local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money))
-    dump(dbnewmoney)
-    dump(newmoney)
+    log.dump(dbnewmoney)
+    log.dump(newmoney)
     if dbnewmoney ~= newmoney then
         log.error("db incrmoney error,club[%d] money_id[%d] dbnewmoney[%d] newmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
         -- return

@@ -216,7 +216,7 @@ function MSG.CL_RegAccount(msg,session)
         skynet.call(gate,"lua","login",session.fd,info.guid,gameid,info)
     end
 
-    dump(info)
+    log.dump(info)
 
     netmsgopt.send(session.fd,"LC_Login",info)
 end
@@ -309,13 +309,13 @@ local function login_by_openid(msg,session)
         skynet.call(gate,"lua","login",session.fd,info.guid,server,info)
     end
 
-    dump(info)
+    log.dump(info)
 
     return info
 end
 
 local function login_by_account(msg,session)
-    dump(msg)
+    log.dump(msg)
     local fd = session.fd
     local ip = session.ip
     if not msg.account and type(msg.account) ~= "string" then
@@ -397,8 +397,8 @@ function MSG.CL_Auth(msg,session)
 
     msg.ip = session.ip
     local result,userinfo = channel.call("login.?","msg","CL_Auth",msg)
-    dump(result)
-    dump(userinfo)
+    log.dump(result)
+    log.dump(userinfo)
     if  result ~= enum.LOGIN_RESULT_SUCCESS and 
         result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
         netmsgopt.send(fd,"LC_Auth",{
@@ -410,7 +410,7 @@ function MSG.CL_Auth(msg,session)
     end
     logining[fd] = nil
 
-    dump(userinfo)
+    log.dump(userinfo)
 
 
     MSG.CL_Login({
@@ -423,7 +423,7 @@ function MSG.CL_Auth(msg,session)
 end
 
 function MSG.CL_Login(msg,session)
-    dump(msg)
+    log.dump(msg)
     local fd = session.fd
     if logining[fd] then
         netmsgopt.send(fd,"LC_Login",{
@@ -456,7 +456,7 @@ function MSG.CL_Login(msg,session)
 
     logining[fd] = nil
 
-    dump(res)
+    log.dump(res)
 
 	netmsgopt.send(fd,"LC_Login",res)
 end
@@ -566,7 +566,7 @@ function MSG.CG_GameServerCfg(msg,session)
         end
     end
 
-    dump(pbconf)
+    log.dump(pbconf)
 
 
 	for _,p in pairs(pbconf) do

@@ -117,7 +117,7 @@ local function reg_account(msg)
 end
 
 local function open_id_login(msg,gate)
-    dump(msg)
+    log.dump(msg)
     local ip = msg.ip
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
@@ -132,7 +132,7 @@ local function open_id_login(msg,gate)
         reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
     end
 
-    dump(info)
+    log.dump(info)
     if info.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED,info
     end
@@ -141,7 +141,7 @@ local function open_id_login(msg,gate)
 end
 
 local function wx_auth(msg)
-    dump(msg)
+    log.dump(msg)
     local conf = global_conf.auth.wx
     local _,authjson = http_get(string.format(conf.auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
             conf.appid,conf.secret,msg.code))
@@ -158,7 +158,7 @@ local function wx_auth(msg)
         return tonumber(auth.errcode),auth.errmsg
     end
 
-    dump(userinfo)
+    log.dump(userinfo)
 
     return nil,userinfo
 end
@@ -436,7 +436,7 @@ local function h5_login(msg,gate)
     end
 
     local info = base_players[tonumber(guid)]
-    dump(info)
+    log.dump(info)
     if info.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED,info
     end
@@ -478,7 +478,7 @@ function on_cl_login(msg,gate)
 
         channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,reconnect)
 
-        dump(info)
+        log.dump(info)
 
         log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s",
             account, game_id, info.session_id, info.gate_id)

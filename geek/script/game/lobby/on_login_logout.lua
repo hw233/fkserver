@@ -990,7 +990,7 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
-	dump(rule)
+	log.dump(rule)
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
 	if result ~= enum.ERROR_NONE  then
@@ -1022,7 +1022,7 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		dump(template)
+		log.dump(template)
 		
 		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 	elseif pay_option == enum.PAY_OPTION_AA then
@@ -1213,7 +1213,7 @@ function on_cs_join_private_room(msg,guid)
 
 	local tb
 	local club_id = private_table.club_id
-	dump(private_table)
+	log.dump(private_table)
 	local club = club_id and base_clubs[club_id] or nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then

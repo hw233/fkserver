@@ -24,7 +24,7 @@ local function check_sign_code(sign,data)
     end
     table.insert(source,"appkey="..appkey)
     local s = table.concat(source,"&")
-    dump(s)
+    log.dump(s)
     return sign:upper() == md5.sumhexa(s):upper()
 end
 
@@ -33,7 +33,7 @@ skynet.start(function()
     assert(appkey)
 
     agent.start(protocol,function(request,response)
-        dump(request)
+        log.dump(request)
         if not request.url then
             response:write(404,nil,json.encode({
                 errcode = error.REQUEST_INVALID
@@ -72,8 +72,8 @@ skynet.start(function()
             return
         end
 
-        dump(sign)
-        dump(data)
+        log.dump(sign)
+        log.dump(data)
 
         if not check_sign_code(sign,data) then
             response:write(404,nil,json.encode({

@@ -422,7 +422,7 @@ function base_player:incr_money(item,why,why_ext)
 		return
 	end
 
-	dump(item)
+	log.dump(item)
 	local where = item.where or 0
 	local oldmoney = player_money[self.guid][item.money_id]
 	log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)

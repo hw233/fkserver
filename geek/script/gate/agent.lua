@@ -563,7 +563,7 @@ local function dispatch_client(buf)
     local msg = netmsgopt.decode(msgid,msgstr)
     if msgname ~= "CS_HeartBeat" then
         log.info("agent.dispatch %s,%s,%s",msgname,msgid,#msgstr)
-        dump(msg)
+        log.dump(msg)
     end
 
     local f = netmsgopt.dispatcher(msgid)
@@ -598,7 +598,7 @@ skynet.start(function()
 
     skynet.dispatch("forward",function (_,_,msgname,msg)
         log.info("agent toclient msgname:%s,%s",guid,msgname)
-        dump(msg)
+        log.dump(msg)
         netmsgopt.send(fd,msgname,msg)
     end)
 end)

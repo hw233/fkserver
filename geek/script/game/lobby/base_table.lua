@@ -466,15 +466,15 @@ function base_table:cost_tax(winlose)
 			tax[p.guid] = taxconf.AA
 		end
 
-		dump(self.round_id)
+		log.dump(self.round_id)
 		do_cost_tax_money(tax)
 		self:do_commission(tax)
 		return
 	end
 
 	if taxconf.big_win and winlose then
-		dump(winlose)
-		dump(taxconf)
+		log.dump(winlose)
+		log.dump(taxconf)
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
@@ -1172,7 +1172,7 @@ function base_table:cost_private_fee()
 		return
 	end
 
-	dump(rule)
+	log.dump(rule)
 
 	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
 	local pay = rule.pay
@@ -1242,7 +1242,7 @@ function base_table:on_started(player_count)
 end
 
 function base_table:balance(moneies,why)
-	dump(moneies)
+	log.dump(moneies)
 
 	local money_id = self:get_money_id()
 
@@ -1260,7 +1260,7 @@ function base_table:balance(moneies,why)
 		moneies[pid] = math.floor(moneies[pid] * minrate)
 	end
 	
-	dump(moneies)
+	log.dump(moneies)
 
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then

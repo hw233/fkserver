@@ -4,7 +4,7 @@ local log = require "log"
 local enum = require "pb_enums"
 
 function on_sd_create_club(msg)
-    dump(msg)
+    log.dump(msg)
     local club_info = msg.info
     local money_info = msg.money_info
     if not club_info.owner or not club_info.id then
@@ -37,7 +37,7 @@ function on_sd_create_club(msg)
         "COMMIT;",
     }
 
-    dump(transqls)
+    log.dump(transqls)
 
     local trans = gamedb:transaction()
     local res = trans:execute(table.concat(transqls,"\n"))
@@ -51,7 +51,7 @@ function on_sd_create_club(msg)
 end
 
 function on_sd_join_club(msg)
-    dump(msg)
+    log.dump(msg)
     local gamedb = dbopt.game
     local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",msg.guid)
     if res.errno then
@@ -88,7 +88,7 @@ function on_sd_join_club(msg)
         "COMMIT;"
     }
 
-    dump(sqls)
+    log.dump(sqls)
 
     local tran = dbopt.game:transaction()
     res = tran:execute(table.concat(sqls,"\n"))
@@ -98,7 +98,7 @@ function on_sd_join_club(msg)
         return
     end
 
-    dump(res)
+    log.dump(res)
 
     return true
 end
@@ -121,7 +121,7 @@ function on_sd_add_club_member(msg)
     local club_id = msg.club_id
     local guid = msg.guid
 
-    dump(msg)
+    log.dump(msg)
 
     dbopt.game:query("INSERT INTO t_club_member(club,guid) VALUES(%d,%d);",club_id,guid)
 end
@@ -136,7 +136,7 @@ local function incr_club_money(club,money_id,money,why,why_ext)
         "COMMIT;",
     }
 
-    dump(sqls)
+    log.dump(sqls)
 
     local tran = dbopt.game:transaction()
     local res = tran:execute(table.concat(sqls,"\n"))
@@ -168,7 +168,7 @@ local function incr_club_money(club,money_id,money,why,why_ext)
 end
 
 function on_sd_change_club_money(items,why,why_ext)
-    dump(items)
+    log.dump(items)
 	local changes = {}
 	for _,item in pairs(items) do
 		local oldmoney,newmoney = incr_club_money(item.club,item.money_id,item.money,why,why_ext)
@@ -182,7 +182,7 @@ function on_sd_change_club_money(items,why,why_ext)
 end
 
 function on_sd_create_club_template(msg)
-    dump(msg)
+    log.dump(msg)
     local res = dbopt.game:query([[
         INSERT INTO t_template(id,club,rule,description,game_id,created_time,status)
         VALUES(%d,%d,'%s','%s',%d,%d,0);
@@ -193,7 +193,7 @@ function on_sd_create_club_template(msg)
 end
 
 function on_sd_remove_club_template(msg)
-    dump(msg)
+    log.dump(msg)
     local res = dbopt.game:query([[UPDATE t_template SET status = 1 WHERE id = %d;]],msg.id)
     if res.errno then
         log.error("on_sd_remove_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)

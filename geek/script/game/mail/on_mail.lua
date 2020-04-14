@@ -131,7 +131,7 @@ function on_cs_pull_summary_mails(msg,guid)
 		end
 	end
 
-	dump(summary_mails)
+	log.dump(summary_mails)
 
 	send2client_pb(guid,"SC_PullMails",{
 		mails = summary_mails,
@@ -145,7 +145,7 @@ function on_cs_pull_mail_detail(msg,guid)
 		return
 	end
 
-	dump(msg)
+	log.dump(msg)
 	local mail_id = msg.mail_id
 	if not player_mail[guid][mail_id] then
 		log.error("on_cs_pull_mail_detail not mail to guid:%d",guid)

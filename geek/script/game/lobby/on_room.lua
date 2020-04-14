@@ -196,7 +196,7 @@ end
 function on_cs_dismiss_table_req(msg,guid)
 	local player = base_players[guid]
 	if not player or not player.online then
-		dump(player)
+		log.dump(player)
 		send2client_pb(guid,"SC_DismissTableReq",{
 			result = enum.ERROR_PLAYER_NOT_EXIST,
 		})

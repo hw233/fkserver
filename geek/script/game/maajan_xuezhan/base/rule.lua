@@ -574,6 +574,6 @@ local test_pai = {
 	},
 }
 
-dump(rule.hu(test_pai,12))
+log.dump(rule.hu(test_pai,12))
 
 return rule

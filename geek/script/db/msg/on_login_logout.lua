@@ -1742,7 +1742,7 @@ function on_ld_verify_account(msg)
 end
 
 function on_ld_reg_account(msg)
-	dump(msg)
+	log.dump(msg)
 
 	local transqls = {
 		"BEGIN;",
@@ -2632,7 +2632,7 @@ function get_binding_bankcard_num(msg)
 end
 
 function on_reg_account(msg)
-	dump(msg)
+	log.dump(msg)
 	local res = dbopt.account:query(
 					[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
 						register_time,ip,version,phone_type,package_name) 

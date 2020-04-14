@@ -119,7 +119,7 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
         end
 
         if self.conf.conf.option.gps_distance >= 0 then
-            dump(player)
+            log.dump(player)
             if not player.gps_latitude or not player.gps_longitude then
                 return enum.ERROR_JOIN_ROOM_NON_GPS_TREAT_ROOM
             end
@@ -358,7 +358,7 @@ function maajan_table:fast_start_vote(player)
 
     while true do
         local evt = yield()
-        dump(evt)
+        log.dump(evt)
         if evt.type == ACTION.CLOSE then
             self.co = nil
             if timer then timer:kill() end
@@ -399,7 +399,7 @@ end
 function maajan_table:xi_pai()
     self:update_state(FSM_S.XI_PAI)
     self:prepare_tiles()
-    dump(self.players)
+    log.dump(self.players)
     self:foreach(function(v)
         self:send_data_to_enter_player(v)
         self.game_log.players[v.chair_id].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
@@ -500,7 +500,7 @@ function maajan_table:huan_pai()
         local function auto_huan_pai(p,huan_type,huan_count)
             if huan_type ~= 1 then
                 local huan_pai = random_choice(p.pai.shou_pai,huan_count)
-                dump(huan_pai)
+                log.dump(huan_pai)
                 self:safe_event({player = p,type = ACTION.HUAN_PAI,msg = {tiles = huan_pai}})
                 return
             end
@@ -748,7 +748,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             return
         end
 
-        dump(waiting_actions)
+        log.dump(waiting_actions)
         local player = self:chu_pai_player()
         if not player then
             log.error("do action %s,but wrong player in chair %s",do_action,player.chair_id)
@@ -856,7 +856,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         end
 
         timer = timer_manager:new_timer(trustee_seconds,function()
-            dump(waiting_actions)
+            log.dump(waiting_actions)
             table.foreach(waiting_actions,function(action,_)
                 if action.done then return end
 
@@ -869,7 +869,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         self:begin_clock(trustee_seconds)
 
         table.foreach(waiting_actions,function(action,_) 
-            dump(waiting_actions)
+            log.dump(waiting_actions)
             local p = self.players[action.chair_id]
             if not p.trustee then return end
 
@@ -1171,7 +1171,7 @@ function maajan_table:mo_pai()
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     local actions = self:get_actions(player,mo_pai)
-    dump(actions)
+    log.dump(actions)
     table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
@@ -1250,7 +1250,7 @@ function maajan_table:chu_pai()
         if not hu_tips or p.trustee then return end
 
         local ting_tiles = self:ting_full(p)
-        dump(ting_tiles)
+        log.dump(ting_tiles)
         if table.nums(ting_tiles) > 0 then
             local discard_tings = {}
             local pai = clone(p.pai)
@@ -1268,7 +1268,7 @@ function maajan_table:chu_pai()
                 })
             end
 
-            dump(discard_tings)
+            log.dump(discard_tings)
 
             send2client_pb(p,"SC_TingTips",{
                 ting = discard_tings
@@ -1301,7 +1301,7 @@ function maajan_table:chu_pai()
                 return tb
             end)
 
-            dump(men_tiles)
+            log.dump(men_tiles)
 
             local chu_pai = p.mo_pai
             if p.que then
@@ -1404,7 +1404,7 @@ function maajan_table:chu_pai()
         end
     end)
 
-    dump(waiting_actions)
+    log.dump(waiting_actions)
     if table.nums(waiting_actions) == 0 then
         self:next_player_index()
         self:gotofunc(function() self:mo_pai() end)
@@ -1420,8 +1420,8 @@ end
 
 function maajan_table:do_balance()
     local typefans,fanscores = self:game_balance()
-    dump(typefans)
-    dump(fanscores)
+    log.dump(typefans)
+    log.dump(fanscores)
     local msg = {
         players = {},
         player_balance = {},
@@ -1486,7 +1486,7 @@ function maajan_table:do_balance()
         log.info("player hu %s,%s,%s",chair_id,p_score,win_money)
     end
 
-    dump(msg)
+    log.dump(msg)
 
     chair_money = self:balance(chair_money,enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN)
     for _,balance in pairs(msg.player_balance) do
@@ -1921,7 +1921,7 @@ function maajan_table:game_balance()
         local ting_tiles = self:ting(p)
         if table.nums(ting_tiles) > 0 then
             p.jiao = p.jiao or {tiles = ting_tiles}
-            dump(p.jiao)
+            log.dump(p.jiao)
         end
     end)
 
@@ -2223,7 +2223,7 @@ function maajan_table:safe_event(evt)
     --     end
     -- end
 
-    dump(evt)
+    log.dump(evt)
     
     if not self.co then
         log.warning("maajan_table:safe_event safe_event got nil co")
@@ -2420,7 +2420,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         table.insert(msg.pb_players,tplayer)
     end)
 
-    dump(msg)
+    log.dump(msg)
     
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect and last_chu_pai_player then

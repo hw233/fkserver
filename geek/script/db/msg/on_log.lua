@@ -139,7 +139,7 @@ function on_sd_log_recharge(msg)
         string.format("SELECT LAST_INSERT_ID() AS id;")
     }
 
-    dump(sqls)
+    log.dump(sqls)
     local trans = dbopt.log:transaction()
     local res = trans:execute(table.concat(sqls,"\n"))
     if res.errno then
@@ -147,7 +147,7 @@ function on_sd_log_recharge(msg)
         return
     end
 
-    dump(res)
+    log.dump(res)
 
     return res[2][1].id
 end
