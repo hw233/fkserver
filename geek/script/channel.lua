@@ -1,7 +1,7 @@
 local skynet = require "skynetproto"
 local log = require "log"
 
-local channeld
+local channeld = ".channeld"
 
 local channel = {}
 
