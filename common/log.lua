@@ -17,9 +17,19 @@ local function strtime()
     return string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),ms)
 end
 
-local function do_log_out(s)
+local level_fmts = {
+    ["ERROR"] = "\27[31m%s\27[0m",
+    ["WARNING"] = "\27[33m%s\27[0m",
+}
+
+local function log_out(s,level)
     skynet.send(logd, "lua","do_log",SERVICE_NAME,s)
 
+    if level and level_fmts[level] then 
+        print(string.format(level_fmts[level],s)) 
+        return
+    end
+    
     print(s)
 end
 
@@ -29,43 +39,43 @@ function log.info(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"INFO",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
 
-    do_log_out(s)
+    log_out(s)
 end
 
 function log.trace(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"TRACE",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out(s)
+    log_out(s)
 end
 
 function log.debug(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"DEBUG",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out(s)
+    log_out(s)
 end
 
 function log.assert(fmt,...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"ASSERT",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out(s)
+    log_out(s)
 end
 
 function log.warning(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"WARNING",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out("\27[33m"..s.."\27[0m")
+    log_out(s,"WARNING")
 end
 
 function log.exception(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"EXCEPTION",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out("\27[31m"..s.."\27[0m")
+    log_out(s,"ERROR")
 end
 
 function log.error(fmt, ...)
     local d = debuginfo()
     local s = string.format("%s %-8s"..fmt,strtime(),"ERROR",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out("\27[31m"..s.."\27[0m")
+    log_out(s,"ERROR")
 end
 
 local function log_dump(value,description,nesting)
@@ -131,7 +141,7 @@ function log.dump(value,description,nesting)
     local str = log_dump(value,desciption,nesting)
     local d = debuginfo()
     local s = string.format("%s %-8s",strtime(),"DUMP") .. string.format("(%s:%d)",d.short_src,d.currentline)
-    do_log_out(s .. "\n" .. str)
+    log_out(s .. "\n" .. str)
 end
 
 skynet.init(function()
