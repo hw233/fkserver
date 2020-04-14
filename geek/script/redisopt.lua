@@ -4,7 +4,7 @@ require "table_func"
 
 require "functions"
 
-local redisd
+local redisd = ".redisd"
 
 local command = {}
 

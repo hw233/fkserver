@@ -4,7 +4,7 @@ local log = require "log"
 
 local skynet = require "skynet"
 
-local mysqld
+local mysqld = ".mysqld"
 
 local function table2sql(tb)
 	local strtb = {}
