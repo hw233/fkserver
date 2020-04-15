@@ -23,6 +23,7 @@ enum ERROR_CODE {
     ERROR_PLAYER_NOT_IN_GAME = 233; //成员已不在房间内
     ERROR_PLAYER_IN_GAME = 234;     //已经在游戏中
 
+    ERROR_MORE_MAX_LIMIT = 237;//金钱大于最大值
     ERROR_LESS_MIN_LIMIT = 238;//小于最小限制
     ERROR_OPERATION_INVALID = 240; //非法操作
     ERORR_PARAMETER_ERROR = 251;//参数非法
@@ -33,4 +34,5 @@ enum ERROR_CODE {
     ERROR_BANKRUPTCY_WARNING = 500;//破产通知码
     ERROR_PLAYER_NO_RIGHT = 502;//没有权限
     ERROR_PLAYER_NOT_AGENCY = 503;//
+    
 }

@@ -1003,10 +1003,117 @@ local function on_cs_club_partner(msg,guid)
     end
 end
 
+local function on_cs_club_kickout_club_boss(msg,guid)
+    log.dump(msg)
+    local club_id = msg.club_id
+    local boss_guid = msg.target_id
+
+    local club
+    for cid,_ in pairs(player_club[boss_guid][enum.CT_UNION]) do
+        local c = base_clubs[cid]
+        if c.owner == boss_guid then
+            club = c
+            break
+        end
+    end
+
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = club_op.OP_EXIT_AGREED,
+            target_id = boss_guid,
+        })
+        return
+    end
+
+    log.dump(club)
+
+    local function is_member_in_gaming(c)
+        if not c then return false end
+        return table.logic_or(club_member[c.id] or {},function(_,mid)
+            local os = onlineguid[mid]
+            return os and os.table
+        end)
+    end
+
+    local function member_money_sum(c,money_id)
+        return table.sum(club_member[c.id] or {},function(_,mid)
+            return player_money[mid][money_id] or 0
+        end)
+    end
+
+    local function deep_is_member_in_gaming(c,money_id)
+        local gaming = is_member_in_gaming(c,money_id)
+        if gaming then return true end
+        local teamids = club_team[c.id]
+        return table.logic_or(teamids,function(_,teamid)
+            local team = base_clubs[teamid]
+            return team and deep_is_member_in_gaming(team,money_id)
+        end)
+    end
+
+    local function deep_member_money_sum(c,money_id)
+        local sum = member_money_sum(c,money_id) + (club_money[c.id][money_id] or 0) + (club_commission[c.id] or 0)
+        local teamids = club_team[c.id]
+        return sum + table.sum(teamids,function(_,teamid)
+            local team = base_clubs[teamid]
+            return team or deep_member_money_sum(team) or 0
+        end)
+    end
+
+    if deep_is_member_in_gaming(club) then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_IN_GAME,
+            op = club_op.OP_EXIT_AGREED,
+            target_id = target_club_id,
+        })
+        return
+    end
+
+    local money_id = club_money_type[club.id]
+    local member_money = deep_member_money_sum(club,money_id)
+    if member_money > 0 then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_MORE_MAX_LIMIT,
+            op = club_op.OP_EXIT_AGREED,
+            target_id = target_club_id,
+        })
+        return
+    end
+
+    local function deep_dismiss_club(c,money_id)
+        local teamids = club_team[c.id]
+        if not teamids or table.nums(teamids) == 0 then
+            c:dismiss()
+            if c.parent and c.parent ~= 0 then
+                local role = club_role[c.parent][c.owner]
+                if role == enum.CRT_PARTNER then
+                    reddb:hdel(string.format("club:role:%d",c.parent),c.id)
+                    club_role[c.parent][c.owner] = nil
+                end
+            end
+        end
+
+        return table.foreach(teamids,function(_,teamid)
+            local team = base_clubs[teamid]
+            return team and deep_dismiss_club(team)
+        end)
+    end
+
+    deep_dismiss_club(club,money_id)
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = club_op.OP_EXIT_AGREED,
+        target_id = target_club_id,
+    })
+end
 
 function on_cs_club_kickout(msg,guid)
     local club_id = msg.club_id
     local target_guid = msg.target_id
+
+    log.dump(msg)
 
     local player = base_players[guid]
     if not player then
@@ -1033,7 +1140,7 @@ function on_cs_club_kickout(msg,guid)
     end
 
     local target_role = club_role[club_id][target_guid]
-    if target_role == enum.CRT_ADMIN or target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER then
+    if target_role == enum.CRT_ADMIN or target_role == enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERORR_PARAMETER_ERROR
         })
@@ -1055,6 +1162,15 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
+    local club_ids = player_club[target_guid][enum.CT_UNION]
+    for cid,_ in pairs(club_ids) do
+        local c = base_clubs[cid]
+        if c and c.parent == club_id and c.owner == target_guid then
+            on_cs_club_kickout_club_boss(msg,guid)
+            return
+        end
+    end
+
     local os = onlineguid[target_guid]
     if os and os.table then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -1063,10 +1179,15 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
-    reddb:srem(string.format("player:club:%d:%d",target_guid,club.type),club_id)
-    player_club[target_guid] = nil
-    reddb:srem(string.format("club:member:%d",club_id),target_guid)
-    club_member[club_id] = nil
+    local money_id = club_money_type[club_id]
+    if player_money[target_guid][money_id] > 0 then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_MORE_MAX_LIMIT
+        })
+        return
+    end
+
+    club:exit(target_guid)
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,

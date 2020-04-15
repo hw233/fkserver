@@ -20,6 +20,7 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
 local club_commission = require "game.club.club_commission"
+local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_team = require "game.club.club_team"
 local util = require "util"
 
@@ -129,9 +130,39 @@ function base_club:exit_from_parent()
 end
 
 function base_club:dismiss()
-    reddb:del("club:info:"..tostring(self.id))
-    reddb:del("club:memeber:"..tostring(self.id))
-    channel.call("db.?","msg","SD_DismissClub",self.id)
+    local money_id = club_money_type[self.id]
+    reddb:del(string.format("club:money_type:%d",self.id))
+    club_money_type[self.id] = nil
+
+    for mid,_ in pairs(club_member[self.id] or {}) do
+        reddb:srem(string.format("player:club:%d:%d",mid,self.type),self.id)
+        reddb:hdel(string.format("player:money:%d",mid),money_id)
+        player_club[mid][self.type][self.id] = nil
+        player_money[mid][money_id] = nil
+    end
+    reddb:del(string.format("club:memeber:%d",self.id))
+    club_member[self.id] = nil
+
+    reddb:del(string.format("club:role:%d",self.id),mid)
+    -- 不直接删除club:info,避免重用此club id
+    reddb:hmset(string.format("club:info:%d",self.id),{status = 3})
+    reddb:hdel(string.format("club:money:%d",self.id),money_id)
+    club_money[self.id][money_id] = nil
+    club_money[self.id][0] = nil
+    reddb:del(string.format("club:commission:%d",self.id))
+    club_commission[self.id] = nil
+    for tid,_ in pairs(club_template[self.id] or {}) do
+        reddb:del(string.format("template:%d",tid))
+        reddb:del(string.format("team_conf:%d:%d",self.id,tid))
+        club_team_template_conf[self.id][tid] = nil
+        table_template[tid] = nil
+    end
+    reddb:del(string.format("club:template:%d",self.id))
+    club_template[self.id] = nil
+    if self.parent then
+        reddb:srem(string.format("club:team:%d",self.parent),self.id)
+    end
+    channel.publish("db.?","msg","SD_DismissClub",{ club_id = self.id})
 end
 
 function base_club:request_join(guid)
@@ -226,10 +257,16 @@ function base_club:join(guid,inviter)
 end
 
 function base_club:exit(guid)
-    channel.publish("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
+    local money_id = club_money_type[self.id]
 	reddb:srem(string.format("club:member:%s",self.id),guid)
     reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
+    reddb:hdel(string.format("player:money:%d",guid),money_id)
+    reddb:hdel(string.format("club:role:%d",self.id),guid)
+    club_member[self.id][guid] = nil
+    player_money[guid][money_id] = nil
     player_club[guid][self.type] = nil
+    club_role[self.id][guid] = nil
+    channel.publish("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
 end
 
 function base_club:broadcast(msgname,msg,except)

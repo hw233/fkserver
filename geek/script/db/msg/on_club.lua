@@ -25,9 +25,9 @@ function on_sd_create_club(msg)
     local transqls = {
         "SET AUTOCOMMIT = 0;",
         "BEGIN;",
-        string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent) SELECT %d,'%s',%d,'%s',%d,%d 
+        string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) SELECT %d,'%s',%d,'%s',%d,%d,%d,%d
                         WHERE EXISTS (SELECT * FROM t_player WHERE guid = %d);]],
-                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,club_info.owner),
+                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time(),club_info.owner),
         string.format([[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id),
         string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],club_info.id,club_info.owner),
         string.format([[INSERT INTO t_player_money(guid,money_id,money) SELECT %d,%d,0
@@ -102,8 +102,20 @@ function on_sd_join_club(msg)
 end
 
 function on_sd_exit_club(msg)
-    local res = dbopt.game:query("DELETE FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id)
+    local sqls = {
+        "SET AUTOCOMMIT = 0;",
+        "BEGIN;",
+        string.format("DELETE FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id),
+        string.format([[DELETE FROM t_player_money WHERE guid = %d AND 
+                        money_id IN (SELECT money_id FROM t_club_money WHERE club = %d AND money_id != 0);]],
+                        msg.guid,msg.club_id),
+        "COMMIT;",
+    }
+    log.dump(sqls)
+    local trans = dbopt.game:transaction()
+    local res = trans:execute(table.concat(sqls,"\n"))
     if res.errno then
+        trans:execute("ROLLBACK;")
         log.error("on_sd_exit_club DELETE member error:%d,%s",res.errno,res.err)
         return
     end
@@ -112,7 +124,13 @@ function on_sd_exit_club(msg)
 end
 
 function on_sd_dismiss_club(msg)
+    local res = dbopt.game:query("UPDATE t_club SET status = 3, updated_at = %d WHERE id = %d;",os.time(),msg.club_id)
+    if res.errno then
+        log.error("on_sd_dismiss_club dismiss member error:%d,%s",res.errno,res.err)
+        return
+    end
 
+    return true
 end
 
 function on_sd_add_club_member(msg)
