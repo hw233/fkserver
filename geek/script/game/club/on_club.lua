@@ -149,7 +149,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
     if not mail or mail.status ~= 0 then
         log.error("on_cs_club_create_club_with_req no request,%s.",msg.mail_id)
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-            result = enum.ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_OPERATION_EXPIRE,
         })
         return
     end
@@ -170,7 +170,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
     if not player then
         log.error("internal error,recv msg but no player.")
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-            result = enum.ERROR_PLAYER_NOT_EXIST,
+            result = enum.ERROR_OPERATION_INVALID,
         })
 
         return
@@ -188,7 +188,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
         local c = base_clubs[cid]
         if c and club_utils.root(c) == root then
             onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-                result = enum.ERROR_CLUB_JOIN_REPEATED
+                result = enum.ERROR_AREADY_MEMBER
             })
             return
         end
@@ -248,7 +248,7 @@ function on_cs_club_invite_join_club(msg,guid)
     if club_member[club_id][invitee] then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-            result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
+            result = enum.ERROR_AREADY_MEMBER,
         })
         return
     end
@@ -256,7 +256,7 @@ function on_cs_club_invite_join_club(msg,guid)
     if not base_players[guid] then
         log.warning("invite join club but inviter is not exists,guid:%s",guid)
         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-            result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
+            result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
@@ -267,7 +267,7 @@ function on_cs_club_invite_join_club(msg,guid)
             local c = base_clubs[cid]
             if c and club_utils.root(c) == root then
                 onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-                    result = enum.ERROR_CLUB_JOIN_REPEATED
+                    result = enum.ERROR_AREADY_MEMBER
                 })
                 return
             end
@@ -293,7 +293,7 @@ function on_cs_club_invite_join_club(msg,guid)
             local c = base_clubs[cid]
             if c and club_utils.root(c) == root then
                 onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-                    result = enum.ERROR_CLUB_JOIN_REPEATED
+                    result = enum.ERROR_AREADY_MEMBER
                 })
                 return
             end
@@ -430,7 +430,8 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local games = table.agg(channel.query(),{},function(tb,sid) 
+    local ss = channel.query()
+    local games = table.agg(ss,{},function(tb,_,sid)
         local id = sid:match("service%.(%d+)")
         if not id then return tb end
 
@@ -582,7 +583,7 @@ function on_cs_club_edit_game_type(msg,guid)
 
     if club.owner ~= guid then
         onlineguid.send(guid,"S2C_EDIT_CLUB_GAME_TYPE_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
         })
         return
     end
@@ -611,7 +612,7 @@ function on_cs_club_join_req(msg,guid)
     if club_member[club_id][guid] then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-            result = enum.ERROR_CLUB_OP_JOIN_CHECKED,
+            result = enum.ERROR_AREADY_MEMBER,
         })
         return
     end
@@ -620,7 +621,7 @@ function on_cs_club_join_req(msg,guid)
         local req = base_request[req_id]
         if req and req.who == guid and req.type == "join" then
             onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
-                result = enum.ERROR_CLUB_OP_JOIN_REPEATED,
+                result = enum.ERROR_REQUEST_REPEATED,
             })
             return
         end
@@ -666,7 +667,7 @@ function on_cs_club_query_memeber(msg,guid)
     local role = club_role[club_id][guid]
     if not role or role == enum.CRT_PLAYER then
         onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
             club_id = club_id,
         })
         return
@@ -756,7 +757,7 @@ local function on_cs_club_administrator(msg,guid)
 
     local self_role = club_role[club_id][guid]
     if self_role ~= enum.CRT_BOSS or self_role == enum.CRT_ADMIN  then
-        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
@@ -764,14 +765,14 @@ local function on_cs_club_administrator(msg,guid)
 
     if msg.op == club_op.ADD_ADMIN then
         if not club_member[club_id][target_guid] then
-            res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            res.result = enum.ERROR_NOT_MEMBER
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
 
         local role = club_role[club_id][target_guid]
         if role == enum.CRT_BOSS or role == enum.CRT_PARTNER or role == enum.CRT_ADMIN then
-            res.result = enum.ERROR_NOT_SET_ADMIN
+            res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
@@ -784,14 +785,14 @@ local function on_cs_club_administrator(msg,guid)
 
     if msg.op == club_op.REMOVE_ADMIN then
         if not club_member[club_id][target_guid] then
-            res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            res.result = enum.ERROR_NOT_MEMBER
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
 
         local role = club_role[club_id][target_guid]
         if role ~= enum.CRT_ADMIN then
-            res.result = enum.ERROR_NOT_SET_ADMIN
+            res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
@@ -843,16 +844,17 @@ local function on_cs_club_agree_request(msg,guid)
     if not request then
         log.error("unknown player when agree request id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_OPERATION_INVALID,
             op_type = msg.op,
         })
         return
     end
 
-    if not request:agree() then
+    local err = request:agree()
+    if err ~= enum.ERROR_NONE then
         log.error("agree request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_OP_EXPIRE,
+            result = err,
             op_type = msg.op,
         })
 
@@ -876,7 +878,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not player then
         log.error("unknown player when reject request request_id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_NOT_EXIST,
+            result = enum.ERROR_OPERATION_INVALID,
             op = msg.op,
         })
         return
@@ -886,7 +888,7 @@ local function on_cs_club_reject_request(msg,guid)
     if not request then
         log.error("unknown request when reject request request_id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_OP_EXPIRE,
+            result = enum.ERROR_OPERATION_EXPIRE,
             op = msg.op,
         })
         return
@@ -902,10 +904,11 @@ local function on_cs_club_reject_request(msg,guid)
         return
     end
 
-    if not club:reject_request(request) then
+    local err = club:reject_request(request)
+    if err ~= enum.ERROR_NONE then
         log.error("reject request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_OP_EXPIRE,
+            result = err,
             request_id = msg.request_id,
         })
 
@@ -939,14 +942,14 @@ local function on_cs_club_partner(msg,guid)
     end
 
     if not club_member[club_id][target_guid] then
-        res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        res.result = enum.ERROR_NOT_MEMBER
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
 
     local role = club_role[club_id][guid]
     if not role or (role ~= enum.CRT_BOSS and role ~= enum.CRT_ADMIN) then
-        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
@@ -954,7 +957,7 @@ local function on_cs_club_partner(msg,guid)
     if msg.op == club_op.ADD_PARTNER then
         local target_role = club_role[club_id][target_guid]
         if target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER or target_role == enum.CRT_ADMIN  then
-            res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+            res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
@@ -977,7 +980,7 @@ local function on_cs_club_partner(msg,guid)
     if msg.op == club_op.REMOVE_PARTNER then
         local target_role = club_role[club_id][target_guid]
         if target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER or target_role == enum.CRT_ADMIN  then
-            res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+            res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
@@ -1013,7 +1016,7 @@ function on_cs_club_kickout(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end
@@ -1036,7 +1039,7 @@ function on_cs_club_kickout(msg,guid)
 
     if not club_member[club_id][target_guid] then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -1044,7 +1047,7 @@ function on_cs_club_kickout(msg,guid)
     local os = onlineguid[target_guid]
     if os and os.table then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_IN_ROOM
+            result = enum.ERROR_PLAYER_IN_GAME
         })
         return
     end
@@ -1103,7 +1106,7 @@ local function on_cs_club_block(msg,guid,status)
 
     if not club_member[parent_club_id][guid] then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_NOT_SET_ADMIN,
+            result = enum.ERROR_NOT_MEMBER,
             op = op,
         })
         return
@@ -1112,7 +1115,7 @@ local function on_cs_club_block(msg,guid,status)
     local role = club_role[parent_club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_NOT_SET_ADMIN,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
             op = op,
         })
         return
@@ -1166,7 +1169,7 @@ local function on_cs_club_close(msg,guid,status)
         status = status
     })
 
-    base_club[club_id] = nil
+    base_clubs[club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
@@ -1216,7 +1219,7 @@ function on_cs_club_team_list(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_TEAM_LIST_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
         })
         return
     end
@@ -1275,14 +1278,14 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
     end
 
     if not club_member[target_club_id][source_guid] then
-        res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        res.result = enum.ERROR_NOT_MEMBER
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
     local role = club_role[target_club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
-        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -1374,14 +1377,14 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
     local parent_club_id = club_team[source_club_id][target_club_id] and source_club_id or
         (club_team[target_club_id][source_club_id] and target_club_id or nil)
     if not parent_club_id then
-        res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        res.result = enum.ERROR_NOT_MEMBER
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
     local role = club_role[parent_club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
-        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -1470,14 +1473,14 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
     end
 
     if not club_member[source_club_id][target_guid] then
-        res.result = enum.ERROR_NOT_IS_CLUB_MEMBER
+        res.result = enum.ERROR_NOT_MEMBER
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
     local role = club_role[source_club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
-        res.result = enum.ERROR_NOT_IS_CLUB_BOSS
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -1604,7 +1607,7 @@ function on_cs_exchagne_club_commission(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
         })
         return
     end
@@ -1635,7 +1638,7 @@ function on_cs_club_money(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_MONEY_RES",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end

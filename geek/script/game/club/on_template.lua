@@ -117,7 +117,7 @@ function on_cs_get_club_template_commission(msg,guid)
 
     if not club_member[club_id][guid] then
         onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -125,7 +125,7 @@ function on_cs_get_club_template_commission(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then 
         onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end
@@ -140,7 +140,7 @@ function on_cs_get_club_template_commission(msg,guid)
 
     if not club_team[club_id][team_id] then
         onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -203,7 +203,7 @@ function on_cs_config_club_template_commission(msg,guid)
 
     if not club_member[club_id][guid] then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end
@@ -211,14 +211,14 @@ function on_cs_config_club_template_commission(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end
 
     if not club_team[club_id][team_id] then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -283,7 +283,7 @@ function on_cs_config_club_team_template(msg,guid)
 
     if not club_member[club_id][guid] then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEAM_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -291,7 +291,7 @@ function on_cs_config_club_team_template(msg,guid)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEAM_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end

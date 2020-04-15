@@ -1150,7 +1150,7 @@ function on_cs_join_private_room(msg,guid)
 
 	if not global_table_id then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_TABLE_NOT_EXISTS,
 		})
 		return
 	end
@@ -1158,7 +1158,7 @@ function on_cs_join_private_room(msg,guid)
 	local private_table = base_private_table[global_table_id]
 	if not private_table then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_TABLE_NOT_EXISTS,
 		})
 		return
 	end
@@ -1166,7 +1166,7 @@ function on_cs_join_private_room(msg,guid)
 	local game_type = private_table.game_type
 	if not game_type then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_TABLE_NOT_EXISTS,
 		})
 		return
 	end
@@ -1177,7 +1177,7 @@ function on_cs_join_private_room(msg,guid)
 		local room_id = find_best_room(game_type)
 		if not room_id then 
 			onlineguid.send(guid,"SC_JoinRoom",{
-				result = enum.ERROR_JOIN_ROOM_NO,
+				result = enum.ERROR_TABLE_NOT_EXISTS,
 			})
 			return 
 		end
@@ -1197,7 +1197,7 @@ function on_cs_join_private_room(msg,guid)
 
 	if not private_table.rule then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_JOIN_ROOM_NO,
+			result = enum.ERROR_TABLE_NOT_EXISTS,
 		})
 		return
 	end

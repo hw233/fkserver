@@ -178,7 +178,7 @@ function base_table:request_dismiss(player)
 
 	if self.dismiss_request then
 		send2client_pb(player.guid,"SC_DismissTableReq",{
-			result = enum.ERROR_OPERATOR_REPEATED
+			result = enum.ERROR_OPERATION_REPEATED
 		})
 		return
 	end
@@ -221,7 +221,7 @@ end
 function base_table:commit_dismiss(player,agree)
 	if not self.dismiss_request then
 		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
-		return enum.ERROR_CLUB_OP_EXPIRE
+		return enum.ERROR_OPERATION_EXPIRE
 	end
 
 	local commissions = self.dismiss_request.commissions
@@ -562,7 +562,7 @@ function base_table:on_game_overed()
 					self:notify_bankruptcy(
 						player_money[guid][self:get_money_id()] <= 0 and
 							enum.ERROR_BANKRUPTCY_WARNING or
-							enum.ERROR_CHIP_LESS_THAN_TABLE_MIN_CHIP
+							enum.ERROR_LESS_MIN_LIMIT
 					)
 					break
 				end

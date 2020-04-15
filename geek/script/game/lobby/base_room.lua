@@ -280,7 +280,7 @@ end
 function base_room:request_dismiss_private_table(requester)
 	local tb = self:find_table_by_player(requester)
 	if not tb then
-		return enum.ERROR_PLAYER_NOT_IN_ROOM
+		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
 	return tb:request_dismiss(requester)
@@ -289,7 +289,7 @@ end
 function base_room:commit_dismiss_private_table(player,agree)
 	local tb = self:find_table_by_player(player)
 	if not tb then
-		return enum.ERROR_PLAYER_NOT_IN_ROOM
+		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
 	return tb:commit_dismiss(player,agree)

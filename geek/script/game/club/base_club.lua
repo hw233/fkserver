@@ -185,7 +185,7 @@ function base_club:agree_request(request)
 	local player = base_players[whoee]
 	if not player then
 		log.error("agree club request,who is unkown,guid:%s",whoee)
-		return
+		return enum.ERROR_PLAYER_NOT_EXIST
     end
 
     if request.type == "join" then
@@ -201,7 +201,7 @@ function base_club:agree_request(request)
 
     club_member[self.id] = nil
     reddb:del(string.format("request:%s",request.id))
-    return true
+    return enum.ERROR_NONE
 end
 
 function base_club:reject_request(request)
@@ -209,12 +209,12 @@ function base_club:reject_request(request)
 	local player = base_players[whoee]
 	if not player then
 		log.error("agree club request,who is unkown,guid:%s",whoee)
-		return
+		return enum.ERROR_PLAYER_NOT_EXIST
     end
 
     reddb:srem(string.format("player:request:%s",whoee),request.id)
     reddb:del(string.format("request:%s",request.id))
-    return true
+    return enum.ERROR_NONE
 end
 
 function base_club:join(guid,inviter)
@@ -241,7 +241,7 @@ function base_club:create_table(player,chair_count,round,conf,template)
     local member = club_member[self.id][player.guid]
     if not member then
         log.warning("create club table,but guid [%s] not exists",player.guid)
-        return enum.ERROR_NOT_IS_CLUB_MEMBER
+        return enum.ERROR_NOT_MEMBER
     end
 
     if conf and not self:can_sit_down(conf,player) then

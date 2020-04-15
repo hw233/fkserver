@@ -115,13 +115,13 @@ end
 function maajan_table:player_sit_down(player, chair_id,reconnect)
     if not reconnect then
         if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
-            return enum.ERROR_JOIN_ROOM_NON_IP_TREAT_ROOM
+            return enum.ERROR_IP_TREAT
         end
 
         if self.conf.conf.option.gps_distance >= 0 then
             log.dump(player)
             if not player.gps_latitude or not player.gps_longitude then
-                return enum.ERROR_JOIN_ROOM_NON_GPS_TREAT_ROOM
+                return enum.ERROR_GPS_TREAT
             end
 
             local player_gps = {
@@ -141,12 +141,12 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
             end)
 
             if is_gps_treat then
-                return enum.ERROR_JOIN_ROOM_NON_GPS_TREAT_ROOM
+                return enum.ERROR_GPS_TREAT
             end
         end
 
         if (self.cur_round and self.cur_round > 0) or self:is_play() then
-            return enum.ERROR_JOIN_ROOM_NO_JOIN
+            return enum.ERROR_TABLE_STATUS_GAMING
         end
     end
 
@@ -156,7 +156,7 @@ end
 function maajan_table:commit_dismiss(player,agree)
 	if not self.dismiss_request then
 		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
-		return enum.ERROR_CLUB_OP_EXPIRE
+		return enum.ERROR_OPERATION_EXPIRE
 	end
 
 	local commissions = self.dismiss_request.commissions

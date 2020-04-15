@@ -27,7 +27,7 @@ function on_cs_create_table_template(msg,guid)
 
     if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -91,7 +91,7 @@ function on_cs_remove_table_template(msg,guid)
 
     if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -168,7 +168,7 @@ function on_cs_modify_table_template(msg,guid)
 
     if not club_member[club_template.club_id][guid] then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_MEMBER
+            result = enum.ERROR_NOT_MEMBER
         })
         return
     end
@@ -176,7 +176,7 @@ function on_cs_modify_table_template(msg,guid)
     local role = club_role[club_template.club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERROR_NOT_IS_CLUB_BOSS
+            result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
     end

@@ -210,7 +210,7 @@ function on_cs_dismiss_table_commit(msg,guid)
 	local player = base_players[guid]
 	if not player or not player.online then
 		send2client_pb(guid,"SC_DismissTableCommit",{
-			result = enum.ERROR_PLAYER_NOT_IN_ROOM,
+			result = enum.ERROR_PLAYER_NOT_IN_GAME,
 		})
 		return
 	end
