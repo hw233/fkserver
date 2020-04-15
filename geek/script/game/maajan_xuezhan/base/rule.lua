@@ -564,16 +564,16 @@ function rule.is_chi(pai,tile)
 end
 
 
-local test_pai = {
-	shou_pai = {[12] = 1},
-	ming_pai = {
-		{type = SECTION_TYPE.PENG,tile = 5},
-		{type = SECTION_TYPE.MING_GANG,tile = 2},
-		{type = SECTION_TYPE.PENG,tile = 4},
-		{type = SECTION_TYPE.PENG,tile = 13},
-	},
-}
+-- local test_pai = {
+-- 	shou_pai = {[12] = 1},
+-- 	ming_pai = {
+-- 		{type = SECTION_TYPE.PENG,tile = 5},
+-- 		{type = SECTION_TYPE.MING_GANG,tile = 2},
+-- 		{type = SECTION_TYPE.PENG,tile = 4},
+-- 		{type = SECTION_TYPE.PENG,tile = 13},
+-- 	},
+-- }
 
-log.dump(rule.hu(test_pai,12))
+-- log.dump(rule.hu(test_pai,12))
 
 return rule
