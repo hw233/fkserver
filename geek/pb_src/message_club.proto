@@ -120,6 +120,7 @@ message C2S_CLUB_OP_REQ{
         OP_JOIN_REJECTED = 11;      //11、拒绝加入俱乐部
         OP_APPLY_EXIT = 12;        //12、退出俱乐部
         CLOSE_CLUB = 13;            //打烊俱乐部
+        OPEN_CLUB = 14;             //俱乐部开始营业
     }
 
     int32 op = 1;

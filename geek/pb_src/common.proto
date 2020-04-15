@@ -51,7 +51,7 @@ message CLUB_BASE_INFO {
 
 //CLUB状态信息
 message CLUB_STATUS_INFO{
-    int32 status = 1;//状态 0正常 1歇业
+    int32 status = 1;//状态 0正常 1歇业 2封禁
     int32 player_count = 2;//总人数
     int32 online_player_count = 3; //在线人数
 }

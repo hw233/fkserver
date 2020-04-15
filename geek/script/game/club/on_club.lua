@@ -49,6 +49,7 @@ local club_op = {
     BLOCK_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","BLOCK_CLUB"),
     UNBLOCK_CLUB    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","UNBLOCK_CLUB"),
     CLOSE_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CLOSE_CLUB"),
+    OPEN_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OPEN_CLUB"),
 }
 
 function on_bs_club_create(owner,name)
@@ -347,6 +348,10 @@ local function get_club_tables(club)
     if not club then return end
 
     local tables = {}
+    if club.status and club.status ~= 0 then
+        return tables
+    end
+
     for tid,_ in pairs(club_table[club.id] or {}) do
         local priv_tb = base_private_table[tid]
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
@@ -382,6 +387,11 @@ local function get_club_templates(club)
     if not club then return end
 
     local templates = {}
+
+    if club.status and club.status ~= 0 then
+        return templates
+    end
+
     for tid,_ in pairs(club_template[club.id]) do
         table.insert(templates,table_template[tid])
     end
@@ -420,18 +430,18 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local games = {}
-    local info = channel.query()
-    for sid,_ in pairs(info) do
+    local games = table.agg(channel.query(),{},function(tb,sid) 
         local id = sid:match("service%.(%d+)")
-        if id then
-            local conf = serviceconf[tonumber(id)]
-            if conf.name == "game" then
-                local sconf = conf.conf
-                games[sconf.first_game_type] = sconf
-            end
-        end
-    end
+        if not id then return tb end
+
+        local conf = serviceconf[tonumber(id)]
+        if conf.name ~= "game" then return tb end
+
+        local sconf = conf.conf
+        tb[sconf.first_game_type] = sconf
+
+        return tb
+    end)
 
     local real_games = {}
     local club_games = club_game_type[club_id]
@@ -462,7 +472,7 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local club_status = {
-        status = 0,
+        status = club.status,
         player_count = total_count,
         online_player_count = online_count,
     }
@@ -1051,6 +1061,120 @@ function on_cs_club_kickout(msg,guid)
     })
 end
 
+
+local function on_cs_club_block(msg,guid,status)
+    local club_id = msg.club_id
+    local op = (status == 0 and club_op.UNBLOCK_CLUB and club_op.BLOCK_CLUB)
+
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            op = op,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id] 
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = op,
+        })
+        return
+    end
+
+    if club.type ~= enum.CT_UNION then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            op = op,
+        })
+        return
+    end
+
+    local parent_club_id = club.parent
+    if not parent_club_id or parent_club_id == 0  then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            op = op,
+        })
+        return
+    end
+
+    if not club_member[parent_club_id][guid] then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_NOT_SET_ADMIN,
+            op = op,
+        })
+        return
+    end
+
+    local role = club_role[parent_club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_NOT_SET_ADMIN,
+            op = op,
+        })
+        return
+    end
+
+    reddb:hmset(string.format("club:info:%d",club_id),{
+        status = 2
+    })
+
+    base_club[club_id] = nil
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = op,
+        club_id = club_id,
+    })
+end
+
+local function on_cs_club_close(msg,guid,status)
+    local club_id = msg.club_id
+    local oper = (status == 0 and club_op.OPEN_CLUB or club_op.CLOSE_CLUB)
+
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            op = oper,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id] 
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = oper,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            op = oper,
+        })
+        return
+    end
+
+    reddb:hmset(string.format("club:info:%d",club_id),{
+        status = status
+    })
+
+    base_club[club_id] = nil
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = oper,
+        club_id = club_id,
+    })
+end
+
 local operator = {
     [club_op.ADD_ADMIN] = on_cs_club_administrator,
     [club_op.REMOVE_ADMIN] = on_cs_club_administrator,
@@ -1060,6 +1184,10 @@ local operator = {
     [club_op.OP_APPLY_EXIT] = on_cs_club_exit,
     [club_op.ADD_PARTNER] = on_cs_club_partner,
     [club_op.REMOVE_PARTNER] = on_cs_club_partner,
+    [club_op.BLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,2) end,
+    [club_op.UNBLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,0) end,
+    [club_op.CLOSE_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,1) end,
+    [club_op.OPEN_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,0) end,
 }
 
 function on_cs_club_operation(msg,guid)
