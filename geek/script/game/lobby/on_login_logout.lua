@@ -1046,7 +1046,7 @@ function on_cs_create_private_room(msg,guid)
 	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
 	else
-		result = enum.ERORR_PARAMETER_ERROR
+		result = enum.ERROR_OPERATION_INVALID
 	end
 
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
