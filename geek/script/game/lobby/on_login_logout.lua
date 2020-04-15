@@ -972,6 +972,24 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 	end
+
+	local club
+	if club_id and club_id ~= 0 then
+		club = base_clubs[club_id]
+		if not club then 
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.ERORR_PARAMETER_ERROR,
+			})
+			return
+		end
+
+		if club.status and club.status ~= 0 then
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.ERROR_OPERATION_INVALID,
+			})
+			return
+		end
+	end
 	
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
@@ -1002,8 +1020,6 @@ function on_cs_create_private_room(msg,guid)
 	end
 
 	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
-
-	local club = club_id and base_clubs[club_id] or nil
 	local errno = check_create_table_limit(player,rule,club)
 	if errno then
 		onlineguid.send(guid,"SC_CreateRoom",{
