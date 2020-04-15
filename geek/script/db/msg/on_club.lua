@@ -98,8 +98,6 @@ function on_sd_join_club(msg)
         return
     end
 
-    log.dump(res)
-
     return true
 end
 
