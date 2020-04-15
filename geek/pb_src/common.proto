@@ -54,6 +54,7 @@ message CLUB_STATUS_INFO{
     int32 status = 1;//状态 0正常 1歇业 2封禁
     int32 player_count = 2;//总人数
     int32 online_player_count = 3; //在线人数
+    int32 status_in_club = 4; //父级状态
 }
 
 message MONEY_INFO{
@@ -68,6 +69,7 @@ message CLUB_TEAM_INFO{
     int32 money_id = 3;//货币id
     repeated MONEY_INFO money = 4; //金额
     int32 commission = 5; //返利佣金
+    int32 status = 6;
 }
 
 //单个座位信息

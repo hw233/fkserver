@@ -344,29 +344,30 @@ function on_cs_club_dismiss(msg,guid)
     }
 end
 
-local function get_club_tables(club)
-    if not club then return end
-
-    local tables = {}
-    if club.status and club.status ~= 0 then
-        return tables
+local function get_club_tables(club,getter_role)
+    if not club then return {} end
+    if  getter_role ~= enum.CRT_BOSS and getter_role ~= enum.CRT_ADMIN and
+        getter_role ~= enum.CRT_PARTNER then
+        return {}
     end
 
-    for tid,_ in pairs(club_table[club.id] or {}) do
+    local ct = club_table[club.id] or {}
+    local tables = table.agg(ct,{},function(tb,_,tid)
         local priv_tb = base_private_table[tid]
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-        table.insert(tables,tableinfo)
-    end
+        table.insert(tb,tableinfo)
+        return tb
+    end)
 
     return tables
 end
 
-local function deep_get_club_tables(club)
-    local tables = get_club_tables(club) or {}
+local function deep_get_club_tables(club,getter_role)
+    local tables = get_club_tables(club,getter_role)
     for teamid,_ in pairs(club_team[club.id]) do
         local team = base_clubs[teamid]
         if team then
-            table.unionto(tables,deep_get_club_tables(team) or {})
+            table.unionto(tables,deep_get_club_tables(team,getter_role))
         end
     end
 
@@ -383,26 +384,26 @@ local function is_template_visiable(club,template)
     return visiable
 end
 
-local function get_club_templates(club)
-    if not club then return end
-
-    local templates = {}
-
-    if club.status and club.status ~= 0 then
-        return templates
+local function get_club_templates(club,getter_role)
+    if not club then return {} end
+    if  getter_role ~= enum.CRT_BOSS and getter_role ~= enum.CRT_ADMIN and
+        getter_role ~= enum.CRT_PARTNER then
+        return {}
     end
 
-    for tid,_ in pairs(club_template[club.id]) do
-        table.insert(templates,table_template[tid])
-    end
+    local ctt = club_template[club.id] or {}
+    local templates = table.agg(ctt,{},function(tb,_,tid)
+        table.insert(tb,table_template[tid])
+        return tb
+    end)
 
-    table.unionto(templates,get_club_templates(base_clubs[club.parent]) or {})
+    table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
 
     return templates
 end
 
 local function get_visiable_club_templates(club,getter_role)
-    local templates = get_club_templates(club)
+    local templates = get_club_templates(club,getter_role)
     return table.agg(templates,{},function(tb,template)
         if  is_template_visiable(club,template) or
             getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
@@ -472,10 +473,20 @@ function on_cs_club_detail_info_req(msg,guid)
         end
     end
 
+    local function recusive_parent_status(c)
+        local parent = c.parent
+        if not parent or parent == 0 then return 0 end
+        c = base_clubs[parent]
+        if not c then return 0 end
+
+        return (not c.status or c.status == 0) and recusive_parent_status(c) or c.status
+    end
+
     local club_status = {
         status = club.status,
         player_count = total_count,
         online_player_count = online_count,
+        status_in_club = recusive_parent_status(club),
     }
 
     local role = club_role[club_id][guid]
@@ -1067,7 +1078,8 @@ end
 
 local function on_cs_club_block(msg,guid,status)
     local club_id = msg.club_id
-    local op = (status == 0 and club_op.UNBLOCK_CLUB and club_op.BLOCK_CLUB)
+    local target_club_id = msg.target_id
+    local op = (status == 0 and club_op.UNBLOCK_CLUB or club_op.BLOCK_CLUB)
 
     local player = base_players[guid]
     if not player then
@@ -1078,7 +1090,7 @@ local function on_cs_club_block(msg,guid,status)
         return
     end
 
-    local club = base_clubs[club_id] 
+    local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
@@ -1087,24 +1099,32 @@ local function on_cs_club_block(msg,guid,status)
         return
     end
 
+    if not target_club_id or target_club_id == 0  then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_OPERATION_INVALID,
+            op = op,
+        })
+        return
+    end
+
+    local target_club = base_clubs[target_club_id]
+    if not target_club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            op = op,
+        })
+        return
+    end
+
     if club.type ~= enum.CT_UNION then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_OPERATION_INVALID,
             op = op,
         })
         return
     end
 
-    local parent_club_id = club.parent
-    if not parent_club_id or parent_club_id == 0  then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
-            op = op,
-        })
-        return
-    end
-
-    if not club_member[parent_club_id][guid] then
+    if not club_member[club_id][guid] then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_NOT_MEMBER,
             op = op,
@@ -1112,7 +1132,7 @@ local function on_cs_club_block(msg,guid,status)
         return
     end
 
-    local role = club_role[parent_club_id][guid]
+    local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_NO_RIGHT,
@@ -1121,11 +1141,19 @@ local function on_cs_club_block(msg,guid,status)
         return
     end
 
-    reddb:hmset(string.format("club:info:%d",club_id),{
-        status = 2
+    if target_club.parent ~= club_id then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_OPERATION_INVALID,
+            op = op,
+        })
+        return
+    end
+
+    reddb:hmset(string.format("club:info:%d",target_club_id),{
+        status = status
     })
 
-    base_club[club_id] = nil
+    base_clubs[target_club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
@@ -1245,6 +1273,7 @@ function on_cs_club_team_list(msg,guid)
             money = moneies,
             money_id = team_money_id,
             commission = 0,
+            status = team_club.status,
         })
     end
 
