@@ -1065,7 +1065,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_IN_GAME,
             op = club_op.OP_EXIT_AGREED,
-            target_id = target_club_id,
+            target_id = boss_guid,
         })
         return
     end
@@ -1076,7 +1076,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_MORE_MAX_LIMIT,
             op = club_op.OP_EXIT_AGREED,
-            target_id = target_club_id,
+            target_id = boss_guid,
         })
         return
     end
@@ -1096,7 +1096,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
 
         return table.foreach(teamids,function(_,teamid)
             local team = base_clubs[teamid]
-            return team and deep_dismiss_club(team)
+            return team and deep_dismiss_club(team,money_id)
         end)
     end
 
@@ -1105,7 +1105,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
         op = club_op.OP_EXIT_AGREED,
-        target_id = target_club_id,
+        target_id = boss_guid,
     })
 end
 
