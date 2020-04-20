@@ -388,11 +388,13 @@ end
 local function get_club_templates(club,getter_role)
     if not club then return {} end
 
+    log.dump(club)
     local ctt = club_template[club.id] or {}
     local templates = table.agg(ctt,{},function(tb,_,tid)
         table.insert(tb,table_template[tid])
         return tb
     end)
+    log.dump(templates)
 
     table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
 
@@ -402,10 +404,12 @@ end
 local function get_visiable_club_templates(club,getter_role)
     local templates = get_club_templates(club,getter_role)
     return table.agg(templates,{},function(tb,template)
-        if  is_template_visiable(club,template) or
+        local visiable = is_template_visiable(club,template)
+        if  visiable or
             getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
             table.insert(tb,template)
         end
+
         return tb
     end)
 end
@@ -503,7 +507,6 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local templates = get_visiable_club_templates(club,role)
-    log.dump(templates)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
     local myself = base_players[guid]
@@ -542,7 +545,14 @@ function on_cs_club_detail_info_req(msg,guid)
         commission = (role == enum.CRT_BOSS or role == enum.CRT_ADMIN) and club_commission[club_id] or 0,
     }
 
-    log.dump(club_fast_template[club_id])
+    local function get_fast_templates(cid)
+        if not cid then return {} end
+        local fast_templates = club_fast_template[cid]
+        if table.nums(fast_templates) > 0 then return fast_templates end
+        local c = base_clubs[cid]
+        if not c or not c.parent or c.parent == 0 then return fast_templates end
+        return table.union(fast_templates,get_fast_templates(c.parent))
+    end
 
     local club_info = {
         root = root.id,
@@ -552,7 +562,7 @@ function on_cs_club_detail_info_req(msg,guid)
         status = club_status,
         table_list = tables,
         gamelist = real_games,
-        fast_templates = club_fast_template[club_id],
+        fast_templates = get_fast_templates(club_id),
         table_templates = table.agg(templates,{},function(tb,template)
             table.insert(tb,{
                 club_id = template.club_id,

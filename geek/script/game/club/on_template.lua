@@ -372,10 +372,12 @@ function on_cs_get_club_team_template_conf(msg,guid)
             return
         end
 
+        local teamconf = club_team_template_conf[club.id][template_id]
         table.insert(confs,{
             template_id = template.id,
             commission = calc_club_template_commission(club,template),
             commission_rate = get_real_club_template_commission_rate(club,template),
+            visual = not teamconf and true or (teamconf.visual and true or false),
         })
     end
 
