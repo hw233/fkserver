@@ -387,10 +387,6 @@ end
 
 local function get_club_templates(club,getter_role)
     if not club then return {} end
-    if  getter_role ~= enum.CRT_BOSS and getter_role ~= enum.CRT_ADMIN and
-        getter_role ~= enum.CRT_PARTNER then
-        return {}
-    end
 
     local ctt = club_template[club.id] or {}
     local templates = table.agg(ctt,{},function(tb,_,tid)
@@ -507,6 +503,7 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local templates = get_visiable_club_templates(club,role)
+    log.dump(templates)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
     local myself = base_players[guid]
