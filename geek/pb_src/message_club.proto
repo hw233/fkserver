@@ -82,6 +82,7 @@ message S2C_CLUB_INFO_RES {
     repeated CLUB_TABLE_TEMPLATE table_templates =10;//可以快速加入的游戏列表和规则
     repeated int32 gamelist = 11;
     int32          root = 12;
+    map<int32,int32> fast_templates = 13;
 }
 
 
@@ -378,4 +379,17 @@ message S2C_CLUB_MONEY_RES{
     int32 money_id =3;
     int32 count = 4;
     int32 commission = 5;
+}
+
+message C2S_CONFIG_FAST_GAME_LIST{ 
+    enum MsgID {NIL = 0;ID = 14091;}
+    int32 club_id = 1;      //俱乐部ID
+    map<int32,int32> template_ids = 2;
+}
+
+message S2C_CONFIG_FAST_GAME_LIST{ 
+    enum MsgID {NIL = 0;ID = 14092;}
+    int32 result = 1;
+    int32 club_id = 2;      //俱乐部ID
+    map<int32,int32> template_ids = 3;
 }

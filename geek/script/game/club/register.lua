@@ -28,3 +28,5 @@ register_dispatcher("C2S_EXCHANGE_CLUB_COMMISSON_REQ",on_cs_exchagne_club_commis
 register_dispatcher("C2S_CLUB_MONEY_REQ",on_cs_club_money)
 
 register_dispatcher("B2S_CLUB_CREATE",on_bs_club_create)
+
+register_dispatcher("C2S_CONFIG_FAST_GAME_LIST",on_cs_config_fast_game_list)

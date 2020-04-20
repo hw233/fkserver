@@ -29,6 +29,7 @@ local club_team_template_conf = require "game.club.club_team_template_conf"
 local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
+local club_fast_template = require "game.club.club_fast_template"
 require "functions"
 
 local g_room = g_room
@@ -544,6 +545,8 @@ function on_cs_club_detail_info_req(msg,guid)
         commission = (role == enum.CRT_BOSS or role == enum.CRT_ADMIN) and club_commission[club_id] or 0,
     }
 
+    log.dump(club_fast_template[club_id])
+
     local club_info = {
         root = root.id,
         result = enum.ERROR_NONE,
@@ -552,6 +555,7 @@ function on_cs_club_detail_info_req(msg,guid)
         status = club_status,
         table_list = tables,
         gamelist = real_games,
+        fast_templates = club_fast_template[club_id],
         table_templates = table.agg(templates,{},function(tb,template)
             table.insert(tb,{
                 club_id = template.club_id,
@@ -1800,5 +1804,62 @@ function on_cs_club_money(msg,guid)
         money_id = money_id,
         count = club_money[club_id][money_id],
         commission = club_commission[club_id] or 0,
+    })
+end
+
+function on_cs_config_fast_game_list(msg,guid)
+    log.info("on_cs_config_fast_game_list")
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+
+        return
+    end
+
+    local club_id = msg.club_id
+    local template_ids = msg.template_ids
+    if not club_id or not template_ids or table.nums(template_ids) == 0 then
+        onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+
+        return
+    end
+
+    local is = table.logic_and(template_ids,function(tid) return tid <= 0 or table_template[tid] ~= nil end)
+    if not is then
+        onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+
+        return
+    end
+
+    reddb:hmset(string.format("club:fast_template:%d",club_id),template_ids)
+
+    onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        template_ids = template_ids,
     })
 end
