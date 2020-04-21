@@ -2,7 +2,11 @@ local skynet = require "skynetproto"
 
 local log_name_files = {}
 
--- os.execute("mkdir ./log")
+os.execute([[
+	if [ ! -d "./log" ];then
+		mkdir ./log
+	fi
+	]])
 
 local CMD = {}
 
