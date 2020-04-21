@@ -345,13 +345,8 @@ function on_cs_club_dismiss(msg,guid)
     }
 end
 
-local function get_club_tables(club,getter_role)
+local function get_club_tables(club)
     if not club then return {} end
-    if  getter_role ~= enum.CRT_BOSS and getter_role ~= enum.CRT_ADMIN and
-        getter_role ~= enum.CRT_PARTNER then
-        return {}
-    end
-
     local ct = club_table[club.id] or {}
     local tables = table.agg(ct,{},function(tb,_,tid)
         local priv_tb = base_private_table[tid]
@@ -394,7 +389,6 @@ local function get_club_templates(club,getter_role)
         table.insert(tb,table_template[tid])
         return tb
     end)
-    log.dump(templates)
 
     table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
 
