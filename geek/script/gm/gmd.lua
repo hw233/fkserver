@@ -151,6 +151,31 @@ function gmd.create_club(data)
     }
 end
 
+function gmd.create_club_with_gourp(data)
+    local group_id = data.group_id
+    if not group_id or group_id == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("group id is illigal.")
+        }
+    end
+
+    local group = base_clubs[group_id]
+    if not group or group.type ~= enum.CT_DEFAULT then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("group id is illigal.")
+        }
+    end
+
+    local name = data.club_name
+    local code,union_id = channel.call("game.?","msg","B2S_CLUB_CREATE_WITH_GROUP",group_id,name)
+    return {
+        errcode = code == enum.ERROR_NONE and error.SUCCESS or error.PARAMETER_ERROR,
+        union_id = union_id,
+    }
+end
+
 function gmd.force_dismiss_club(data)
 
 end
@@ -244,7 +269,7 @@ function gmd.agency_remove(data)
     }
 end
 
-function gmd.online_player(data)
+function gmd.online_player(_)
     local count = reddb:get("player:online:count")
     return {
         result = error.SUCCESS,
@@ -253,6 +278,7 @@ function gmd.online_player(data)
 end
 
 gmd["club/create"] = gmd.create_club
+gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove

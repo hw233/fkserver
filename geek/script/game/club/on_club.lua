@@ -53,6 +53,47 @@ local club_op = {
     OPEN_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OPEN_CLUB"),
 }
 
+local function rand_union_club_id()
+    local id_begin = (math.random(10) > 5 and 6 or 8) * 10000000
+    local id_end = id_begin + 9999999
+    local id = math.random(id_begin,id_end)
+    for _ = 1,1000 do
+        if not base_clubs[id] then break end
+        id = math.random(id_begin,id_end)
+    end
+
+    return id
+end
+
+local function rand_group_club_id()
+    local id_begin = (math.random(10) > 5 and 6 or 8) * 100000
+    local id_end = id_begin + 99999
+    local id = math.random(id_begin,id_end)
+    for _ = 1,1000 do
+        if not base_clubs[id] then break end
+        id = math.random(id_begin,id_end)
+    end
+
+    return id
+end
+
+local function recusive_is_in_club(club,guid)
+    if not club or not guid then return end
+    return table.logic_or(club_member[club.id] or {},function(_,pid) return guid == pid end)
+        or table.logic_or(club_team[club] or {},function(_,teamid)
+            return recusive_is_in_club(base_clubs[teamid],guid)
+        end)
+end
+
+local function import_union_player_from_group(from,to)
+    local root = club_utils.root(to)
+    table.foreach(club_member[from.id] or {},function(_,guid)
+        if not recusive_is_in_club(root,guid) then
+            to:join(guid)
+        end
+    end)
+end
+
 function on_bs_club_create(owner,name)
     local guid = owner
     -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
@@ -76,14 +117,7 @@ function on_bs_club_create(owner,name)
         return enum.ERROR_PLAYER_NO_RIGHT
     end
 
-    local id_head = math.random(10) > 5 and 6 or 8
-    local id_begin = id_head * 10000000
-    local id_end = id_begin + 9999999
-    local id = math.random(id_begin,id_end)
-    for _ = 1,1000 do
-        if not base_clubs[id] then break end
-        id = math.random(id_begin,id_end)
-    end
+    local id = rand_union_club_id()
 
     base_club:create(id,name or "","",player,enum.CT_UNION)
 
@@ -96,19 +130,40 @@ function on_bs_club_create(owner,name)
     return enum.ERROR_NONE,id
 end
 
+function on_bs_club_create_with_group(group_id,name)
+    local group = base_clubs[group_id]
+    if not group then
+        return enum.ERROR_CLUB_NOT_FOUND
+    end
+
+    if group.type ~= enum.CT_DEFAULT then
+        return enum.ERORR_PARAMETER_ERROR
+    end
+
+    local player = base_players[group.owner]
+    if not player then
+        return enum.ERROR_PLAYER_NOT_EXIST
+    end
+
+    local id = rand_union_club_id()
+    base_club:create(id,name or "","",player,enum.CT_UNION)
+
+    base_clubs[id]:incr_money({
+        money_id = club_money_type[id],
+        money = math.floor(global_cfg.union_init_money),
+    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+
+    local son_club_id = rand_union_club_id()
+    base_club:create(son_club_id,group.name,"",player,enum.CT_UNION,id)
+    local son_club = base_clubs[son_club_id]
+
+    import_union_player_from_group(son_club,group)
+
+    return enum.ERROR_NONE,id
+end
+
 function on_cs_club_create(msg,guid)
     local club_info = msg.info
-    -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
-    --     local p_club = base_clubs[msg.parent]
-    --     if not p_club then
-    --         log.error("on_cs_club_create no parent club,%s.",msg.parent)
-    --         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-    --             result = enum.ERROR_CLUB_NOT_FOUND,
-    --         })
-    --         return
-    --     end
-    -- end
-
     local player = base_players[guid]
     if not player then
         log.error("internal error,recv msg but no player.")
@@ -121,14 +176,7 @@ function on_cs_club_create(msg,guid)
 
     log.dump(player)
 
-    local id_head = math.random(10) > 5 and 6 or 8
-    local id_begin = id_head * 100000
-    local id_end = id_begin + 99999
-    local id = math.random(id_begin,id_end)
-    for _ = 1,1000 do
-        if not base_clubs[id] then break end
-        id = math.random(id_begin,id_end)
-    end
+    local id = rand_group_club_id()
 
     base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
@@ -200,14 +248,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
-    local id_head = math.random(10) > 5 and 6 or 8
-    local id_begin = id_head * 10000000
-    local id_end = id_begin + 9999999
-    local id = math.random(id_begin,id_end)
-    for _ = 1,1000 do
-        if not base_clubs[id] then break end
-        id = math.random(id_begin,id_end)
-    end
+    local id = rand_union_club_id()
 
     local club_info = msg.club_info
 
@@ -383,7 +424,6 @@ end
 local function get_club_templates(club,getter_role)
     if not club then return {} end
 
-    log.dump(club)
     local ctt = club_template[club.id] or {}
     local templates = table.agg(ctt,{},function(tb,_,tid)
         table.insert(tb,table_template[tid])
