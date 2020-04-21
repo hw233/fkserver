@@ -87,11 +87,20 @@ end
 
 local function import_union_player_from_group(from,to)
     local root = club_utils.root(to)
-    table.foreach(club_member[from.id] or {},function(_,guid)
+    local members = club_member[from.id]
+    local guids = table.agg(members or {},{},function(tb,_,guid)
         if not recusive_is_in_club(root,guid) then
-            to:join(guid)
+            table.insert(tb,guid)
         end
+        return tb
     end)
+
+    if table.nums(guids) == 0 then
+        return
+    end
+
+    to:batch_join(guids)
+    return true
 end
 
 function on_bs_club_create(owner,name)
@@ -129,6 +138,7 @@ function on_bs_club_create(owner,name)
 
     return enum.ERROR_NONE,id
 end
+
 
 function on_bs_club_create_with_group(group_id,name)
     local group = base_clubs[group_id]
@@ -191,6 +201,46 @@ function on_cs_club_create(msg,guid)
         id = id,
     })
 end
+
+function on_cs_club_import_player_from_group(msg,guid)
+    local to_id = msg.club_id
+    local from_id = msg.group_id
+    local from = base_clubs[from_id]
+    local to = base_clubs[to_id]
+
+    if not from or not to then
+        onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    log.dump(from)
+    log.dump(to)
+
+    if from.type ~= enum.CT_DEFAULT or to.type ~= enum.CT_UNION then
+        onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
+            result = enum.ERORR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    local to_role = club_role[to_id][guid]
+    local from_role = club_role[from_id][guid]
+
+    if to.owner ~= guid or from.owner ~= guid or from_role ~= to_role then
+        onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    import_union_player_from_group(from,to)
+    onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
+        result = enum.ERROR_NONE
+    })
+end
+
 
 function on_cs_club_create_club_with_mail(msg,guid)
     log.dump(msg)
@@ -615,10 +665,14 @@ function on_cs_club_detail_info_req(msg,guid)
 end
 
 function on_cs_club_list(msg,guid)
-    log.info("on_cs_club_list,guid:%s",guid)
-    local clubs = {}
-    for club,_ in pairs(player_club[guid][msg.type or enum.CT_DEFAULT]) do
-        table.insert(clubs,base_clubs[club])
+    log.info("on_cs_club_list,guid:%s,%s,%s",guid,msg.type,msg.owned_myself)
+    local clubs = table.agg(player_club[guid][msg.type or enum.CT_DEFAULT],{},function(tb,_,cid) 
+        table.insert(tb,base_clubs[cid])
+        return tb
+    end)
+
+    if msg.owned_myself then
+        clubs = table.select(clubs,function(c) return c.owner == guid end)
     end
 
     onlineguid.send(guid,"S2C_CLUBLIST_RES",{

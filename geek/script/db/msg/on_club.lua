@@ -12,10 +12,8 @@ function on_sd_create_club(msg)
         return
     end
 
-    local gamedb = dbopt.game
-     
     if club_info.parent and club_info.parent ~= 0 then
-        local res = gamedb:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
+        local res = dbopt.game:query("SELECT * FROM t_club WHERE id = %d;",club_info.parent)
         if res.errno then
             log.error("on_sd_create_club query parent error:%d,%s",res.errno,res.err)
             return
@@ -23,8 +21,6 @@ function on_sd_create_club(msg)
     end
 
     local transqls = {
-        "SET AUTOCOMMIT = 0;",
-        "BEGIN;",
         string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) SELECT %d,'%s',%d,'%s',%d,%d,%d,%d
                         WHERE EXISTS (SELECT * FROM t_player WHERE guid = %d);]],
                     club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time(),club_info.owner),
@@ -34,16 +30,13 @@ function on_sd_create_club(msg)
             WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = %d);]],
             club_info.owner,money_info.id,club_info.owner,money_info.id),
         string.format([[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],money_info.id,club_info.id),
-        "COMMIT;",
     }
 
     log.dump(transqls)
 
-    local trans = gamedb:transaction()
-    local res = trans:execute(table.concat(transqls,"\n"))
+    local res = dbopt.game:query(table.concat(transqls,"\n"))
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
-        trans:execute("ROLLBACK;")
         return
     end
 
@@ -52,49 +45,63 @@ end
 
 function on_sd_join_club(msg)
     log.dump(msg)
-    local gamedb = dbopt.game
-    local res = gamedb:query("SELECT COUNT(*) AS c FROM t_player WHERE guid = %d;",msg.guid)
+    local res = dbopt.game:query("SELECT * FROM t_club_money_type WHERE club = %d",club_id)
     if res.errno then
-        log.error("on_sd_join_club query player error:%d,%s",res.errno,res.err)
+        log.error("on_sd_join_club error:%d,%s",res.errno,res.err)
         return
     end
 
-    if res[1].c ~= 1 then
-        log.error("on_sd_join_club check player got wrong player count,guid:%s",msg.guid)
-        return
-    end
-
-    res = gamedb:query("SELECT COUNT(*) AS c FROM t_club WHERE id = %d;",msg.club_id)
-    if res.errno then
-        log.error("on_sd_join_club query player error:%d,%s",res.errno,res.err)
-        return
-    end
-
-    if res[1].c ~= 1 then
-        log.error("on_sd_join_club check club got wrong player count,club:%s",msg.club_id)
-        return
-    end
+    local money_id = res[1].money_id
 
     local sqls = {
-        "SET AUTOCOMMIT = 0;",
-        "BEGIN;",
-        string.format([[INSERT INTO t_club_member(club,guid) SELECT %d,%d
-            WHERE NOT EXISTS (SELECT * FROM t_club_member WHERE club = %d AND guid = %d);]],
-            msg.club_id,msg.guid,msg.club_id,msg.guid,msg.guid),
-        string.format([[INSERT INTO t_player_money
-            (SELECT %d,money_id,0,0 FROM (SELECT * FROM t_club_money_type WHERE club = %d) m
-            WHERE NOT EXISTS (SELECT * FROM t_player_money WHERE guid = %d AND money_id = m.money_id));]],
-            msg.guid,msg.club_id,msg.guid),
-        "COMMIT;"
+        string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d) ]],msg.club_id,msg.guid),
+        string.format([[INSERT INTO t_player_money(guid,money_id,money,where) VALUES(%d,%d,0,0)]],msg.guid,money_id),
     }
 
     log.dump(sqls)
 
-    local tran = dbopt.game:transaction()
-    res = tran:execute(table.concat(sqls,"\n"))
+    res = dbopt.game:query(table.concat(sqls,"\n"))
     if res.errno then
-        tran:execute("ROLLBACK;")
         log.error("on_sd_join_club error:%d,%s",res.errno,res.err)
+        return
+    end
+
+    return true
+end
+
+function on_sd_batch_join_club(msg)
+    local club_id = msg.club_id
+    local guids = msg.guids
+
+    if not club_id or not guids or table.nums(guids) == 0 then
+        log.warning("on_sd_batch_join_club parameter is error!")
+        return
+    end
+
+    local res = dbopt.game:query("SELECT * FROM t_club_money_type WHERE club = %d",club_id)
+    if res.errno then
+        log.error("on_sd_batch_join_club error:%d,%s",res.errno,res.err)
+        return
+    end
+
+    local money_id = res[1].money_id
+
+    local sqls = {
+        "INSERT INTO t_club_member(club,guid,status) VALUES"..table.concat(table.agg(guids,{},function(tb,guid)
+            table.insert(tb,string.format("(%d,%d,0)",club_id, guid))
+            return tb
+        end),",")..";",
+        "INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES"..table.concat(table.agg(guids,{},function(tb,guid)
+            table.insert(tb,string.format("(%d,%d,0,0)",guid,money_id))
+            return tb
+        end),",")..";",
+    }
+
+    log.dump(sqls)
+
+    res = dbopt.game:query(table.concat(sqls,"\n"))
+    if res.errno then
+        log.error("on_sd_batch_join_club error:%d,%s",res.errno,res.err)
         return
     end
 
@@ -103,19 +110,14 @@ end
 
 function on_sd_exit_club(msg)
     local sqls = {
-        "SET AUTOCOMMIT = 0;",
-        "BEGIN;",
         string.format("DELETE FROM t_club_member WHERE guid = %d AND club = %d;",msg.guid,msg.club_id),
         string.format([[DELETE FROM t_player_money WHERE guid = %d AND 
                         money_id IN (SELECT money_id FROM t_club_money WHERE club = %d AND money_id != 0);]],
                         msg.guid,msg.club_id),
-        "COMMIT;",
     }
     log.dump(sqls)
-    local trans = dbopt.game:transaction()
-    local res = trans:execute(table.concat(sqls,"\n"))
+    local res = dbopt.game:query(table.concat(sqls,"\n"))
     if res.errno then
-        trans:execute("ROLLBACK;")
         log.error("on_sd_exit_club DELETE member error:%d,%s",res.errno,res.err)
         return
     end

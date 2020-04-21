@@ -9,6 +9,7 @@ import "common.proto";
 message C2S_CLUBLIST_REQ {
     enum MsgID {NIL = 0;ID = 14004;}
     int32 type = 1;
+    bool  owned_myself = 2;
 }
 
 //俱乐部所在列表信息
@@ -392,4 +393,15 @@ message S2C_CONFIG_FAST_GAME_LIST{
     int32 result = 1;
     int32 club_id = 2;      //俱乐部ID
     map<int32,int32> template_ids = 3;
+}
+
+message C2S_IMPORT_PLAYER_FROM_GROUP{ 
+    enum MsgID {NIL = 0;ID = 14093;}
+    int32 club_id = 1;
+    int32 group_id = 2;
+}
+
+message S2C_IMPORT_PLAYER_FROM_GROUP{ 
+    enum MsgID {NIL = 0;ID = 14094;}
+    int32 result = 1;
 }

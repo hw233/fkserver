@@ -256,6 +256,16 @@ function base_club:join(guid,inviter)
     player_club[guid][self.type] = nil
 end
 
+function base_club:batch_join(guids)
+    for _,guid in pairs(guids) do
+        reddb:sadd(string.format("club:member:%s",self.id),guid)
+        reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
+        player_club[guid][self.type] = nil
+    end
+
+    channel.publish("db.?","msg","SD_BatchJoinClub",{club_id = self.id,guids = guids})
+end
+
 function base_club:exit(guid)
     local money_id = club_money_type[self.id]
 	reddb:srem(string.format("club:member:%s",self.id),guid)

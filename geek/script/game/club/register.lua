@@ -32,3 +32,5 @@ register_dispatcher("B2S_CLUB_CREATE",on_bs_club_create)
 register_dispatcher("C2S_CONFIG_FAST_GAME_LIST",on_cs_config_fast_game_list)
 
 register_dispatcher("B2S_CLUB_CREATE_WITH_GROUP",on_bs_club_create_with_group)
+
+register_dispatcher("C2S_IMPORT_PLAYER_FROM_GROUP",on_cs_club_import_player_from_group)
