@@ -1042,9 +1042,9 @@ function on_cs_create_private_room(msg,guid)
 		
 		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 	elseif pay_option == enum.PAY_OPTION_AA then
-		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
+		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
 	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
-		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule)
+		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
 	else
 		result = enum.ERROR_OPERATION_INVALID
 	end

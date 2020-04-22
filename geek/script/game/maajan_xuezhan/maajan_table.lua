@@ -10,6 +10,7 @@ local enum = require "pb_enums"
 local profile = require "skynet.profile"
 local skynet = require "skynetproto"
 local timer_manager = require "game.timer_manager"
+local club_utils = require "game.club.club_utils"
 
 local yield = profile.yield
 local resume = profile.resume
@@ -244,7 +245,7 @@ function maajan_table:on_started(player_count)
     self:ding_zhuang()
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
 	self.last_chu_pai              = -1 --上次的出牌
-	self:update_state(FSM_S.PER_BEGIN)
+    self:update_state(FSM_S.PER_BEGIN)
     self.game_log = {
         start_game_time = os.time(),
         zhuang = self.zhuang,
@@ -252,11 +253,11 @@ function maajan_table:on_started(player_count)
         players = table.agg(self.players,{},function(tb,_,i) tb[i] = {} return tb end),
         action_table = {},
         rule = self.private_id and self.conf.conf or nil,
+        club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
         table_id = self.private_id or nil,
     }
 
     self.dealer = maajan_tile_dealer:new(all_tiles[player_count])
-
     self.co = skynet.fork(function()
         self:main()
     end)

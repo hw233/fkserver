@@ -352,6 +352,7 @@ function base_room:create_private_table(player,chair_count,round, conf,club)
 		owner_guid = player.guid,
 		owner_chair_id = chair_id,
 		rule = conf.play,
+		club = club,
 		conf = conf,
 	})
 

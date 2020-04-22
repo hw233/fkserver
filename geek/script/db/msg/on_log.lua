@@ -57,12 +57,12 @@ function on_sl_log_game(msg)
         log.error(ret.err)
     end
 
-    local players_sql = {}
-    for _,p in pairs(msg.log.players) do
-        table.insert(players_sql,string.format("('%s',%d,%d)",msg.round_id,msg.log.table_id,p.guid))
-    end
+    local log_round_sql = table.concat(table.agg(msg.log.players,{},function(tb,p)
+        table.insert(tb,string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,msg.log.club))
+        return tb
+    end),",")
 
-    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid) VALUES"..table.concat(players_sql,",")..";")
+    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid,club) VALUES" .. log_round_sql .. ";")
     if ret.errno then
         log.error(ret.err)
     end

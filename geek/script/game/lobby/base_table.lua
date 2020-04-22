@@ -1182,7 +1182,7 @@ function base_table:cost_private_fee()
 			p:cost_money({{
 				money_id = 0,
 				money = money_each,
-			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
 		end
 	elseif pay.option == enum.PAY_OPTION_BOSS then
 		local root = club_utils.root(private_table.club_id)
@@ -1195,7 +1195,7 @@ function base_table:cost_private_fee()
 		boss:cost_money({{
 			money_id = 0,
 			money = money,
-		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
 	elseif pay.option == enum.PAY_OPTION_ROOM_OWNER then
 		local owner = base_players[private_table.owner]
 		if not owner then
@@ -1206,7 +1206,7 @@ function base_table:cost_private_fee()
 		owner:cost_money({{
 			money_id = 0,
 			money = money,
-		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
+		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.round_id)
 	else
 		log.error("base_table:cost_private_fee [%d] got wrong pay option.")
 	end
