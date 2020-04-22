@@ -32,3 +32,7 @@
 	path = 3rd/pbc_v3
 	url = https://gitee.com/thinblog/pbc_v3.git
 	branch = proto_v3
+[submodule "common/FDaysORM"]
+	path = common/FDaysORM
+	url = https://gitee.com/thinblog/FDaysORM.git
+	branch = skynet
