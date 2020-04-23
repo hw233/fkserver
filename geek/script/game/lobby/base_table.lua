@@ -1246,18 +1246,20 @@ function base_table:balance(moneies,why)
 
 	local money_id = self:get_money_id()
 
-	local minrate = 1
-	for pid,money in pairs(moneies) do
-		local p = self.players[pid] or base_players[pid]
-		local p_money = player_money[p.guid][money_id]
-		if p_money + money < 0 then
-			local r = math.abs(p_money) / math.abs(money)
-			if minrate > r then minrate = r end
+	if self.private_id and self.conf.club and self.conf.club.type  == enum.CT_UNION then
+		local minrate = 1
+		for pid,money in pairs(moneies) do
+			local p = self.players[pid] or base_players[pid]
+			local p_money = player_money[p.guid][money_id]
+			if p_money + money < 0 then
+				local r = math.abs(p_money) / math.abs(money)
+				if minrate > r then minrate = r end
+			end
 		end
-	end
 
-	for pid,_ in pairs(moneies) do
-		moneies[pid] = math.floor(moneies[pid] * minrate)
+		for pid,_ in pairs(moneies) do
+			moneies[pid] = math.floor(moneies[pid] * minrate)
+		end
 	end
 	
 	log.dump(moneies)

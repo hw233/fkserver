@@ -444,7 +444,7 @@ function base_player:incr_money(item,why,why_ext)
 	local dbnewmoney = changes[1].newmoney
 	
 	if dboldmoney ~= oldmoney then
-		log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d] dboldmoney[%d]",self.guid,item.money_id,oldmoney,dboldmoney)
+		log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
 		-- return
 	end
 
@@ -452,7 +452,7 @@ function base_player:incr_money(item,why,why_ext)
 	if not self:is_android() then
 		newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
 		if dbnewmoney ~= newmoney then
-			log.error("db incrmoney error,guid[%d] money_id[%d] newmoney[%d] dbnewmoney[%d]",self.guid,item.money_id,newmoney,dbnewmoney)
+			log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
 			-- return
 		end
 	end

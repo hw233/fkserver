@@ -570,7 +570,7 @@ function base_club:incr_money(item,why,why_ext)
     log.dump(dboldmoney)
     log.dump(oldmoney)
 	if dboldmoney ~= oldmoney then
-		log.error("db incrmoney error,club[%d] money_id[%d] dboldmoney[%d] oldmoney[%d] ",self.id,item.money_id,oldmoney,dboldmoney)
+		log.error("db incrmoney error,club[%s] money_id[%s] dboldmoney[%s] oldmoney[%s] ",self.id,item.money_id,oldmoney,dboldmoney)
 		-- return
 	end
 
@@ -578,12 +578,12 @@ function base_club:incr_money(item,why,why_ext)
     log.dump(dbnewmoney)
     log.dump(newmoney)
     if dbnewmoney ~= newmoney then
-        log.error("db incrmoney error,club[%d] money_id[%d] dbnewmoney[%d] newmoney[%d]",self.id,item.money_id,newmoney,dbnewmoney)
+        log.error("db incrmoney error,club[%s] money_id[%s] dbnewmoney[%s] newmoney[%s]",self.id,item.money_id,newmoney,dbnewmoney)
         -- return
     end
     
     club_money[self.id][item.money_id] = nil
-	log.info("incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
+	log.info("incr_money  end oldmoney[%s] new_money[%s]" , oldmoney, newmoney)
 	self:notify_money()
 	return oldmoney,newmoney
 end
