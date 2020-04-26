@@ -10,6 +10,8 @@ local enum = require "pb_enums"
 local base_clubs = require "game.club.base_clubs"
 local club_money_type = require "game.club.club_money_type"
 local log = require "log"
+local player_money = require "game.lobby.player_money"
+local club_money = require "game.club.club_money"
 
 
 local reddb = redisopt.default
@@ -275,6 +277,186 @@ function gmd.online_player(_)
         result = error.SUCCESS,
         count = tonumber(count) or 0,
     }
+end
+
+local function transfer_money_player2club(guid,club_id,coin_type,amount)
+    local player = base_players[guid]
+    if not player then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",guid),
+        }
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("club [%d] not exists.",club_id),
+        }
+    end
+
+    if guid ~= club.owner then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("player [%d] is not club [%d] boss.",guid,club_id),
+        }
+    end
+
+    if coin_type ~= 0 then
+        local money_id = club_money_type[club_id]
+        if money_id ~= coin_type then
+            return {
+                errcode = error.DATA_ERROR,
+                errstr = string.format("coin type is fault."),
+            }
+        end
+    end
+
+    if amount == 0 then
+        return {
+            errcode = error.SUCCESS,
+        }
+    end
+
+    local money_amount = player_money[guid][coin_type]
+    if money_amount < amount then
+        return {
+                errcode = error.DATA_ERROR,
+                errstr = string.format("money is not enough."),
+            }
+    end
+
+    player:incr_money({
+        money_id = 0,
+        money = - amount,
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,club_id)
+
+    club:incr_money({
+        money_id = 0,
+        money = amount,
+    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,guid)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+local function transfer_money_club2player(club_id,guid,coin_type,amount)
+    local player = base_players[guid]
+    if not player then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("player [%d] not exists.",guid),
+        }
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("club [%d] not exists.",club_id),
+        }
+    end
+
+    if guid ~= club.owner then
+        return {
+            result = error.DATA_ERROR,
+            errstr = string.format("player [%d] is not club [%d] boss.",guid,club_id),
+        }
+    end
+
+    if coin_type ~= 0 then
+        local money_id = club_money_type[club_id]
+        if money_id ~= coin_type then
+            return {
+                errcode = error.DATA_ERROR,
+                errstr = string.format("coin type is fault."),
+            }
+        end
+    end
+
+    if amount == 0 then
+        return {
+            errcode = error.SUCCESS,
+        }
+    end
+
+    local money_amount = club_money[club_id][coin_type]
+    if money_amount < amount then
+        return {
+                errcode = error.DATA_ERROR,
+                errstr = string.format("money is not enough."),
+            }
+    end
+
+    club:incr_money({
+        money_id = 0,
+        money = - amount,
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,guid)
+
+    player:incr_money({
+        money_id = 0,
+        money = amount,
+    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,club_id)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.transfer_money(data)
+    local to = tonumber(data.to)
+    if not to then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "target id can not be nil."
+        }
+    end
+
+    to = math.floor(to)
+
+    local from = tonumber(data.from)
+    if not from then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "from id can not be nil."
+        }
+    end
+
+    from = math.floor(from)
+
+    local coin_type = tonumber(data.coin_type)
+    if not coin_type then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "coin_type is nil.",
+        }
+    end
+
+    coin_type = math.floor(coin_type)
+
+    local amount = tonumber(data.amount)
+    if not amount or amount == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "amount is nil.",
+        }
+    end
+
+    local transfer_type = data.transfer_type
+    if transfer_type == 1 then
+        return transfer_money_player2club(from,to,coin_type,amount)
+    end
+
+    if transfer_type == 2 then
+        return transfer_money_club2player(from,to,coin_type,amount)
+    end
+
+    return {
+            errcode = error.DATA_ERROR,
+            errstr = "transfer_type is not support!",
+        }
 end
 
 gmd["club/create"] = gmd.create_club
