@@ -425,17 +425,29 @@ function table.nums(t)
     return count
 end
 
-function table.keys(hashtable)
+table.count = table.nums
+
+function table.series(tb,fn)
+    local s = {}
+    for k,v in pairs(tb) do
+        if fn then table.insert(s,fn(v,k))
+        else table.insert(s,v) end
+    end
+
+    return s
+end
+
+function table.keys(tb)
     local keys = {}
-    for k, _ in pairs(hashtable) do
+    for k, _ in pairs(tb) do
         keys[#keys + 1] = k
     end
     return keys
 end
 
-function table.values(hashtable)
+function table.values(tb)
     local values = {}
-    for _, v in pairs(hashtable) do
+    for _, v in pairs(tb) do
         values[#values + 1] = v
     end
     return values
@@ -456,6 +468,14 @@ function table.mergeto(dest, src, agg)
         dest[k] = agg and agg(dest[k],v) or v
     end
     return dest
+end
+
+function table.merge_tables(tbs,agg)
+    local r = {}
+    for _,tb in pairs(tbs) do
+        table.mergeto(r,tb,agg)
+    end
+    return r
 end
 
 function table.insertto(dest, src, begin)
@@ -502,15 +522,36 @@ function table.removebyvalue(array, value, removeall)
     return c
 end
 
-function table.map(t, fn)
+function table.map(t,fn)
+    local ret = {}
+    for k,v in pairs(t) do
+        local k1,v1 = fn(v,k)
+        if k1 then ret[k1] = v1 end
+    end
+    return ret
+end
+
+table.pick = table.map
+
+function table.ref_map(t, fn)
     for k, v in pairs(t) do
         t[k] = fn(v, k)
     end
 end
 
-function table.walk(t, fn)
+function table.group(t,fn)
+    local g = {}
     for k,v in pairs(t) do
-        fn(v, k)
+        local x = fn(v,k)
+        g[x] = g[x] or {}
+        g[x][k] = v
+    end
+    return g
+end
+
+function table.walk(t, fn,on)
+    for k,v in pairs(t) do
+        if not on or on(v,k) then fn(v, k) end
     end
 end
 
@@ -527,6 +568,18 @@ function table.select(t,fn)
     end
 
     return tb
+end
+
+function table.unique_value(t)
+    local check = {}
+    local n = {}
+    for k, v in pairs(t) do
+        if not check[v] then
+            n[k] = v
+            check[v] = true
+        end
+    end
+    return n
 end
 
 function table.unique(t, bArray)
@@ -589,6 +642,14 @@ function table.unionto(dst,src,agg)
         table.insert(dst,agg and agg(v,k) or v)
     end
     return dst
+end
+
+function table.union_tables(tbs,agg)
+    local t = {}
+    for _,tb in pairs(tbs) do
+        table.unionto(t,tb,agg)
+    end
+    return t
 end
 
 function table.pop_back(tb)
@@ -678,15 +739,9 @@ function table.logic_or(tb,agg)
     return false
 end
 
-function table.foreach(tb,op)
+function table.foreach(tb,op,on)
     for k,v in pairs(tb) do
-        op(v,k)
-    end
-end
-
-function table.foreach_on(tb,op,cond)
-    for k,v in pairs(tb) do
-        if cond(v,k) then op(v,k) end
+        if not on or on(v,k) then op(v,k) end
     end
 end
 
@@ -696,18 +751,16 @@ function table.agg(tb,init,agg_op)
     return ret
 end
 
-function table.agg_on(tb,init,agg,cond)
-    local ret = init
-    for k,v in pairs(tb) do
-        if cond(ret,v,k) then ret = agg(ret,v,k) end
+function table.ref_broadcast(tb,func)
+    for k,v in pairs(tb) do 
+        tb[k] = func(v,k)
     end
-    return ret
 end
 
-function table.walk_on(tb,op,cond)
-	table.walk(tb,function(v,k) 
-		if cond(v,k) then op(v,k)  end 
-	end)
+function table.broadcast(tb,func)
+    local r = {}
+    for k,v in pairs(tb) do r[k] = func(v,k) end
+    return r
 end
 
 function table.get(tb,field,default)
