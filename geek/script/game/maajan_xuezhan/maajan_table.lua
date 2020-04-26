@@ -250,7 +250,7 @@ function maajan_table:on_started(player_count)
         start_game_time = os.time(),
         zhuang = self.zhuang,
         mj_min_scale = self.mj_min_scale,
-        players = table.agg(self.players,{},function(tb,_,i) tb[i] = {} return tb end),
+        players = table.map(self.players,function(_,chair) return chair,{} end),
         action_table = {},
         rule = self.private_id and self.conf.conf or nil,
         club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
@@ -443,10 +443,8 @@ function maajan_table:huan_pai()
     
         local huan_type = self:get_huan_type()
         if huan_type == 1 then
-            local mens = table.agg(tiles,{},function(tb,t)
-                table.incr(tb,math.floor(t / 10))
-                return tb
-            end)
+            local g = table.group(tiles,function(t) return math.floor(t / 10) end)
+            local mens = table.map(g,function(gp,men) return men,table.nums(gp) end)
             local men_count = table.nums(mens)
             if men_count ~= 1 then
                 send2client_pb(player.guid,"SC_HuanPai",{
@@ -506,10 +504,8 @@ function maajan_table:huan_pai()
                 return
             end
 
-            local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-                table.get(tb,mj_util.tile_men(tile),{})[tile] = c
-                return tb
-            end)
+            local g = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
+            local men_tiles = table.map(g,function(gp,men) return men,table.merge_tables(gp,function(l,r) return (l or 0) + (r or 0) end) end)
 
             local c = 0
             local tiles
@@ -633,11 +629,8 @@ function maajan_table:ding_que()
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
         local function auto_ding_que(p)
-            local men_count = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-                table.incr(tb,mj_util.tile_men(tile),c)
-                return tb
-            end)
-
+            local g = table.group(p.pai.shou_pai,function(c,tile) return mj_util.tile_men(tile) end)
+            local men_count = table.map(g,function(gp,men) return men,table.sum(gp)  end)
             local min_men,c = table.min(men_count)
             log.info("%s,%s",min_men,c)
             self:safe_event({player = p,type = ACTION.DING_QUE,msg = {men = min_men}})
@@ -1208,10 +1201,7 @@ function maajan_table:ting(p)
 
     local ting_tiles = mj_util.is_ting(p.pai) or {}
     if p.que and ting_tiles then
-        ting_tiles = table.agg(ting_tiles,{},function(tb,b,tile)
-            tb[tile] =mj_util.tile_men(tile) ~= p.que and b or nil
-            return tb
-        end)
+        table.filter(ting_tiles,function(_,tile) return mj_util.tile_men(tile) ~= p.que end)
     end
 
     return ting_tiles
@@ -1220,11 +1210,8 @@ end
 function maajan_table:is_que(p)
     if not p.que then return true end
 
-    local men_counts = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-        table.incr(tb,mj_util.tile_men(tile),c)
-        return tb
-    end)
-
+    local g = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
+    local men_counts = table.map(g,function(gp,men)  return men,table.sum(gp)  end)
     local men_count = table.sum(men_counts,function(c,men) return (c > 0 and men < 3) and 1 or 0 end)
     return men_count <= 2
 end
@@ -1234,14 +1221,11 @@ function maajan_table:ting_full(p)
 
     local ting_tiles = mj_util.is_ting_full(p.pai)
     if p.que then
-        ting_tiles = table.agg(ting_tiles,{},function(tb,tiles,discard)
-            local hu_tiles = {}
-            for tile,_ in pairs(tiles) do
-                hu_tiles[tile] = mj_util.tile_men(tile) ~= p.que and tile or nil
-            end
-
-            tb[discard] = table.nums(hu_tiles) > 0 and hu_tiles or nil
-            return tb
+        ting_tiles = table.map(ting_tiles,function(tiles,discard)
+            local hu_tiles = table.map(tiles,function(_,tile)
+                return tile,mj_util.tile_men(tile) ~= p.que and tile or nil
+            end)
+            return discard, table.nums(hu_tiles) > 0 and hu_tiles or nil
         end)
     end
 
@@ -1258,21 +1242,13 @@ function maajan_table:chu_pai()
         local ting_tiles = self:ting_full(p)
         log.dump(ting_tiles)
         if table.nums(ting_tiles) > 0 then
-            local discard_tings = {}
             local pai = clone(p.pai)
-            for discard,tiles in pairs(ting_tiles) do
+            local discard_tings = table.series(ting_tiles,function(tiles,discard)
                 table.decr(pai.shou_pai,discard)
-                local tings = table.agg(tiles,{},function(tb,_,tile)
-                    table.insert(tb,{tile = tile,fan = self:hu_fan(p,tile)})
-                    return tb
-                end)
+                local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(pai,tile)} end)
                 table.incr(pai.shou_pai,discard)
-
-                table.insert(discard_tings,{
-                    discard = discard,
-                    tiles_info = tings,
-                })
-            end
+                return { discard = discard, tiles_info = tings, }
+            end)
 
             log.dump(discard_tings)
 
@@ -1301,11 +1277,7 @@ function maajan_table:chu_pai()
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_chu_pai(p)
-            local men_tiles = table.agg(p.pai.shou_pai,{},function(tb,c,tile)
-                if c == 0 then return tb end
-                table.get(tb,mj_util.tile_men(tile),{})[tile] = c
-                return tb
-            end)
+            local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
 
             log.dump(men_tiles)
 
@@ -1653,18 +1625,16 @@ function maajan_table:prepare_tiles()
 end
 
 function maajan_table:max_hu(p,tiles)
-    local fans = table.agg(tiles,{},function(tb,_,tile)
-        table.insert(tb,self:hu_fan(p,tile))
-        return tb
-    end)
+    local tile_fans = table.map(tiles,function(_,tile) return tile,self:hu_fan(p.pai,tile) end)
+    local fans = table.series(tile_fans)
     table.sort(fans,function(l,r) return l > r end)
     if table.nums(fans) > 0 then
         return fans[1]
     end
 end
 
-function maajan_table:hu_fan(p,tile)
-    local hu = mj_util.hu(p.pai,tile)
+function maajan_table:hu_fan(pai,tile)
+    local hu = mj_util.hu(pai,tile)
     local fans = self:calculate_hu({
         types = hu,
         tile = tile,
@@ -1853,13 +1823,12 @@ function maajan_table:calculate_gang(p)
         [SECTION_TYPE.BA_GANG] = HU_TYPE.BA_GANG,
     }
 
-    local gangfans = table.agg(p.pai.ming_pai,{},function(tb,s)
-        local t = s2hu_type[s.type]
-        if not t then return tb end
-        local v = table.get(tb,t,{fan = 0,count = 0})
-        v.fan = v.fan + HU_TYPE_INFO[t].fan
-        v.count = v.count + 1
-        return tb
+    local ss = table.select(p.pai.ming_pai,function(s) return  s2hu_type[s.type] ~= nil end)
+    local gfan= table.group(ss,function(s) return  s2hu_type[s.type] end)
+    local gangfans = table.map(gfan,function(gp,t) 
+        local fan = table.sum(gp,function(s) return HU_TYPE_INFO[t].fan end)
+        local count = table.nums(gp)
+        return t,{fan = fan,count = count}
     end)
 
     local scores = table.agg(p.pai.ming_pai,{},function(tb,s)
@@ -1884,11 +1853,7 @@ function maajan_table:calculate_gang(p)
         return tb
     end)
 
-    local fans = table.agg(gangfans,{},function(tb,v,t)
-        table.insert(tb,{type = t,fan = v.fan,count = v.count})
-        return tb
-    end)
-
+    local fans = table.series(gangfans,function(v,t) return {type = t,fan = v.fan,count = v.count} end)
     return fans,scores
 end
 
@@ -1952,10 +1917,10 @@ function maajan_table:game_balance()
     end)
 
     local max_fan = self:get_max_fan() or 3
-    local fans = table.agg(typefans,{},function(tb,v,chair)
+
+    local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
-        tb[chair] = fan > max_fan and max_fan or fan
-        return tb
+        return chair,(fan > max_fan and max_fan or fan)
     end)
 
     self:foreach(function(p)
@@ -1994,12 +1959,8 @@ function maajan_table:game_balance()
         end
     end)
 
-    local fanscores = table.agg(self.players,{},function(tb,p,chair)
-        tb[chair] = {
-            fan = fans[chair] or 0,
-            score = scores[chair] or 0,
-        }
-        return tb
+    local fanscores = table.map(self.players,function(_,chair)
+        return chair,{fan = fans[chair] or 0,score = scores[chair] or 0,}
     end)
 
     return typefans,fanscores
@@ -2048,17 +2009,13 @@ function maajan_table:on_final_game_overed()
     self.start_count = self.chair_count
 
     self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
-        players = table.agg(self.players,{},function(tb,p,chair)
-            table.insert(tb,{
+        players = table.series(self.players,function(p,chair)
+            return {
                 chair_id = chair,
                 guid = p.guid,
                 score = p.total_score or 0,
-                statistics = table.agg(p.statistics,{},function(tb,c,t)
-                    table.insert(tb,{type = t,count = c})
-                    return tb
-                end),
-            })
-            return tb
+                statistics = table.series(p.statistics,function(c,t) return {type = t,count = c} end),
+            }
         end),
     })
 
@@ -2110,12 +2067,9 @@ function maajan_table:ding_zhuang()
         return
     end
 
-    local pao_counts = table.agg(self.players,{},function(tb,p) 
-        if not p.hu then return tb end
-        table.incr(tb,self.players[p.hu.zi_mo and p.chair_id or p.hu.whoee].chair_id)
-        return tb
-    end)
-
+    local hu_ps = table.select(self.players,function(p) return p.hu ~= nil end)
+    local g = table.group(hu_ps,function(p) return  self.players[p.hu.zi_mo and p.chair_id or p.hu.whoee].chair_id end)
+    local pao_counts = table.map(g,function(paos,chair) return chair,table.nums(paos) end)
     local max_chair,max_c = table.max(pao_counts)
     if max_c and max_c > 1 then
         self.zhuang = max_chair
@@ -2427,16 +2381,17 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     end)
 
     log.dump(msg)
-    
+
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
-    if is_reconnect and last_chu_pai_player then
+    if is_reconnect  then
         msg.pb_rec_data = {
             last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
-            last_chu_pai = last_tile
+            last_chu_pai = last_tile,
+            total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
         }
     end
 
-    
+    log.dump(msg.pb_rec_data)
 
     send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
 end

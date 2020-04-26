@@ -212,6 +212,7 @@ message Maajan_Reconnect_Data {
 	int32 act_left_time = 1;						// 操作剩余时间
 	int32 last_chu_pai_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
 	int32 last_chu_pai = 3;						// 最后一次的出牌
+	map<int32, int32> total_scores = 4;		//大局总分数
 }
 
 message Maajan_Task_Data {
