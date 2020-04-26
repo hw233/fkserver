@@ -198,18 +198,14 @@ local function ting(state)
 end
 
 local function ting_qi_dui(state)
-	local count_tiles = {{},{},{},{}}
-	table.agg(state.counts,count_tiles,function(tb,c,tile) 
-		table.insert(table.get(tb,c,{}),tile)
-		return tb
-	end)
-
-	local even_count = #count_tiles[2] + #count_tiles[4]
-	if count_tiles[1] == 1 and even_count == 6 then
+	local count_tilemaps = table.group(state.counts,function(c,_) return c end)
+	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
+	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] or 0)
+	if count_tiles[1] and #count_tiles[1] == 1 and even_count == 6 then
 		return count_tiles[1][1]
 	end
 
-	if count_tiles[3] == 1 and even_count == 5 then
+	if count_tiles[3] and #count_tiles[3] == 1 and even_count == 5 then
 		return count_tiles[3][1]
 	end
 
@@ -478,7 +474,7 @@ function rule.ting_tiles(shou_pai)
 	ting(state)
 	local qi_dui_tile = ting_qi_dui(state)
 	local tiles = state.feed_tiles
-	if qi_dui_tile then tiles[qi_dui_tile] = 1 end
+	if qi_dui_tile then tiles[qi_dui_tile] = true end
 	return tiles
 end
 
@@ -489,18 +485,13 @@ end
 
 --全部牌判听
 function rule.ting_full(pai)
-	local counts = clone(pai.shou_pai)
-	local discard_then_ting_tiles = {}
-	for tile,c in pairs(counts) do
-		if c > 0 then
-			table.decr(counts,tile)
-			local tiles = rule.ting_tiles(counts)
-			if table.nums(tiles) > 0 then
-				discard_then_ting_tiles[tile] = tiles
-			end
-			table.incr(counts,tile)
-		end
-	end
+	local counts = table.select(pai.shou_pai,function(c,tile) return c > 0 end)
+	local discard_then_ting_tiles = table.map(counts,function(_,tile)
+		table.decr(counts,tile)
+		local tiles = rule.ting_tiles(counts)
+		table.incr(counts,tile)
+		if table.nums(tiles) > 0 then return tile,tiles end
+	end)
 
 	return discard_then_ting_tiles
 end
