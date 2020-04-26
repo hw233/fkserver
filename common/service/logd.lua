@@ -1,4 +1,4 @@
-local skynet = require "skynetproto"
+local skynet = require "skynet"
 
 local log_name_files = {}
 local service_file = {}
@@ -19,7 +19,7 @@ local function log_file(service)
 		log_name_files[filename] = f
 		service_file[service] =f
 	end
-    return log_name_files[filename]
+    	return log_name_files[filename]
 end
 
 function CMD.do_log(servicename,log)
@@ -27,6 +27,32 @@ function CMD.do_log(servicename,log)
     file:write(log.."\n")
     file:flush()
 end
+
+local function log_text_dispatch(_, address, msg)
+	local time = skynet.time()
+	local strtime = string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),math.ceil((time % 1) * 1000))
+	local log = string.format("%s %-8s%08x: %s",strtime,"SYSTEM ",address, msg)
+	local file = log_file("system")
+	file:write(log.."\n")
+	file:flush()
+	print(log)
+end
+
+skynet.register_protocol {
+	name = "text",
+	id = skynet.PTYPE_TEXT,
+	unpack = skynet.tostring,
+	dispatch = log_text_dispatch,
+}
+
+skynet.register_protocol {
+	name = "SYSTEM",
+	id = skynet.PTYPE_SYSTEM,
+	unpack = function(...) return ... end,
+	dispatch = function()
+		print("SIGHUP")
+	end
+}
 
 skynet.start(function()
 	skynet.dispatch("lua", function (_, _, cmd, ...)
@@ -38,13 +64,7 @@ skynet.start(function()
 			skynet.retpack(nil)
 		end
 	end)
-
-	require "skynet.manager"
-	local handle = skynet.localname ".logd"
-	if handle then
-		skynet.exit()
-		return handle
-	end
-
-	skynet.register ".logd"
 end)
+
+
+

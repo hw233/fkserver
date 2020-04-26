@@ -25,11 +25,12 @@ local level_fmts = {
 local function log_out(s,level)
     skynet.send(logd, "lua","do_log",SERVICE_NAME,s)
 
-    if level and level_fmts[level] then 
-        print(string.format(level_fmts[level],s)) 
+    local level_fmt = level and level_fmts[level] or nil
+    if level_fmt then 
+        print(string.format(level_fmt,s)) 
         return
     end
-    
+
     print(s)
 end
 
@@ -132,20 +133,20 @@ local function log_dump(value,description,nesting)
             end
         end
     end
-    dump_(value, desciption, "- ", 1)
+    dump_(value, description, "- ", 1)
 
     return table.concat(result,"\n")
 end
 
 function log.dump(value,description,nesting)
-    local str = log_dump(value,desciption,nesting)
+    local str = log_dump(value,description,nesting)
     local d = debuginfo()
     local s = string.format("%s %-8s",strtime(),"DUMP") .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s .. "\n" .. str)
 end
 
 skynet.init(function()
-	logd = skynet.uniqueservice("service.logd")
+	logd =  skynet.localname ".logger"
 end)
 
 return log
