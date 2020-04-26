@@ -549,7 +549,7 @@ function base_club:incr_money(item,why,why_ext)
 	log.info("base_club:incr_money club[%d] money_id[%d]  money[%d]" ,self.id, item.money_id, item.money)
     log.info("base_club:incr_money money[%d] - p[%d]" , oldmoney,item.money)
     
-    if oldmoney + item.money_id <= 0 then
+    if oldmoney + item.money <= 0 then
         log.warning("base_club:incr_money club[%d] money_id [%d] money[%d] not enough.",self.id,item.money_id,item.money)
         return
     end
@@ -572,9 +572,9 @@ function base_club:incr_money(item,why,why_ext)
 	if dboldmoney ~= oldmoney then
 		log.error("db incrmoney error,club[%s] money_id[%s] dboldmoney[%s] oldmoney[%s] ",self.id,item.money_id,oldmoney,dboldmoney)
 		-- return
-	end
+    end
 
-    local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),item.money_id,item.money))
+    local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),math.floor(item.money_id),math.floor(item.money)))
     log.dump(dbnewmoney)
     log.dump(newmoney)
     if dbnewmoney ~= newmoney then
