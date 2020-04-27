@@ -488,13 +488,15 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
     return enum.ERROR_NONE,info
 end
 
-function base_club:notify_money()
-    onlineguid.send(self.owner,"SYNC_OBJECT",util.format_sync_info(
+function base_club:notify_money(money_id)
+    local admins = table.series(club_role[self.id],function(_,guid) return guid end)
+    onlineguid.broadcast(admins,"SYNC_OBJECT",util.format_sync_info(
         "CLUB",{
             id = self.id,
         },{
-            money = club_money[self.id][club_money_type[self.id]],
+            money = club_money[self.id][money_id],
             commission = club_commission[self.id],
+            money_id = money_id,
         }
     ))
 end
@@ -520,7 +522,7 @@ function base_club:incr_commission(money,round_id)
         money_id = money_id,
     })
 
-    self:notify_money()
+    self:notify_money(money_id)
     return newmoney
 end
 
@@ -534,11 +536,12 @@ function base_club:exchange_commission(count)
     if count > commission then return enum.ERROR_LESS_MIN_LIMIT  end
 
     reddb:incrby(string.format("club:commission:%d",self.id),-math.floor(count))
+    local money_id = club_money_type[self.id]
     self:incr_money({
-        money_id = club_money_type[self.id],
+        money_id = money_id,
         money = count,
     },enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
-    self:notify_money()
+    self:notify_money(money_id)
 
     return enum.ERROR_NONE
 end
@@ -584,7 +587,7 @@ function base_club:incr_money(item,why,why_ext)
     
     club_money[self.id][item.money_id] = nil
 	log.info("incr_money  end oldmoney[%s] new_money[%s]" , oldmoney, newmoney)
-	self:notify_money()
+	self:notify_money(item.money_id)
 	return oldmoney,newmoney
 end
 
