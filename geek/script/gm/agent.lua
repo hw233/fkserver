@@ -69,7 +69,7 @@ function agent.start(proto,handle)
     
         local code, url, method, header, body = httpd.read_request(interface.read)
         if not code then
-            error("accept request error,%d",url)
+            log.error("accept request error,code:%s,url:%s",code,url)
             return
         end
 
