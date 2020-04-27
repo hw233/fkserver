@@ -353,6 +353,13 @@ function on_cs_club_invite_join_club(msg,guid)
     end
 
     if invite_type == "invite_join" then
+        if not base_players[invitee] then
+            onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                    result = enum.ERROR_PLAYER_NOT_EXIST
+                })
+            return
+        end
+
         local root = club_utils.root(club)
         for cid,_ in pairs(player_club[invitee][enum.CT_UNION]) do
             local c = base_clubs[cid]
