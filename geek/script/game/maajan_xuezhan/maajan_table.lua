@@ -266,6 +266,16 @@ end
 function maajan_table:fast_start_vote_req(player)
     local player_count = table.sum(self.players,function(p) return 1 end)
     if player_count < 2 then
+        send2client_pb(player,"SC_VoteTableReq",{
+            result = enum.ERROR_OPERATION_INVALID
+        })
+        return
+    end
+
+    if self.co then
+        send2client_pb(player,"SC_VoteTableReq",{
+            result = enum.ERROR_OPERATION_REPEATED
+        })
         return
     end
 
@@ -280,6 +290,7 @@ end
 
 function maajan_table:fast_start_vote(player)
     self:update_state(FSM_S.FAST_START_VOTE)
+    
     local timeout = 60
     self:broadcast2client("SC_VoteTableReq",{
         vote_type = "FAST_START",
