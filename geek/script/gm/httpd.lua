@@ -12,7 +12,7 @@ function httpd.open(conf,dispatch)
     end
 
     listend = socket.listen(host,port,conf.backlog)
-    log.info("Listen web port %d",conf.port)
+    log.info("Listen web host: %s,port:%d",host,port)
     socket.start(listend,dispatch)
 end
 
