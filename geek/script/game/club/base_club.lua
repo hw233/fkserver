@@ -591,6 +591,10 @@ function base_club:incr_money(item,why,why_ext)
 	return oldmoney,newmoney
 end
 
+function base_club:check_money_limit(money,money_id)
+    local self_money = club_money[self.id][money_id] or 0
+    return self_money < money
+end
 
 
 return base_club

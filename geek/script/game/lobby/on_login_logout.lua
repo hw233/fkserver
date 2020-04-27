@@ -895,17 +895,16 @@ local function check_create_table_limit(player,rule,club)
 			return enum.ERROR_LESS_MIN_LIMIT
 		end
 	elseif payopt == enum.PAY_OPTION_BOSS then
-		if not club then return
-			enum.ERORR_PARAMETER_ERROR
+		if not club then 
+			return enum.ERORR_PARAMETER_ERROR
 		end
 		
 		local root = club_utils.root(club)
-		if not root then return
-			enum.ERORR_PARAMETER_ERROR
+		if not root then 
+			return enum.ERORR_PARAMETER_ERROR
 		end
 
-		local boss = base_players[root.owner]
-		if boss:check_money_limit(roomfee,0) then
+		if root:check_money_limit(roomfee,0) then
 			return enum.ERROR_LESS_MIN_LIMIT
 		end
 	end

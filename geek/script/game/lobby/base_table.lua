@@ -1191,11 +1191,10 @@ function base_table:cost_private_fee()
 			return
 		end
 
-		local boss = base_players[root.owner]
-		boss:cost_money({{
+		root:incr_money({
 			money_id = 0,
-			money = money,
-		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
+			money = - money,
+		},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
 	elseif pay.option == enum.PAY_OPTION_ROOM_OWNER then
 		local owner = base_players[private_table.owner]
 		if not owner then
