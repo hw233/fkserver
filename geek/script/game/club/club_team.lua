@@ -1,4 +1,5 @@
 local redisopt = require "redisopt"
+require "functions"
 
 local reddb = redisopt.default
 
@@ -6,11 +7,8 @@ local club_team = {}
 
 setmetatable(club_team,{
     __index = function(t,club_id)
-        local ms = {}
         local teams = reddb:smembers("club:team:"..tostring(club_id))
-        for _,tid in pairs(teams) do
-            ms[tonumber(tid)] = true
-        end
+        local ms = table.map(teams,function(tid) return tonumber(tid),true end)
 
         -- t[club_id] = ms --多游服情况下，不缓存
         return ms
