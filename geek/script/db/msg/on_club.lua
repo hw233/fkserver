@@ -88,13 +88,11 @@ function on_sd_batch_join_club(msg)
     local money_id = res[1].money_id
 
     local sqls = {
-        "INSERT INTO t_club_member(club,guid,status) VALUES"..table.concat(table.agg(guids,{},function(tb,guid)
-            table.insert(tb,string.format("(%d,%d,0)",club_id, guid))
-            return tb
+        "INSERT INTO t_club_member(club,guid,status) VALUES"..table.concat(table.series(guids,function(guid)
+            return string.format("(%d,%d,0)",club_id, guid)
         end),",")..";",
-        "INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES"..table.concat(table.agg(guids,{},function(tb,guid)
-            table.insert(tb,string.format("(%d,%d,0,0)",guid,money_id))
-            return tb
+        "INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES"..table.concat(table.series(guids,function(guid)
+            return string.format("(%d,%d,0,0)",guid,money_id)
         end),",")..";",
     }
 
