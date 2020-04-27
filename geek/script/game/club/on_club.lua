@@ -88,11 +88,10 @@ end
 local function import_union_player_from_group(from,to)
     local root = club_utils.root(to)
     local members = club_member[from.id]
-    local guids = table.agg(members or {},{},function(tb,_,guid)
+    local guids = table.series(members or {},function(_,guid)
         if not recusive_is_in_club(root,guid) then
-            table.insert(tb,guid)
+            return guid
         end
-        return tb
     end)
 
     if table.nums(guids) == 0 then
@@ -439,11 +438,10 @@ end
 local function get_club_tables(club)
     if not club then return {} end
     local ct = club_table[club.id] or {}
-    local tables = table.agg(ct,{},function(tb,_,tid)
+    local tables = table.series(ct,function(_,tid)
         local priv_tb = base_private_table[tid]
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-        table.insert(tb,tableinfo)
-        return tb
+        return tableinfo
     end)
 
     return tables
@@ -475,10 +473,7 @@ local function get_club_templates(club,getter_role)
     if not club then return {} end
 
     local ctt = club_template[club.id] or {}
-    local templates = table.agg(ctt,{},function(tb,_,tid)
-        table.insert(tb,table_template[tid])
-        return tb
-    end)
+    local templates = table.series(ctt,function(_,tid) return table_template[tid] end)
 
     table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
 
@@ -487,14 +482,12 @@ end
 
 local function get_visiable_club_templates(club,getter_role)
     local templates = get_club_templates(club,getter_role)
-    return table.agg(templates,{},function(tb,template)
+    return table.series(templates,function(template)
         local visiable = is_template_visiable(club,template)
         if  visiable or
             getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
-            table.insert(tb,template)
+            return template
         end
-
-        return tb
     end)
 end
 
@@ -519,7 +512,7 @@ function on_cs_club_detail_info_req(msg,guid)
     local ss = channel.query()
     local games = table.agg(ss,{},function(tb,_,sid)
         local id = sid:match("service%.(%d+)")
-        if not id then return tb end
+        if not id then  return tb end
 
         local conf = serviceconf[tonumber(id)]
         if conf.name ~= "game" then return tb end
@@ -624,6 +617,9 @@ function on_cs_club_detail_info_req(msg,guid)
         money = {{
             money_id = money_id,
             count = club_money[club_id][money_id] or 0
+        },{
+            money_id = 0,
+            count = club_money[club_id][0] or 0,
         }},
         money_id = money_id,
         commission = (role == enum.CRT_BOSS or role == enum.CRT_ADMIN) and club_commission[club_id] or 0,
@@ -647,8 +643,8 @@ function on_cs_club_detail_info_req(msg,guid)
         table_list = tables,
         gamelist = real_games,
         fast_templates = get_fast_templates(club_id),
-        table_templates = table.agg(templates,{},function(tb,template)
-            table.insert(tb,{
+        table_templates = table.series(templates,function(template)
+            return {
                 club_id = template.club_id,
                 template = {
                     template_id = template.template_id,
@@ -656,8 +652,7 @@ function on_cs_club_detail_info_req(msg,guid)
                     description = template.description,
                     rule = json.encode(template.rule),
                 }
-            })
-            return tb
+            }
         end),
     }
 
@@ -666,9 +661,8 @@ end
 
 function on_cs_club_list(msg,guid)
     log.info("on_cs_club_list,guid:%s,%s,%s",guid,msg.type,msg.owned_myself)
-    local clubs = table.agg(player_club[guid][msg.type or enum.CT_DEFAULT],{},function(tb,_,cid) 
-        table.insert(tb,base_clubs[cid])
-        return tb
+    local clubs = table.series(player_club[guid][msg.type or enum.CT_DEFAULT],function(_,cid)
+        return base_clubs[cid]
     end)
 
     if msg.owned_myself then
