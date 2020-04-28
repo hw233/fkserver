@@ -405,3 +405,14 @@ message S2C_IMPORT_PLAYER_FROM_GROUP{
     enum MsgID {NIL = 0;ID = 14094;}
     int32 result = 1;
 }
+
+message C2S_CLUB_FORCE_DISMISS_TABLE{
+    enum MsgID {NIL = 0;ID = 14095;}
+    int32 club_id = 1;
+    int32 table_id = 2;
+}
+
+message S2C_CLUB_FORCE_DISMISS_TABLE{
+    enum MsgID {NIL = 0;ID = 14096;}
+    int32 result = 1;
+}

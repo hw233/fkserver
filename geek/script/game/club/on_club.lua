@@ -30,6 +30,7 @@ local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
 local club_fast_template = require "game.club.club_fast_template"
+local base_private_table = require "game.lobby.base_private_table"
 require "functions"
 
 local g_room = g_room
@@ -1957,5 +1958,53 @@ function on_cs_config_fast_game_list(msg,guid)
         result = enum.ERROR_NONE,
         club_id = club_id,
         template_ids = template_ids,
+    })
+end
+
+function on_cs_force_dismiss_table(msg,guid)
+    local club_id = msg.club_id
+    local table_id = msg.table_id
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    club = club_utils.root(club)
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end 
+
+    local tb = base_private_table[table_id]
+    if not tb then
+        onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
+            result = enum.ERROR_TABLE_NOT_EXISTS
+        })
+        return
+    end
+
+    if tb.room_id ~= def_game_id then
+        channel.publish("game."..tostring(tb.room_id),"msg","C2S_CLUB_FORCE_DISMISS_TABLE",msg,guid)
+        return
+    end
+
+    local succ = g_room:force_dismiss_table(tb.real_table_id)
+    onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
+            result = succ
     })
 end

@@ -954,7 +954,7 @@ function on_cs_create_private_room(msg,guid)
 		template = table_template[template_id]
 		if not template then
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_TEMPLATE_NOT_EXISTS
 			})
 			return
 		end
@@ -977,7 +977,7 @@ function on_cs_create_private_room(msg,guid)
 		club = base_clubs[club_id]
 		if not club then 
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERORR_PARAMETER_ERROR,
+				result = enum.ERROR_CLUB_NOT_FOUND,
 			})
 			return
 		end

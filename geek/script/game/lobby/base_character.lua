@@ -146,7 +146,7 @@ function base_character:forced_exit()
 	end
 
 	g_room:player_exit_room(self)
-	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,success",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
+	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,enum.STANDUP_REASON_FORCE)
 end
 
 function base_character:forced_logout()

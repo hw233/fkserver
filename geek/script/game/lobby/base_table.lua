@@ -947,7 +947,6 @@ function base_table:player_stand_up(player, reason)
 			p:notify_stand_up(player)
 		end)
 
-		self.players[chairid] = nil
 		player.table_id = nil
 		player.chair_id = nil
 
@@ -974,6 +973,8 @@ function base_table:player_stand_up(player, reason)
 		if self.private_id and player_count == 1 then
 			self:dismiss()
 		end
+
+		self.players[chairid] = nil
 
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"table")
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"chair")
@@ -1081,7 +1082,8 @@ end
 
 function base_table:can_stand_up(player,reason)
 	if reason == enum.STANDUP_REASON_OFFLINE or 
-		reason == enum.STANDUP_REASON_FORCE then
+		reason == enum.STANDUP_REASON_FORCE or 
+		reason == enum.STANDUP_REASON_DISMISS then
 		--掉线 用于结算
 		log.info("set Dropped true")
 		return true
