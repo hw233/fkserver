@@ -257,16 +257,8 @@ function base_table:commit_dismiss(player,agree)
 	
 	local result = self:dismiss()
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		self:broadcast2client("SC_DismissTable",{
-			success = result == enum.ERROR_NONE,
-		})
-
 		return
 	end
-
-	self:broadcast2client("SC_DismissTable",{
-			success = true,
-		})
 
 	self:foreach(function(p)
 		p:forced_exit(enum.STANDUP_REASON_DISMISS)

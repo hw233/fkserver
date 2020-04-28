@@ -288,10 +288,6 @@ function base_room:force_dismiss_table(table_id)
 		return result
 	end
 
-	tb:broadcast2client("SC_DismissTable",{
-		success = true,
-	})
-
 	tb:foreach(function(p)
 		p:forced_exit(enum.STANDUP_REASON_DISMISS)
 	end)
