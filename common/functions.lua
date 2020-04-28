@@ -419,7 +419,7 @@ end
 
 function table.nums(t)
     local count = 0
-    for _,_ in pairs(t) do
+    for _,_ in pairs(t or {}) do
         count = count + 1
     end
     return count
@@ -429,8 +429,8 @@ table.count = table.nums
 
 function table.series(tb,fn)
     local s = {}
-    for k,v in pairs(tb) do
-        if fn then v = fn(v,k) end
+    for k,v in pairs(tb or {}) do
+        v = fn and fn(v,k) or v
         if v then table.insert(s,v) end
     end
 
@@ -439,8 +439,8 @@ end
 
 function table.keys(tb)
     local keys = {}
-    for k, _ in pairs(tb) do
-        keys[#keys + 1] = k
+    for k, _ in pairs(tb or {}) do
+        table.insert(keys,k)
     end
     return keys
 end
@@ -454,25 +454,44 @@ function table.values(tb)
 end
 
 function table.merge(dest,src,agg)
-    local ret = clone(dest)
+    local ret = {}
 
-    for k,v in pairs(src) do
-        ret[k] = agg(ret[k],v)
+    for k,v in pairs(src or {}) do
+        ret[k] = agg and agg(dest[k],v) or v
+    end
+
+    return ret
+end
+
+function table.merge_x(src,fn,dest)
+    local ret = {}
+
+    for k,v in pairs(src or {}) do
+        ret[k] = fn and fn(dest[k],v) or v
     end
 
     return ret
 end
 
 function table.mergeto(dest, src, agg)
-    for k, v in pairs(src) do
+    dest = dest or {}
+    for k, v in pairs(src or {}) do
         dest[k] = agg and agg(dest[k],v) or v
+    end
+    return dest
+end
+
+function table.mergeto_x(src,fn,dest)
+    dest = dest or {}
+    for k, v in pairs(src or {}) do
+        dest[k] = fn and fn(dest[k],v) or v
     end
     return dest
 end
 
 function table.merge_tables(tbs,agg)
     local r = {}
-    for _,tb in pairs(tbs) do
+    for _,tb in pairs(tbs or {}) do
         table.mergeto(r,tb,agg)
     end
     return r
@@ -500,7 +519,7 @@ function table.indexof(array, value, begin)
 end
 
 function table.keyof(hashtable, value)
-    for k, v in pairs(hashtable) do
+    for k, v in pairs(hashtable or {}) do
         local is = type(value) == "function" and value(v,k) or value == v
         if is then return k end
     end
@@ -523,54 +542,60 @@ function table.removebyvalue(array, value, removeall)
 end
 
 function table.map(t,fn)
+    if not t or not fn then return {} end
+
     local ret = {}
-    for k,v in pairs(t) do
+    for k,v in pairs(t or {}) do
         local k1,v1 = fn(v,k)
         if k1 then ret[k1] = v1 end
     end
+
     return ret
 end
 
 table.pick = table.map
 
 function table.ref_map(t, fn)
-    for k, v in pairs(t) do
+    for k, v in pairs(t or {}) do
         t[k] = fn(v, k)
     end
 end
 
 function table.group(t,fn)
     local g = {}
-    for k,v in pairs(t) do
+    for k,v in pairs(t or {}) do
         local x = fn(v,k)
-        g[x] = g[x] or {}
+        g[x] = g[x]  or {}
         g[x][k] = v
     end
     return g
 end
 
 function table.walk(t, fn,on)
-    for k,v in pairs(t) do
+    for k,v in pairs(t or {}) do
         if not on or on(v,k) then fn(v, k) end
     end
 end
 
 function table.filter(t, fn)
-    for k, v in pairs(t) do
-        if not fn(v, k) then t[k] = nil end
+    for k, v in pairs(t or {}) do
+        if fn and not fn(v, k) then t[k] = nil end
     end
 end
 
 function table.select(t,fn)
     local tb = {}
-    for k,v in pairs(t) do
-        if fn(v,k) then tb[k] = v end
+
+    for k,v in pairs(t or {}) do
+        tb[k] = (fn and fn(v,k)) and v  or nil
     end
 
     return tb
 end
 
 function table.unique_value(t)
+    if not t then return {} end
+
     local check = {}
     local n = {}
     for k, v in pairs(t) do
@@ -619,7 +644,7 @@ function table.choice(t)
 end
 
 function table.merge_back(dst,tb,func)
-    for _,v in pairs(tb) do 
+    for _,v in pairs(tb or {}) do 
         table.insert(dst,(func and func(v) or v))
     end
 	return dst
@@ -630,25 +655,36 @@ function table.push_back(dst,v)
 end
 
 function table.union(dst,src,agg)
-    local tb = clone(dst)
-    for k,v in pairs(src) do
+    dst = dst or {}
+
+    local tb = {}
+    for k,v in pairs(dst or {}) do
+        table.insert(tb,agg and agg(v,k) or v)
+    end
+
+    for k,v in pairs(src or {}) do
         table.insert(tb,agg and agg(v,k) or v)
     end
     return tb
 end
 
 function table.unionto(dst,src,agg)
-    for k,v in pairs(src) do
+    dst = dst or {}
+
+    for k,v in pairs(src or {}) do
         table.insert(dst,agg and agg(v,k) or v)
     end
+
     return dst
 end
 
 function table.union_tables(tbs,agg)
     local t = {}
-    for _,tb in pairs(tbs) do
+
+    for _,tb in pairs(tbs or {}) do
         table.unionto(t,tb,agg)
     end
+
     return t
 end
 
@@ -692,7 +728,7 @@ end
 
 function table.sum(tb,agg)
     local value = 0
-    for k,v in pairs(tb) do
+    for k,v in pairs(tb or {}) do
         value = value + (agg and agg(v,k) or tonumber(v))
     end
 
@@ -701,7 +737,7 @@ end
 
 function table.min(tb,agg)
     local mini,minv
-    for i,v in pairs(tb) do
+    for i,v in pairs(tb or {}) do
         local aggv = agg and agg(v,i) or v
         if not minv or aggv < minv then
             minv = aggv
@@ -713,7 +749,7 @@ end
 
 function table.max(tb,agg)
     local maxi,maxv
-    for i,v in pairs(tb) do
+    for i,v in pairs(tb or {}) do
         local aggv = agg and agg(v,i) or v
         if not maxv or aggv > maxv then
             maxv = aggv
@@ -724,7 +760,7 @@ function table.max(tb,agg)
 end
 
 function table.logic_and(tb,agg)
-    for k,v in pairs(tb) do
+    for k,v in pairs(tb or {}) do
         if not agg(v,k) then return false end
     end
 
@@ -732,7 +768,7 @@ function table.logic_and(tb,agg)
 end
 
 function table.logic_or(tb,agg)
-    for k,v in pairs(tb) do
+    for k,v in pairs(tb or {}) do
         if agg(v,k) then return true end
     end
 
@@ -740,26 +776,26 @@ function table.logic_or(tb,agg)
 end
 
 function table.foreach(tb,op,on)
-    for k,v in pairs(tb) do
+    for k,v in pairs(tb or {}) do
         if not on or on(v,k) then op(v,k) end
     end
 end
 
 function table.agg(tb,init,agg_op)
-    local ret = init
-    for k,v in pairs(tb) do ret = agg_op(ret,v,k) end
+    local ret = init or {}
+    for k,v in pairs(tb or {}) do ret = agg_op(ret,v,k) end
     return ret
 end
 
 function table.ref_broadcast(tb,func)
-    for k,v in pairs(tb) do 
+    for k,v in pairs(tb or {}) do 
         tb[k] = func(v,k)
     end
 end
 
 function table.broadcast(tb,func)
     local r = {}
-    for k,v in pairs(tb) do r[k] = func(v,k) end
+    for k,v in pairs(tb or {}) do r[k] = func(v,k) end
     return r
 end
 
