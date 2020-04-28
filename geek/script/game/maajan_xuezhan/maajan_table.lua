@@ -154,62 +154,22 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
     return base_table.player_sit_down(self,player,chair_id,reconnect)
 end
 
-function maajan_table:commit_dismiss(player,agree)
-	if not self.dismiss_request then
-		log.error("commit dismiss but not dismiss request,guid:%d,agree:%s",player.guid,agree)
-		return enum.ERROR_OPERATION_EXPIRE
+function maajan_table:on_private_pre_dismiss()
+    self:on_final_game_overed()
+end
+
+function maajan_table:check_dismiss_commit(agrees)
+    if table.sum(agrees,function(agree) return not agree and 1 or 0  end) > 0 then
+		return
 	end
 
-	local commissions = self.dismiss_request.commissions
-	agree = agree and agree == true or false
-
-	commissions[player.chair_id] = agree and agree == true or false
-
-	self:broadcast2client("SC_DismissTableCommit",{
-		chair_id = player.chair_id,
-		guid = player.guid,
-		agree = agree,
-	})
-
-	if not agree and self.conf.conf.room.dismiss_all_agree then
-		self:broadcast2client("SC_DismissTable",{
-			success = false,
-		})
-
-		self.dismiss_request.timer:kill()
-		self.dismiss_request.timer = nil
-		self.dismiss_request = nil
-		return
-    end
-
-    local agree_count = table.sum(self.players,function(p) return commissions[p.chair_id] and 1 or 0 end)
+    local agree_count = table.sum(self.players,function(p) return agrees[p.chair_id] and 1 or 0 end)
     local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.floor(table.nums(self.players) / 2) + 1
 	if agree_count < agree_count_at_least then
-		return
-	end
+		return false
+    end
 
-	self.dismiss_request.timer:kill()
-	self.dismiss_request.timer = nil
-	self.dismiss_request = nil
-
-	self:on_final_game_overed()
-	
-	local result = self:dismiss()
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		self:broadcast2client("SC_DismissTable",{
-			success = result == enum.ERROR_NONE,
-		})
-
-		return
-	end
-
-	self:broadcast2client("SC_DismissTable",{
-			success = true,
-		})
-
-	self:foreach(function(p)
-		p:forced_exit()
-	end)
+    return true
 end
 
 function base_table:check_start()
