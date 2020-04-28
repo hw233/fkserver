@@ -58,7 +58,7 @@ function on_sl_log_game(msg)
     end
 
     local log_round_sql = table.concat(table.series(msg.log.players,function(p)
-        return string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,msg.log.club)
+        return string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,msg.log.club or "NULL")
     end),",")
 
     ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid,club) VALUES" .. log_round_sql .. ";")
