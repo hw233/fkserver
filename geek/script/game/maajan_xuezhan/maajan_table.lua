@@ -155,7 +155,9 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
 end
 
 function maajan_table:on_private_pre_dismiss()
-    self:on_final_game_overed()
+    if self.cur_round and self.cur_round > 0 then
+        self:on_final_game_overed()
+    end
 end
 
 function maajan_table:check_dismiss_commit(agrees)
@@ -1986,7 +1988,7 @@ function maajan_table:on_final_game_overed()
                 chair_id = chair,
                 guid = p.guid,
                 score = p.total_score or 0,
-                statistics = table.series(p.statistics,function(c,t) return {type = t,count = c} end),
+                statistics = table.series(p.statistics or {},function(c,t) return {type = t,count = c} end),
             }
         end),
     })
