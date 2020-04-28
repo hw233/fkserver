@@ -14,6 +14,7 @@ enum ERROR_CODE {
     ERROR_REQUEST_REPEATED = 105;   //重复申请
     ERROR_LESS_ROOM_CARD = 107;     //房卡不足
     ERROR_OPERATION_REPEATED = 108;        //重复操作
+    ERROR_TEMPLATE_NOT_EXISTS = 109; //模板不存在
     ERROR_PLAYER_IS_LOCKED = 224;//玩家已经被封号，限制登录
 
     ERROR_GAME_MAINTAIN = 225;//即将进入维护
