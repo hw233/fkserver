@@ -8,6 +8,8 @@ local nameservice = require "nameservice"
 local log = require "log"
 local redisopt = require "redisopt"
 
+local reddb = redisopt.default
+
 local clusterid = skynet.getenv("clusterid")
 clusterid = tonumber(clusterid)
 
@@ -127,7 +129,6 @@ local function setupbootcluster()
 end
 
 local function clean_when_start()
-    local reddb = redisopt.default
     local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*"}
     for _,pattern in pairs(key_patterns) do
 		local keys = reddb:keys(pattern)
@@ -135,6 +136,15 @@ local function clean_when_start()
             log.info("redis del %s",key)
             reddb:del(key)
         end
+    end
+end
+
+local function setup_default_redis_value()
+    local global_cfg = channel.call("config.?","msg","global_conf")
+    local first_guid = global_cfg.first_guid or 100001
+    local exists = reddb:exists("player:global:guid")
+    if not exists or exists == 0 then
+        reddb:set("player:global:guid",math.floor(first_guid))
     end
 end
 
@@ -159,6 +169,7 @@ local function setup()
     end
 
     clean_when_start()
+    setup_default_redis_value()
 end
 
 skynet.start(function()
