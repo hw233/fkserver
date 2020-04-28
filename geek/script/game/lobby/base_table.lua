@@ -554,7 +554,7 @@ function base_table:on_game_overed()
 		local is_bankruptcy = false
 		local private_table = base_private_table[self.private_id]
 		local club = base_clubs[private_table.club_id]
-		if club.type == enum.CT_UNION then
+		if club and club.type == enum.CT_UNION then
 			local bankruptcy = self:check_bankruptcy()
 			for guid,is in pairs(bankruptcy) do
 				is_bankruptcy = is_bankruptcy or is
@@ -1243,7 +1243,7 @@ end
 function base_table:balance(moneies,why)
 	log.dump(moneies)
 
-	local money_id = self:get_money_id()
+	local money_id = self:get_money_id() or -1
 
 	if self.private_id and self.conf.club and self.conf.club.type  == enum.CT_UNION then
 		local minrate = 1
