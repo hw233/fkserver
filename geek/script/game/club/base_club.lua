@@ -424,7 +424,7 @@ function base_club:remove_table_template(template_id)
     end
 
     template_id = tonumber(template_id)
-    reddb:del(string.format("template:%d",template_id))
+    reddb:hmset(string.format("template:%d",template_id),{ status = 1 })
     reddb:del(string.format("template:%d:%d",self.id,template_id))
     reddb:srem(string.format("club:template:%d",self.id),template_id)
     table_template[template_id] = nil
