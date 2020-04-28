@@ -340,6 +340,7 @@ function maajan_table:fast_start_vote(player)
         self:broadcast2client("SC_VoteTable",{success = all_agree})
         if not all_agree then
             self:update_state(nil)
+            self.co = nil
             return true
         end
 
