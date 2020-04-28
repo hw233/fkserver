@@ -26,7 +26,7 @@ function on_sd_create_club(msg)
         string.format([[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],money_info.id,club_info.id),
         string.format([[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id),
         string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],club_info.id,club_info.owner),
-        string.format([[INSERT INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]], club_info.owner,money_info.id),
+        string.format([[INSERT IGNORE INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]], club_info.owner,money_info.id),
     }
 
     log.dump(transqls)
