@@ -24,20 +24,6 @@ local get_init_regmoney = get_init_regmoney
 local def_save_db_time = 60 -- 1分钟存次档
 local def_offline_cache_time = 600 -- 离线玩家数据缓存10分钟
 
-local LOG_MONEY_OPT_TYPE_RECHARGE_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_RECHARGE_MONEY")
-local LOG_MONEY_OPT_TYPE_CASH_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_CASH_MONEY")
-local LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE")
-local LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY")
-local LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY")
-local LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY")
-local LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY")
-local LOG_MONEY_OPT_TYPE_SAVE_BACK = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_SAVE_BACK")
-
-local LOGIN_RESULT_DB_ERR = pb.enum("LOGIN_RESULT","LOGIN_RESULT_DB_ERR")
-local LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT = pb.enum("LOGIN_RESULT","LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT")
-local LOGIN_RESULT_CREATE_MAX = pb.enum("LOGIN_RESULT","LOGIN_RESULT_CREATE_MAX")
-local LOGIN_RESULT_NEED_INVITE_CODE = pb.enum("LOGIN_RESULT","LOGIN_RESULT_NEED_INVITE_CODE")
-
 local GMmessageRetCode_ReChargeDBSetError = pb.enum("GMmessageRetCode", "GMmessageRetCode_ReChargeDBSetError")
 local GMmessageRetCode_Success = pb.enum("GMmessageRetCode", "GMmessageRetCode_Success")
 
@@ -432,15 +418,15 @@ function agent_transfer(guid_ ,gameid , data)
 				log.info(ret.err)
 			end
 			--插入金钱记录
-			local log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+			local log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			if tonumber(Agentdatainfo.transfer_type) == 0 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			elseif tonumber(Agentdatainfo.transfer_type) == 1 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
 			elseif tonumber(Agentdatainfo.transfer_type) == 2 then
-				log_money_type = LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
 			elseif tonumber(Agentdatainfo.transfer_type) == 3 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
 			end
 			log.info("guid[%d] transfer_id[%s] transfer_type[%d] log_Type [%d]",guid_,Agentdatainfo.transfer_id,Agentdatainfo.transfer_type,log_money_type)
 			-- 入代理商日志表
@@ -548,7 +534,7 @@ function  online_proc_recharge_order(guid_ ,gameid , data)		-- 该功能暂时�
 				new_money = data.money,
 				old_bank =  Tbefore_bank,
 				new_bank =  Tafter_bank,
-				opt_type = LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+				opt_type = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
 			}		
 			dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$", log_money_)
 			if Tnum ==  Ttotal then
@@ -600,7 +586,7 @@ function proc_recharge_order( guid_ , data , opttype ,last_login_channel_id )		-
 					new_money = 0,
 					old_bank =  v.oldbank,
 					new_bank =  v.newbank,
-					opt_type = LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+					opt_type = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
 					}
 				
 				dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$", log_money_)
@@ -649,7 +635,7 @@ function proc_recharge_order( guid_ , data , opttype ,last_login_channel_id )		-
 					new_money = 0,
 					old_bank =  v.oldbank,
 					new_bank =  v.newbank,
-					opt_type = LOG_MONEY_OPT_TYPE_SAVE_BACK,
+					opt_type = enum.LOG_MONEY_OPT_TYPE_SAVE_BACK,
 					}
 				dbopt.log:execute("INSERT INTO t_log_money SET $FIELD$", log_money_)
 			end
@@ -1016,15 +1002,15 @@ function add_player_money(notify ,proxy_before_money,  proxy_after_money)
 			notify.newmoney = data.newbank
 
 			-- 入金币流水日志表
-			local log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+			local log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			if tonumber(notify.transfer_type) == 0 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			elseif tonumber(notify.transfer_type) == 1 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
 			elseif tonumber(notify.transfer_type) == 2 then
-				log_money_type = LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
 			elseif tonumber(notify.transfer_type) == 3 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
 			end
 			log.info("add_player_money transfer_id [%s] log_money_type is [%d]",notify.transfer_id,log_money_type)
 			local log_money_= {
@@ -1133,15 +1119,15 @@ function cost_agent_money(notify)
 			notify.newmoney = data.newbank
 
 			-- 入金币流水日志表
-			local log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+			local log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			if tonumber(notify.transfer_type) == 0 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOAGENT_MONEY
 			elseif tonumber(notify.transfer_type) == 1 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTTOPLAYER_MONEY
 			elseif tonumber(notify.transfer_type) == 2 then
-				log_money_type = LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY
 			elseif tonumber(notify.transfer_type) == 3 then
-				log_money_type = LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
+				log_money_type = enum.LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY
 			end
 			log.info("cost_agent_money transfer_id [%s] log_money_type is [%d]",notify.transfer_id,log_money_type)
 			local log_money_= {
@@ -1717,7 +1703,7 @@ function on_ld_verify_account(msg)
 	if not reply then
 		reply = {}
 		log.error( "verify account[%s] failed", account )
-		reply.ret = LOGIN_RESULT_DB_ERR
+		reply.ret = enum.LOGIN_RESULT_DB_ERR
 		reply.account = account
 		reply.platform_id = platform_id
 		return reply
@@ -1848,7 +1834,7 @@ function on_ld_sms_login( msg )
 			reply.platform_id =  msg.platform_id
 			
 			if not msg.invite_code then
-				reply.ret =  LOGIN_RESULT_NEED_INVITE_CODE
+				reply.ret =  enum.LOGIN_RESULT_NEED_INVITE_CODE
 				return reply
 			end
 
@@ -1881,12 +1867,12 @@ function on_ld_sms_login( msg )
 			if data then
 				if data.ret == -100 then
 					log.error( "sms login ip[%s] failed", msg.ip() )
-					reply.ret = LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT 
+					reply.ret = enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT 
 				elseif (data.ret == -99) then
 					log.error( "sms login ip[%s] failed", msg.ip() )
-					reply.ret = LOGIN_RESULT_CREATE_MAX 
-				elseif data.ret ~= LOGIN_RESULT_NEED_INVITE_CODE then
-					reply.ret = LOGIN_RESULT_NEED_INVITE_CODE 
+					reply.ret = enum.LOGIN_RESULT_CREATE_MAX 
+				elseif data.ret ~= enum.LOGIN_RESULT_NEED_INVITE_CODE then
+					reply.ret = enum.LOGIN_RESULT_NEED_INVITE_CODE 
 				else 
 					sql = string.format([[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`, `login_version`,
 									`login_channel_id`, `login_package_name`, `login_imei`, `login_ip`, `channel_id` , `is_guest` , `create_time` , `register_time`, `deprecated_imei` ,
@@ -2101,7 +2087,7 @@ function on_ld_cash_deal(msg )
 		if data then
 			data = data[1]
 			dbopt.log:query("INSERT INTO t_log_money (`guid`,`old_money`,`new_money`,`old_bank`,`new_bank`,`opt_type`)VALUES ('%d','%I64d','%I64d','%I64d','%I64d','%d')",
-			guid, data.money(), data.money(), data.bank() - money, data.bank(), LOG_MONEY_OPT_TYPE_CASH_MONEY)
+			guid, data.money(), data.money(), data.bank() - money, data.bank(), enum.LOG_MONEY_OPT_TYPE_CASH_MONEY)
 		end
 		return reply
 	end
@@ -2347,10 +2333,10 @@ end
 -- 修改金钱成功 
 function on_sd_changemoney( msg )
 	log.info( "on_sd_changemoney  web[%d] gudi[%d] order_id[%d] type[%d]", msg.web_id, msg.info.guid, msg.info.order_id, msg.info.type_id )
-	if msg.info.type_id == LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
+	if msg.info.type_id == enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
 		dbopt.recharge:query("UPDATE t_recharge_order SET `server_status` = '1', before_bank = '%I64d', after_bank = '%I64d' WHERE id = %d",
 				msg.befor_bank, msg.after_bank, msg.info.order_id)
-	elseif msg.info.type_id == LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
+	elseif msg.info.type_id == enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
 		dbopt.recharge:query("UPDATE t_cash SET `status_c` = '1' WHERE order_id = %d", msg.info.order_id)
 	end
 
@@ -2387,9 +2373,9 @@ local function insert_into_changemoney( msg )
 	if data > 0 then
 		log.info( "on_DF_ChangMoney  order[%d] insert t_re_recharge  true", info.order_id )
 		reply.result = 6
-		if info.type_id == LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
+		if info.type_id == enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
 			dbopt.recharge:query("UPDATE t_recharge_order SET `server_status` = '6' WHERE id = %d", info.order_id)
-		elseif info.type_id == LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
+		elseif info.type_id == enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
 			if info.order_id ~= -1 then
 				dbopt.recharge:query("UPDATE t_cash SET `status_c` = '6' WHERE order_id = %d", info.order_id)
 			end
@@ -2413,7 +2399,7 @@ function on_cash_false_changemoney( msg )
 	local web_id = msg.web_id
 	local type_id = msg.type_id
 
-	if msg.type_id ~= LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
+	if msg.type_id ~= enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
 		return
 	end
 
