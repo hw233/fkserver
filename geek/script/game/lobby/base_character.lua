@@ -129,8 +129,9 @@ function base_character:check_forced_exit(score,money_id)
 end
 
 -- 强制踢出房间
-function base_character:forced_exit()
-	log.info("force exit,guid:%s,table_id:%s,chair_id:%s",self.guid,self.chair_id,enum.STANDUP_REASON_FORCE)
+function base_character:forced_exit(reason)
+	reason = reason or enum.STANDUP_REASON_FORCE
+	log.info("force exit,guid:%s,table_id:%s,chair_id:%s",self.guid,self.chair_id,reason)
 	local tb = g_room:find_table_by_player(self)
 	if not tb then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
@@ -140,13 +141,15 @@ function base_character:forced_exit()
 	local table_id = self.table_id
 	local chair_id = self.chair_id
 
-	if not tb:player_stand_up(self,enum.STANDUP_REASON_FORCE) then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,enum.STANDUP_REASON_FORCE)
+	if not tb:player_stand_up(self,reason) then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,reason)
 		return
 	end
-
+	
 	g_room:player_exit_room(self)
-	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,enum.STANDUP_REASON_FORCE)
+
+	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.GAME_SERVER_RESULT_SUCCESS)
+	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
 end
 
 function base_character:forced_logout()

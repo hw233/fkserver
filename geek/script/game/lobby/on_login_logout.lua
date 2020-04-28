@@ -545,7 +545,7 @@ function on_cs_change_game(msg,guid)
 		if not room:is_play(player) then
 			log.info("on_cs_change_game.....................player not in play forced_exit")
 			-- 强行T下线
-			player:forced_exit();
+			player:forced_exit()
 		end
 		return
 	end

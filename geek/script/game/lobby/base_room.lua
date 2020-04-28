@@ -278,19 +278,22 @@ function base_room:save_private_table(owner,table_id,chair_id)
 end
 
 function base_room:force_dismiss_table(table_id)
-	local tb = self.tables[table_id]
+	local tb = self:find_table(table_id)
 	if not tb then
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
+	local result = tb:dismiss()
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		return result
+	end
+
+	tb:broadcast2client("SC_DismissTable",{
+		success = true,
+	})
+
 	tb:foreach(function(p)
-		local chair_id = p.chair_id
-		if not tb:player_stand_up(p,enum.STANDUP_REASON_DISMISS) then
-			log.warning("force_dismiss_table,guid:%s,table_id:%s,chair_id:%s,failed",p.guid,table_id,chair_id,enum.STANDUP_REASON_DISMISS)
-			return
-		end
-		self:player_exit_room(p)
-		p:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.GAME_SERVER_RESULT_SUCCESS)
+		p:forced_exit(enum.STANDUP_REASON_DISMISS)
 	end)
 	
 	return enum.ERROR_NONE

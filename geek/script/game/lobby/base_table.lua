@@ -235,7 +235,8 @@ function base_table:commit_dismiss(player,agree)
 		agree = agree,
 	})
 
-	if not agree then
+	local is_done = self:check_dismiss_commit(commissions)
+	if  is_done == nil then
 		self:broadcast2client("SC_DismissTable",{
 			success = false,
 		})
@@ -246,16 +247,13 @@ function base_table:commit_dismiss(player,agree)
 		return
 	end
 
-	local succ = table.logic_and(self.players,function(p) return commissions[p.chair_id] end)
-	if not succ then
+	if not is_done then
 		return
 	end
 
 	self.dismiss_request.timer:kill()
 	self.dismiss_request.timer = nil
 	self.dismiss_request = nil
-
-	self:on_final_game_overed()
 	
 	local result = self:dismiss()
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
@@ -271,10 +269,9 @@ function base_table:commit_dismiss(player,agree)
 		})
 
 	self:foreach(function(p)
-		p:forced_exit()
+		p:forced_exit(enum.STANDUP_REASON_DISMISS)
 	end)
 end
-
 
 local function get_real_club_template_conf(club,template_id)
     local conf = club_template_conf[club.id][template_id]
@@ -805,10 +802,26 @@ function base_table:on_private_dismissed()
 
 end
 
+function base_table:can_dismiss()
+	return true
+end
+
+function base_table:check_dismiss_commit(agrees)
+	if table.sum(agrees,function(agree) return not agree and 1 or 0  end) > 0 then
+		return
+	end
+
+	return table.logic_and(self.players,function(p) return agrees[p.chair_id] end)
+end
+
 function base_table:dismiss()
 	if not self.conf or not self.private_id then
 		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+	end
+
+	if not self:can_dismiss() then
+		return enum.ERROR_OPERATION_INVALID
 	end
 
 	self:on_private_pre_dismiss()
@@ -970,7 +983,7 @@ function base_table:player_stand_up(player, reason)
 			end
 		end
 
-		if self.private_id and player_count == 1 then
+		if self.private_id and player_count == 1  and reason == enum.STANDUP_REASON_NORMAL  then
 			self:dismiss()
 		end
 
