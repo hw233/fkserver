@@ -206,9 +206,9 @@ end
 
 function on_sd_remove_club_template(msg)
     log.dump(msg)
-    local res = dbopt.game:query([[UPDATE t_template SET status = 1 WHERE id = %d;]],msg.id)
+    local res = dbopt.game:query([[DELETE FROM t_template WHERE id = %d;]],msg.id)
     if res.errno then
-        log.error("on_sd_remove_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)
+        log.error("on_sd_remove_club_template DELETE template errno:%d,errstr:%s",res.errno,res.err)
     end
 end
 
