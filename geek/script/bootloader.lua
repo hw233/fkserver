@@ -30,10 +30,6 @@ local servicepath = {
     [nameservice.TNGAME] = "game.main",
 }
 
-local function isbootcluster(id)
-    return bootconf.node.id == id
-end
-
 local function isselfcluster(id)
     return clusterid == id
 end
@@ -46,7 +42,6 @@ local function launchservice(conf)
 end
 
 local function setupservice(clusterservice)
-    -- local clusterservice = channel.call(bootconf.service.name..".?","msg","query_cluster_service")
     if not clusterservice then
         log.error("cluster service is nil with cluster id %d,please check config in database.")
         return
@@ -62,8 +57,6 @@ end
 
 local function setupcluster(clusterconfs)
     local selfname = nil
-    
-    -- local clusterconfs = channel.call("config.?","msg","query_cluster_conf")
 
     local clusters = {}
     for _,c in pairs(clusterconfs) do
@@ -88,13 +81,27 @@ local function setupcluster(clusterconfs)
     cluster.open(selfname)
 end
 
+local function getlocalips()
+    local ips = {}
+    local file = io.popen("ifconfig")
+    io.input(file)
+    for l in io.lines() do
+        local s = l:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
+        if s then ips[s] = true end
+    end
+    io.close(file)
+    
+    return ips
+end
+
 local function checkbootconf()
+    local localips = getlocalips()
     local bootnodeconf = bootconf.node
     local clusterconf = channel.call("config.?","msg","query_cluster_conf",bootconf.node.id)
     assert(clusterconf,"boot cluster conf is not exists")
     assert(clusterconf.name == bootnodeconf.name,
         string.format("boot cluster name does not match. %s ~= %s",clusterconf.name,bootnodeconf.name))
-    assert(clusterconf.host == "0.0.0.0" or clusterconf.host == bootnodeconf.host,
+    assert(clusterconf.host == "0.0.0.0" or localips[clusterconf.host] == localips[bootnodeconf.host],
         string.format("boot cluster host does not match. %s ~= %s",clusterconf.host,bootnodeconf.host))
     assert(clusterconf.port == bootnodeconf.port,
         string.format("boot cluster port does not match. %d ~= %s",clusterconf.port,bootnodeconf.port))
