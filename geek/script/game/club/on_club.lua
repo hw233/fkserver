@@ -1557,29 +1557,32 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
         operator = guid,
     })
 
-    -- reddb:multi()
+    local errno,_,new_db_club_money,_,new_db_player_money  = 
+        channel.call("db.?","msg","SD_TransferMoney",{
+            from = source_guid,
+            to = target_club_id,
+            type = 2,
+            amount = money,
+            money_id = money_id,
+            why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+            why_ext = recharge_id,
+        })
 
-    if not p:incr_money({
-        money_id = money_id,
-        money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return        
-    end
-
-    if not club:incr_money({
-        money_id = money_id,
-        money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
+    if errno ~= enum.ERROR_NONE then
+        res.result = errno
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
-    -- reddb:exec()
+    local new_player_money = p:incr_redis_money(money_id,-money)
+    if new_player_money ~= new_db_player_money then
+        log.warning("transfer_money_club2player player %s db money ~= redis money,%s,%s",p.guid,new_db_player_money,new_player_money)
+    end
+
+    local new_club_money = club:incr_redis_money(money_id,money)
+    if new_club_money ~= new_db_club_money then
+        log.warning("transfer_money_club2player club %s db money ~= redis money,%s,%s",club.id,new_db_club_money,new_club_money)
+    end
 
     onlineguid.send(p.guid,"SYNC_OBJECT",util.format_sync_info(
         "PLAYER",{
@@ -1624,7 +1627,6 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
         return
     end
 
-    
     local parent_club_id = club_team[source_club_id][target_club_id] and source_club_id or
         (club_team[target_club_id][source_club_id] and target_club_id or nil)
     if not parent_club_id then
@@ -1657,29 +1659,33 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
         operator = guid,
     })
 
-    -- reddb:multi()
+    
+    local errno,_,new_db_source_club_money,_,new_db_target_club_money  = 
+        channel.call("db.?","msg","SD_TransferMoney",{
+            from = source_club_id,
+            to = target_club_id,
+            type = 3,
+            amount = money,
+            money_id = money_id,
+            why = why,
+            why_ext = recharge_id,
+        })
 
-    if not sourceclub:incr_money({
-        money_id = money_id,
-        money = -money,
-    },why,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
+    if errno ~= enum.ERROR_NONE then
+        res.result = errno
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
-    if not targetclub:incr_money({
-        money_id = money_id,
-        money = money,
-    },why,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
+    local new_source_club_money = sourceclub:incr_redis_money(money_id,-money)
+    if new_db_source_club_money ~= new_source_club_money then
+        log.warning("transfer_money_club2club club %s db money ~= redis money,%s,%s",sourceclub.id,new_db_source_club_money,new_source_club_money)
     end
 
-    -- reddb:exec()
+    local new_target_club_money = targetclub:incr_redis_money(money_id,money)
+    if new_db_target_club_money ~= new_target_club_money then
+        log.warning("transfer_money_club2club club %s db money ~= redis money,%s,%s",sourceclub.id,new_db_target_club_money,new_target_club_money)
+    end
 
     onlineguid.send(sourceclub.owner,"SYNC_OBJECT",util.format_sync_info(
         "CLUB",{
@@ -1752,28 +1758,32 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
         operator = guid,
     })
 
-    -- reddb:multi()
+    local errno,_,new_db_club_money,_,new_db_player_money  = 
+        channel.call("db.?","msg","SD_TransferMoney",{
+            from = source_club_id,
+            to = target_guid,
+            type = 1,
+            amount = money,
+            money_id = money_id,
+            why = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            why_ext = recharge_id,
+        })
 
-    if not p:incr_money({
-        money_id = money_id,
-        money = money,
-    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
+    if errno ~= enum.ERROR_NONE then
+        res.result = errno
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
 
-    if not club:incr_money({
-        money_id = money_id,
-        money = -money,
-    },enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,recharge_id) then
-        -- reddb:discard()
-        res.result = enum.ERROR_CLUB_UNKOWN
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
+    local new_club_money = club:incr_redis_money(money_id,-money)
+    if new_club_money ~= new_db_club_money then
+        log.warning("transfer_money_club2player club %s db money ~= redis money,%s,%s",club.id,new_db_club_money,new_club_money)
     end
-    -- reddb:exec()
+
+    local new_player_money = p:incr_redis_money(money_id,money)
+    if new_player_money ~= new_db_player_money then
+        log.warning("transfer_money_club2player player %s db money ~= redis money,%s,%s",p.guid,new_db_player_money,new_player_money)
+    end
 
     onlineguid.send(p.guid,"SYNC_OBJECT",util.format_sync_info(
         "PLAYER",{

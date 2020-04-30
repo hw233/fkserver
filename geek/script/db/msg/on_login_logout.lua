@@ -2709,3 +2709,164 @@ function on_sd_new_money_type(msg)
 	local money_type = msg.type
 	dbopt.game:query("INSERT INTO t_money(id,type,club_id) VALUES(%d,%d,%s)",id,money_type,club_id)
 end
+
+local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_ext)
+	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
+		club_id,guid,money_id,amount,why,why_ext)
+	local sqls = {
+		"SET AUTOCOMMIT = 0;",
+		"BEGIN;",
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
+		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],- amount,club_id,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
+		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],amount,guid,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
+		"COMMIT;",
+		"SET AUTOCOMMIT = 1;",
+	}
+
+	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	if res.errno then
+		dbopt.game:rollback_trans(transid)
+		log.error("transfer_money_club2player do money error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	log.dump(res)
+
+	local old_club_money = res[3] and res[3][1] and res[3][1].money or nil
+	local new_club_money = res[5] and res[5][1] and res[5][1].money or nil
+	local old_player_money = res[6] and res[6][1] and res[6][1].money or nil
+	local new_player_money = res[8] and res[8][1] and res[8][1].money or nil
+
+	local logsqls = {
+		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+					club_id,money_id,old_club_money,new_club_money,why,why_ext),
+		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
+					guid,money_id,old_player_money,new_player_money,why,why_ext),
+	}
+	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	if res.errno then
+		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	return enum.ERROR_NONE,old_club_money,new_club_money,old_player_money,new_player_money
+end
+
+local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_ext)
+	log.info("transfer_money_player2club club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
+		club_id,guid,money_id,amount,why,why_ext)
+	local sqls = {
+		"SET AUTOCOMMIT = 0;",
+		"BEGIN;",
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
+		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],- amount,guid,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
+		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
+		"COMMIT;",
+		"SET AUTOCOMMIT=1;"
+	}
+
+	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	if res.errno then
+		dbopt.game:rollback_trans(transid)
+		log.error("transfer_money_player2club do money error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	local old_player_money = res[3] and res[3][1] and res[3][1].money or nil
+	local new_player_money = res[5] and res[5][1] and res[5][1].money or nil
+	local old_club_money = res[6] and res[6][1] and res[6][1].money or nil
+	local new_club_money = res[8] and res[8][1] and res[8][1].money or nil
+
+	local logsqls = {
+		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+					club_id,money_id,old_club_money,new_club_money,why,why_ext),
+		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
+					guid,money_id,old_player_money,new_player_money,why,why_ext),
+	}
+	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	if res.errno then
+		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	return enum.ERROR_NONE,old_club_money,new_club_money,old_player_money,new_player_money
+end
+
+local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,why,why_ext)
+	log.info("transfer_money_club2club from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
+		club_id_from,club_id_to,money_id,amount,why,why_ext)
+	local sqls = {
+		"SET AUTOCOMMIT = 0;",
+		"BEGIN;",
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
+		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]], -amount,club_id_from,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
+		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id_to,money_id),
+		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
+		"COMMIT;",
+		"SET AUTOCOMMIT=1;"
+	}
+
+	log.dump(sqls)
+
+	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	if res.errno then
+		dbopt.game:rollback_trans(transid)
+		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	log.dump(res)
+
+	local old_from_money = res[3] and res[3][1] and res[3][1].money or nil
+	local new_from_money = res[5] and res[5][1] and res[5][1].money or nil
+	local old_to_money = res[6] and res[6][1] and res[6][1].money or nil
+	local new_to_money = res[8] and res[8][1] and res[8][1].money or nil
+
+	local logsqls = {
+		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+					club_id_from,money_id,old_from_money,new_from_money,why,why_ext),
+		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+					club_id_to,money_id,old_to_money,new_to_money,why,why_ext),
+	}
+
+	log.dump(logsqls)
+	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	if res.errno then
+		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	return enum.ERROR_NONE,old_from_money,new_from_money,old_to_money,new_to_money
+end
+
+function on_sd_transfer_money(msg)
+	local from_id = msg.from
+	local to_id = msg.to
+	local trans_type = msg.type
+	local money_id = msg.money_id
+	local amount = msg.amount
+	local why = msg.why
+	local why_ext = msg.why_ext
+
+	if trans_type == 1 then
+		return transfer_money_club2player(from_id,to_id,money_id,amount,why,why_ext)
+	end
+
+	if trans_type == 2 then
+		return transfer_money_player2club(from_id,to_id,money_id,amount,why,why_ext)
+	end
+
+	if trans_type == 3 then
+		return transfer_money_club2club(from_id,to_id,money_id,amount,why,why_ext)
+	end
+
+	return enum.ERROR_PARAMER_ERROR
+end
