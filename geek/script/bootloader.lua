@@ -166,12 +166,12 @@ local function setup()
     setupcluster(clusterconfs)
 
     for _,conf in pairs(serviceconfs) do
-        if conf.cluster ~= clusterid then
-            local clusterconf = clusterconfs[conf.cluster]
-            local cid = clusterconf.name.."."..clusterconf.id
-            local serviceid = conf.name.."."..conf.id
-            channel.subscribe(serviceid,cid.."@"..serviceid)
-            channel.subscribe("service."..conf.id,cid.."@"..serviceid)
+        local clusterconf = clusterconfs[conf.cluster]
+        if conf.cluster ~= clusterid and clusterconf then
+                local cid = clusterconf.name.."."..clusterconf.id
+                local serviceid = conf.name.."."..conf.id
+                channel.subscribe(serviceid,cid.."@"..serviceid)
+                channel.subscribe("service."..conf.id,cid.."@"..serviceid)
         end
     end
 
