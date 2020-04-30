@@ -2,24 +2,12 @@ require "functions"
 
 local card_dealer = class("card_dealer")
 
-function card_dealer:ctor(include_joker,begin_num,end_num)
-    self:init(include_joker,begin_num,end_num)
+function card_dealer:ctor(cards)
+    self:init(cards)
 end
 
-function card_dealer:init(include_joker,begin_num,end_num)
-    math.randomseed(os.time())
-	for _ = 1,10 do math.random() end
-
-    self.cards = {}
-    for i = 0,3 do
-        for j = begin_num,end_num do table.push_back(self.cards,i * 15 + j) end
-    end
-
-	if include_joker then
-		table.push_back(61)
-		table.push_back(62)
-	end
-
+function card_dealer:init(cards)
+    self.cards = cards
     self.remainder_card_count = #self.cards
 end
 

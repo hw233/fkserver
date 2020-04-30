@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+
+//玩家操作类型
+enum PDK_ACTION{
+	ACTION_NONE = 0;
+	ACTION_PASS = 1;//不出
+	ACTION_DISCARD = 2;//出牌
+}
+
+// 出牌类型
+enum PDK_CARD_TYPE {
+	ERROR                    = 0;                                //错误类型
+	SINGLE                   = 1;                                //单牌类型
+	DOUBLE                   = 2;                                //对牌类型
+	THREE                    = 3;                                //三不带
+	THREE_WITH_ONE           = 4;                          	//三带一
+	THREE_WITH_TWO           = 5;                          //三带一对
+	FOUR_WITH_ONE            = 6;                          	//四带二
+	FOUR_WITH_TWO            = 7;                          	//四带两对
+	SINGLE_LINE              = 8;                                	//顺子
+	DOUBLE_LINE              = 9;                                //连对
+	PLANE                    = 10;                               //飞机 不带
+	PLANE_WITH_ONE           = 11;                               //飞机 带牌 单
+	PLANE_WITH_TWO           = 12;                               //飞机 带牌 对
+	BOMB                     = 13;                               //炸弹
+}
+
+message PdkPlayerInfo {
+	repeated int32 hand_cards = 1; 			// 手牌
+	int32 chair_id		= 2; 			// id
+	int32 total_score 	= 3;
+	int32 round_score 	= 4;
+}
+
+message PdkReconnectData {
+	int32 act_left_time = 1;						// 操作剩余时间
+	int32 last_discard_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
+	repeated int32 last_discard = 3;						// 最后一次的出牌
+	map<int32, int32> total_scores = 4;
+}
+
+message SC_PdkDeskEnter {
+	enum MsgID { Nil = 0; ID = 24100; }
+	repeated PdkPlayerInfo pb_players 	= 1; 		// 玩家
+	int32 status = 2;							//状态
+	int32 zhuang = 3;							//庄家
+	int32 self_chair_id = 4;					//id
+	int32 act_time_limit = 5;					// 操作时间
+	bool is_reconnect = 7;						//reconnect
+	PdkReconnectData pb_rec_data = 8;		//断线数据
+	int32 round = 10;
+}
+
+//该谁出牌
+message SC_PdkDiscardRound{
+	enum MsgID { Nil = 0; ID = 24101; }
+	int32 chair_id	 = 1;				
+}
+
+//托管
+message SC_PdkActTrustee {
+	enum MsgID { Nil = 0; ID = 24103; }
+	int32 chair_id	 = 1;	
+	bool is_trustee = 2;				//最終托管狀態 true托管 false 非托管
+}
+
+message CS_PdkDoAction{
+    	enum MsgID { Nil = 0; ID = 24104; }
+	int32  action = 1;	
+    	repeated int32 cards = 2;   //出的牌数据
+}
+
+message SC_PdkDoAction{
+    	enum MsgID { Nil = 0; ID = 24105; }
+	int32 chair_id	 = 1;	
+	int32 action = 2;	
+    	repeated int32 cards = 3;   //出的牌数据
+}
+
+message PdkBlanacePlayer{
+	int32 chair_id 			= 1;
+	repeated int32 hand_cards     = 2; // 剩余手牌数量
+	int32 boom_score        = 3; // 炸弹得分
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	int32 round_money 		= 6;
+	int32 total_money  		= 7;
+}
+
+//结算
+message SC_PdkGameOver {
+	enum MsgID { Nil = 0; ID = 24106; }
+	repeated PdkBlanacePlayer 	player_balance = 2;
+}
+
+message PdkStatisticsItem{
+	int32  type = 1;
+	int32  count = 2;
+}
+
+message PdkFinalOverPlayerInfo{
+	int32 chair_id = 1;
+	int32 guid = 2;
+	int32 score = 3;
+	repeated PdkStatisticsItem statistics = 4;
+}
+
+message SC_PdkFinalGameOver{
+	enum MsgID { Nil = 0; ID = 24107;}
+	repeated PdkFinalOverPlayerInfo players = 1;
+}
