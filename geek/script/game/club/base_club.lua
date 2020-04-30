@@ -591,6 +591,12 @@ function base_club:incr_money(item,why,why_ext)
 	return oldmoney,newmoney
 end
 
+function base_club:incr_redis_money(money_id,money)
+    local newmoney = tonumber(reddb:hincrby(string.format("club:money:%d",self.id),math.floor(money_id),math.floor(money)))
+    self:notify_money(money_id)
+    return newmoney
+end
+
 function base_club:check_money_limit(money,money_id)
     local self_money = club_money[self.id][money_id] or 0
     return self_money < money

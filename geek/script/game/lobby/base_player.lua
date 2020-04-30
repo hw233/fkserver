@@ -416,6 +416,12 @@ function base_player:decrby(field,value)
 	return tonumber(v)
 end
 
+function base_player:incr_redis_money(money_id,money)
+	local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
+	self:notify_money(money_id)
+	return newmoney
+end
+
 function base_player:incr_money(item,why,why_ext)
 	if not why then
 		log.error("base_player:incr_money [%d] why can not be nil.",self.guid)
