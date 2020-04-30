@@ -22,24 +22,6 @@ local function table2sql(tb)
 	return table.concat(strtb,",")
 end
 
-local transaction = {}
-
-function transaction:begin()
-	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"BEGIN;")
-end
-
-function transaction:rollback()
-	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"ROLLBACK;")
-end
-
-function transaction:execute(sql,...)
-	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,sql,...)
-end
-
-function transaction:commit()
-	return skynet.call(mysqld,"lua","querywithconn",self.name,self.conn,"COMMIT;")
-end
-
 local db = {}
 
 function db:query(sql,...)
@@ -51,9 +33,20 @@ function db:execute(sql,tb)
 	return skynet.call(mysqld,"lua","query",self.name,sql)
 end
 
-function db:transaction()
-	local conn = skynet.call(mysqld,"lua","getconn",self.name)
-	return setmetatable({name = self.name,conn = conn},{__index = transaction})
+function db:begin_trans()
+	return skynet.call(mysqld,"lua","begin_transaction",self.name)
+end
+
+function db:do_trans(transid,sql,...)
+	return skynet.call(mysqld,"lua","do_transaction",self.name,transid,sql,...)
+end
+
+function db:rollback_trans(transid)
+	return skynet.call(mysqld,"lua","rollback_transaction",self.name,transid)
+end
+
+function db:commit_trans(transid)
+	return skynet.call(mysqld,"lua","commit_transaction",self.name,transid)
 end
 
 local mysql = {}

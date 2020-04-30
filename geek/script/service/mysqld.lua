@@ -6,30 +6,8 @@ local log = require "log"
 local skynet = require "skynetproto"
 local mysql = require "skynet.db.mysql"
 
-
-
-local waiting = {}
-
-local function wait()
-	local co = coroutine.running()
-	table.insert(waiting,co)
-	skynet.wait()
-end
-
-local function wakeup()
-	for _,co in pairs(waiting) do
-		skynet.wakeup(co)
-	end
-
-	waiting = {}
-end
-
-
-local db_conn = {}
-
-function new_db_connection(cfg)
-	local conn = {}
-	conn.db = mysql.connect({
+function new_connection(cfg)
+	local conn = mysql.connect({
 		host=cfg.host or "127.0.0.1",
 		port=cfg.port or 3306,
 		database=cfg.database,
@@ -37,176 +15,198 @@ function new_db_connection(cfg)
 		password=cfg.password,
 		max_packet_size = 1024 * 1024,
 		on_connect = function(db)
-			db:query("set charset utf8");
+			db:query("set charset utf8;");
 		end,
 	})
-	if not conn.db then
-		log.info("mysql failed to connect")
+	if not conn then
+		log.error("mysql failed to connect")
+		return
 	end
 
-	return setmetatable(conn,{__index = db_conn})
-end
-
-function db_conn:close()
-	if not self.db then return end
-
-	self.db:disconnect()
-	self.db = nil
-end
-
-function db_conn:query(sqlfmt,...)
-	return self.db:query(string.format(sqlfmt,...))
-end
-
-local db_conn_pool = {}
-
-function new_db_connection_pool(cfg)
-	assert(cfg)
-	local pool = setmetatable({
-		conns = {},
-		cfg = cfg,
-		max_conn = cfg.pool_size or 8,
-	},{__index = db_conn_pool})
-	return pool
-end
-
-function db_conn_pool:close()
-	for _,conn in pairs(self.conns) do
-		conn:close()
-	end
-	self.conns = {}
-end
-
-function db_conn_pool:choice()
-	local i = math.random(#self.conns)
-	return self.conns[i]
-end
-
-function db_conn_pool:chooseone()
-	if #self.conns == 0 then
-		table.insert(self.conns,new_db_connection(self.cfg))
-	end
-
-	return math.random(#self.conns)
-end
-
-function db_conn_pool:get(id)
-	if id then
-		return self.conns[id]
-	end
-
-	if #self.conns >= self.max_conn then
-		return self:choice()
-	end
-
-	local conn = new_db_connection(self.cfg)
-	table.insert(self.conns,conn)
 	return conn
 end
 
+local connection = {}
 
-function db_conn_pool:execute(sql, tb)
-	self:get():execute(sql,tb)
+function connection.close(conn)
+	if not conn then return end
+	conn:disconnect()
 end
 
-function db_conn_pool:update(sql)
-	return self:get():query(sql)
+function connection.query(conn,fmtsql,...)
+	if not conn then 
+		log.errro("connection.query conn is nil.")
+		return
+	end
+	return conn:query(string.format(fmtsql,...))
 end
 
-function db_conn_pool:query(sql)
-	return self:get():query(sql)
+function new_connection_pool(conf)
+	assert(conf)
+	return setmetatable({
+		__connections = {},
+		__conf = conf,
+		__max= conf.pool_size or 8,
+		__free = {},
+		__occupied = {},
+	},{__index = function(pool,id) 
+		if not id then return nil end
+		return pool.__connections[id]
+	end})
 end
 
-function db_conn_pool:fmt_query(sqlfmt,...)
-	return self:get():query(sqlfmt,...)
+local connection_pool = {}
+
+function connection_pool.close(pool)
+	for id,conn in pairs(pool.__connections) do
+		connection.close(conn)
+		pool.__connections[id] = nil
+	end
 end
 
-function db_conn_pool:fmt_execute(sqlfmt,...)
-	return self:get():query(sqlfmt,...)
-end
+function connection_pool.occupy(pool)
+	local free_count = table.nums(pool.__free)
+	if free_count  == 0 then
+		if #pool.__connections <= pool.__max then
+			local conn = new_connection(pool.__conf)
+			local cid = #pool.__connections + 1
+			pool.__connections[cid] = conn
+			pool.__free[cid] = conn
+			return cid,conn
+		end
 
-function db_conn_pool:fmt_execute_pb(sqlfmt,...)
-	return self:get():query(sqlfmt,...)
-end
-
-
-local dbmanager = {all = {}}
-
-function dbmanager:open(cfg)
-	if self.all[cfg.name] then
-		return self.all[cfg.name]
+		log.warning("all of pool connection is occupied,pool:%s.",pool.__conf.name)
+		return nil
 	end
 
-	local db = new_db_connection_pool(cfg)
-	if db then
-		self.all[cfg.name] = db
+	for cid,conn in pairs(pool.__free) do
+		pool.__free[cid] = nil
+		pool.__occupied[cid] = conn
+		return cid,conn
 	end
-
-	return db
 end
 
-function dbmanager:close(dbname)
-	log.dump(dbname)
+function connection_pool.release(pool,cid)
+	local conn = pool.__connections[cid]
+	if not conn then
+		log.warning("connection_pool.release got invalid id:%s.",cid)
+		return
+	end
 
-	if not self.all[dbname] then return end
-
-	self.all[dbname]:close()
-	self.all[dbname] = nil
+	pool.__free[cid] = conn
+	pool.__occupied[cid] = nil
 end
 
-function dbmanager:get(cfg_or_name)
-	local function get_with_cfg(cfg)
-		return self.all[cfg.name] or self:open(cfg)
-	end
-
-	local function get_with_name(name)
-		return self.all[name]
-	end
-
-	if type(cfg_or_name) == "string" then
-		return get_with_name(cfg_or_name)
-	end
-
-	if type(cfg_or_name) == "table" then
-		return get_with_cfg(cfg_or_name)
-	end
-
-	return nil
+function connection_pool.query(pool,fmtsql,...)
+	local cid,conn = connection_pool.occupy(pool)
+	local res = connection.query(conn,fmtsql,...)
+	connection_pool.release(pool,cid)
+	return res
 end
+
+function connection_pool.do_transaction(pool,transid,fmtsql,...)
+	local conn
+	if not transid then
+		transid,conn = connection_pool.occupy(pool)
+	else
+		conn = pool[transid]
+	end
+	
+	local res = connection.query(conn,fmtsql,...)
+	return transid,res
+end
+
+function connection_pool.finish_transaction(pool,transid)
+	connection_pool.release(pool,transid)
+end
+
+local dbconfs= {}
+local dbpools = {}
+
+local function opendb(conf)
+	local name = conf.name
+	dbconfs[name] = dbconfs[name] or  conf
+	return dbconfs[name]
+end
+
+local function closedb(name)
+	dbconfs[name] = nil
+	connection_pool.close(dbpools[name])
+	dbpools[name] = nil
+end
+
+setmetatable(dbpools,{__index = function(t,name)
+	local pool = new_connection_pool(dbconfs[name])
+	t[name] = pool
+	return pool
+end})
 
 local CMD = {}
 
 function CMD.query(dbname,fmtsql,...)
-	local pool = dbmanager:get(dbname)
-	if not pool then return end
-	local res = pool:fmt_query(fmtsql,...)
+	local pool = dbpools[dbname]
+	if not pool then 
+		log.error("mysqld CMD.query got nil pool,db:%s",dbname)
+		return 
+	end
+
+	local res = connection_pool.query(pool,fmtsql,...)
 	return res
 end
 
-function CMD.execute(dbname,sql,tb)
-	local pool = dbmanager:get(dbname)
-	if not pool then return end
-	return pool:execute(sql,tb)
+function CMD.begin_transaction(dbname)
+	local pool = dbpools[dbname]
+	if not pool then 
+		log.error("mysqld CMD.do_transaction got nil pool,db:%s",dbname)
+		return 
+	end
+
+	local transid,res = connection_pool.do_transaction(pool,nil,[[SET AUTOCOMMIT = 0;BEGIN;]])
+	return transid,res
 end
 
-function CMD.querywithconn(dbname,connid,fmtsql,...)
-	local pool = dbmanager:get(dbname)
-	if not pool then return end
-	return pool:get(connid):query(fmtsql,...)
+function CMD.do_transaction(dbname,transid,fmtsql,...)
+	local pool = dbpools[dbname]
+	if not pool then 
+		log.error("mysqld CMD.do_transaction got nil pool,db:%s",dbname)
+		return 
+	end
+
+	local res
+	transid,res = connection_pool.do_transaction(pool,transid,fmtsql,...)
+	return transid,res
 end
 
-function CMD.getconn(dbname)
-	local pool = dbmanager:get(dbname)
-	if not pool then return end
-	return pool:chooseone()
+function CMD.rollback_transaction(dbname,transid)
+	local pool = dbpools[dbname]
+	if not pool then 
+		log.error("mysqld CMD.do_transaction got nil pool,db:%s",dbname)
+		return 
+	end
+
+	local res = connection_pool.do_transaction(pool,transid,[[ROLLBACK;SET AUTOCOMMIT = 1;]])
+	connection_pool.finish_transaction(pool,transid)
+	return res
+end
+
+function CMD.commit_transaction(dbname,transid)
+	local pool = dbpools[dbname]
+	if not pool then 
+		log.error("mysqld CMD.do_transaction got nil pool,db:%s",dbname)
+		return 
+	end
+
+	local res = connection_pool.do_transaction(pool,transid,[[COMMIT;SET AUTOCOMMIT = 1;]])
+	connection_pool.finish_transaction(pool,transid)
+	return res
 end
 
 function CMD.open(cfg)
-	dbmanager:open(cfg)
+	opendb(cfg)
 end
 
 function CMD.close(dbname)
-	dbmanager:close(dbname)
+	closedb(dbname)
 end
 
 skynet.start(function()
