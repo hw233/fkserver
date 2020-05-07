@@ -547,27 +547,17 @@ function MSG.CG_GameServerCfg(msg,session)
         player_platform_id = msg.platform_id
     end
 
-    local sconf = channel.list()
+    local gameservices = table.map(channel.list(),function(_,sid)
+        local id = string.match(sid,"service.(%d+)")
+        if not id then return end
+        id = tonumber(id)
+        local conf = serviceconf[id]
+        if conf and conf.name == "game" and conf.conf.first_game_type ~= 1 then  return id,conf.conf end
+    end)
 
-    local pbconf = {}
-    for id,_ in pairs(sconf) do
-        local id = string.match(id,"service.(%d+)")
-        if id then
-            local conf = serviceconf[tonumber(id)]
-            if conf.name == "game" then
-                local gameconf = conf.conf
-                local platformids = string.split(gameconf.platform_id,"%d+")
-                for _,pid in pairs(platformids) do
-                    if pid == player_platform_id then
-                        table.insert(pbconf,gameconf)
-                    end
-                end
-            end
-        end
-    end
+    local pbconf = table.values(gameservices)
 
     log.dump(pbconf)
-
 
 	for _,p in pairs(pbconf) do
 		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
