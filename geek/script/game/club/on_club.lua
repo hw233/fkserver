@@ -517,19 +517,15 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local ss = channel.query()
-    local games = table.agg(ss,{},function(tb,_,sid)
-        local id = sid:match("service%.(%d+)")
-        if not id then  return tb end
-
-        local conf = serviceconf[tonumber(id)]
-        if conf.name ~= "game" then return tb end
-
-        local sconf = conf.conf
-        tb[sconf.first_game_type] = sconf
-
-        return tb
+    local gameservices = table.map(channel.list(),function(_,sid)
+        local id = string.match(sid,"service.(%d+)")
+        if not id then return end
+        id = tonumber(id)
+        local conf = serviceconf[id]
+        if conf and conf.name == "game" and conf.conf.first_game_type ~= 1 then  return id,conf end
     end)
+
+    local games = table.map(gameservices,function(conf) return conf.conf.first_game_type,conf.conf end)
 
     local real_games = {}
     local club_games = club_game_type[club_id]
