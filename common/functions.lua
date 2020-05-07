@@ -430,7 +430,7 @@ table.count = table.nums
 function table.series(tb,fn)
     local s = {}
     for k,v in pairs(tb or {}) do
-        v = fn and fn(v,k)
+        v = fn and fn(v,k) or v
         if v then table.insert(s,v) end
     end
 
