@@ -1,4 +1,5 @@
 local enum = require "pb_enums"
+require "game.pdk.register"
 
 local function boot(conf)
     local room = require "game.pdk.pdk_room"

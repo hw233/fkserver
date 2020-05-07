@@ -24,6 +24,7 @@ enum PDK_CARD_TYPE {
 	PLANE_WITH_ONE           = 11;                               //飞机 带牌 单
 	PLANE_WITH_TWO           = 12;                               //飞机 带牌 对
 	BOMB                     = 13;                               //炸弹
+	FOUR_WITH_THREE = 14;
 }
 
 message PdkPlayerInfo {
@@ -72,10 +73,11 @@ message CS_PdkDoAction{
 }
 
 message SC_PdkDoAction{
-    	enum MsgID { Nil = 0; ID = 24105; }
-	int32 chair_id	 = 1;	
-	int32 action = 2;	
-    	repeated int32 cards = 3;   //出的牌数据
+	enum MsgID { Nil = 0; ID = 24105; }
+	int32 result = 1;    
+	int32 chair_id	 = 2;	
+	int32 action = 3;	
+    	repeated int32 cards = 4;   //出的牌数据
 }
 
 message PdkBlanacePlayer{

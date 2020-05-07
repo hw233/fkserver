@@ -2,8 +2,7 @@
 
 local log = require "log"
 local base_players = require "game.lobby.base_players"
-
-local room = g_room
+local room = require "game.pdk.pdk_room"
 
 -- 出牌
 function on_cs_pdk_do_action(msg,guid)
