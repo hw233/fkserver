@@ -534,13 +534,9 @@ function on_cs_club_detail_info_req(msg,guid)
     local real_games = {}
     local club_games = club_game_type[club_id]
     if table.nums(club_games) ~= 0 then
-        for _,game in pairs(club_games or {}) do
-            if games[game] then
-                table.insert(real_games,game)
-            end
-        end
+        real_games = table.select(club_games,function(id) return id ~= 1 and games[id] end)
     else
-        real_games = table.keys(games)
+        real_games = table.keys(table.select(games,function(_,id) return id ~= 1 end))
     end
 
     local root = club_utils.root(club)
