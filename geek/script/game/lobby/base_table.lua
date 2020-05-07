@@ -850,6 +850,7 @@ function base_table:dismiss()
 
 	self.private_id = nil
 	self.conf = nil
+	self.cur_round = nil
 
 	return enum.GAME_SERVER_RESULT_SUCCESS
 end
@@ -1004,10 +1005,10 @@ end
 function base_table:set_trusteeship(player,trustee)
 	log.info("====================base_table:set_trusteeship")
 	self:broadcast2client("SC_Trustee",{
-        result = enum.ERROR_NONE,
-        chair_id = player.chair_id,
-        is_trustee = trustee and true or false,
-    })
+		result = enum.ERROR_NONE,
+		chair_id = player.chair_id,
+		is_trustee = trustee and true or false,
+	})
 end
 
 -- 准备开始
@@ -1076,7 +1077,6 @@ function base_table:reconnect(player)
 	log.info("set online is true")
 	player.online = true
 	log.info("set player[%d] in_game true" ,player.guid)
-	player.in_game = true
 	self:on_reconnect(player)
 end
 

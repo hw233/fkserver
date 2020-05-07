@@ -778,7 +778,6 @@ end
 
 -- 玩家进入房间
 function base_room:player_enter_room(player)
-	player.in_game = true
 	log.info("set player[%s] in_game true this room have player count is [%s] [%s]" ,
 		player.guid , self.cur_player_count_ , self:get_player_num())
 	self.players[player.guid] = player
