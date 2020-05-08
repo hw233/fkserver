@@ -711,13 +711,17 @@ function base_table:calculate_gps_distance(pos1,pos2)
 	return R * math.acos(C) * math.pi/180
 end
 
-function base_table:player_sit_down(player, chair_id,reconnect)
-if not reconnect then
-	if self.rule.option.ip_stop_cheat and self:check_same_ip_net(player) then
+function base_table:check_cheat_control(player,reconnect)
+	local option = self.rule and self.rule.option
+	if not option then
+		return enum.ERROR_NONE
+	end
+
+	if option.ip_stop_cheat and self:check_same_ip_net(player) then
 		return enum.ERROR_IP_TREAT
 	end
 
-	if self.rule.option.gps_distance >= 0 then
+	if option.gps_distance and option.gps_distance >= 0 then
 		if not player.gps_latitude or not player.gps_longitude then
 			return enum.ERROR_GPS_TREAT
 		end
@@ -727,7 +731,7 @@ if not reconnect then
 			latitude = player.gps_latitude,
 		}
 
-		local limit = self.rule.option.gps_distance
+		local limit = option.gps_distance
 		local is_gps_treat = table.logic_or(self.players,function(p)
 			local p_gps = {
 				longitude = p.gps_longitude,
@@ -743,12 +747,7 @@ if not reconnect then
 		end
 	end
 
-	if (self.cur_round and self.cur_round > 0) or self:is_play() then
-		return enum.ERROR_TABLE_STATUS_GAMING
-	end
-end
-
-return base_table.player_sit_down(self,player,chair_id,reconnect)
+	return enum.ERROR_NONE
 end
 
 function base_table:check_same_ip_net(player)
@@ -772,14 +771,50 @@ function base_table:check_same_ip_net(player)
 	end
 
 	local login_ip = player.login_ip
-    return table.logic_or(self.players,function(p)
-        if p == player then return end
-        return same_ip_net(login_ip,p.login_ip)
-    end)
+	return table.logic_or(self.players,function(p)
+		if p == player then return end
+		return same_ip_net(login_ip,p.login_ip)
+	end)
+end
+
+function base_table:can_sit_down(player,chair_id,reconnect)
+	if reconnect then 
+		return enum.ERROR_NONE 
+	end
+
+	if self.players[chair_id] then
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	local cheat_check = self:check_cheat_control(player,reconnect)
+	if cheat_check ~= enum.ERROR_NONE then
+		return cheat_check
+	end
+
+	if self.private_id then
+		if self.cur_round or self:is_play() then
+			return enum.ERROR_TABLE_STATUS_GAMING
+		end
+	else
+		if self:is_play() then
+			return enum.ERROR_TABLE_STATUS_GAMING
+		end
+	end
+
+	return enum.ERROR_NONE
+end
+
+function base_table:on_player_sit_down(player,chair_id,reconnect)
+
 end
 
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
+	local can =  self:can_sit_down(player,chair_id,reconnect)
+	if can ~= enum.ERROR_NONE then
+		return can
+	end
+
 	player.table_id = self.table_id_
 	player.chair_id = chair_id
 	self.players[chair_id] = player
@@ -787,7 +822,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 			player.guid,player.table_id,player.chair_id)
 
 	self.player_count = self.player_count + 1
-	self:on_player_sit_down(player,reconnect)
+	self:on_player_sit_down(player,chair_id,reconnect)
 	
 	if not player:is_android() then
 		for i, p in ipairs(self.players) do
