@@ -1369,11 +1369,10 @@ function base_table:on_private_inited()
 	
 end
 
-function base_table:private_init(private_id,conf)
+function base_table:private_init(private_id,rule,conf)
 	self.private_id = private_id
-	self.rule = conf.rule
+	self.rule = rule
 	self.chair_count = conf.chair_count
-	self.money_type = conf.money_type
 	self.conf = conf
 
 	self:on_private_inited()
@@ -1424,7 +1423,7 @@ end
 -- 破产检测
 function base_table:check_bankruptcy()
 	local money_id = self:get_money_id()
-	local limit = self.private_id and self.conf and self.conf.conf.union and self.conf.conf.union.min_score or 0
+	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
 	local bankruptcy = {}
 	for _,p in pairs(self.players) do
 		local money = player_money[p.guid][money_id]

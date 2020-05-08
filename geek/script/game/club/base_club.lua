@@ -284,18 +284,18 @@ function base_club:broadcast(msgname,msg,except)
 end
 
 
-function base_club:create_table(player,chair_count,round,conf,template)
+function base_club:create_table(player,chair_count,round,rule,template)
     local member = club_member[self.id][player.guid]
     if not member then
         log.warning("create club table,but guid [%s] not exists",player.guid)
         return enum.ERROR_NOT_MEMBER
     end
 
-    if conf and not self:can_sit_down(conf,player) then
+    if rule and not self:can_sit_down(rule,player) then
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
-    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,conf,self)
+    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,rule,self)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hmset(string.format("table:info:%d",global_tid),{
             club_id = self.id,

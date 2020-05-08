@@ -337,7 +337,7 @@ function base_room:find_empty_table()
 end
 
 -- 创建私人房间
-function base_room:create_private_table(player,chair_count,round, conf,club)
+function base_room:create_private_table(player,chair_count,round, rule,club)
 	if player.table_id or player.chair_id then
 		log.info("player already in table, table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
@@ -361,17 +361,14 @@ function base_room:create_private_table(player,chair_count,round, conf,club)
 	end
 
 	local chair_id = 1
-	tb:private_init(global_tid,{
+	tb:private_init(global_tid,rule,{
 		round = round,
 		chair_count = chair_count,
-		money_type = conf.pay.money_type,
-		pay_option = conf.pay.option,
 		owner = player,
 		owner_guid = player.guid,
 		owner_chair_id = chair_id,
-		rule = conf.play,
+		rule = rule,
 		club = club,
-		conf = conf,
 	})
 
 	reddb:hmset("table:info:"..tostring(global_tid),{
