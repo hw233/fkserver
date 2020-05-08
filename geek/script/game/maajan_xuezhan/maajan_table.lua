@@ -94,7 +94,7 @@ function maajan_table:clear_event_pump()
 end
 
 function maajan_table:get_trustee_conf()
-    local trustee = (self.conf and self.conf.conf) and self.conf.conf.trustee or nil
+    local trustee = self.rule and self.rule.trustee or nil
     if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
         local trstee_conf = self.room_.conf.private_conf.trustee
         local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
@@ -115,11 +115,11 @@ end
 
 function maajan_table:player_sit_down(player, chair_id,reconnect)
     if not reconnect then
-        if self.conf.conf.option.ip_stop_cheat and self:check_same_ip_net(player) then
+        if self.rule.option.ip_stop_cheat and self:check_same_ip_net(player) then
             return enum.ERROR_IP_TREAT
         end
 
-        if self.conf.conf.option.gps_distance >= 0 then
+        if self.rule.option.gps_distance >= 0 then
             log.dump(player)
             if not player.gps_latitude or not player.gps_longitude then
                 return enum.ERROR_GPS_TREAT
@@ -130,7 +130,7 @@ function maajan_table:player_sit_down(player, chair_id,reconnect)
                 latitude = player.gps_latitude,
             }
 
-            local limit = self.conf.conf.option.gps_distance
+            local limit = self.rule.option.gps_distance
             local is_gps_treat = table.logic_or(self.players,function(p)
                 local p_gps = {
                     longitude = p.gps_longitude,
@@ -166,7 +166,7 @@ function maajan_table:check_dismiss_commit(agrees)
 	end
 
     local agree_count = table.sum(self.players,function(p) return agrees[p.chair_id] and 1 or 0 end)
-    local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.floor(table.nums(self.players) / 2) + 1
+    local agree_count_at_least = self.rule.room.dismiss_all_agree and table.nums(self.players) or math.floor(table.nums(self.players) / 2) + 1
 	if agree_count < agree_count_at_least then
 		return false
     end
@@ -214,7 +214,7 @@ function maajan_table:on_started(player_count)
         mj_min_scale = self.mj_min_scale,
         players = table.map(self.players,function(_,chair) return chair,{} end),
         action_table = {},
-        rule = self.private_id and self.conf.conf or nil,
+        rule = self.private_id and self.rule or nil,
         club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
         table_id = self.private_id or nil,
     }
@@ -354,7 +354,7 @@ function maajan_table:fast_start_vote(player)
 end
 
 function maajan_table:set_trusteeship(player,trustee)
-    if not self.conf.conf.trustee or table.nums(self.conf.conf.trustee) == 0 then
+    if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
         return 
     end
 
@@ -384,7 +384,7 @@ function maajan_table:xi_pai()
 end
 
 function maajan_table:huan_pai()
-    if not self.conf.conf.huan or table.nums(self.conf.conf.huan) == 0 then
+    if not self.rule.huan or table.nums(self.rule.huan) == 0 then
         self:gotofunc(function() self:ding_que() end)
         return
     end
@@ -775,7 +775,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             -- 点杠花算点炮
             local is_zi_mo = true
             local whoee = nil
-            if self.conf.conf.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
+            if self.rule.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
                 is_zi_mo = nil
                 for _,s in pairs(player.pai.ming_pai) do
                     if s.tile == player.last_action.tile and s.type == SECTION_TYPE.MING_GANG then
@@ -1076,14 +1076,14 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
 
         if action.done.action == ACTION.PASS then
-            if self.conf.conf.play.guo_zhuang_hu then
+            if self.rule.play.guo_zhuang_hu then
                 local hu_action = waiting_actions[player.chair_id].actions[ACTION.HU]
                 if hu_action then
                     player.guo_zhuang_hu = self:max_hu(player,hu_action)
                 end
             end
 
-            if self.conf.conf.play.guo_shou_peng then
+            if self.rule.play.guo_shou_peng then
                 local peng_action = waiting_actions[player.chair_id].actions[ACTION.PENG]
                 if peng_action then
                     player.guo_shou_peng = peng_action.tile
@@ -1210,7 +1210,7 @@ function maajan_table:chu_pai()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     local function send_ting_tips(p)
-        local hu_tips = self.conf and self.conf.conf and self.conf.conf.play.hu_tips or nil
+        local hu_tips = self.rule and self.rule.play.hu_tips or nil
         if not hu_tips or p.trustee then return end
 
         local ting_tiles = self:ting_full(p)
@@ -1366,7 +1366,7 @@ function maajan_table:chu_pai()
 end
 
 function maajan_table:get_max_fan()
-    local fan_opt = self.conf.conf.fan.max_option + 1
+    local fan_opt = self.rule.fan.max_option + 1
     return self.room_.conf.private_conf.fan.max_option[fan_opt]
 end
 
@@ -1485,12 +1485,12 @@ function maajan_table:main()
 end
 
 function maajan_table:get_huan_type()
-    local type_option = self.conf.conf.huan.type_opt + 1
+    local type_option = self.rule.huan.type_opt + 1
     return self.room_.conf.private_conf.huan.type_option[type_option]
 end
 
 function maajan_table:get_huan_count()
-    local count_option = self.conf.conf.huan.count_opt + 1
+    local count_option = self.rule.huan.count_opt + 1
     return self.room_.conf.private_conf.huan.count_option[count_option]
 end
 
@@ -1746,7 +1746,7 @@ function maajan_table:calculate_hu(hu)
         table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
     end
 
-    if self.conf.conf.play.tian_di_hu then
+    if self.rule.play.tian_di_hu then
         if hu.tian_hu then
             local t = HU_TYPE.TIAN_HU
             table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
@@ -1763,7 +1763,7 @@ function maajan_table:calculate_hu(hu)
         table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
     end
 
-    if hu.zi_mo and self.conf.conf.play.zi_mo_jia_fan then
+    if hu.zi_mo and self.rule.play.zi_mo_jia_fan then
         local t = HU_TYPE.ZI_MO
         table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
     end
@@ -1776,8 +1776,8 @@ function maajan_table:calculate_hu(hu)
     local ts = self:get_hu_items(hu)
     for _,t in pairs(ts) do
         repeat
-            if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.conf.conf.play.yao_jiu) or
-                (t.type == HU_TYPE.MEN_QING and not self.conf.conf.play.men_qing) then
+            if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or
+                (t.type == HU_TYPE.MEN_QING and not self.rule.play.men_qing) then
                 break
             end
 
@@ -1849,9 +1849,9 @@ function maajan_table:calculate_jiao(p)
         table.insert(type_fans,{types = hu_fans,hu = hu,fan = fan,tile = tile})
     end
 
-    if self.conf.conf.play.cha_da_jao then
+    if self.rule.play.cha_da_jao then
         table.sort(type_fans,function(l,r) return l.fan > r.fan end)
-    elseif self.conf.conf.play.cha_xiao_jao then
+    elseif self.rule.play.cha_xiao_jao then
         table.sort(type_fans,function(l,r) return l.fan < r.fan end)
     end
 
@@ -1909,7 +1909,7 @@ function maajan_table:game_balance()
                 return
             end
 
-            if self.conf.conf.play.zi_mo_jia_di then
+            if self.rule.play.zi_mo_jia_di then
                 fan_score = fan_score + 1
             end
 
@@ -1926,7 +1926,7 @@ function maajan_table:game_balance()
                 local chair_i = pi.chair_id
                 scores[chair_id] = (scores[chair_id] or 0) + fan_score
                 scores[chair_i] = (scores[chair_i] or 0) - fan_score
-                if self.conf.conf.play.cha_da_jiao then
+                if self.rule.play.cha_da_jiao then
                     pi.statistics.cha_da_jiao = (pi.statistics.cha_da_jiao or 0) + 1
                 end
             end)
@@ -2531,7 +2531,7 @@ function maajan_table:global_status_info()
         table_id = self.private_id,
         seat_list = seats,
         room_cur_round = self.cur_round or 0,
-        rule = self.private_id and json.encode(self.conf.conf) or "",
+        rule = self.private_id and json.encode(self.rule) or "",
         game_type = def_first_game_type,
         template_id = private_conf and private_conf.template,
     }
