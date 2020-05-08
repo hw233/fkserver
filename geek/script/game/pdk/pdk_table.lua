@@ -53,10 +53,26 @@ local TABLE_STATUS = {
 
 local all_cards = {
 	[2] = {
-		3,4,5,6,7,8,9,10,11,12,13,15,
-		23,24,25,26,27,28,29,30,31,32,33,34,
-		43,44,45,46,47,48,49,50,51,52,53,54,
-		63,64,65,66,67,68,69,70,71,72,73,74,
+		[16] = {
+			3,4,5,6,7,8,9,10,11,12,13,15,
+			23,24,25,26,27,28,29,30,31,32,33,34,
+			43,44,45,46,47,48,49,50,51,52,53,54,
+			63,64,65,66,67,68,69,70,71,72,73,74,
+		}
+	},
+	[3] = {
+		[16] = {
+			3,4,5,6,7,8,9,10,11,12,13,14,15,
+			23,24,25,26,27,28,29,30,31,32,33,34,
+			43,44,45,46,47,48,49,50,51,52,53,54,
+			63,64,65,66,67,68,69,70,71,72,73,
+		},
+		[15] = {
+			3,4,5,6,7,8,9,10,11,12,13,14,15,
+			23,24,25,26,27,28,29,30,31,32,33,
+			43,44,45,46,47,48,49,50,51,52,53,
+			63,64,65,66,67,68,69,70,71,72,
+		},
 	}
 }
 
@@ -99,7 +115,7 @@ function pdk_table:check_dismiss_commit(agrees)
 	end
 
 	local agree_count = table.sum(self.players,function(p) return agrees[p.chair_id] and 1 or 0 end)
-	local agree_count_at_least = self.conf.conf.room.dismiss_all_agree and table.nums(self.players) or math.floor(table.nums(self.players) / 2) + 1
+	local agree_count_at_least = self.rule.room.dismiss_all_agree and table.nums(self.players) or math.ceil(table.nums(self.players) / 2)
 	if agree_count < agree_count_at_least then
 		return
 	end
@@ -108,20 +124,60 @@ function pdk_table:check_dismiss_commit(agrees)
 end
 
 function pdk_table:ding_zhuang()
-	if not self.cur_round then
-		if self.private_id then
-			local table_conf = base_private_table[self.private_id]
-			self.zhuang = table_conf.owner
-			return
-		end
+	local function random_zhuang()
+		local chair,_ = table.choice(self.players)
+		return chair
+	end
 
-		for i,_ in pairs(self.players) do
-			self.zhuang = i
-			break
+	local function with_3_zhuang()
+		for chair,p in pairs(self.players) do
+			if p.hand_cards[3] then return chair end
 		end
 	end
 
-	self.zhuang = table.choice(self.players)
+	local function room_owner_zhuang()
+		if not self.private_id then
+			log.error("pdk_table:ding_zhuang zhuang room owner but not private table.")
+			return
+		end
+
+		return self.conf.owner.chair_id
+	end
+
+	local function trun_round_zhuang()
+		if not self.zhuang or not self.cur_round then
+			log.error("pdk_table:ding_zhuang turn round, but first round.")
+			return 
+		end
+		return self.zhuang % table.nums(self.players) + 1
+	end
+
+	local function winner_zhuang()
+		if not self.cur_round then return end
+
+		for chair,p in pairs(self.players) do
+			if p.win then return chair end
+		end
+	end
+
+	local ding_zhuang_fn = {
+		[0] = winner_zhuang,
+		[1] = trun_round_zhuang,
+		[2] = with_3_zhuang,
+		[3] = room_owner_zhuang,
+		[4] = random_zhuang,
+	}
+
+	if self.private_id then
+		local zhuang_conf = self.rule and self.rule.play and self.rule.play.zhuang
+		local zhuang_opt = self.cur_round and zhuang_conf.normal_round or zhuang_conf.firset_round
+		self.zhuang = ding_zhuang_fn[zhuang_opt]()
+
+		if not self.zhuang then
+			log.warning("pdk_table:ding_zhuang got nil zhuang,set default.")
+			self.zhuang = self.chair_count == 2 and room_owner_zhuang() or with_3_zhuang()
+		end
+	end
 end
 
 function pdk_table:on_started(player_count)
@@ -136,13 +192,12 @@ function pdk_table:on_started(player_count)
 		v.statistics = {}
 	end
 
-	self:ding_zhuang()
 	self.game_log = {
 		start_game_time = os.time(),
 		zhuang = self.zhuang,
 		players = table.map(self.players,function(_,chair) return chair,{} end),
 		action_table = {},
-		rule = self.private_id and self.conf.conf or nil,
+		rule = self.private_id and self.rule or nil,
 		club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
 		table_id = self.private_id or nil,
 	}
@@ -157,15 +212,35 @@ function pdk_table:on_started(player_count)
 	end)
 
 	self:deal_cards()
+	self:ding_zhuang()
 	self.cur_discard_chair = self.zhuang
+	self.first_discard = true
 	self:begin_discard()
 end
 
 function pdk_table:deal_cards()
-	local dealer = card_dealer.new(clone(all_cards[self.start_count]))
+	local play = self.rule and self.rule.play
+	local cards_count = 16
+	if play and play.card_num then
+		local play_card_num = play.card_num
+		cards_count = (play_card_num == 15 or play_card_num == 16) and play_card_num or 16
+	end
+	local cards = clone(all_cards[self.start_count][cards_count])
+	if play and play.abandon_3_4 then
+		for i,c in pairs(cards) do
+			local v = cards_util.value(c)
+			if v == 3 or v == 4 then
+				cards[i] = nil
+			end
+		end
+
+		cards = table.values(cards)
+	end
+
+	local dealer = card_dealer.new(cards)
 	dealer:shuffle()
 	self:foreach(function(p)
-		local cards = dealer:deal_cards(16)
+		local cards = dealer:deal_cards(cards_count)
 		p.hand_cards = table.map(cards,function(c) return c,1 end)
 	end)
 
@@ -175,12 +250,12 @@ function pdk_table:deal_cards()
 end
 
 function pdk_table:get_trustee_conf()
-	local trustee = (self.conf and self.conf.conf) and self.conf.conf.trustee or nil
+	local trustee = self.rule and self.rule.trustee or nil
 	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
 	    local trstee_conf = self.room_.conf.private_conf.trustee
 	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    local tp = trstee_conf.type_opt[trustee.type_opt + 1]
-	    return tp,seconds
+	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
+	    return type,seconds
 	end
     
 	return nil
@@ -191,9 +266,13 @@ function pdk_table:begin_discard()
 		chair_id = self.cur_discard_chair
 	})
 
+	if self.last_discard and self.cur_discard_chair == self.last_discard.chair then
+		self.last_discard = nil
+	end
+
 	local trustee_type,trustee_seconds = self:get_trustee_conf()
-    	if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
-		
+	if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
+
 	end
 end
 
@@ -224,7 +303,7 @@ end
 
 
 function pdk_table:set_trusteeship(player,trustee)
-    if not self.conf.conf.trustee or table.nums(self.conf.conf.trustee) == 0 then
+    if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
         return 
     end
 
@@ -326,7 +405,6 @@ function pdk_table:next_player()
 		chair = chair  % self.start_count + 1
 	until self.players[chair] ~= nil
 
-	self.cur_discard_chair = chair
 	return chair
 end
 
@@ -337,6 +415,10 @@ end
 function pdk_table:pre_start( ... )
 	self.gamelog.start_game_time = os.time()
 	self:update_status(TABLE_STATUS.PLAY)
+end
+
+function pdk_table:cur_player()
+	return self.players[self.cur_discard_chair]
 end
 
 function pdk_table:do_action(player,act)
@@ -365,6 +447,52 @@ function pdk_table:do_action(player,act)
 	log.error("pdk_table:do_action invalid action:%s",act.action)
 end
 
+function pdk_table:get_cards_type(cards)
+	local cardstype, cardsval = cards_util.get_cards_type(cards)
+	if self.rule and self.rule.play.AAA_is_bomb and cardstype == CARD_TYPE.THREE and cardsval  == 14 then
+		cardstype = CARD_TYPE.MISSLE
+	end
+
+	return cardstype,cardsval
+end
+
+function pdk_table:check_discard_next_player_last_single(ctype,cvalue)
+	local play = self.rule and self.rule.play
+	if not play then return end
+
+	-- 下家报单必出最大单牌
+	if play.bao_dan_discard_max and not self.last_discard then
+		local next_player = self.players[self:next_player()]
+		if table.nums(next_player.hand_cards) == 1 and ctype == CARD_TYPE.SINGLE then
+			local _,hand_max_value = table.max(self:cur_player().hand_cards,function(_,c) return cards_util.value(c) end)
+			return hand_max_value ~= cvalue
+		end
+	end
+end
+
+function pdk_table:check_discard_cards_type(ctype,cvalue)
+	local play = self.rule and self.rule.play
+	if not play then return end
+
+	if ( 	(ctype == CARD_TYPE.FOUR_WITH_TWO or ctype == CARD_TYPE.FOUR_WITH_ONE)  and not play.si_dai_er ) or --四带二
+		(ctype == CARD_TYPE.FOUR_WITH_THREE and not play.si_dai_san) or --四带三
+		(ctype == CARD_TYPE.THREE_WITH_ONE and (not play.san_dai_yi or table.nums(self:cur_player().hand_cards) ~= 4))  --三带一
+	then
+		return true
+	end
+end
+
+function pdk_table:check_first_discards_with_3(cards)
+	local play = self.rule and self.rule.play
+	if not play then return end
+
+	-- 首张带黑桃3
+	if self.first_discard and play.first_discard and play.first_discard.with_3 then
+		self.first_discard = nil
+		return not table.logic_or(cards,function(c) return c == 3 end)
+	end
+end
+
 -- 出牌
 function pdk_table:do_action_discard(player, cards)
 	log.info("pdk_table:do_action_discard {%s}",table.concat(cards,","))
@@ -385,7 +513,7 @@ function pdk_table:do_action_discard(player, cards)
 	end
 
 	if not table.logic_and(cards,function(c) return player.hand_cards[c] ~= nil end) then
-		log.warning("pdk_table:discard guid[%d] out cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
+		log.warning("pdk_table:discard guid[%d] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client_pb(player,"SC_PdkDoAction",{
 			result = enum.ERORR_PARAMETER_ERROR
@@ -393,9 +521,19 @@ function pdk_table:do_action_discard(player, cards)
 		return
 	end
 
-	local cardstype, cardsval = cards_util.get_cards_type(cards)
+	local cardstype, cardsval = self:get_cards_type(cards)
 	log.info("cardstype[%s] cardsval[%s]" , cardstype , cardsval)
 	if not cardstype then
+		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
+		send2client_pb(player,"SC_PdkDoAction",{
+			result = enum.ERORR_PARAMETER_ERROR
+		})
+		return
+	end
+
+	if self:check_discard_cards_type(cardstype,cardsval) or 
+	   self:check_discard_next_player_last_single(cardstype,cardsval) or 
+	   self:check_first_discards_with_3(cards) then
 		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client_pb(player,"SC_PdkDoAction",{
 			result = enum.ERORR_PARAMETER_ERROR
@@ -432,6 +570,7 @@ function pdk_table:do_action_discard(player, cards)
 		action = ACTION.DISCARD,
 		cards = cards,
 	})
+
 	log.info("pdk_table:do_action_discard  chair_id [%d] cards{%s}", player.chair_id, table.concat(cards, ','))
 	
 	table.foreach(cards,function(c) player.hand_cards[c] = nil end)
@@ -445,15 +584,16 @@ function pdk_table:do_action_discard(player, cards)
 	})
 
 	if  table.sum(player.hand_cards) == 0 then
+		player.win = true
 		self:game_balance(player)
 	else
-		self:next_player()
+		self.cur_discard_chair = self:next_player()
 		self:begin_discard()
 	end
 end
 
 -- 放弃出牌
-function pdk_table:do_action_pass(player, flag)
+function pdk_table:do_action_pass(player)
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("pdk_table:pass_card guid[%d] status error", player.guid)
 		return
@@ -476,14 +616,13 @@ function pdk_table:do_action_pass(player, flag)
 		time = os.time(),
 	})
 
-	self.last_discard = nil
-
 	log.info("cur_chair_id[%d],pass_chair_id[%d]",self.cur_discard_chair,player.chair_id)
 	self:broadcast2client("SC_PdkDoAction", {
 		chair_id = player.chair_id,
 		action = ACTION.PASS
 	})
-	self:next_player()
+
+	self.cur_discard_chair =  self:next_player()
 	self:begin_discard()
 end
 
@@ -505,7 +644,12 @@ function  pdk_table:is_play( ... )
 end
 
 function pdk_table:game_balance()
-	local card_scores = table.map(self.players,function(p,chair) return chair, - table.nums(p.hand_cards)  end )
+	local card_scores = table.map(self.players,function(p,chair) 
+		local play = self.rule and self.rule.play
+		local count = table.nums(p.hand_cards)
+		return chair, (play and play.lastone_not_consume and count <= 1) and 0 or -count 
+	end )
+	
 	local bomb_scores = table.map(self.players,function(p,chair) return chair,(p.bomb or 0) * 5 end)
 	local card_score_group = table.group(card_scores,function(s) return s < 0 and 1 or 0 end)
 	local card_win_chair = table.keys(card_score_group[0])[1]

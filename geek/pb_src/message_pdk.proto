@@ -16,8 +16,8 @@ enum PDK_CARD_TYPE {
 	THREE                    = 3;                                //三不带
 	THREE_WITH_ONE           = 4;                          	//三带一
 	THREE_WITH_TWO           = 5;                          //三带一对
-	FOUR_WITH_ONE            = 6;                          	//四带二
-	FOUR_WITH_TWO            = 7;                          	//四带两对
+	FOUR_WITH_SINGLE            = 6;                          	//四带二
+	FOUR_WITH_DOUBLE            = 7;                          	//四带一对
 	SINGLE_LINE              = 8;                                	//顺子
 	DOUBLE_LINE              = 9;                                //连对
 	PLANE                    = 10;                               //飞机 不带
@@ -25,6 +25,7 @@ enum PDK_CARD_TYPE {
 	PLANE_WITH_TWO           = 12;                               //飞机 带牌 对
 	BOMB                     = 13;                               //炸弹
 	FOUR_WITH_THREE = 14;
+	MISSLE = 15;
 }
 
 message PdkPlayerInfo {
