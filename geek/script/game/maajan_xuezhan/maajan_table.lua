@@ -105,55 +105,6 @@ function maajan_table:get_trustee_conf()
     return nil
 end
 
-function maajan_table:calculate_gps_distance(pos1,pos2)
-    local R = 6371393
-    local C = math.sin(pos1.latitude) * math.sin(pos2.latitude) * math.cos(pos1.longitude-pos2.longitude)
-        + math.cos(pos1.latitude) * math.cos(pos2.latitude)
-
-    return R * math.acos(C) * math.pi/180
-end
-
-function maajan_table:player_sit_down(player, chair_id,reconnect)
-    if not reconnect then
-        if self.rule.option.ip_stop_cheat and self:check_same_ip_net(player) then
-            return enum.ERROR_IP_TREAT
-        end
-
-        if self.rule.option.gps_distance >= 0 then
-            log.dump(player)
-            if not player.gps_latitude or not player.gps_longitude then
-                return enum.ERROR_GPS_TREAT
-            end
-
-            local player_gps = {
-                longitude = player.gps_longitude,
-                latitude = player.gps_latitude,
-            }
-
-            local limit = self.rule.option.gps_distance
-            local is_gps_treat = table.logic_or(self.players,function(p)
-                local p_gps = {
-                    longitude = p.gps_longitude,
-                    latitude = p.gps_latitude,
-                }
-                local dist = self:calculate_gps_distance(p_gps,player_gps)
-                log.info("player %s,%s distance %s",p.guid,player.guid,dist)
-                return dist < limit
-            end)
-
-            if is_gps_treat then
-                return enum.ERROR_GPS_TREAT
-            end
-        end
-
-        if (self.cur_round and self.cur_round > 0) or self:is_play() then
-            return enum.ERROR_TABLE_STATUS_GAMING
-        end
-    end
-
-    return base_table.player_sit_down(self,player,chair_id,reconnect)
-end
-
 function maajan_table:on_private_pre_dismiss()
     if self.cur_round and self.cur_round > 0 then
         self:on_final_game_overed()
