@@ -43,12 +43,11 @@ function cards_util.check_cards(cards)
 	return table.logic_and(cards,function(c) return cards_util.check(c) end)
 end
 
-function cards_util.search_great_than(kcards,ctype,cvalue,ccount)
+function cards_util.seek_great_than(kcards,ctype,cvalue,ccount)
 	local valuegroup = table.group(kcards,function(_,c) return cards_util.value(c) end)
 	local valuecards =  table.map(valuegroup,function(cs,v)  return v,table.values(cs) end)
 	local valuecounts = table.map(valuegroup,function(cs,v) return v,table.nums(cs) end)
 	local countgroup =  table.group(valuecounts,function(c)  return c end)
-	local countvalues = table.map(countgroup,function(cg,c) return c,table.keys(cg) end)
 
 	if ctype == PDK_CARD_TYPE.MISSLE then
 		return
@@ -92,21 +91,25 @@ function cards_util.search_great_than(kcards,ctype,cvalue,ccount)
 
 	if ctype == PDK_CARD_TYPE.FOUR_WITH_DOUBLE then
 		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] == 4  then return PDK_CARD_TYPE.FOUR_WITH_DOUBLE,i end
+			if valuecards[i] and #valuecards[i] == 4 and table.sum(valuecards,function(cs,j) return j == i and 0 or #cs end) >= 2  then 
+				return PDK_CARD_TYPE.FOUR_WITH_DOUBLE,i 
+			end
 		end
 	end
 
 	if ctype == PDK_CARD_TYPE.FOUR_WITH_THREE then
 		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] == 4  then return PDK_CARD_TYPE.FOUR_WITH_THREE ,i end
+			if valuecards[i] and #valuecards[i] == 4  and table.sum(valuecards,function(cs,j) return j == i and 0 or #cs end) >= 3 then 
+				return PDK_CARD_TYPE.FOUR_WITH_THREE ,i 
+			end
 		end
 	end
 
-	if ctype == PDK_CARD_TYPE.SINGLE_LINE then
+	local function continuity_cards_count(begin,value_count)
 		local first_value
 		local lian_count = 0
-		for i = cvalue + 1,14 do
-			if countgroup[1][i] then
+		for i = begin,14 do
+			if countgroup[value_count] and countgroup[value_count][i] then
 				lian_count = first_value and lian_count + 1 or 1
 				first_value = first_value or i
 			else
@@ -114,74 +117,39 @@ function cards_util.search_great_than(kcards,ctype,cvalue,ccount)
 			end
 		end
 
+		return lian_count,first_value
+	end
+
+	if ctype == PDK_CARD_TYPE.SINGLE_LINE then
+		local lian_count,first_value = continuity_cards_count(cvalue + 1,1)
 		if lian_count >= ccount then
 			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
 	end
 
 	if ctype == PDK_CARD_TYPE.DOUBLE_LINE then
-		local first_value
-		local lian_count = 0
-		for i = cvalue + 1,14 do
-			if countgroup[2][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		local lian_count,first_value = continuity_cards_count(cvalue + 1,2)
 		if lian_count >= ccount / 2 then
 			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
 	end
 
 	if ctype == PDK_CARD_TYPE.PLANE then
-		local first_value
-		local lian_count = 0
-		for i = cvalue + 1,14 do
-			if countgroup[3][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
 		if lian_count >= ccount / 3 then
 			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
 	end
 
 	if ctype == PDK_CARD_TYPE.PLANE_WITH_ONE then
-		local first_value
-		local lian_count = 0
-		for i = cvalue + 1,14 do
-			if countgroup[3][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
 		if lian_count >= ccount  /  4 then
 			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
 	end
 
 	if ctype == PDK_CARD_TYPE.PLANE_WITH_TWO then
-		local first_value
-		local lian_count = 0
-		for i = cvalue + 1,14 do
-			if countgroup[3][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
 		if lian_count >= ccount / 5 then
 			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
@@ -219,6 +187,21 @@ function cards_util.get_cards_type(cards)
 		return nil
 	end
 
+	local function continuity_cards_count(begin,value_count)
+		local first_value
+		local lian_count = 0
+		for i = begin,14 do
+			if countgroup[value_count][i] then
+				lian_count = first_value and lian_count + 1 or 1
+				first_value = first_value or i
+			elseif first_value then
+				break
+			end
+		end
+
+		return lian_count,first_value
+	end
+
 	if countcounts[3] then
 		if countcounts[3] == 1 then
 			if (countcounts[2] == 1 or countcounts[1] == 2) and #cards == 5 then
@@ -235,11 +218,10 @@ function cards_util.get_cards_type(cards)
 		end
 
 		if  countcounts[3] > 1 then
-			for i = 2,#countvalues[3] do
-				if math.abs(countvalues[3][i] - countvalues[3][i - 1]) ~= 1 or countvalues[3][i] == 15 then
-					return nil
-				end
-			end
+			local lian_count,_ = continuity_cards_count(3,3)
+
+			if lian_count < 2 then return end
+
 			local count_other = table.sum(countcounts,function(cc,c) return c == 3 and 0 or cc end)
 			if count_other == countcounts[3] and #cards == 4 * countcounts[3] then
 				return PDK_CARD_TYPE.PLANE, countvalues[3][1] -- 飞机不带牌
@@ -257,39 +239,20 @@ function cards_util.get_cards_type(cards)
 		return nil
 	end
 
+
 	if countcounts[2] and countcounts[2] > 0 then
 		if countcounts[2] == 1 and #cards == 2 then
 			return PDK_CARD_TYPE.DOUBLE, countvalues[2][1] -- 对子
 		end
-
-		local first_value
-		local lian_count = 0
-		for i = 3,14 do
-			if countgroup[2][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		
+		local lian_count,first_value = continuity_cards_count(3,2)
 		if lian_count >= 3 and lian_count == countcounts[2]  and #cards == lian_count * 2 then
 			return PDK_CARD_TYPE.DOUBLE_LINE , first_value -- 连对
 		end
 	end
 
 	if countcounts[1] and countcounts[1] >= 5 then
-		local first_value
-		local lian_count = 0
-		for i = 3,14 do
-			if countgroup[1][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
-			end
-		end
-
+		local lian_count,first_value = continuity_cards_count(3,1)
 		if lian_count >= 5 and lian_count == countcounts[1] and lian_count == lian_count then
 			return PDK_CARD_TYPE.SINGLE_LINE , first_value -- 顺子
 		end

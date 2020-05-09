@@ -137,6 +137,21 @@ function base_table:get_free_chair_id()
 	return nil
 end
 
+function base_table:begin_clock(timeout,player,total_time)
+	if player then 
+		send2client_pb(player,"SC_TimeOutNotify",{
+			left_time = math.ceil(timeout),
+			total_time = total_time and math.floor(total_time) or nil,
+		})
+		return
+	end
+	
+	self:broadcast2client("SC_TimeOutNotify",{
+		left_time = timeout,
+		total_time = total_time,
+	})
+end
+
 function base_table:on_reconnect(player)
 	if not self.dismiss_request then return end
 
