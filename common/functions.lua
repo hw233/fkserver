@@ -490,11 +490,15 @@ function table.mergeto_x(src,fn,dest)
 end
 
 function table.merge_tables(tbs,agg)
-    local r = {}
+    local r
     for _,tb in pairs(tbs or {}) do
-        table.mergeto(r,tb,agg)
+        if not r then 
+            r = clone(tb)
+        else 
+            table.mergeto(r,tb,agg) 
+        end
     end
-    return r
+    return r or {}
 end
 
 function table.insertto(dest, src, begin)
@@ -682,7 +686,7 @@ function table.union_tables(tbs,agg)
     local t = {}
 
     for _,tb in pairs(tbs or {}) do
-        table.unionto(t,tb,agg)
+            table.unionto(t,tb,agg)
     end
 
     return t
