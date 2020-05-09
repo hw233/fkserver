@@ -278,6 +278,10 @@ function pdk_table:begin_discard()
 	})
 
 	if self.last_discard and self.cur_discard_chair == self.last_discard.chair then
+		if self.last_discard.type == CARD_TYPE.BOMB then
+			local player = self.players[self.last_discard.chair]
+			player.bomb = (player.bomb or 0) + 1
+		end
 		self.last_discard = nil
 	end
 
@@ -402,7 +406,9 @@ function pdk_table:on_final_game_overed()
 			chair_id = chair,
 			guid = p.guid,
 			score = p.total_score or 0,
-			statistics = table.series(p.statistics or {},function(c,t) return {type = t,count = c} end),
+			statistics = table.series(p.statistics or {},function(c,t) 
+				return {type = t == "win" and 1 or (t == "max_score" and 2 or (t == "bomb" and 3 or 0)),count = c}
+			end),
 		}
 	end),
     })
@@ -536,8 +542,7 @@ function pdk_table:check_first_discards_with_3(cards)
 
 	-- 首张带黑桃3
 	if self.first_discard and play.first_discard and play.first_discard.with_3 then
-		self.first_discard = nil
-		return not table.logic_or(cards,function(c) return c == 3 end)
+		return table.logic_or(cards,function(c) return c == 3 end) 
 	end
 end
 
@@ -600,6 +605,8 @@ function pdk_table:do_action_discard(player, cards)
 		return
 	end
 
+	self.first_discard = nil
+
 	self.last_discard = {
 		cards = cards,
 		chair = player.chair_id,
@@ -610,7 +617,7 @@ function pdk_table:do_action_discard(player, cards)
 
 	if cardstype == CARD_TYPE.BOMB then
 		player.bomb = (player.bomb  or 0) + 1
-		self.bomb = self.bomb + 1
+		player.statistics.bomb = (player.statistics.bomb or 0) + 1
 	end
 
 	self:broadcast2client("SC_PdkDoAction", {
@@ -633,6 +640,7 @@ function pdk_table:do_action_discard(player, cards)
 
 	if  table.sum(player.hand_cards) == 0 then
 		player.win = true
+		player.statistics.win = (player.statistics.win or 0) + 1
 		self:game_balance()
 	else
 		self.cur_discard_chair = self:next_player()
@@ -714,21 +722,29 @@ function  pdk_table:is_play( ... )
 end
 
 function pdk_table:game_balance()
-	local card_scores = table.map(self.players,function(p,chair) 
+	local scores = table.map(self.players,function(p,chair) 
 		local play = self.rule and self.rule.play
 		local count = table.nums(p.hand_cards)
-		return chair, (play and play.lastone_not_consume and count <= 1) and 0 or -count 
+		local score = (play and play.lastone_not_consume and count <= 1) and 0 or -count 
+		return chair, table.map(self.players,function(_,c) return c,c == chair and score or  -score end)
 	end )
+	local card_scores = table.merge_tables(scores,function(l,r) return (l or 0) + (r or 0) end)
+
+	local bombs = table.map(self.players,function(p,chair)
+		local score = (p.bomb or 0) * 5
+		return chair,table.map(self.players,function(_,c)  return c, c == chair and score or -score end)
+	end)
+	local bomb_scores = table.merge_tables(bombs,function(l,r) return (l or 0) + (r  or 0) end)
 	
-	local bomb_scores = table.map(self.players,function(p,chair) return chair,(p.bomb or 0) * 5 end)
-	local card_score_group = table.group(card_scores,function(s) return s < 0 and 1 or 0 end)
-	local card_win_chair = table.keys(card_score_group[0])[1]
-	card_scores[card_win_chair] = math.abs(table.sum(card_score_group[1]))
-	local bomb_score_group = table.group(bomb_scores,function(s) return s < 0 and 1 or 0 end)
-	local bomb_win_chair = table.keys(bomb_score_group[0])[1]
-	bomb_scores[bomb_win_chair] = math.abs(table.sum(bomb_score_group[1]))
-	
-	local scores = table.map(self.players,function(_,chair)  return chair,(card_scores[chair] or 0) + (bomb_scores[0] or 0) end)
+	local scores = table.map(self.players,function(_,chair)  return chair,(card_scores[chair] or 0) + (bomb_scores[chair] or 0) end)
+
+	self:foreach(function(p,chair)
+		local score = scores[chair]
+		if score >= 0 and (p.statistics.max_score or 0) < score then
+			p.statistics.max_score = score
+		end
+	end)
+
 	local moneies = table.map(scores,function(score,chair) return chair,self:calc_score_money(score) end)
 	moneies = self:balance(moneies,enum.LOG_MONEY_OPT_TYPE_PDK)
 	self:foreach(function(p,chair)

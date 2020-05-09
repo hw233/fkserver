@@ -84,7 +84,7 @@ message SC_PdkDoAction{
 message PdkBlanacePlayer{
 	int32 chair_id 			= 1;
 	repeated int32 hand_cards     = 2; // 剩余手牌数量
-	int32 boom_score        = 3; // 炸弹得分
+	int32 bomb_score        = 3; // 炸弹得分
 	int32 total_score 		= 4;
 	int32 round_score 		= 5;
 	int32 round_money 		= 6;
