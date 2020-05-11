@@ -548,6 +548,7 @@ function base_table:game_over()
 end
 
 function base_table:on_final_game_overed()
+	self:on_process_over()
 	self.round_id = nil
 	self.ext_round_id = nil
 	self.cur_round = nil
@@ -1380,6 +1381,14 @@ function base_table:balance(moneies,why)
 	return moneies
 end
 
+function base_table:on_process_start(player_count)
+
+end
+
+function base_table:on_process_over()
+
+end
+
 -- 开始游戏
 function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
@@ -1387,6 +1396,10 @@ function base_table:start(player_count)
 	if result_ == true then
 		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
 		return nil
+	end
+
+	if not self.cur_round then
+		self:on_process_start(player_count)
 	end
 
 	self:on_pre_start(player_count)
