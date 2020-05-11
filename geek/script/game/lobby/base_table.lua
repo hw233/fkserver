@@ -1612,8 +1612,32 @@ function base_table:log_msg(str)
 	self:log(str, 1 ,3)
 end
 
-function base_table:global_status_info(table_id)
-	return {}
+function base_table:global_status_info()
+	local seats = table.series(self.players,function(p,chair_id) 
+		return {
+			chair_id = chair_id,
+			player_info = {
+			    guid = p.guid,
+			    icon = p.icon,
+			    nickname = p.nickname,
+			    sex = p.sex,
+			},
+			ready = self.ready_list[chair_id] and true or false,
+		    }
+	end)
+    
+	local private_conf = base_private_table[self.private_id]
+    
+	local info = {
+	    table_id = self.private_id,
+	    seat_list = seats,
+	    room_cur_round = self.cur_round or 0,
+	    rule = self.private_id and json.encode(self.rule) or "",
+	    game_type = def_first_game_type,
+	    template_id = private_conf and private_conf.template,
+	}
+    
+	return info
 end
 
 return base_table
