@@ -119,6 +119,8 @@ function pdk_table:check_dismiss_commit(agrees)
 	return agree_count >= agree_count_at_least 
 end
 
+
+
 function pdk_table:ding_zhuang()
 	local function random_zhuang()
 		local ps = table.values(self.players)
@@ -183,6 +185,14 @@ function pdk_table:ding_zhuang()
 	end
 end
 
+function pdk_table:on_process_start()
+	self:foreach(function(p) 
+		p.statistics = {}
+		p.total_score = 0
+		p.total_money = 0
+	end)
+end
+
 function pdk_table:on_started(player_count)
 	log.info("pdk_table:on_started %s.",player_count)
 
@@ -192,10 +202,11 @@ function pdk_table:on_started(player_count)
 	self:update_status(TABLE_STATUS.PLAY)
 
 	self:foreach(function(p) 
-		p.statistics = {}
 		p.win = nil
 		p.round_score = nil
 		p.round_money = nil
+		p.discard_times = nil
+		p.bomb = nil
 	end)
 
 	self.game_log = {
@@ -245,6 +256,12 @@ function pdk_table:deal_cards()
 
 	local dealer = card_dealer.new(cards)
 	dealer:shuffle()
+	local pei_cards = {
+		-- {3,23,43,63,4,24,44,64,5,25,45,65,14,34,54,15},
+		-- {6,26,46,66,7,27,47,67,8,28,48,68,9,29,49,69},
+		-- {10,30,50,70,11,31,51,71,12,32,52,72,13,33,53,73},
+	}
+	dealer:layout_cards(table.union_tables(pei_cards))
 	self:foreach(function(p)
 		local cards = dealer:deal_cards(cards_count)
 		p.hand_cards = table.map(cards,function(c) return c,1 end)
@@ -276,14 +293,6 @@ function pdk_table:begin_discard()
 	self:broadcast2client("SC_PdkDiscardRound",{
 		chair_id = self.cur_discard_chair
 	})
-
-	if self.last_discard and self.cur_discard_chair == self.last_discard.chair then
-		if self.last_discard.type == CARD_TYPE.BOMB then
-			local player = self.players[self.last_discard.chair]
-			player.bomb = (player.bomb or 0) + 1
-		end
-		self.last_discard = nil
-	end
 
 	local function auto_discard(player)
 		if not self.last_discard then
@@ -377,12 +386,13 @@ function pdk_table:on_game_overed()
 
     self:clear_ready()
 
-    self:foreach(function(v)
+    self:foreach(function(p)
+	p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
         if not self.private_id then
-            if v.deposit then
-                v:forced_exit()
-            elseif v:is_android() then
-                self:ready(v)
+            if p.deposit then
+                p:forced_exit()
+            elseif p:is_android() then
+                self:ready(p)
             end
         end
     end)
@@ -397,18 +407,20 @@ function pdk_table:on_game_overed()
     base_table.on_game_overed(self)
 end
 
-function pdk_table:on_final_game_overed()
+function pdk_table:on_process_over()
     self.start_count = self.chair_count
 
     self:broadcast2client("SC_PdkFinalGameOver",{
 	players = table.series(self.players,function(p,chair)
+		local statistics = table.series(p.statistics or {},function(c,t) 
+			return {type = t == "win" and 1 or (t == "max_score" and 2 or (t == "bomb" and 3 or 0)),count = c}
+		end)
+		log.dump(statistics,tostring(chair))
 		return {
 			chair_id = chair,
 			guid = p.guid,
 			score = p.total_score or 0,
-			statistics = table.series(p.statistics or {},function(c,t) 
-				return {type = t == "win" and 1 or (t == "max_score" and 2 or (t == "bomb" and 3 or 0)),count = c}
-			end),
+			statistics = statistics,
 		}
 	end),
     })
@@ -436,7 +448,7 @@ function pdk_table:on_final_game_overed()
     end
 
     self.zhuang = nil
-    base_table.on_final_game_overed(self)
+    base_table.on_process_over(self)
 end
 
 -- 检查是否可取消准备
@@ -458,7 +470,7 @@ function pdk_table:load_lua_cfg()
 	
 end
 
-function pdk_table:next_player()
+function pdk_table:next_chair()
 	local chair = self.cur_discard_chair
 	repeat
 		chair = chair  % self.start_count + 1
@@ -516,7 +528,7 @@ function pdk_table:check_discard_next_player_last_single(ctype,cvalue)
 
 	-- 下家报单必出最大单牌
 	if play.bao_dan_discard_max and not self.last_discard then
-		local next_player = self.players[self:next_player()]
+		local next_player = self.players[self:next_chair()]
 		if table.nums(next_player.hand_cards) == 1 and ctype == CARD_TYPE.SINGLE then
 			local _,hand_max_value = table.max(self:cur_player().hand_cards,function(_,c) return cards_util.value(c) end)
 			return hand_max_value ~= cvalue
@@ -542,7 +554,7 @@ function pdk_table:check_first_discards_with_3(cards)
 
 	-- 首张带黑桃3
 	if self.first_discard and play.first_discard and play.first_discard.with_3 then
-		return table.logic_or(cards,function(c) return c == 3 end) 
+		return table.logic_and(cards,function(c) return c ~= 3 end) 
 	end
 end
 
@@ -615,10 +627,7 @@ function pdk_table:do_action_discard(player, cards)
 		count = #cards,
 	}
 
-	if cardstype == CARD_TYPE.BOMB then
-		player.bomb = (player.bomb  or 0) + 1
-		player.statistics.bomb = (player.statistics.bomb or 0) + 1
-	end
+	player.discard_times = (player.discard_times or 0) + 1
 
 	self:broadcast2client("SC_PdkDoAction", {
 		chair_id = player.chair_id,
@@ -641,9 +650,12 @@ function pdk_table:do_action_discard(player, cards)
 	if  table.sum(player.hand_cards) == 0 then
 		player.win = true
 		player.statistics.win = (player.statistics.win or 0) + 1
-		self:game_balance()
+		if cardstype == CARD_TYPE.BOMB or cardstype == CARD_TYPE.MISSLE then
+			player.bomb = (player.bomb or 0) + 1
+		end
+		self:game_balance(player)
 	else
-		self.cur_discard_chair = self:next_player()
+		self.cur_discard_chair = self:next_chair()
 		self:begin_discard()
 	end
 end
@@ -700,7 +712,18 @@ function pdk_table:do_action_pass(player)
 		action = ACTION.PASS
 	})
 
-	self.cur_discard_chair =  self:next_player()
+	self.cur_discard_chair =  self:next_chair()
+
+	if self.last_discard and self.cur_discard_chair == self.last_discard.chair  then
+		log.dump(self.last_discard)
+		if self.last_discard.type == CARD_TYPE.BOMB or self.last_discard.type == CARD_TYPE.MISSLE then
+			local p = self:cur_player()
+			p.bomb = (p.bomb or 0) + 1
+		end
+		log.dump(self:cur_player().bomb)
+		self.last_discard = nil
+	end
+
 	self:begin_discard()
 end
 
@@ -721,20 +744,38 @@ function  pdk_table:is_play( ... )
 	return  self.status and self.status ~= TABLE_STATUS.FREE and self.status ~= TABLE_STATUS.END
 end
 
-function pdk_table:game_balance()
-	local scores = table.map(self.players,function(p,chair) 
-		local play = self.rule and self.rule.play
+function pdk_table:game_balance(winner)
+	local play = self.rule and self.rule.play
+	local function calc_score(p)
 		local count = table.nums(p.hand_cards)
-		local score = (play and play.lastone_not_consume and count <= 1) and 0 or -count 
-		return chair, table.map(self.players,function(_,c) return c,c == chair and score or  -score end)
-	end )
-	local card_scores = table.merge_tables(scores,function(l,r) return (l or 0) + (r or 0) end)
+		local score = (play and play.lastone_not_consume and count <= 1) and 0 or count
+		score = ((not p.discard_times or p.discard_times == 0 or (p.discard_times == 1 and self.zhuang == p.chair_id)) and 2  or 1) * score
+		return score
+	end
 
-	local bombs = table.map(self.players,function(p,chair)
+	local card_win_matrix = table.map(self.players,function(p,chair)
+		local score = calc_score(p)
+		return chair, table.map(self.players,function(_,c) if c == winner.chair_id then return c,score end end)
+	end )
+
+	local card_losers = table.map(card_win_matrix,function(winer,c) return c, - table.sum(winer) end)
+	log.dump(card_losers)
+	local card_winers = table.merge_tables(card_win_matrix,function(l,r) return (l or 0) + (r or 0)  end)
+	log.dump(card_winers)
+	local card_scores = table.merge(card_winers,card_losers,function(l,r) return (l or 0) + (r or 0) end)
+	log.dump(card_scores)
+
+	local bomb_lose_matrix = table.map(self.players,function(p,chair)
 		local score = (p.bomb or 0) * 5
-		return chair,table.map(self.players,function(_,c)  return c, c == chair and score or -score end)
+		return chair,table.map(self.players,function(_,c) return c,c ~= chair and -score or nil end)
 	end)
-	local bomb_scores = table.merge_tables(bombs,function(l,r) return (l or 0) + (r  or 0) end)
+	local bomb_winners = table.map(bomb_lose_matrix,function(losers,chair) return chair,math.abs(table.sum(losers)) end)
+	dump(bomb_winners)
+	local bomb_losers = table.merge_tables(bomb_lose_matrix,function(l,r) return (l or 0) + (r or 0) end) 
+	dump(bomb_losers)
+	local bomb_scores = table.merge(bomb_winners,bomb_losers,function(l,r) return (l or 0) + (r  or 0) end)
+
+	log.dump(bomb_scores)
 	
 	local scores = table.map(self.players,function(_,chair)  return chair,(card_scores[chair] or 0) + (bomb_scores[chair] or 0) end)
 
