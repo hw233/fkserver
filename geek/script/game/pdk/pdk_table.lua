@@ -737,6 +737,7 @@ function  pdk_table:reconnect(player)
 			chair_id = self.cur_discard_chair
 		})
 	end
+	base_table.reconnect(self,player)
 end
 
 function  pdk_table:is_play( ... )
