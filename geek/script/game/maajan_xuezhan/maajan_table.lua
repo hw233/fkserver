@@ -1600,7 +1600,7 @@ end
 
 function maajan_table:max_hu(p,tiles)
     local tile_fans = table.map(tiles,function(_,tile) return tile,self:hu_fan(p.pai,tile) end)
-    local fans = table.series(tile_fans)
+    local fans = table.series(tile_fans,function(v) return v end)
     table.sort(fans,function(l,r) return l > r end)
     if table.nums(fans) > 0 then
         return fans[1]
