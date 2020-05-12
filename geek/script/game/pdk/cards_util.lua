@@ -170,8 +170,6 @@ function cards_util.get_cards_type(cards)
 	local countcounts = table.map(countvalues,function(cs,c) return c,table.nums(cs) end)
 
 	if countcounts[4] then
-		if countcounts[4] > 1 or countcounts[3] then return nil end
-
 		if (countcounts[1] == 2 or countcounts[2] == 1) and #cards ==  6 then
 			return PDK_CARD_TYPE.FOUR_WITH_DOUBLE, countvalues[4][1] -- 四带一
 		end
