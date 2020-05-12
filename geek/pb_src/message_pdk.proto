@@ -18,13 +18,13 @@ enum PDK_CARD_TYPE {
 	THREE_WITH_TWO           = 5;                          //三带一对
 	FOUR_WITH_SINGLE            = 6;                          	//四带二
 	FOUR_WITH_DOUBLE            = 7;                          	//四带一对
-	SINGLE_LINE              = 8;                                	//顺子
-	DOUBLE_LINE              = 9;                                //连对
-	PLANE                    = 10;                               //飞机 不带
-	PLANE_WITH_ONE           = 11;                               //飞机 带牌 单
-	PLANE_WITH_TWO           = 12;                               //飞机 带牌 对
-	BOMB                     = 13;                               //炸弹
-	FOUR_WITH_THREE = 14;
+	FOUR_WITH_THREE = 8;
+	SINGLE_LINE              = 9;                                	//顺子
+	DOUBLE_LINE              = 10;                                //连对
+	PLANE                    = 11;                               //飞机 不带
+	PLANE_WITH_ONE           = 12;                               //飞机 带牌 单
+	PLANE_WITH_TWO           = 13;                               //飞机 带牌 对
+	BOMB                     = 14;                               //炸弹
 	MISSLE = 15;
 }
 

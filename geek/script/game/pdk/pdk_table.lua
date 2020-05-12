@@ -809,6 +809,8 @@ function pdk_table:game_balance(winner)
 		end)
 	})
 
+	self:notify_game_money()
+
 	self.last_discard = nil
 	self:update_status(TABLE_STATUS.FREE)
 	self:clear_ready()
