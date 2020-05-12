@@ -187,19 +187,17 @@ function cards_util.get_cards_type(cards)
 		return nil
 	end
 
-	local function continuity_cards_count(begin,value_count)
-		local first_value
-		local lian_count = 0
+	local function max_continuity_cards(begin,value_count)
+		local values = {}
 		for i = begin,14 do
-			if countgroup[value_count][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			elseif first_value then
-				break
+			if value_count[i] then
+				table.insert(values,i)
+			elseif #values == 1 then
+				values = {}
 			end
 		end
 
-		return lian_count,first_value
+		return values
 	end
 
 	if countcounts[3] then
@@ -218,21 +216,20 @@ function cards_util.get_cards_type(cards)
 		end
 
 		if  countcounts[3] > 1 then
-			local lian_count,_ = continuity_cards_count(3,3)
+			local values = max_continuity_cards(3,countgroup[3])
+			log.dump(values)
+			if #values < 2 then return end
 
-			if lian_count < 2 then return end
-
-			local count_other = table.sum(countcounts,function(cc,c) return c == 3 and 0 or cc end)
-			if count_other == countcounts[3] and #cards == 4 * countcounts[3] then
-				return PDK_CARD_TYPE.PLANE, countvalues[3][1] -- 飞机不带牌
+			if #cards == #values * 3 then
+				return PDK_CARD_TYPE.PLANE, values[1] -- 飞机不带牌
 			end
 
-			if count_other == countcounts[3] * 2 and  #cards == 5 * countcounts[3]  then
-				return PDK_CARD_TYPE.PLANE_WITH_TWO, countvalues[3][1] -- 飞机带对牌
-			end
-
-			if count_other == 0 and #cards == 3 * countcounts[3] then
-				return PDK_CARD_TYPE.PLANE, countvalues[3][1] -- 飞机不带牌
+			--三带二飞机
+			local probobility_3_count = #cards  /  5
+			for i = 0,probobility_3_count - 1 do
+				if #cards == (#values - i) * 5 then
+					return PDK_CARD_TYPE.PLANE_WITH_TWO, values[i + 1]
+				end
 			end
 		end
 
@@ -244,17 +241,17 @@ function cards_util.get_cards_type(cards)
 		if countcounts[2] == 1 and #cards == 2 then
 			return PDK_CARD_TYPE.DOUBLE, countvalues[2][1] -- 对子
 		end
-		
-		local lian_count,first_value = continuity_cards_count(3,2)
-		if lian_count >= 3 and lian_count == countcounts[2]  and #cards == lian_count * 2 then
-			return PDK_CARD_TYPE.DOUBLE_LINE , first_value -- 连对
+
+		local values = max_continuity_cards(3,countgroup[2])
+		if #values >= 3 and #values == countcounts[2]  and #cards == #values * 2 then
+			return PDK_CARD_TYPE.DOUBLE_LINE , values[1] -- 连对
 		end
 	end
 
 	if countcounts[1] and countcounts[1] >= 5 then
-		local lian_count,first_value = continuity_cards_count(3,1)
-		if lian_count >= 5 and lian_count == countcounts[1] and lian_count == lian_count then
-			return PDK_CARD_TYPE.SINGLE_LINE , first_value -- 顺子
+		local values = max_continuity_cards(3,countgroup[1])
+		if #values >= 5 and #values == countcounts[1] then
+			return PDK_CARD_TYPE.SINGLE_LINE , values[1] -- 顺子
 		end
 	end
 
