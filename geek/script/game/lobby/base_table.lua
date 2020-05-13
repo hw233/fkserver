@@ -1075,7 +1075,7 @@ function base_table:player_stand_up(player, reason)
 			end
 		end
 
-		if self.private_id and player_count == 1  and (reason == enum.STANDUP_REASON_NORMAL)  then
+		if self.private_id and player_count == 1 then
 			self:dismiss()
 		end
 
