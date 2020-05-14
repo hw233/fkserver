@@ -211,7 +211,11 @@ function pdk_table:on_started(player_count)
 
 	self.game_log = {
 		start_game_time = os.time(),
-		players = table.map(self.players,function(_,chair) return chair,{} end),
+		players = table.map(self.players,function(p,chair) 
+			return chair,{
+				guid = p.guid,
+			} 
+		end),
 		actions = {},
 		rule = self.private_id and self.rule or nil,
 		club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
@@ -262,8 +266,9 @@ function pdk_table:deal_cards()
 		-- {10,30,50,70,11,31,51,71,12,32,52,72,13,33,53,73},
 	}
 	dealer:layout_cards(table.union_tables(pei_cards))
-	self:foreach(function(p)
+	self:foreach(function(p,chair)
 		local cards = dealer:deal_cards(cards_count)
+		self.game_log.players[chair].deal_cards = cards
 		p.hand_cards = table.map(cards,function(c) return c,1 end)
 	end)
 
@@ -811,6 +816,22 @@ function pdk_table:game_balance(winner)
 	})
 
 	self:notify_game_money()
+
+	table.foreach(self.players,function(p,chair) 
+		local plog = self.game_log.players[chair]
+		plog.total_money = p.total_money
+		plog.total_score = p.total_score
+		plog.round_money = p.round_money
+		plog.score = p.round_score
+		plog.nickname = p.nickname
+		plog.head_url = p.icon
+		plog.guid = p.guid
+		plog.sex = p.sex
+		plog.bomb_score = bomb_scores[chair]
+	end)
+
+	self.game_log.cur_round = self.cur_round
+	self:save_game_log(self.game_log)
 
 	self.last_discard = nil
 	self:update_status(TABLE_STATUS.FREE)
