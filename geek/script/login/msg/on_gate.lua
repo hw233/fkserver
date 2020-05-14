@@ -85,7 +85,7 @@ local function reg_account(msg)
         account = msg.open_id,
         nickname = msg.nickname or ("guest_"..tostring(guid)),
         open_id = msg.open_id,
-        sex = msg.sex or false,
+        sex = msg.sex or 1,
         icon = msg.icon or default_open_id_icon,
         version = msg.version,
         login_ip = msg.ip,

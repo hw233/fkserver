@@ -37,7 +37,7 @@ message PLAYER_BASE_INFO {
     int32   guid = 1;    //玩家ID
     string  icon = 2;        //头像
     string  nickname = 3;   //昵称
-    bool    sex =4; // 性别
+    int32    sex =4; // 性别
 }
 
 //俱乐部信息

@@ -1,10 +1,11 @@
 
-…!
-player_define.protocommon.proto"¯
+?!
+player_define.protocommon.proto"?
 GameClientRoomListCfg
 game_id (RgameId(
 second_game_type (RsecondGameType&
-first_game_type (RfirstGameType
+first_game_type (R
+firstGameType
 	game_name (	RgameName
 table_count (R
 tableCount
@@ -17,10 +18,11 @@ cell_money (R	cellMoney
 platform_id
  (	R
 platformId
-title (	Rtitle"¶
+title (	Rtitle"?
 PlayerBaseInfo
 bank (Rbank&
-login_award_day (RloginAwardDay5
+login_award_day (R
+loginAwardDay5
 login_award_receive_day (RloginAwardReceiveDay*
 online_award_time (RonlineAwardTime(
 online_award_num (RonlineAwardNum0
@@ -33,11 +35,12 @@ headerIcon'
  (RslotmaAddition
 icon (	Ricon
 status (Rstatus
-phone (	Rphone
-sex (Rsex
+phone
+ (	Rphone
+sex (Rsex
 type (Rtype
 nickname (	Rnickname
-role (Rrole"ê
+role (Rrole"?
 PlayerVisualInfo
 chair_id (RchairId
 guid (Rguid
@@ -53,7 +56,7 @@ headerIcon
  (	Ricon",
 ItemInfo
 id (Rid
-num (Rnum"•
+num (Rnum"?
 MsgDataInfo
 id (Rid
 
@@ -63,7 +66,7 @@ start_time (R	startTime
 is_read (RisRead
 content (	Rcontent".
 ItemBagInfo
-items (2	.ItemInfoRitems"˝
+items (2	.ItemInfoRitems"?
 MailInfo
 id (	Rid
 
@@ -75,8 +78,9 @@ createTime-
 sender (2.PLAYER_BASE_INFORsender
 title (	Rtitle
 content (	Rcontent
-status (Rstatus"≤
-BankStatement
+status (Rstatus"?
+
+BankStatement
 serial (Rserial
 guid (Rguid
 time (Rtime
@@ -91,20 +95,21 @@ createTime-
 money (Rmoney"7
 RankList+
 pb_rank_list (2	.RankItemR
-pbRankList"Ü
+pbRankList"?
 AndroidInfo
 guid (Rguid
 account (	Raccount
 nickname (	Rnickname
 game_id (RgameId
-money (Rmoney"É
+money (Rmoney"?
 	CashFalse
 guid (Rguid
 order_id (RorderId
 coins (Rcoins
 status (Rstatus
-status_c (RstatusC"Ω
-CashMoneyType
+status_c (RstatusC"?
+
+CashMoneyType
 	cash_type (RcashType
 money (Rmoney
 
@@ -112,17 +117,20 @@ created_at (	R	createdAt
 status (Rstatus
 
 agent_guid (R	agentGuid#
-exchange_code (	RexchangeCode"7
+
+exchange_code (	RexchangeCode"7
 PlayerMoney
 money (Rmoney
-bank (Rbank"ó
+bank (Rbank"?
 Recharge
 guid (Rguid
 id (Rid#
-exchange_gold (RexchangeGold
+
+exchange_gold (RexchangeGold
 
 pay_status (R	payStatus#
-server_status (RserverStatus"™
+
+server_status (RserverStatus"?
 Marquee
 id (Rid
 
@@ -130,16 +138,19 @@ start_time (R	startTime
 end_time (RendTime
 content (	Rcontent
 number (Rnumber#
-interval_time (RintervalTime"Î
+
+interval_time (RintervalTime"?
 AgentsTransferData
 	agents_id (RagentsId
 	player_id (RplayerId
 transfer_id (	R
 transferId#
-transfer_type (RtransferType%
-transfer_money (RtransferMoney
+
+transfer_type (RtransferType%
+transfer_money (R
+transferMoney
 ret_id (RretId
-re_code (RreCode"≠
+re_code (RreCode"?
 	ProxyInfo
 proxy_id (RproxyId
 name (	Rname!
@@ -151,14 +162,17 @@ transferId#
 PlatformProxyInfos
 platform_id (R
 platformId.
-pb_proxy_list (2
-.ProxyInfoRpbProxyList"”
+
+pb_proxy_list (2
+.ProxyInfoRpbProxyList"?
 
 GameNotice&
-first_game_type (RfirstGameType(
+first_game_type (R
+firstGameType(
 second_game_type (RsecondGameType
 number (Rnumber#
-interval_time (RintervalTime
+
+interval_time (RintervalTime
 
 start_time (R	startTime
 notice_type (R
@@ -167,7 +181,7 @@ noticeType
 param2 (	Rparam2
 param3	 (	Rparam3
 param4 (	Rparam4
-param5 (	Rparam5"‡
+param5 (	Rparam5"?
 
 RegAccount
 account (	Raccount
@@ -186,8 +200,10 @@ channel_id (	R	channelId!
 platform_id (	R
 platformId'
 deprecated_imei (	RdeprecatedImei
-	shared_id (	RsharedId%
-promotion_info (	RpromotionInfo
+	shared_id
+ (	RsharedId%
+promotion_info (	R
+promotionInfo
 invite_code (	R
 inviteCode
 invite_type (R
