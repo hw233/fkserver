@@ -1592,3 +1592,21 @@ message SC_UpdateLocation{
 	enum MsgID{Nil = 0; ID = 1211;}
 	int32 result = 1;
 }
+
+//表情互动
+message C2SPlayerInteraction{
+	enum MsgID{Nil = 0; ID = 1212;}
+    int32 content_idx = 1;    // 表情语音 编号
+    int32 type = 2;     // 类型 0：表情   1：快捷语言  2:魔法表情
+    int32 receiver = 3;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+//表情互动回复
+message S2CPlayerInteraction{
+	enum MsgID{Nil = 0; ID = 1213;}
+    int32 result = 1;
+    int32 content_idx = 2;    // 表情语音 编号
+    int32 type = 3;     // 类型 0：表情   1：快捷语言   2:魔法表情
+    int32 sender = 4;    //发起人
+    int32 receiver = 5;  //接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}

@@ -120,4 +120,6 @@ skynet.start(function()
 	register_dispatcher("GetTableStatusInfo",on_s_get_table_status_info)
 	register_dispatcher("C2S_EDIT_TABLE_TEMPLATE",on_cs_edit_table_template)
 	register_dispatcher("CS_UpdateLocation",on_cs_update_location_gps)
+
+	register_dispatcher("C2SPlayerInteraction",on_cs_player_interaction)
 end)
