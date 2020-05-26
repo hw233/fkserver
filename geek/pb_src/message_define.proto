@@ -63,6 +63,7 @@ message CL_Login {
 	string ip_area = 10;					// 客户端ip地区
 	string platform_id = 12;				// 客户端 平台id
 	string open_id = 13;                 	//	open_id 授权服务器，玩家id唯一开放id
+	string sms_verify_no = 14;
 }
 
 // 登录验证框
@@ -108,20 +109,19 @@ message LC_Login {
 }
 
 // 申请短信验证
-message CS_RequestSms {
+message CS_RequestSmsVerifyCode {
 	enum MsgID { Nil = 0; ID = 1005; }
-	string phone = 1;						// 手机号
-	int32 intention = 2;					// 1 为普通 需求，2 为绑定账号寻求
-	int32 guid = 5;
-	string platform_id = 6;	// 客户端 平台id
+	string phone_number = 1;						// 手机号
+	int32 guid = 2;
+	string platform_id = 3;	// 客户端 平台id
 }
 
 // 申请短信验证回复
-message SC_RequestSms {
+message SC_RequestSmsVerifyCode {
 	enum MsgID { Nil = 0; ID = 1006; }
-	int32 result = 1;						// LOGIN_RESULT
+	int32 	result = 1;						// LOGIN_RESULT
 	string sms_no = 2;						// 验证码
-	string phone = 3;						// 手机号
+	string phone_number = 3;						// 手机号
 }
 
 // 完善账号

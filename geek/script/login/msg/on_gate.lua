@@ -226,34 +226,35 @@ local function sms_reg_account(msg)
     local password = md5(msg.account)
     
     local guid = reddb:incr("player:global:guid")
-    local info = {}
-    info.guid = guid
-    info.is_guest =  false
-    info.phone =  msg.phone
-    info.phone_type =  msg.phone_type
-    info.version =  msg.version
-    info.channel_id =  msg.channel_id
-    info.package_name =  msg.package_name
-    info.imei =  msg.imei
-    info.ip =  msg.ip
-    info.ip_area =  msg.ip_area
-    info.deprecated_imei =  msg.deprecated_imei
-    info.platform_id =  msg.platform_id
-    info.password = password
-    info.account = msg.account
-    info.nickname = msg.nickname
-    info.register_time = os.time()
-    
+    local info = {
+        guid = guid,
+        is_guest =  false,
+        phone =  msg.phone,
+        phone_type =  msg.phone_type,
+        version =  msg.version,
+        channel_id =  msg.channel_id,
+        package_name =  msg.package_name,
+        imei =  msg.imei,
+        ip =  msg.ip,
+        ip_area =  msg.ip_area,
+        deprecated_imei =  msg.deprecated_imei,
+        platform_id =  msg.platform_id,
+        password = password,
+        account = msg.account,
+        nickname = msg.nickname,
+        register_time = os.time(),
+    }
+
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.phone),guid)
 
     info.using_login_validatebox = is_validatebox_block and 1 or 0
 
-    reddb:hmset("player:proxy:relationship",{
-        guid = guid,
-        inviter_guid = msg.inviter_guid,
-        inviter_account = msg.inviter_account,
-    })
+    -- reddb:hmset("player:proxy:relationship",{
+    --     guid = guid,
+    --     inviter_guid = msg.inviter_guid,
+    --     inviter_account = msg.inviter_account,
+    -- })
 
     return enum.REG_ACCOUNT_RESULT_SUCCESS,info
 end
