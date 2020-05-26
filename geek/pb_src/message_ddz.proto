@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+
+//玩家操作类型
+enum DDZ_ACTION{
+	ACTION_NONE = 0;
+	ACTION_PASS = 1;//不出
+	ACTION_DISCARD = 2;//出牌
+}
+
+// 出牌类型
+enum DDZ_CARD_TYPE {
+	ERROR                    = 0;                                //错误类型
+	SINGLE                   = 1;                                //单牌类型
+	DOUBLE                   = 2;                                //对牌类型
+	THREE                    = 3;                                //三不带
+	THREE_WITH_ONE           = 4;                          	//三带一
+	THREE_WITH_TWO           = 5;                          //三带一对
+	FOUR_WITH_SINGLE         = 6;                          	//四带二
+	FOUR_WITH_DOUBLE         = 7;                          	//四带一对
+	FOUR_WITH_THREE          = 8;
+	SINGLE_LINE              = 9;                                	//顺子
+	DOUBLE_LINE              = 10;                                //连对
+	PLANE                    = 11;                               //飞机 不带
+	PLANE_WITH_ONE           = 12;                               //飞机 带牌 单
+	PLANE_WITH_TWO           = 13;                               //飞机 带牌 对
+	BOMB                     = 14;                               //炸弹
+	MISSLE = 15;
+}
+
+message DdzPlayerInfo {
+	repeated int32 hand_cards = 1; 			// 手牌
+	int32 chair_id		= 2; 			// id
+	int32 total_score 	= 3;
+	int32 round_score 	= 4;
+}
+
+message DdzReconnectData {
+	int32 act_left_time = 1;						// 操作剩余时间
+	int32 last_discard_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
+	repeated int32 last_discard = 3;						// 最后一次的出牌
+	map<int32, int32> total_scores = 4;
+	repeated int32 landlord_cards = 5;
+}
+
+message SC_DdzDeskEnter {
+	enum MsgID { Nil = 0; ID = 25100; }
+	repeated DdzPlayerInfo pb_players 	= 1; 		// 玩家
+	int32 status = 2;							//状态
+	int32 landlord = 3;							//地主
+	int32 self_chair_id = 4;					//id
+	int32 act_time_limit = 5;					// 操作时间
+	bool is_reconnect = 7;						//reconnect
+	DdzReconnectData pb_rec_data = 8;		//断线数据
+	int32 round = 10;
+	int32 times = 12;
+	int32 base_score = 13;
+}
+
+//该谁出牌
+message SC_DdzDiscardRound{
+	enum MsgID { Nil = 0; ID = 25101; }
+	int32 chair_id	 = 1;				
+}
+
+//托管
+message SC_DdzActTrustee {
+	enum MsgID { Nil = 0; ID = 25103; }
+	int32 chair_id	 = 1;	
+	bool is_trustee = 2;				//最終托管狀態 true托管 false 非托管
+}
+
+message CS_DdzDoAction{
+    	enum MsgID { Nil = 0; ID = 25104; }
+	int32  action = 1;	
+    	repeated int32 cards = 2;   //出的牌数据
+}
+
+message SC_DdzDoAction{
+	enum MsgID { Nil = 0; ID = 25105; }
+	int32 result = 1;    
+	int32 chair_id	 = 2;	
+	int32 action = 3;	
+    	repeated int32 cards = 4;   //出的牌数据
+}
+
+message DdzBlanacePlayer{
+	int32 chair_id 			= 1;
+	int32 base_score        = 2;
+	int32 times        = 3; // 	倍数
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	int32 round_money 		= 6;
+	int32 total_money  		= 7;
+}
+
+//结算
+message SC_DdzGameOver {
+	enum MsgID { Nil = 0; ID = 25106; }
+	repeated DdzBlanacePlayer 	player_balance = 2;
+	int32 chun_tian = 3;
+}
+
+message DdzStatisticsItem{
+	int32  type = 1;
+	int32  count = 2;
+}
+
+message DdzFinalOverPlayerInfo{
+	int32 chair_id = 1;
+	int32 guid = 2;
+	int32 score = 3;
+	repeated DdzStatisticsItem statistics = 4;
+}
+
+message SC_DdzFinalGameOver{
+	enum MsgID { Nil = 0; ID = 25107;}
+	repeated DdzFinalOverPlayerInfo players = 1;
+}
+
+// 轮到谁叫分或者抢地主
+message SC_DdzCallLandlordRound{
+    enum MsgID { Nil = 0; ID = 25108; }
+    int32 chair_id = 1; 
+}
+
+message CS_DdzCallLandlord{
+    enum MsgID { Nil = 0; ID = 25109; }
+    int32 action = 1; // -4:不叫 -3:不抢  -2:叫地主  -1:抢地主  1:1分 2:2分 3:3分  
+}
+
+message SC_DdzCallLandlord{
+	enum MsgID { Nil = 0; ID = 25110; }
+	int32 result = 1;    
+	int32 chair_id = 2;
+	int32 aciton = 3;
+	int32 base_score = 4;
+	int32 times = 5;
+}
+
+message SC_DdzCallLandlordOver{
+	enum MsgID { Nil = 0; ID = 25111; }
+	int32 landlord = 2;	
+	repeated int32 cards = 3;	
+}
+
+// 用于同步当前的叫分状态
+message SC_DdzCallLandlordInfo{
+	enum MsgID { Nil = 0; ID = 25112; }
+	int32 result = 1;    
+	map<int32, int32> info = 2; // chair_id->action -1:不抢，不叫   1:1分 2:2分 3:3分 4:抢地主
+}
+
+//没人叫地主,重新开始
+message SC_DdzRestart{
+	enum MsgID { Nil = 0; ID = 25113; }
+}

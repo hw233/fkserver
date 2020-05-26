@@ -8,5 +8,6 @@ pb.loadfile("./geek/pb/player_define.proto")
 pb.loadfile("./geek/pb/message_define.proto")
 pb.loadfile("./geek/pb/message_maajan.proto")
 pb.loadfile("./geek/pb/message_pdk.proto")
+pb.loadfile("./geek/pb/message_ddz.proto")
 
 return pb
