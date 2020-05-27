@@ -1867,6 +1867,11 @@ function on_cs_bind_phone(msg,guid)
 	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
 	player.phone = phone
 
+	channel.publish("db.?","msg","SD_BindPhone",{
+		guid = guid,
+		phone = phone,
+	})
+
 	onlineguid.send(guid,"SC_RequestBindPhone",{
 		result = enum.ERROR_NONE,
 		phone_number = phone,

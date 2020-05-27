@@ -1732,7 +1732,7 @@ function on_ld_reg_account(msg)
 
 	local transqls = {
 		string.format([[INSERT INTO account.t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-			register_time,ip,version,phone_type,package_name) VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
+			register_time,ip,version,phone_type,package_name,phone) VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s');]],
 			msg.guid,
 			msg.account,
 			msg.nickname,
@@ -1743,13 +1743,15 @@ function on_ld_reg_account(msg)
 			msg.login_ip,
 			msg.version,
 			msg.phone_type or "unkown",
-			msg.package_name or ""),
-		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url) VALUES(%d,'%s','%s','%s','%s');]],
+			msg.package_name or "",
+			msg.phone or ""),
+		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone) VALUES(%d,'%s','%s','%s','%s','%s');]],
 			msg.guid,
 			msg.account,
 			msg.nickname,
 			msg.level,
-			msg.icon),
+			msg.icon,
+			msg.phone or ""),
 		string.format([[INSERT INTO game.t_player_money(guid,money_id) VALUES(%d,%d),(%d,%d);]],msg.guid,enum.ROOM_CARD_ID,msg.guid,-1),
 		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
 				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
@@ -1937,7 +1939,7 @@ function on_sd_reset_account( msg )
 	local data = dbopt.account:query("select change_alipay_num from t_account where guid = '%d'", guid)
 	if nmsg then
 		nmsg.guid = guid
-		nmsg.binding_num = tonumber(data[1][1])
+		nmsg.sing_num = tonumber(data[1][1])
 		return nmsg
 	end
 
@@ -2869,4 +2871,10 @@ function on_sd_transfer_money(msg)
 	end
 
 	return enum.ERROR_PARAMER_ERROR
+end
+
+function on_sd_bind_phone(msg)
+	local guid = msg.guid
+	local phone = msg.phone
+	dbopt.game:query("UPDATE t_player SET phone = \"%s\" WHERE guid = %s;",phone,guid)
 end
