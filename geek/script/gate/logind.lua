@@ -83,49 +83,6 @@ function MSG.CL_RegAccount(msg,session)
         return false
     end
 
-    -- if msg.pb_regaccount.password then
-    --     local password = util.rsa_decrypt(crypt.hexdecode(tostring(msg.pb_regaccount.password)))
-    --     if type(password) ~= "string" or password == "" then
-    --         log.error( "password error %s", msg.pb_regaccount.password )
-    --         return false
-    --     end
-
-    --     msg.pb_regaccount.password = password 
-    -- end
-
-    -- local account_
-    -- -- 保存账号
-    -- if msg.pb_regaccount.account then
-    --     if type(msg.pb_regaccount.account) ~= "string" or msg.pb_regaccount.account == "" then
-    --         log.error( "no account, CL_RegAccount")
-    --         return false
-    --     end
-    --     account_ = msg.pb_regaccount.account
-    -- end
-
-    --保存imei
-    if msg.pb_regaccount.imei then
-        if type(msg.pb_regaccount.imei) ~= "string" or msg.pb_regaccount.imei == "" then
-            log.error( "no imei, CL_RegAccount")
-            return false
-        end
-        imei_ = msg.pb_regaccount.imei
-    else
-        log.error( "no imei, CL_RegAccount" )
-        return false
-    end
-
-    -- if msg.pb_regaccount.deprecated_imei then
-    --     if type(msg.pb_regaccount.deprecated_imei) ~= "string" or msg.pb_regaccount.deprecated_imei == "" then
-    --         log.error( "no deprecated_imei, CL_RegAccount")
-    --         return false
-    --     end
-    --     deprecated_imei_ = msg.pb_regaccount.deprecated_imei
-    -- else
-    --     deprecated_imei_ = ""
-    --     msg.pb_regaccount.deprecated_imei = ""
-    -- end
-
     if msg.pb_regaccount.platform_id and msg.pb_regaccount.platform_id ~= "" then
         platform_id = msg.pb_regaccount.platform_id
     else
@@ -149,70 +106,6 @@ function MSG.CL_RegAccount(msg,session)
     netmsgopt.send(session.fd,"LC_Login",info)
 end
 
-
--- function finish(fd,msg) 
--- 	local str = data.m_readbuf.str()
--- 	-- 	str = "{\"success\":true,\"code\":1,\"message\":\"ok\",\"data\":{\"open_id\":\"12562a189dcd3841cea5adcae10e930e\",\"username\":\"jibudao123\",\"phone\":\"9750673\",\"country_code\":\"354\",\"photo_url\":\"\"}}"
--- 	-- 	is_send_login_ = true
--- 	log.info( "%s", str )
--- 	rapidjson::Document document
--- 	document.Parse( str )
--- 	if (document.HasParseError()) {
--- 		log.error( boost::str( boost::format( "json 格式错误 error: (%1%:%2%)%3%" ) % document.GetParseError() % document.GetErrorOffset() % rapidjson::GetParseErrorFunc( document.GetParseError() ) ) )
--- 		is_send_login_ = false
--- 	} else if (checkJsonMember( document, "success", "bool", "code", "int", "message", "string" )) {
--- 		is_send_login_ = false
--- 	}
--- 	bool t = document["success"].GetBool()
--- 	int code = document["code"].GetInt()
--- 	if (is_send_login_ and document["success"].GetBool()) {
--- 		-- 验证成功开始登录 
--- 		if (document.HasMember( "data" ) and document["data"].IsObject() and document["data"].HasMember( "phone" ) and document["data"]["phone"].IsString()) {
--- 			string unique_id = document["data"]["open_id"].GetString()
--- 			string phone = document["data"]["phone"].GetString()
-
--- 			log.info( "unique_id[%s] phone[%s] potato_login_phone [%s] potato_login_phone_type [%s] potato_login_version[%s] potato_login_channel_id[%s] potato_login_package_name[%s] potato_login_imei[%s] potato_login_platform_id[%s]",
--- 					  unique_id, phone, potato_login_phone, potato_login_phone_type, potato_login_version, potato_login_channel_id, potato_login_package_name, potato_login_imei, potato_login_platform_id )
--- 			CL_LoginBySms msg
--- 			msg.set_account( phone )
--- 			msg.set_phone( potato_login_phone )
--- 			msg.set_phone_type( potato_login_phone_type )
--- 			msg.set_version( potato_login_version )
--- 			msg.set_channel_id( potato_login_channel_id )
--- 			msg.set_package_name( potato_login_package_name )
--- 			msg.set_imei( potato_login_imei )
--- 			msg.set_unique_id( unique_id )
-
--- 			std::string ip
--- 			if (m_haprox_ip_from_.empty()) {
--- 				get_remote_ip_port( ip )
--- 			} else {
--- 				ip = m_haprox_ip_from_
--- 			}
--- 			-- 保存账号
--- 			account_ = msg.account()
--- 			imei_ = msg.imei()
--- 			msg.set_ip_area( IpAreaManager::instance().get_ip_area_str( ip ) )
--- 			msg.set_ip( ip )
--- 			log.info( "set_ip = %s", msg.ip() )
--- 			log.info( "set_ip_area = %s", IpAreaManager::instance().U2G( msg.ip_area() ) )
-
--- 			msg.set_deprecated_imei( potato_login_deprecated_imei )
--- 			msg.set_platform_id( potato_login_platform_id )
--- 			msg.set_shared_id( potato_login_shared_id )
-
--- 			GateSessionManager::instance().add_CL_LoginBySms( get_id(), msg )
--- 		}
--- 	} else {
--- 		-- 验证失败
--- 		is_send_login_ = false
--- 		if (document.HasMember( "code" ) and document["code"].IsInt()) {
--- 			log.error( "potato login is error : code[%d] message[%s]", document["code"].GetInt(), document["message"].GetString() )
--- 		} else {
--- 			log.error( "potato login is error : code[%d] ", LOGIN_RESULT_POTATO_CHECK_ERROR )
--- 		}
--- 	}
--- end
 
 local function login_by_sms(msg,session)
     if not msg.phone or not msg.sms_verify_no then
