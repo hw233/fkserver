@@ -412,11 +412,13 @@ function on_cl_login(msg,gate,session_id)
     local ret,info
 
     if msg.open_id and msg.open_id ~= "" then
-        ret,info = open_id_login(msg,gate)
+        if msg.phone_type == "H5" then
+            ret,info = h5_login(msg,gate)
+        else
+            ret,info = open_id_login(msg,gate)
+        end
     elseif msg.phone ~= "" and msg.sms_verify_no ~= "" then
         ret,info = sms_login(msg,gate,session_id)
-    elseif msg.phone_type == "H5" then
-        ret,info = h5_login(msg,gate)
     end
 
     log.dump(info)
