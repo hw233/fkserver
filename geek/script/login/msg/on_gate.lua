@@ -708,7 +708,6 @@ function on_cs_request_sms_verify_code(msg,session_id)
 
     if prefix == "999" then
         local expire = math.floor(global_conf.sms_expire_time or 60)
-        log.dump(expire)
         local code =  string.sub(phone_num,phone_num_len - 4 + 1)
         local rkey = string.format("sms:verify_code:session:%s",session_id)
         reddb:set(rkey,code)
