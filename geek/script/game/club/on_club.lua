@@ -133,7 +133,7 @@ function on_bs_club_create(owner,name)
     -- 初始送分 金币
     base_clubs[id]:incr_money({
         money_id = club_money_type[id],
-        money = math.floor(global_cfg.union_init_money),
+        money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     return enum.ERROR_NONE,id
@@ -160,7 +160,7 @@ function on_bs_club_create_with_group(group_id,name)
 
     base_clubs[id]:incr_money({
         money_id = club_money_type[id],
-        money = math.floor(global_cfg.union_init_money),
+        money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     local son_club_id = rand_union_club_id()
@@ -193,7 +193,7 @@ function on_cs_club_create(msg,guid)
     -- 初始送分 金币
     base_clubs[id]:incr_money({
         money_id = club_money_type[id],
-        money = math.floor(global_cfg.union_init_money),
+        money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{

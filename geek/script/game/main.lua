@@ -16,7 +16,7 @@ register_dispatcher = msgopt.register
 
 def_game_name = nil
 def_game_id = nil
-global_cfg = nil
+global_conf = nil
 def_first_game_type = nil
 def_second_game_type = nil
 open_lan_mate = true
@@ -51,11 +51,11 @@ local function checkgameconf(conf)
 end
 
 function get_register_money()
-    return global_cfg.register_money
+    return global_conf.register_money
 end
 
 function get_private_room_bank()
-    return global_cfg.private_room_bank
+    return global_conf.private_room_bank
 end
 
 local function clean_private_table()
@@ -86,7 +86,7 @@ function CMD.start(conf)
 	def_game_id = sconf.id
 	def_first_game_type = gameconf.first_game_type
 	def_second_game_type = gameconf.second_game_type
-	global_cfg = channel.call("config.?","msg","global_conf")
+	global_conf = channel.call("config.?","msg","global_conf")
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
 

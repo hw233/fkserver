@@ -147,8 +147,8 @@ local function clean_when_start()
 end
 
 local function setup_default_redis_value()
-    local global_cfg = channel.call("config.?","msg","global_conf")
-    local first_guid = global_cfg.first_guid or 100001
+    local global_conf = channel.call("config.?","msg","global_conf")
+    local first_guid = global_conf.first_guid or 100001
     local exists = reddb:exists("player:global:guid")
     if not exists or exists == 0 then
         reddb:set("player:global:guid",math.floor(first_guid))
