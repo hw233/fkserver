@@ -54,84 +54,12 @@ function MSG.C_RequestPublicKey(msg,session)
     })
 end
 
-function MSG.CS_RequestSms(msg,session)
-    local fd = session.fd
-    local sms_session = sms[fd]
-    sms_time_limit = sms_time_limit or datacenter.query("sms_limit_time")
-    if sms_session and sms_session.last then
-        if os.time() - sms_session.last >= sms_time_limit then
-            log.info( "RequestSms in time [%d] session [%d]", os.time() - sms_session.last, fd )
-            netmsgopt.send(fd,"SC_RequestSms",{
-                result = enum.LOGIN_RESULT_SMS_REPEATED,
-            })
-            return
-        end
-    end
-
-    log.info( "RequestSms session [%d] =================", fd )
-    if not msg.tel then
-        log.error( "RequestSms session [%d] =================tel not find", fd)
-        netmsgopt.send(fd,"SC_RequestSms",{
-            result = enum.LOGIN_RESULT_SMS_FAILED,
-        })
-        return true
-    end
-
-    local tel = msg.tel
-
-    log.info( "RequestSms guid [%d] =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
-    local tellen = string.len(tel)
-    if tellen < 7 or tellen > 18 then
-        netmsgopt.send(fd,"SC_RequestSms",{
-            result = enum.LOGIN_RESULT_TEL_LEN_ERR,
-        })
-        return true
-    end
-
-    local tel_head = string.sub(tel,0, 3)
-
-    --170 171的不准绑定
-    if tel_head == "170" or tel_head == "171" then
-        netmsgopt.send(fd,"SC_RequestSms",{
-            result = enum.LOGIN_RESULT_TEL_ERR,
-        } )
-        return true
-    end
-
-    if tel_head == "999" then
-        local sms_no =  string.sub(tel,tellen - 6)
-        sms[fd] = {
-            tel = tel,
-            sms_no = sms_no,
-            last = os.time(),
-        }
-        return true
-    end
-
-
-    if not string.match(tel,"^%d+&") then
-        netmsgopt.send(fd,"SC_RequestSms",{
-            result = enum.LOGIN_RESULT_TEL_ERR,
-        })
-        return true
-    end
-
-    -- if msg.intention == 2 then
-    --     auto session = GateSessionManager::instance().get_login_session()
-    --     if session then
-    --         msg.gate_session_id =  get_id
-    --         msg.guid =  guid
-    --         msg.gate_id( static_cast<GateServer*>(BaseServer::instance()).get_gate_id() )
-    --         log.info( "gateid[%d] guid[%d] sessiong[%d]", static_cast<GateServer*>(BaseServer::instance()).get_gate_id(), get_guid(), get_id() )
-    --         session.send_pb( &msg )
-    --     else
-    --         log.warning( "login server disconnect" )
-    --     end
-    -- else
-        -- do_get_sms_http( msg.tel, msg.platform_id )
-    -- end
-
-	return true
+function MSG.CS_RequestSmsVerifyCode(msg,session)
+    local result = channel.call("login.?","msg","CS_RequestSmsVerifyCode",msg,session.fd)
+    netmsgopt.send(session.fd,"SC_RequestSmsVerifyCode",{
+        result = result,
+        phone_number = msg.phone_number,
+    })
 end
 
 function MSG.CL_RegAccount(msg,session) 
@@ -287,7 +215,27 @@ end
 -- end
 
 local function login_by_sms(msg,session)
+    if not msg.phone or not msg.sms_verify_no then
+        return {
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        }
+    end
 
+    msg.ip = session.ip
+    local info,server = channel.call("login.?","msg","CL_Login",msg,gateid,session.fd)
+    local guid = info.guid
+    if info.result == enum.LOGIN_RESULT_SUCCESS then
+        if not check_login_session(session.fd) then --已断开连接
+            channel.publish("service."..tostring(server),"lua","afk",guid)
+            return
+        end
+
+        skynet.call(gate,"lua","login",session.fd,info.guid,server,info)
+    end
+
+    log.dump(info)
+
+    return info
 end
 
 local function login_by_openid(msg,session)
@@ -436,7 +384,7 @@ function MSG.CL_Login(msg,session)
         return field and type(field) == "string" and field ~= ""
     end
 
-    if not check_key_field(msg.account) and  not check_key_field(msg.open_id) then
+    if not check_key_field(msg.account) and  not check_key_field(msg.open_id) and not check_key_field(msg.phone) then
         netmsgopt.send(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
         })
@@ -452,6 +400,10 @@ function MSG.CL_Login(msg,session)
 
     if msg.open_id and msg.open_id ~= "" then
         res = login_by_openid(msg,session)
+    end
+
+    if msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
+        res = login_by_sms(msg,session)
     end
 
     logining[fd] = nil

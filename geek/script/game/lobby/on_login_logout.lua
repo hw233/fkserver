@@ -1828,3 +1828,125 @@ function on_ds_bandbankcardnum(msg)
 		player.change_bankcard_num = msg.band_card_num
 	end
 end
+
+function on_cs_bind_phone(msg,guid)
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	if player.phone and player.phone ~= "" then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.ERROR_OPERATION_REPEATED
+		})
+		return
+	end
+
+	local sms_verify_code = msg.sms_verify_no
+	local code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
+	reddb:del(string.format("sms:verify_code:guid:%s",guid))
+	if not code or code == "" then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.LOGIN_RESULT_SMS_FAILED
+		})
+		return
+	end
+
+	if string.lower(code) ~= string.lower(sms_verify_code) then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.LOGIN_RESULT_SMS_FAILED
+		})
+		return
+	end
+
+	local phone = msg.phone_number
+	reddb:hset(string.format("player:info:%s",guid),"phone",phone)
+	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
+	player.phone = phone
+
+	onlineguid.send(guid,"SC_RequestBindPhone",{
+		result = enum.ERROR_NONE,
+		phone_number = phone,
+	})
+end
+
+function on_cs_request_sms_verify_code(msg,guid)
+	local phone_num = msg.phone_number
+	if not guid then
+	    onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+		    result =  enum.LOGIN_RESULT_SMS_FAILED,
+		    phone_number = phone_num,
+	    })
+	    return
+	end
+    
+	local verify_code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
+	if verify_code and verify_code ~= "" then
+		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+			result =  enum.LOGIN_RESULT_SMS_REPEATED,
+			phone_number = phone_num,
+		})
+		return
+	end
+    
+	log.info( "RequestSms session [%s] =================", guid )
+	if not phone_num then
+		log.error( "RequestSms session [%s] =================tel not find", guid)
+		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+			result =  enum.LOGIN_RESULT_TEL_ERR,
+			phone_number = phone_num,
+		})
+		return
+	end
+    
+	log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
+	local phone_num_len = string.len(phone_num)
+	if phone_num_len < 7 or phone_num_len > 18 then
+		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+			result =  enum.LOGIN_RESULT_TEL_LEN_ERR,
+			phone_number = phone_num,
+		})
+		return
+	end
+    
+	local prefix = string.sub(phone_num,0, 3)
+	if prefix == "170" or prefix == "171" then
+		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+			result =  enum.LOGIN_RESULT_TEL_ERR,
+			phone_number = phone_num,
+		})
+		return
+	end
+    
+	if prefix == "999" then
+	    local expire = math.floor(global_conf.sms_expire_time or 60)
+	    local code =  string.sub(phone_num,phone_num_len - 4 + 1)
+	    local rkey = string.format("sms:verify_code:guid:%s",guid)
+	    reddb:set(rkey,code)
+	    reddb:expire(rkey,expire)
+	    onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+			result =  enum.LOGIN_RESULT_SUCCESS,
+			phone_number = phone_num,
+		})
+		return
+	end
+    
+	if not string.match(phone_num,"^%d+&") then
+	    return enum.LOGIN_RESULT_TEL_ERR
+	end
+    
+	local expire = math.floor(global_conf.sms_expire_time or 60)
+	local code = string.format("%4d",math.random(4001,9999))
+	local rkey = string.format("sms:verify_code:guid:%s",guid)
+	reddb:set(rkey,code)
+	reddb:expire(rkey,expire)
+	channel.send("gate.?","lua","LG_PostSms",string.format("[友友娱乐]:你的验证码为 %s ,请勿告知任何人。",code))
+	onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+		result =  enum.LOGIN_RESULT_SUCCESS,
+		phone_number = phone_num,
+	})
+	return
+end

@@ -136,7 +136,7 @@ local function setupbootcluster()
 end
 
 local function clean_when_start()
-    local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*"}
+    local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
     for _,pattern in pairs(key_patterns) do
 		local keys = reddb:keys(pattern)
         for _,key in pairs(keys) do

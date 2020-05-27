@@ -1,16 +1,15 @@
 
 local redisopt = require "redisopt"
-local msgopt = require "msgopt"
-local skynet = require "skynetproto"
 local channel = require "channel"
 local onlineguid = require "netguidopt"
+local skynet = require "skynetproto"
 local log = require "log"
 local json = require "cjson"
 local serviceconf = require "serviceconf"
 local base_players = require "game.lobby.base_players"
 local md5 = require "md5.core"
+local crypt = require "skynet.crypt"
 local enum = require "pb_enums"
-local dbopt = require "dbopt"
 local httpc = require "http.httpc"
 local player_money = require "game.lobby.player_money"
 require "functions"
@@ -24,6 +23,20 @@ local function http_get(url)
     return httpc.get(host,url)
 end
 
+local function sha1(text)
+	local c = crypt.sha1(text)
+	return crypt.hexencode(c)
+end
+
+local function hmac_sha1(key, text)
+	local c = crypt.hmac_sha1(key, text)
+	return crypt.hexencode(c)
+end
+
+local function gen_uuid(basestr)
+    local entirestr = basestr..tostring(skynet.time())..tostring(math.random(10000))
+    return sha1(entirestr)
+end
 
 function on_s_logout(msg)
 	local account = msg.account
@@ -104,12 +117,13 @@ local function reg_account(msg)
     
     channel.call("db.?","msg","LD_RegAccount",info)
 
-    -- -- 测试注册时加默认房卡
-    if global_conf.register_money then
+    -- -- 注册时加默认房卡
+    local register_money = global_conf.register_money
+    if register_money and register_money > 0  then
         local player = base_players[guid]
         player:incr_money({
             money_id = 0,
-            money = global_conf.register_money,
+            money = register_money,
         },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     end
 
@@ -165,22 +179,8 @@ local function wx_auth(msg)
     return nil,userinfo
 end
 
-local function cn_auth(msg)
-
-end
-
-local function xl_auth(msg)
-
-end
-
 function on_cl_auth(msg)
-    local auth_platforms = {
-        wx = wx_auth,
-        cn = cn_auth,
-        xl = xl_auth,
-    }
-
-    local do_auth = auth_platforms[msg.auth_platform]
+    local do_auth = wx_auth
     if not do_auth then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
     end
@@ -190,9 +190,15 @@ function on_cl_auth(msg)
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
     end
 
+    local uuid = reddb:get(string.format("player:auth_id:%s",auth.openid))
+    if not uuid or uuid == "" then
+        uuid = gen_uuid(auth.openid)
+        reddb:set(string.format("player:auth_id:%s",auth.openid),uuid)
+    end
+
     return reg_account({
         ip = msg.ip,
-        open_id = auth.openid,
+        open_id = uuid,
         nickname = auth.nickname,
         icon = auth.headimgurl,
         sex = auth.sex,
@@ -204,27 +210,7 @@ end
 
 
 local function sms_reg_account(msg)
-    if not msg.invite_code then
-        return enum.LOGIN_RESULT_NEED_INVITE_CODE
-    end
-
-    local is_block_ip = reddb:hgetall("player:block:ip:"..tostring(msg.ip))
-    if tonumber(is_block_ip) ~= 0 then
-        return enum.LOGIN_RESULT_FAILED
-    end
-
-    local ip_register = reddb:hgetall("player:register:ip:"..tostring(msg.ip))
-    if ip_register.disable then
-        return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT
-    end
-
-    local is_validatebox_block = ip_register.disable and tonumber(ip_register.disable) > 0 or false
-    if ip_register.count > 20 then
-        return enum.LOGIN_RESULT_CREATE_MAX
-    end
-
     local password = md5(msg.account)
-    
     local guid = reddb:incr("player:global:guid")
     local info = {
         guid = guid,
@@ -248,84 +234,57 @@ local function sms_reg_account(msg)
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.phone),guid)
 
-    info.using_login_validatebox = is_validatebox_block and 1 or 0
-
-    -- reddb:hmset("player:proxy:relationship",{
-    --     guid = guid,
-    --     inviter_guid = msg.inviter_guid,
-    --     inviter_account = msg.inviter_account,
-    -- })
-
     return enum.REG_ACCOUNT_RESULT_SUCCESS,info
 end
 
 
-local function sms_login(msg,gate)
-    local account = msg.account
+local function sms_login(msg,_,session_id)
+    if not session_id then
+        return enum.LOGIN_RESULT_SMS_FAILED
+    end
+
+    local verify_code = reddb:get(string.format("sms:verify_code:session:%s",session_id))
+    if not verify_code or verify_code == "" then
+        return enum.LOGIN_RESULT_SMS_CLOSED
+    end
+
+    reddb:del(string.format("sms:verify_code:session:%s",session_id))
+
+    if string.lower(verify_code) ~= string.lower(msg.sms_verify_no) then
+        return enum.LOGIN_RESULT_SMS_FAILED
+    end
+
     local phone = msg.phone
-    local phone_type = msg.phone_type
-    local version = msg.version
-    local channel_id = msg.channel_id
-    local imei = msg.imei
-    local ip = msg.ip
-    local package_name = msg.package_name
+    if not phone then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
 
-    local guid = reddb:get("player:account:"..tostring(account))
-    guid = tonumber(guid)
-    local player = base_players[guid]
-    if not player then
-        local ret,info = sms_reg_account(msg)
-        if ret == enum.REG_ACCOUNT_RESULT_SUCCESS then
-            return enum.LOGIN_RESULT_SUCCESS,info
+    local ret,info
+    local uuid = reddb:get(string.format("player:phone_uuid:%s",msg.phone))
+    if not uuid or uuid == "" then
+        uuid = gen_uuid(phone)
+        reddb:set(string.format("player:phone_uuid:%s",phone),uuid)
+        ret,info =  reg_account({
+            ip = msg.ip,
+            open_id = uuid,
+            nickname = string.sub(phone,1,3) .. "****" .. string.sub(phone,8),
+            icon = math.random(1,1000),
+            sex = math.random(1,2),
+            package_name = msg.package_name,
+            phone = msg.phone,
+            phone_type = msg.phone_type,
+            version = msg.version,
+        })
+        if ret ~= enum.ERROR_NONE then
+            return ret
         end
-
-        return enum.LOGIN_RESULT_FAILED
+    else
+        local guid = reddb:get("player:account:"..tostring(uuid))
+        guid = tonumber(guid)
+        info = base_players[guid]
     end
 
-    if player.imei ~= msg.imei or player.platform_id ~= msg.platform_id then
-        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
-    end
-
-    if not player.guid then
-        return enum.LOGIN_RESULT_DB_ERR
-    end
-
-    if not player.is_guest then
-        reddb:hset("player:account:"..account,"is_guest",0)
-    end
-
-    if not player.share_id then
-        reddb:hset("player:account:"..account,"shared_id",msg.shared_id)
-    end
-
-    if player.enable_transfer then
-        return enum.LOGIN_RESULT_AGENT_CANNOT_IN_GAME
-    end
-
-    if player.disable then
-        return enum.LOGIN_RESULT_ACCOUNT_DISABLED
-    end
-
-    local disable_ip = reddb:hget("player:login:disable_ip",ip)
-    if disable_ip  then
-        log.error( "sms_login[%s] failed", account )
-        return enum.LOGIN_RESULT_IP_CONTROL
-    end
-
-    reddb:hincrby("player:info:"..tostring(guid),"login_count",1)
-
-    reddb:hmset("player:info:"..tostring(guid),{
-        last_login_phone = phone,
-        last_login_phone_type = phone_type,
-        last_login_version = version,
-        last_login_channel_id = channel_id,
-        last_login_imei = imei,
-        last_login_ip = player.login_ip,
-        login_ip = ip,
-        login_time = os.time(),
-    })
-
-	return enum.LOGIN_RESULT_SUCCESS,player
+	return enum.LOGIN_RESULT_SUCCESS,info
 end
 
 local function account_login(msg,gate)
@@ -447,19 +406,20 @@ local function h5_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
-function on_cl_login(msg,gate)
+function on_cl_login(msg,gate,session_id)
     local account = (msg.account and msg.account ~= "") and msg.account or msg.open_id
-
+    log.dump(msg)
     local ret,info
-    if msg.phone_type == "H5" then
-        ret,info = h5_login(msg,gate)
-    elseif msg.open_id and msg.open_id ~= "" then
+
+    if msg.open_id and msg.open_id ~= "" then
         ret,info = open_id_login(msg,gate)
-    elseif msg.sms_no and msg.sms_no ~= "" then
-        ret,info = sms_login(msg,gate)
-    else
-        ret,info = account_login(msg,gate)
+    elseif msg.phone ~= "" and msg.sms_verify_no ~= "" then
+        ret,info = sms_login(msg,gate,session_id)
+    elseif msg.phone_type == "H5" then
+        ret,info = h5_login(msg,gate)
     end
+
+    log.dump(info)
 
     if ret ~= enum.LOGIN_RESULT_SUCCESS then
         return {
@@ -716,8 +676,54 @@ function on_L_KickClient(msg)
 	log.info( "login step login[online]->L_KickClient,account=%s,userdata=%d", account_key, userdata )
 end
 
-function on_cs_request_sms(msg)
-    
+function on_cs_request_sms_verify_code(msg,session_id)
+    if not session_id then
+        return enum.LOGIN_RESULT_SMS_FAILED
+    end
+
+    local verify_code = reddb:get(string.format("sms:verify_code:session:%s",session_id))
+    if verify_code and verify_code ~= "" then
+        return enum.LOGIN_RESULT_SMS_REPEATED
+    end
+
+    local phone_num = msg.phone_number
+    log.info( "RequestSms session [%s] =================", session_id )
+    if not phone_num then
+        log.error( "RequestSms session [%s] =================tel not find", session_id)
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
+    local phone_num_len = string.len(phone_num)
+    if phone_num_len < 7 or phone_num_len > 18 then
+        return enum.LOGIN_RESULT_TEL_LEN_ERR
+    end
+
+    local prefix = string.sub(phone_num,0, 3)
+    if prefix == "170" or prefix == "171" then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    if prefix == "999" then
+        local expire = math.floor(global_conf.sms_expire_time or 60)
+        log.dump(expire)
+        local code =  string.sub(phone_num,phone_num_len - 4 + 1)
+        local rkey = string.format("sms:verify_code:session:%s",session_id)
+        reddb:set(rkey,code)
+        reddb:expire(rkey,expire or 60)
+        return enum.LOGIN_RESULT_SUCCESS
+    end
+
+    if not string.match(phone_num,"^%d+&") then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    local expire = math.floor(global_conf.sms_expire_time or 60)
+    local code = string.format("%4d",math.random(4001,9999))
+    local rkey = string.format("sms:verify_code:session:%s",session_id)
+    reddb:set(rkey,code)
+    reddb:expire(rkey,expire)
+    channel.send("gate.?","lua","LG_PostSms",string.format("[友友娱乐]:你的验证码为 %s ,请勿告知任何人。",code))
 end
 
 function on_cs_chat_world(msg)  
@@ -740,3 +746,4 @@ function on_SL_GameNotice(msg)
         platform_ids = platform_ids,
     })
 end
+

@@ -9,6 +9,12 @@ local gateid
 local gateconf
 protocol = nil
 
+local MSG = {}
+
+function MSG.LG_PostSms(sms)
+    
+end
+
 local CMD = {}
 
 local function checkgateconf(conf)

@@ -1610,3 +1610,18 @@ message S2CPlayerInteraction{
     int32 sender = 4;    //发起人
     int32 receiver = 5;  //接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
 }
+
+// 绑定手机
+message CS_RequestBindPhone {
+	enum MsgID { Nil = 0; ID = 1214; }
+	string phone_number = 1;						// 手机号
+	string sms_verify_no = 2;
+	string platform_id = 3;	// 客户端 平台id
+}
+
+// 绑定手机回复
+message SC_RequestBindPhone {
+	enum MsgID { Nil = 0; ID = 1215; }
+	int32 result = 1;						
+	string phone_number = 2;						// 手机号
+}
