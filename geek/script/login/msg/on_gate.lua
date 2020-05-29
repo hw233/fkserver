@@ -190,10 +190,10 @@ function on_cl_auth(msg)
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
     end
 
-    local uuid = reddb:get(string.format("player:auth_id:%s",auth.openid))
+    local uuid = reddb:get(string.format("player:auth_id:%s",auth.unionid))
     if not uuid or uuid == "" then
-        uuid = gen_uuid(auth.openid)
-        reddb:set(string.format("player:auth_id:%s",auth.openid),uuid)
+        uuid = gen_uuid(auth.unionid)
+        reddb:set(string.format("player:auth_id:%s",auth.unionid),uuid)
     end
 
     return reg_account({
