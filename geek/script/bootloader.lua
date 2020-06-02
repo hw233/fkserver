@@ -6,9 +6,7 @@ local cluster = require "cluster"
 local bootconf = require "conf.boot"
 local nameservice = require "nameservice"
 local log = require "log"
-local redisopt = require "redisopt"
 
-local reddb = redisopt.default
 
 local clusterid = skynet.getenv("clusterid")
 clusterid = tonumber(clusterid)
@@ -115,6 +113,7 @@ local function checkbootconf()
         string.format("boot service type does not match. %s ~= %s",serviceconf.type,bootserviceconf.type))
 end
 
+
 local function setupbootcluster()
     local bootnode = bootconf.node
     local bootnodename = bootnode.name .. "." .. tostring(bootnode.id)
@@ -135,25 +134,6 @@ local function setupbootcluster()
     return sid,handle
 end
 
-local function clean_when_start()
-    local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
-    for _,pattern in pairs(key_patterns) do
-		local keys = reddb:keys(pattern)
-        for _,key in pairs(keys) do
-            log.info("redis del %s",key)
-            reddb:del(key)
-        end
-    end
-end
-
-local function setup_default_redis_value()
-    local global_conf = channel.call("config.?","msg","global_conf")
-    local first_guid = global_conf.first_guid or 100001
-    local exists = reddb:exists("player:global:guid")
-    if not exists or exists == 0 then
-        reddb:set("player:global:guid",math.floor(first_guid))
-    end
-end
 
 local function setup()
     setupbootcluster()
@@ -175,8 +155,7 @@ local function setup()
         end
     end
 
-    clean_when_start()
-    setup_default_redis_value()
+
 end
 
 skynet.start(function()

@@ -7,6 +7,9 @@ local bootconf = require "conf.boot"
 local log = require "log"
 local json = require "cjson"
 require "functions"
+local redisopt = require "redisopt"
+
+local reddb = redisopt.default
 
 local LOG_MONEY_OPT_TYPE_RECHARGE_MONEY = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_RECHARGE_MONEY")
 
@@ -394,6 +397,28 @@ function CMD.start(conf)
     sconf = conf
 end
 
+
+
+local function clean_when_start()
+    local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
+    for _,pattern in pairs(key_patterns) do
+		local keys = reddb:keys(pattern)
+        for _,key in pairs(keys) do
+            log.info("redis del %s",key)
+            reddb:del(key)
+        end
+    end
+end
+
+local function setup_default_redis_value()
+    local global_conf = channel.call("config.?","msg","global_conf")
+    local first_guid = global_conf.first_guid or 100001
+    local exists = reddb:exists("player:global:guid")
+    if not exists or exists == 0 then
+        reddb:set("player:global:guid",math.floor(first_guid))
+    end
+end
+
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
@@ -431,4 +456,7 @@ skynet.start(function()
     end
 
     load_global()
+
+    clean_when_start()
+    setup_default_redis_value()
 end)
