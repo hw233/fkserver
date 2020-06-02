@@ -397,8 +397,6 @@ function CMD.start(conf)
     sconf = conf
 end
 
-
-
 local function clean_when_start()
     local key_patterns = {"player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
     for _,pattern in pairs(key_patterns) do
@@ -411,7 +409,7 @@ local function clean_when_start()
 end
 
 local function setup_default_redis_value()
-    local global_conf = channel.call("config.?","msg","global_conf")
+    local global_conf = globalconf
     local first_guid = global_conf.first_guid or 100001
     local exists = reddb:exists("player:global:guid")
     if not exists or exists == 0 then
@@ -457,6 +455,8 @@ skynet.start(function()
 
     load_global()
 
-    clean_when_start()
-    setup_default_redis_value()
+    skynet.timeout(0,function()
+        clean_when_start()
+        setup_default_redis_value()
+    end)
 end)
