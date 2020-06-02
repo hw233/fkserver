@@ -1,18 +1,22 @@
 /*
- Navicat MySQL Data Transfer
+ Navicat Premium Data Transfer
 
- Source Server         : localhost
+ Source Server         : rm-wz94y9xl0w2t60i92.mysql.rds.aliyuncs.com
  Source Server Type    : MySQL
- Source Server Version : 50728
- Source Host           : localhost:3306
+ Source Server Version : 50726
+ Source Host           : rm-wz94y9xl0w2t60i92.mysql.rds.aliyuncs.com:3306
  Source Schema         : geek_admin
 
  Target Server Type    : MySQL
- Target Server Version : 50728
+ Target Server Version : 50726
  File Encoding         : 65001
 
- Date: 07/03/2020 17:06:38
+ Date: 02/06/2020 15:13:00
 */
+
+CREATE DATABASE IF NOT EXISTS geek_admin;
+USE geek_admin;
+
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -21,51 +25,57 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for geek_admin
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_admin`;
-CREATE TABLE `geek_admin`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `username` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '用户名',
-  `nickname` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '昵称',
-  `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '密码',
-  `salt` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '密码盐',
-  `avatar` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '头像',
-  `email` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '电子邮箱',
-  `loginfailure` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '失败次数',
-  `logintime` int(10) NULL DEFAULT NULL COMMENT '登录时间',
-  `loginip` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '登录IP',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `token` varchar(59) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'Session标识',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'normal' COMMENT '状态',
+CREATE TABLE `geek_admin` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `username` varchar(20) NOT NULL DEFAULT '' COMMENT '用户名',
+  `nickname` varchar(50) NOT NULL DEFAULT '' COMMENT '昵称',
+  `password` varchar(32) NOT NULL DEFAULT '' COMMENT '密码',
+  `salt` varchar(30) NOT NULL DEFAULT '' COMMENT '密码盐',
+  `avatar` varchar(255) NOT NULL DEFAULT '' COMMENT '头像',
+  `email` varchar(100) NOT NULL DEFAULT '' COMMENT '电子邮箱',
+  `loginfailure` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '失败次数',
+  `logintime` int(10) DEFAULT NULL COMMENT '登录时间',
+  `loginip` varchar(50) DEFAULT NULL COMMENT '登录IP',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `token` varchar(59) NOT NULL DEFAULT '' COMMENT 'Session标识',
+  `status` varchar(30) NOT NULL DEFAULT 'normal' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '管理员表' ROW_FORMAT = Dynamic;
+  UNIQUE KEY `username` (`username`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COMMENT='管理员表';
 
 -- ----------------------------
 -- Records of geek_admin
 -- ----------------------------
-INSERT INTO `geek_admin` VALUES (1, 'admin', '超级管理员', 'b80e941f7e069b0fab72e793c36c3495', '1b8d6f', '/assets/img/avatar.png', '1194794288@qq.com', 0, 1583564983, '127.0.0.1', 1492186163, 1583564983, '15bc6186-5a39-4f28-8566-298403850c7d', 'normal');
+BEGIN;
+INSERT INTO `geek_admin` VALUES (1, 'admin', '超级管理员', 'b80e941f7e069b0fab72e793c36c3495', '1b8d6f', '/assets/img/avatar.png', '1194794288@qq.com', 0, 1591063908, '182.150.160.58', 1492186163, 1591063908, '756ddd78-0a87-432a-a877-a14321091eb3', 'normal');
+INSERT INTO `geek_admin` VALUES (2, '15046676081', 'nuin', '901e01004743ce19fdbc27e543b88641', 'Sa5pq9', '/assets/img/avatar.png', '814326153@qq.com', 0, 1583734702, '127.0.0.1', 1583734641, 1583734702, 'ed9a43ac-24bb-4848-8086-49843d6c1312', 'normal');
+INSERT INTO `geek_admin` VALUES (3, 'feilanqing', '费兰清', '2a530580f473e259fe10d35983358d82', 'lJY0NU', '/assets/img/avatar.png', '1045370376@qq.com', 0, 1590050578, '171.221.129.225', 1590050465, 1590050609, '4f4fa40e-b155-4f12-afe4-cae51ca0bd6e', 'normal');
+INSERT INTO `geek_admin` VALUES (4, '100004', '神净讨魔', '7b0114856e797e923a54d33bfadadf61', 'xcvDmb', '/assets/img/avatar.png', '1063737309@qq.com', 0, 1590059615, '171.221.129.225', 1590059067, 1590059615, '9d52c9a5-324b-48e3-8b22-28dc1047b21f', 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_admin_log
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_admin_log`;
-CREATE TABLE `geek_admin_log`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `admin_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '管理员ID',
-  `username` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '管理员名字',
-  `url` varchar(1500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '操作页面',
-  `title` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '日志标题',
-  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '内容',
-  `ip` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'IP',
-  `useragent` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'User-Agent',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '操作时间',
+CREATE TABLE `geek_admin_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `admin_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '管理员ID',
+  `username` varchar(30) NOT NULL DEFAULT '' COMMENT '管理员名字',
+  `url` varchar(1500) NOT NULL DEFAULT '' COMMENT '操作页面',
+  `title` varchar(100) NOT NULL DEFAULT '' COMMENT '日志标题',
+  `content` text NOT NULL COMMENT '内容',
+  `ip` varchar(50) NOT NULL DEFAULT '' COMMENT 'IP',
+  `useragent` varchar(255) NOT NULL DEFAULT '' COMMENT 'User-Agent',
+  `createtime` int(10) DEFAULT NULL COMMENT '操作时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `name`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 471 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '管理员日志表' ROW_FORMAT = Dynamic;
+  KEY `name` (`username`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=810 DEFAULT CHARSET=utf8 COMMENT='管理员日志表';
 
 -- ----------------------------
 -- Records of geek_admin_log
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_admin_log` VALUES (1, 1, 'admin', '/LZuT4M69sU.php/index/login?url=%2FLZuT4M69sU.php', '登录', '{\"url\":\"\\/LZuT4M69sU.php\",\"__token__\":\"80a1e9d5e1bea64b0dac7db37b9922fe\",\"username\":\"admin\",\"captcha\":\"pvex\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1576464247);
 INSERT INTO `geek_admin_log` VALUES (2, 1, 'admin', '/LZuT4M69sU.php/addon/install', '插件管理 安装', '{\"name\":\"summernote\",\"faversion\":\"1.0.0.20191101_beta\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1576464261);
 INSERT INTO `geek_admin_log` VALUES (3, 1, 'admin', '/LZuT4M69sU.php/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1576464261);
@@ -445,31 +455,344 @@ INSERT INTO `geek_admin_log` VALUES (467, 1, 'admin', '/admin/geek/club/edit/ids
 INSERT INTO `geek_admin_log` VALUES (468, 1, 'admin', '/admin/geek/club/edit/ids/1192297?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"13414\"},\"ids\":\"1192297\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583568716);
 INSERT INTO `geek_admin_log` VALUES (469, 1, 'admin', '/admin/geek/club/edit/ids/1192297?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"1231231\"},\"ids\":\"1192297\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583568866);
 INSERT INTO `geek_admin_log` VALUES (470, 1, 'admin', '/admin/geek/player/addMoney/guid/13/ids/13?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"number\":\"1000\",\"uid\":\"13\"},\"guid\":\"13\",\"ids\":\"13\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583569533);
+INSERT INTO `geek_admin_log` VALUES (471, 1, 'admin', '/admin/auth/rule/multi/ids/171', '', '{\"action\":\"\",\"ids\":\"171\",\"params\":\"ismenu=0\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583575914);
+INSERT INTO `geek_admin_log` VALUES (472, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583575914);
+INSERT INTO `geek_admin_log` VALUES (473, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fplayer%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/player\\/index?ref=addtabs\",\"__token__\":\"22ec553d5b530c7c6c7c62c8cee6c37f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"76e1412c2fd1425b77e5319fe66bafe63s\",\"geetest_validate\":\"38455011e51e65e28d012612f309d574\",\"geetest_seccode\":\"38455011e51e65e28d012612f309d574|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583720879);
+INSERT INTO `geek_admin_log` VALUES (474, 1, 'admin', '/admin/auth/rule/multi/ids/171', '', '{\"action\":\"\",\"ids\":\"171\",\"params\":\"ismenu=1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583720904);
+INSERT INTO `geek_admin_log` VALUES (475, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583720904);
+INSERT INTO `geek_admin_log` VALUES (476, 1, 'admin', '/admin/auth/rule/multi/ids/171', '', '{\"action\":\"\",\"ids\":\"171\",\"params\":\"ismenu=0\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583720908);
+INSERT INTO `geek_admin_log` VALUES (477, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583720909);
+INSERT INTO `geek_admin_log` VALUES (478, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"f26e29b56f1cb857880c5fb8267b7f8f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"14294fa353369bd1c11d1c0eee8a250die\",\"geetest_validate\":\"6ba51876d25b57dbe83f78a71b4ef040\",\"geetest_seccode\":\"6ba51876d25b57dbe83f78a71b4ef040|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1583720943);
+INSERT INTO `geek_admin_log` VALUES (479, 1, 'admin', '/admin/geek/agent/add/ids/1?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"17665031234\",\"password\":\"123456\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583721948);
+INSERT INTO `geek_admin_log` VALUES (480, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583722240);
+INSERT INTO `geek_admin_log` VALUES (481, 1, 'admin', '/admin/geek/member_agent/edit/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"123\",\"desc\":\"13123\",\"status\":\"1\"},\"ids\":\"7\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583724732);
+INSERT INTO `geek_admin_log` VALUES (482, 1, 'admin', '/admin/geek/member_agent/edit/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"123412\",\"desc\":\"13123\",\"status\":\"1\"},\"ids\":\"7\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583724766);
+INSERT INTO `geek_admin_log` VALUES (483, 1, 'admin', '/admin/geek/member_agent/edit/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"123412\",\"desc\":\"13123\",\"status\":\"1\"},\"ids\":\"7\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583724776);
+INSERT INTO `geek_admin_log` VALUES (484, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"3b1f1dc10eb76c4f213caf9d16824fa7\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"b09c551f59ba4532ebea5f6b7fcdf236fe\",\"geetest_validate\":\"41fd09aec0df120c3046673ae65f9532\",\"geetest_seccode\":\"41fd09aec0df120c3046673ae65f9532|jordan\"}', '192.168.2.54', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36', 1583733240);
+INSERT INTO `geek_admin_log` VALUES (485, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"4fcd2569e318446b068cb9119c1b3fd5\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"bc9ec445b99b6f512ff2b3b2eaec6809ib\",\"geetest_validate\":\"0247f0b13e0fd2fc910633570986d1c8\",\"geetest_seccode\":\"0247f0b13e0fd2fc910633570986d1c8|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583733787);
+INSERT INTO `geek_admin_log` VALUES (486, 1, 'admin', '/admin/auth/rule/add?dialog=1', '权限管理 菜单规则 添加', '{\"dialog\":\"1\",\"__token__\":\"836f00189764c642f8aa2bc6c348cbde\",\"row\":{\"ismenu\":\"1\",\"pid\":\"159\",\"name\":\"geek\\/player\\/addMoney\",\"title\":\"\\u5145\\u503c\\u623f\\u5361\",\"icon\":\"fa fa-circle-o\",\"weigh\":\"0\",\"condition\":\"\",\"remark\":\"\",\"status\":\"normal\"}}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734437);
+INSERT INTO `geek_admin_log` VALUES (487, 1, 'admin', '/admin/auth/rule/add?dialog=1', '权限管理 菜单规则 添加', '{\"dialog\":\"1\",\"__token__\":\"20393f11c2b4d72127d0d22417d77e2f\",\"row\":{\"ismenu\":\"1\",\"pid\":\"159\",\"name\":\"geek\\/player\\/addmoney\",\"title\":\"\\u5145\\u503c\\u623f\\u5361\",\"icon\":\"fa fa-circle-o\",\"weigh\":\"0\",\"condition\":\"\",\"remark\":\"\",\"status\":\"normal\"}}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734448);
+INSERT INTO `geek_admin_log` VALUES (488, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734448);
+INSERT INTO `geek_admin_log` VALUES (489, 1, 'admin', '/admin/auth/group/roletree', '', '{\"id\":\"3\",\"pid\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734457);
+INSERT INTO `geek_admin_log` VALUES (490, 1, 'admin', '/admin/geek/player/multi/ids/2', '', '{\"action\":\"\",\"ids\":\"2\",\"params\":\"status=0\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734489);
+INSERT INTO `geek_admin_log` VALUES (491, 1, 'admin', '/admin/geek/player/multi/ids/2', '', '{\"action\":\"\",\"ids\":\"2\",\"params\":\"status=1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734498);
+INSERT INTO `geek_admin_log` VALUES (492, 1, 'admin', '/admin/auth/group/roletree', '', '{\"pid\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734569);
+INSERT INTO `geek_admin_log` VALUES (493, 1, 'admin', '/admin/auth/group/roletree', '', '{\"pid\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734572);
+INSERT INTO `geek_admin_log` VALUES (494, 1, 'admin', '/admin/auth/group/add?dialog=1', '权限管理 角色组 添加', '{\"dialog\":\"1\",\"__token__\":\"eb65b14d7a1423f3614337e62ab67718\",\"row\":{\"rules\":\"1,2,4,6,7,8,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,55,56,57,58,59,60,61,62,63,64,65\",\"pid\":\"2\",\"name\":\"\\u63a8\\u5e7f\\u5458\",\"status\":\"normal\"}}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734618);
+INSERT INTO `geek_admin_log` VALUES (495, 1, 'admin', '/admin/auth/admin/add?dialog=1', '权限管理 管理员管理 添加', '{\"dialog\":\"1\",\"__token__\":\"f0b8bbb9397efc65d5a8c37ee23bdb6f\",\"group\":[\"6\"],\"row\":{\"username\":\"15046676081\",\"email\":\"814326153@qq.com\",\"nickname\":\"nuin\",\"password\":\"eleen11\",\"status\":\"normal\"}}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734641);
+INSERT INTO `geek_admin_log` VALUES (496, 0, 'Unknown', '/admin/index/login', '登录', '{\"__token__\":\"875b249101b88236da98fd15ba1b3235\",\"username\":\"15046676081\",\"captcha\":\"ok\",\"geetest_challenge\":\"9ab22009fed410727fe14502f07df5843s\",\"geetest_validate\":\"c9e20df601d9fc6f826b7c05d9485be8\",\"geetest_seccode\":\"c9e20df601d9fc6f826b7c05d9485be8|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734653);
+INSERT INTO `geek_admin_log` VALUES (497, 0, 'Unknown', '/admin/index/login', '登录', '{\"__token__\":\"27dfb75ef276fa8d54b62bcf6e227b1a\",\"username\":\"15046676081\",\"captcha\":\"ok\",\"geetest_challenge\":\"76392b39e1b25416a8d19ddca1c26fd08t\",\"geetest_validate\":\"3cebf125b7b7bc082067a5d9c3fbe0d9\",\"geetest_seccode\":\"3cebf125b7b7bc082067a5d9c3fbe0d9|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734660);
+INSERT INTO `geek_admin_log` VALUES (498, 0, 'Unknown', '/admin/index/login', '登录', '{\"__token__\":\"95aaaf01b9ad0e8da86fef17cd6aff05\",\"username\":\"15046676081\",\"captcha\":\"ok\",\"geetest_challenge\":\"b24d7b7d2ebe663c03755b18d5a10327bo\",\"geetest_validate\":\"d2d99279814faca866a9c985aec4bd9d\",\"geetest_seccode\":\"d2d99279814faca866a9c985aec4bd9d|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734666);
+INSERT INTO `geek_admin_log` VALUES (499, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"7fe7dd5368c598aa8ce895f368a0e648\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"821827e02cb2606cdaa77f79241f95c1j5\",\"geetest_validate\":\"28e0b3fd441c80b1b9ff92bd8c00a1a2\",\"geetest_seccode\":\"28e0b3fd441c80b1b9ff92bd8c00a1a2|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734675);
+INSERT INTO `geek_admin_log` VALUES (500, 1, 'admin', '/admin/auth/admin/edit/ids/2?dialog=1', '权限管理 管理员管理 编辑', '{\"dialog\":\"1\",\"__token__\":\"c1cedc5d89108b3262bbaa4065e93c2d\",\"group\":[\"6\"],\"row\":{\"username\":\"15046676081\",\"email\":\"814326153@qq.com\",\"nickname\":\"nuin\",\"password\":\"123456\",\"loginfailure\":\"3\",\"status\":\"normal\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734687);
+INSERT INTO `geek_admin_log` VALUES (501, 2, '15046676081', '/admin/index/login', '登录', '{\"__token__\":\"b84032c9f58817dc418abfd10a6708ca\",\"username\":\"15046676081\",\"captcha\":\"ok\",\"geetest_challenge\":\"1b08e9818847b0bf7362707b4b44bef0f6\",\"geetest_validate\":\"3be795e25f20c9ccab04d84a228b7e33\",\"geetest_seccode\":\"3be795e25f20c9ccab04d84a228b7e33|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734702);
+INSERT INTO `geek_admin_log` VALUES (502, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"c59cf6c502e2027da12c7fdf6454c71e\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"36a5db49ff6b153f83a89f4b1d72f44cj4\",\"geetest_validate\":\"13e60fc04345d27aa7925870be726d14\",\"geetest_seccode\":\"13e60fc04345d27aa7925870be726d14|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734753);
+INSERT INTO `geek_admin_log` VALUES (503, 1, 'admin', '/admin/auth/rule/multi/ids/164', '', '{\"action\":\"\",\"ids\":\"164\",\"params\":\"ismenu=0\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734815);
+INSERT INTO `geek_admin_log` VALUES (504, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36', 1583734815);
+INSERT INTO `geek_admin_log` VALUES (505, 1, 'admin', '/admin/index/login?password=50279901a4f4fe8a', '登录', '{\"__token__\":\"ac98da4d62c8612fca4df09292b94ea4\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"5763fd4764151ccfe9c36fdcdd2445e6eo\",\"geetest_validate\":\"76f493d978992df2189d4e9d9eb0e9b4\",\"geetest_seccode\":\"76f493d978992df2189d4e9d9eb0e9b4|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735319);
+INSERT INTO `geek_admin_log` VALUES (506, 1, 'admin', '/admin/auth/rule/multi/ids/97', '', '{\"action\":\"\",\"ids\":\"97\",\"params\":\"ismenu=1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735448);
+INSERT INTO `geek_admin_log` VALUES (507, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735448);
+INSERT INTO `geek_admin_log` VALUES (508, 1, 'admin', '/admin/auth/rule/multi/ids/97', '', '{\"action\":\"\",\"ids\":\"97\",\"params\":\"ismenu=0\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735465);
+INSERT INTO `geek_admin_log` VALUES (509, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735465);
+INSERT INTO `geek_admin_log` VALUES (510, 1, 'admin', '/admin/auth/rule/edit/ids/173?dialog=1', '权限管理 菜单规则 编辑', '{\"dialog\":\"1\",\"__token__\":\"b6083adb5f76f0d5d90b44220e862229\",\"row\":{\"ismenu\":\"0\",\"pid\":\"159\",\"name\":\"geek\\/player\\/addmoney\",\"title\":\"\\u5145\\u503c\\u623f\\u5361\",\"icon\":\"fa fa-circle-o\",\"weigh\":\"0\",\"condition\":\"\",\"remark\":\"\",\"status\":\"normal\"},\"ids\":\"173\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735488);
+INSERT INTO `geek_admin_log` VALUES (511, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583735488);
+INSERT INTO `geek_admin_log` VALUES (512, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"28fe2d2f3492811164c12695189e5958\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"6f9897e356136d8c904daabee56f740ca7\",\"geetest_validate\":\"8328294c15433189c6c6d7216ccedb16\",\"geetest_seccode\":\"8328294c15433189c6c6d7216ccedb16|jordan\"}', '192.168.2.75', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36', 1583737187);
+INSERT INTO `geek_admin_log` VALUES (513, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"adf14c2caa3c5ee5cd869c50df70cb98\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"09b326176bf1870f535b0a49c4021f3aj1\",\"geetest_validate\":\"268ef45748fb6c3298418f2eb85bc0ba\",\"geetest_seccode\":\"268ef45748fb6c3298418f2eb85bc0ba|jordan\",\"keeplogin\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583748434);
+INSERT INTO `geek_admin_log` VALUES (514, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"4dbe203581109a75a7af8c0ee54a8577\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"\",\"geetest_validate\":\"\",\"geetest_seccode\":\"\",\"keeplogin\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583748436);
+INSERT INTO `geek_admin_log` VALUES (515, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"70df0f2f8799604c19a0f3312f4900f3\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c7959515f5cf4bb9b0ba96d36a3432c6es\",\"geetest_validate\":\"7ccef3d6bd927d05ab6afdd7c68d6332\",\"geetest_seccode\":\"7ccef3d6bd927d05ab6afdd7c68d6332|jordan\",\"keeplogin\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583748441);
+INSERT INTO `geek_admin_log` VALUES (516, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"076474115e42bde3bc5f7b28580b4ac3\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a239db0e23928a423aacb0e2b32eb11697\",\"geetest_validate\":\"a46ae49c57e5237c0f88af2d8724b122\",\"geetest_seccode\":\"a46ae49c57e5237c0f88af2d8724b122|jordan\",\"keeplogin\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583803796);
+INSERT INTO `geek_admin_log` VALUES (517, 1, 'admin', '/admin/geek/club/edit/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"123\"},\"ids\":\"7\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583806329);
+INSERT INTO `geek_admin_log` VALUES (518, 1, 'admin', '/admin/geek/club/edit/ids/10?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5fb7\\u739b\\u897f\\u4e9a\"},\"ids\":\"10\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583806437);
+INSERT INTO `geek_admin_log` VALUES (521, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583808606);
+INSERT INTO `geek_admin_log` VALUES (522, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583808627);
+INSERT INTO `geek_admin_log` VALUES (523, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583808634);
+INSERT INTO `geek_admin_log` VALUES (524, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583808910);
+INSERT INTO `geek_admin_log` VALUES (526, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583808998);
+INSERT INTO `geek_admin_log` VALUES (527, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583809119);
+INSERT INTO `geek_admin_log` VALUES (528, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583809281);
+INSERT INTO `geek_admin_log` VALUES (529, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583809363);
+INSERT INTO `geek_admin_log` VALUES (530, 1, 'admin', '/admin/geek/agent/add/ids/3?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583809589);
+INSERT INTO `geek_admin_log` VALUES (532, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"3d73a4bbf0591a345c529c10c1117644\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"136c59455e7c374042c9ab26a1e2cc68an\",\"geetest_validate\":\"e8101e5abb23f68d69bfa5ed0022e79c\",\"geetest_seccode\":\"e8101e5abb23f68d69bfa5ed0022e79c|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1583812261);
+INSERT INTO `geek_admin_log` VALUES (533, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"62849156637493b4f9160bd81bd99734\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"72b0964c1047de8d998470dbd430a7749k\",\"geetest_validate\":\"dded0788c6556bd0822700d0de005328\",\"geetest_seccode\":\"dded0788c6556bd0822700d0de005328|jordan\"}', '192.168.2.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3970.5 Safari/537.36', 1583818852);
+INSERT INTO `geek_admin_log` VALUES (534, 1, 'admin', '/admin/geek/agent/add/ids/2?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583818879);
+INSERT INTO `geek_admin_log` VALUES (535, 1, 'admin', '/admin/geek/agent/add/ids/2?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584723\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583818885);
+INSERT INTO `geek_admin_log` VALUES (539, 1, 'admin', '/admin/geek/agent/add/ids/4?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"18200584721\",\"password\":\"123456\",\"guid\":\"4\",\"nickname\":\"guest_4\",\"status\":\"1\"},\"ids\":\"4\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583819486);
+INSERT INTO `geek_admin_log` VALUES (540, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fdashboard%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/dashboard?ref=addtabs\",\"__token__\":\"9276d1683bf2f8b777846852c4f2cd87\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c63ccda19589c94543061ff8c848ee629p\",\"geetest_validate\":\"ea6a72cc8e71b4c46c37bb28acfb2382\",\"geetest_seccode\":\"ea6a72cc8e71b4c46c37bb28acfb2382|jordan\"}', '192.168.2.14', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583831217);
+INSERT INTO `geek_admin_log` VALUES (541, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"da7e2f5925a6c19884b356ebd2b8ddbd\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"e75ebf9166700fa776b89477f25025959q\",\"geetest_validate\":\"832c9d9deb37a5706d66e9124d243ec2\",\"geetest_seccode\":\"832c9d9deb37a5706d66e9124d243ec2|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583831248);
+INSERT INTO `geek_admin_log` VALUES (542, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"47baa8877c142548a19232c0dca1777c\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"20aad3ae55e30660fc1b7d030cbec992go\",\"geetest_validate\":\"1c152ce1489c17d0b243f7c3f9e6f4d8\",\"geetest_seccode\":\"1c152ce1489c17d0b243f7c3f9e6f4d8|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1583892505);
+INSERT INTO `geek_admin_log` VALUES (543, 1, 'admin', '/admin/geek/agent/add/ids/1?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"123456\",\"password\":\"123456\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583892552);
+INSERT INTO `geek_admin_log` VALUES (544, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fplayer%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/player\\/index?ref=addtabs\",\"__token__\":\"bb5161e8acc5be0b310ee4a510001e0c\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"7b6acb4a327b8a0b89bf8d07662d8d2331\",\"geetest_validate\":\"55b4ab42e75ed6f470b9f21312fa34b0\",\"geetest_seccode\":\"55b4ab42e75ed6f470b9f21312fa34b0|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583892662);
+INSERT INTO `geek_admin_log` VALUES (546, 1, 'admin', '/admin/geek/club/edit/ids/19?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u6d4b\\u8bd5\\u6dfb\\u52a0\"},\"ids\":\"19\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583893543);
+INSERT INTO `geek_admin_log` VALUES (547, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583894029);
+INSERT INTO `geek_admin_log` VALUES (548, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583894051);
+INSERT INTO `geek_admin_log` VALUES (549, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583894364);
+INSERT INTO `geek_admin_log` VALUES (550, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/19?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"19\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583894452);
+INSERT INTO `geek_admin_log` VALUES (551, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583894460);
+INSERT INTO `geek_admin_log` VALUES (552, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"39451c13cae2ceb7d365fa3fca789809\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"152e3101d193cd75fb559187cc24329bk0\",\"geetest_validate\":\"8009818c1ddb64293af61724424db6ee\",\"geetest_seccode\":\"8009818c1ddb64293af61724424db6ee|jordan\",\"keeplogin\":\"1\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583896490);
+INSERT INTO `geek_admin_log` VALUES (553, 1, 'admin', '/admin/geek/player/addMoney/guid/4/ids/4?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"1000\",\"uid\":\"4\"},\"guid\":\"4\",\"ids\":\"4\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583898135);
+INSERT INTO `geek_admin_log` VALUES (554, 1, 'admin', '/admin/geek/agent/add/ids/4?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17683146641\",\"password\":\"long5201314jie\",\"guid\":\"4\",\"nickname\":\"guest_4\",\"status\":\"1\"},\"ids\":\"4\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583898166);
+INSERT INTO `geek_admin_log` VALUES (555, 1, 'admin', '/admin/geek/club/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u9a6c\\u52d2\\u6208\\u58c1\"},\"ids\":\"21\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583898186);
+INSERT INTO `geek_admin_log` VALUES (556, 1, 'admin', '/admin/geek/agent/add/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"165156161651\",\"password\":\"311616516\",\"guid\":\"5\",\"nickname\":\"guest_5\",\"status\":\"1\"},\"ids\":\"5\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583898428);
+INSERT INTO `geek_admin_log` VALUES (557, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"135165181616\",\"password\":\"16516516161\",\"guid\":\"6\",\"nickname\":\"guest_6\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583898448);
+INSERT INTO `geek_admin_log` VALUES (558, 1, 'admin', '/admin/geek/club/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u677e\\u624b\"},\"ids\":\"21\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583899048);
+INSERT INTO `geek_admin_log` VALUES (559, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"a397bbc072ea332ebdf87860a9c1f065\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"f423d2d05aae5f686946caf394702fa777\",\"geetest_validate\":\"c25e7ced45790cba466948298a8f978b\",\"geetest_seccode\":\"c25e7ced45790cba466948298a8f978b|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583906488);
+INSERT INTO `geek_admin_log` VALUES (560, 1, 'admin', '/admin/geek/member_agent/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"status\":\"2\"},\"ids\":\"21\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583908328);
+INSERT INTO `geek_admin_log` VALUES (561, 1, 'admin', '/admin/geek/member_agent/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"status\":\"1\"},\"ids\":\"21\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583908334);
+INSERT INTO `geek_admin_log` VALUES (562, 1, 'admin', '/admin/geek/member_agent/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"hidden\":\"4\",\"status\":\"1\"},\"ids\":\"21\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583908654);
+INSERT INTO `geek_admin_log` VALUES (563, 1, 'admin', '/admin/geek/member_agent/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"guid\":\"4\",\"status\":\"2\"},\"ids\":\"21\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583909080);
+INSERT INTO `geek_admin_log` VALUES (564, 1, 'admin', '/admin/geek/member_agent/edit/ids/21?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"guid\":\"4\",\"status\":\"2\"},\"ids\":\"21\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583909296);
+INSERT INTO `geek_admin_log` VALUES (565, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"76ad605d235a366d77d6c5c1fa9292c2\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a17387c06b156c6a7bba993c17bf166ech\",\"geetest_validate\":\"78e066c771833f8ece9e7194bcd72727\",\"geetest_seccode\":\"78e066c771833f8ece9e7194bcd72727|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1583909408);
+INSERT INTO `geek_admin_log` VALUES (566, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18200584725\",\"password\":\"123456\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583909426);
+INSERT INTO `geek_admin_log` VALUES (568, 1, 'admin', '/admin/geek/member_agent/edit/ids/24?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"guid\":\"1\",\"status\":\"2\"},\"ids\":\"24\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583909872);
+INSERT INTO `geek_admin_log` VALUES (569, 1, 'admin', '/admin/geek/member_agent/edit/ids/24?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"password\":\"\",\"desc\":\"\",\"guid\":\"1\",\"status\":\"1\"},\"ids\":\"24\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583909881);
+INSERT INTO `geek_admin_log` VALUES (570, 0, 'Unknown', '/admin/index/login', '登录', '{\"__token__\":\"b552533fb51a81d45e06cff8295e0d7f\",\"username\":\"18200584725\",\"captcha\":\"ok\",\"geetest_challenge\":\"12f8bbcaf09cc72b1f8e6cc82c3af76bly\",\"geetest_validate\":\"28320ec63692a838b9a847718d1f6290\",\"geetest_seccode\":\"28320ec63692a838b9a847718d1f6290|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910113);
+INSERT INTO `geek_admin_log` VALUES (571, 0, 'Unknown', '/admin/index/login', '登录', '{\"__token__\":\"35c937c9409568f8e8d6b140d488ba0a\",\"username\":\"18200584725\",\"captcha\":\"ok\",\"geetest_challenge\":\"e41c287d60cd9980cfa20b4ca34b9db49u\",\"geetest_validate\":\"d1f264d69f1945cf8265b25a813a547b\",\"geetest_seccode\":\"d1f264d69f1945cf8265b25a813a547b|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910141);
+INSERT INTO `geek_admin_log` VALUES (572, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"097eee91928d60ccf5c2b9531f561503\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"fb9964359522c6609b2dbc89b8523bcf8v\",\"geetest_validate\":\"9c8ccc81244fc1aa182dfe95bf2fe274\",\"geetest_seccode\":\"9c8ccc81244fc1aa182dfe95bf2fe274|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910152);
+INSERT INTO `geek_admin_log` VALUES (573, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"8dda1f35f104234ad7064637f2ae7432\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"0594b5ee1812a015d228732fca7edf40l7\",\"geetest_validate\":\"b3b7841264b6e51d53b03e8db83c80cc\",\"geetest_seccode\":\"b3b7841264b6e51d53b03e8db83c80cc|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910192);
+INSERT INTO `geek_admin_log` VALUES (574, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"c02e6da09124609655697e5aca51fe5f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"1242665cbdc16cf965115b7993b48103fk\",\"geetest_validate\":\"ae31c061e116f843187ccc7e26a86897\",\"geetest_seccode\":\"ae31c061e116f843187ccc7e26a86897|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910263);
+INSERT INTO `geek_admin_log` VALUES (575, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"59566bc5298e398f07cc2a920f161805\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"71a0f60ce5c20209d5864ada96a4278bko\",\"geetest_validate\":\"07daf0c95b61795b0256171c36894d83\",\"geetest_seccode\":\"07daf0c95b61795b0256171c36894d83|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583910624);
+INSERT INTO `geek_admin_log` VALUES (576, 1, 'admin', '/admin/geek/club/edit/ids/24?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5fb7\\u739b\\u897f\\u4e9a\"},\"ids\":\"24\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1583911041);
+INSERT INTO `geek_admin_log` VALUES (577, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"2942132fefe2fffbedc8584b37adb133\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"0c9408ae7009391d36d955d8f5d84974jl\",\"geetest_validate\":\"e4fd1e4bf124bb78fc99bed07aa8a89c\",\"geetest_seccode\":\"e4fd1e4bf124bb78fc99bed07aa8a89c|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583911242);
+INSERT INTO `geek_admin_log` VALUES (578, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978451\",\"password\":\"123456\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583911285);
+INSERT INTO `geek_admin_log` VALUES (579, 1, 'admin', '/admin/geek/agent/add/ids/4?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978452\",\"password\":\"123456\",\"guid\":\"4\",\"nickname\":\"guest_4\",\"status\":\"1\"},\"ids\":\"4\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583911381);
+INSERT INTO `geek_admin_log` VALUES (580, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"6554978456\",\"password\":\"123456\",\"guid\":\"6\",\"nickname\":\"guest_6\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583912030);
+INSERT INTO `geek_admin_log` VALUES (581, 1, 'admin', '/admin/geek/player/addMoney/guid/3/ids/3?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"1000\",\"uid\":\"3\"},\"guid\":\"3\",\"ids\":\"3\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912769);
+INSERT INTO `geek_admin_log` VALUES (582, 1, 'admin', '/admin/geek/agent/add/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17683146641\",\"password\":\"long5201314jie\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912787);
+INSERT INTO `geek_admin_log` VALUES (583, 1, 'admin', '/admin/geek/agent/add/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"111111\",\"password\":\"long5201314jie\",\"guid\":\"3\",\"nickname\":\"guest_3\",\"status\":\"1\"},\"ids\":\"3\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912830);
+INSERT INTO `geek_admin_log` VALUES (584, 1, 'admin', '/admin/geek/club/edit/ids/28?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u9a6c\\u52d2\\u6208\\u58c1\"},\"ids\":\"28\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912849);
+INSERT INTO `geek_admin_log` VALUES (585, 1, 'admin', '/admin/geek/club/edit/ids/28?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u9a6c\\u52d2\\u6208\\u58c1\"},\"ids\":\"28\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912862);
+INSERT INTO `geek_admin_log` VALUES (586, 1, 'admin', '/admin/geek/agent/add/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1313132\",\"password\":\"13111655161\",\"guid\":\"7\",\"nickname\":\"guest_7\",\"status\":\"1\"},\"ids\":\"7\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912903);
+INSERT INTO `geek_admin_log` VALUES (587, 1, 'admin', '/admin/geek/agent/add/ids/8?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1\",\"password\":\"\",\"guid\":\"8\",\"nickname\":\"guest_8\",\"status\":\"1\"},\"ids\":\"8\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583912909);
+INSERT INTO `geek_admin_log` VALUES (591, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"40889c31d0d919308c07a5148e3fb103\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"1643763807f369d03b0857e6c8e736e95h\",\"geetest_validate\":\"23e76b956001d87a77b7f4307b7b744b\",\"geetest_seccode\":\"23e76b956001d87a77b7f4307b7b744b|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1583913972);
+INSERT INTO `geek_admin_log` VALUES (592, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583913996);
+INSERT INTO `geek_admin_log` VALUES (593, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"100\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583914072);
+INSERT INTO `geek_admin_log` VALUES (594, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"100\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583914235);
+INSERT INTO `geek_admin_log` VALUES (595, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"100\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1583914355);
+INSERT INTO `geek_admin_log` VALUES (596, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"93f02c4d14eead566ed92f44eaf47105\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"866a1c6c6e6b06afa7780356179736d3lt\",\"geetest_validate\":\"bdf6ecb9e28f44b51eaabcb20dfcfb0b\",\"geetest_seccode\":\"bdf6ecb9e28f44b51eaabcb20dfcfb0b|jordan\",\"keeplogin\":\"1\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583915915);
+INSERT INTO `geek_admin_log` VALUES (597, 1, 'admin', '/admin/geek/player/addMoney/guid/11/ids/11?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"11\"},\"guid\":\"11\",\"ids\":\"11\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583915943);
+INSERT INTO `geek_admin_log` VALUES (598, 1, 'admin', '/admin/geek/agent/add/ids/11?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"151351513\",\"password\":\"long5201314jie\",\"guid\":\"11\",\"nickname\":\"guest_11\",\"status\":\"1\"},\"ids\":\"11\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583915965);
+INSERT INTO `geek_admin_log` VALUES (599, 1, 'admin', '/admin/geek/agent/add/ids/12?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1315313\",\"password\":\"13513\",\"guid\":\"12\",\"nickname\":\"guest_12\",\"status\":\"1\"},\"ids\":\"12\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583915984);
+INSERT INTO `geek_admin_log` VALUES (600, 1, 'admin', '/admin/geek/agent/add/ids/13?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1351151\",\"password\":\"4686461\",\"guid\":\"13\",\"nickname\":\"guest_13\",\"status\":\"1\"},\"ids\":\"13\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583915994);
+INSERT INTO `geek_admin_log` VALUES (601, 1, 'admin', '/admin/geek/club/edit/ids/31?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u9a6c\\u52d2\\u6208\\u58c1\"},\"ids\":\"31\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1583916023);
+INSERT INTO `geek_admin_log` VALUES (602, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"99e2454224292d53a33324e7fd45aaaf\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"570d7776cb4e7494bec7f208627b04aabe\",\"geetest_validate\":\"24158b366dc9df53f6490367405ac407\",\"geetest_seccode\":\"24158b366dc9df53f6490367405ac407|jordan\"}', '192.168.2.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36 Edg/80.0.361.66', 1584002435);
+INSERT INTO `geek_admin_log` VALUES (603, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"417aec858c3af06097d29e6a4857087a\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c60c4fe53b93c044e798e7760b6c669f9j\",\"geetest_validate\":\"57182054aeaa160213a572704051e699\",\"geetest_seccode\":\"57182054aeaa160213a572704051e699|jordan\"}', '192.168.2.14', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1584066896);
+INSERT INTO `geek_admin_log` VALUES (604, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123456\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584067246);
+INSERT INTO `geek_admin_log` VALUES (605, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978451\",\"password\":\"1234\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584067257);
+INSERT INTO `geek_admin_log` VALUES (606, 1, 'admin', '/admin/geek/club/edit/ids/34?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5927\\u5927\\u5927\"},\"ids\":\"34\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584067275);
+INSERT INTO `geek_admin_log` VALUES (607, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/34?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"34\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584067410);
+INSERT INTO `geek_admin_log` VALUES (608, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"c492a320baa6ef40336e92c8a4924804\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a50671a1e3f36d65d81052ab01ccdbb7jm\",\"geetest_validate\":\"6c8a53c827f1a27a5a27b12ddc2fb025\",\"geetest_seccode\":\"6c8a53c827f1a27a5a27b12ddc2fb025|jordan\"}', '192.168.2.98', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36 Edg/80.0.361.66', 1584069274);
+INSERT INTO `geek_admin_log` VALUES (609, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"874c984ef290f0f675e1026ab6dd2aac\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"755aa4a36c513e10ca8ce3900010c1f8cz\",\"geetest_validate\":\"fcce0580fd0cfe26709e879504a82132\",\"geetest_seccode\":\"fcce0580fd0cfe26709e879504a82132|jordan\"}', '192.168.2.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36 Edg/80.0.361.66', 1584070521);
+INSERT INTO `geek_admin_log` VALUES (610, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"da25e8017e60075ba97bf52bc89df8c6\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"1022ca80f877bd3e76611c68230414a07t\",\"geetest_validate\":\"30b9952421bc8dce8577091ca740f7e1\",\"geetest_seccode\":\"30b9952421bc8dce8577091ca740f7e1|jordan\"}', '192.168.2.26', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36 Edg/80.0.361.66', 1584084384);
+INSERT INTO `geek_admin_log` VALUES (611, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"791a190aafb82329f76bdea65fc4564f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"cdcd1be062e186aa693be7b11adb0dc9dv\",\"geetest_validate\":\"1b320a5ca6e38a21e52c462e0178ec04\",\"geetest_seccode\":\"1b320a5ca6e38a21e52c462e0178ec04|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1584500897);
+INSERT INTO `geek_admin_log` VALUES (612, 1, 'admin', '/admin/geek/agent/add/ids/1?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"654978451\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584501313);
+INSERT INTO `geek_admin_log` VALUES (613, 1, 'admin', '/admin/geek/agent/add/ids/2?addtabs=1', '', '{\"addtabs\":\"1\",\"row\":{\"mobile\":\"654978452\",\"password\":\"123\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584501329);
+INSERT INTO `geek_admin_log` VALUES (614, 1, 'admin', '/admin/geek/player/addMoney/guid/2/ids/37?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"2\"},\"guid\":\"2\",\"ids\":\"37\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584501352);
+INSERT INTO `geek_admin_log` VALUES (615, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fdashboard%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/dashboard?ref=addtabs\",\"__token__\":\"ace5c5a728d11236b397834d61b99bba\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c6d176a9f8c2dd0c46bac6d7c15292b8dj\",\"geetest_validate\":\"4dba43b7860f56f9a3c73e9c3ef0e88e\",\"geetest_seccode\":\"4dba43b7860f56f9a3c73e9c3ef0e88e|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1584501577);
+INSERT INTO `geek_admin_log` VALUES (616, 1, 'admin', '/admin/geek/club/edit/ids/36?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5fb7\\u739b\\u897f\\u4e9a\"},\"ids\":\"36\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1584502199);
+INSERT INTO `geek_admin_log` VALUES (617, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"a09246a2c0222b58f92218b0b8ef436f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"db2a51a08f09fe3eea1d8826b74e5c3fl2\",\"geetest_validate\":\"15c5935e1436810e46aa030b8578b854\",\"geetest_seccode\":\"15c5935e1436810e46aa030b8578b854|jordan\"}', '192.168.2.14', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3722.400 QQBrowser/10.5.3751.400', 1584502254);
+INSERT INTO `geek_admin_log` VALUES (618, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"fa9579d936922fde2d3064ff324bd32b\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"2d2162439d92f1c5403a7d3b66e91adbl0\",\"geetest_validate\":\"f2e5cf20e90e61ec213e5f3582238e94\",\"geetest_seccode\":\"f2e5cf20e90e61ec213e5f3582238e94|jordan\",\"keeplogin\":\"1\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526024);
+INSERT INTO `geek_admin_log` VALUES (619, 1, 'admin', '/admin/geek/agent/add/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17683146641\",\"password\":\"long5201314jie\",\"guid\":\"5\",\"nickname\":\"guest_5\",\"status\":\"1\"},\"ids\":\"5\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526252);
+INSERT INTO `geek_admin_log` VALUES (620, 1, 'admin', '/admin/geek/player/addMoney/guid/5/ids/5?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"5\"},\"guid\":\"5\",\"ids\":\"5\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526262);
+INSERT INTO `geek_admin_log` VALUES (621, 1, 'admin', '/admin/geek/player/addMoney/guid/5/ids/5?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"1000000\",\"uid\":\"5\"},\"guid\":\"5\",\"ids\":\"5\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526276);
+INSERT INTO `geek_admin_log` VALUES (622, 1, 'admin', '/admin/geek/player/addMoney/guid/5/ids/5?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"5\"},\"guid\":\"5\",\"ids\":\"5\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526292);
+INSERT INTO `geek_admin_log` VALUES (623, 1, 'admin', '/admin/geek/club/edit/ids/38?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u9a6c\\u52d2\\u6208\\u58c1\"},\"ids\":\"38\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526444);
+INSERT INTO `geek_admin_log` VALUES (624, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"165156161651\",\"password\":\"16516516161\",\"guid\":\"6\",\"nickname\":\"guest_6\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526483);
+INSERT INTO `geek_admin_log` VALUES (625, 1, 'admin', '/admin/geek/agent/add/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"135165181616\",\"password\":\"13111655161\",\"guid\":\"7\",\"nickname\":\"guest_7\",\"status\":\"1\"},\"ids\":\"7\"}', '192.168.2.3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1584526494);
+INSERT INTO `geek_admin_log` VALUES (626, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"66dcdf2412701fb43b00a24856742cbc\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"9207a3372379be13907398263b375a0f86\",\"geetest_validate\":\"7f6961cf0db3ce14b4a3fc83942c202e\",\"geetest_seccode\":\"7f6961cf0db3ce14b4a3fc83942c202e|jordan\"}', '192.168.2.75', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36', 1584608504);
+INSERT INTO `geek_admin_log` VALUES (627, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"caaa2363f9c9c08cb588bc051d20ac28\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"608db285ceb3aec4ac6b43c4e52abb9fbc\",\"geetest_validate\":\"9d7e79dc0873b66aa534df34198b63a1\",\"geetest_seccode\":\"9d7e79dc0873b66aa534df34198b63a1|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1584611945);
+INSERT INTO `geek_admin_log` VALUES (628, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fdashboard%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/dashboard?ref=addtabs\",\"__token__\":\"3cfe805dee841f17d6a9666b052165e2\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"bebb474d779e1fb5912b90b9f3727e81jc\",\"geetest_validate\":\"74451506d42c592abfaee890ba7ffcc8\",\"geetest_seccode\":\"74451506d42c592abfaee890ba7ffcc8|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1584611964);
+INSERT INTO `geek_admin_log` VALUES (629, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/36?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"300\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"36\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584611998);
+INSERT INTO `geek_admin_log` VALUES (630, 1, 'admin', '/admin/geek/agent/add/ids/11?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978453\",\"password\":\"123\",\"guid\":\"11\",\"nickname\":\"guest_11\",\"status\":\"1\"},\"ids\":\"11\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1584615176);
+INSERT INTO `geek_admin_log` VALUES (631, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"46b56638e967c2c2623edc96560e6bdc\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"f6aba8024af99c083db19b76506a9b07m4\",\"geetest_validate\":\"6d8a05083a595801a979f20e8aed5970\",\"geetest_seccode\":\"6d8a05083a595801a979f20e8aed5970|jordan\"}', '192.168.2.20', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586505183);
+INSERT INTO `geek_admin_log` VALUES (632, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"19ce37141399b5954929855b55b491dd\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"6773da7e9be3c603d6788d6e80a477a893\",\"geetest_validate\":\"1e6674be6e0b8385a93a84f1c8a6dd67\",\"geetest_seccode\":\"1e6674be6e0b8385a93a84f1c8a6dd67|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586505257);
+INSERT INTO `geek_admin_log` VALUES (633, 1, 'admin', '/admin/geek/club/edit/ids/38?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5927\\u8054\\u76df\"},\"ids\":\"38\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586506045);
+INSERT INTO `geek_admin_log` VALUES (634, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"839c622c6a44729402a115756ac06acc\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"8d2094b79f0c40183799c6d0bb78c4f06s\",\"geetest_validate\":\"83b5dabf624dc22f4a5997ae2063e724\",\"geetest_seccode\":\"83b5dabf624dc22f4a5997ae2063e724|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586509656);
+INSERT INTO `geek_admin_log` VALUES (635, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"20e18096aa683f22c1fc4bbc81d0f29d\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"0e5628849d3dc359e4d7357ee35585697k\",\"geetest_validate\":\"5bdd12d866d3edac7452421cde489eb4\",\"geetest_seccode\":\"5bdd12d866d3edac7452421cde489eb4|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586516631);
+INSERT INTO `geek_admin_log` VALUES (636, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123456\",\"guid\":\"6\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586516666);
+INSERT INTO `geek_admin_log` VALUES (637, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123456\",\"guid\":\"6\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586516670);
+INSERT INTO `geek_admin_log` VALUES (638, 1, 'admin', '/admin/geek/agent/add/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"133666888\",\"password\":\"123456\",\"guid\":\"6\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"6\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586516680);
+INSERT INTO `geek_admin_log` VALUES (639, 1, 'admin', '/admin/geek/agent/add/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"32356498\",\"password\":\"123\",\"guid\":\"5\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"5\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586516709);
+INSERT INTO `geek_admin_log` VALUES (640, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586517140);
+INSERT INTO `geek_admin_log` VALUES (641, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fplayer%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/player\\/index?ref=addtabs\",\"__token__\":\"b05cb364df107ec2b69b446868bbd6a4\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"afe8a6ded02a9f5b66b131193037a778cu\",\"geetest_validate\":\"ed6628731174632d5d1c6c6d7daa1e70\",\"geetest_seccode\":\"ed6628731174632d5d1c6c6d7daa1e70|jordan\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517202);
+INSERT INTO `geek_admin_log` VALUES (642, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123456\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517219);
+INSERT INTO `geek_admin_log` VALUES (643, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517462);
+INSERT INTO `geek_admin_log` VALUES (644, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517486);
+INSERT INTO `geek_admin_log` VALUES (645, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517500);
+INSERT INTO `geek_admin_log` VALUES (646, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"asdasd\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517549);
+INSERT INTO `geek_admin_log` VALUES (647, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"0ad805489f9212bf4b079ba0b708c73d\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"8ac219404f53fdbfc64380d3ce44eb4789\",\"geetest_validate\":\"2a17d29fd5a9ae88d65052a04fdd1eee\",\"geetest_seccode\":\"2a17d29fd5a9ae88d65052a04fdd1eee|jordan\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586517564);
+INSERT INTO `geek_admin_log` VALUES (648, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1231\",\"password\":\"123123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586517573);
+INSERT INTO `geek_admin_log` VALUES (649, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36', 1586517774);
+INSERT INTO `geek_admin_log` VALUES (651, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"1\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519749);
+INSERT INTO `geek_admin_log` VALUES (652, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/44?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"5000\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"44\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519800);
+INSERT INTO `geek_admin_log` VALUES (653, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"23456\",\"password\":\"111\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519902);
+INSERT INTO `geek_admin_log` VALUES (654, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"65497845\",\"password\":\"111\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519927);
+INSERT INTO `geek_admin_log` VALUES (655, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"65497845saaaaaa\",\"password\":\"111\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519942);
+INSERT INTO `geek_admin_log` VALUES (657, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"133669988\",\"password\":\"asd\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586519975);
+INSERT INTO `geek_admin_log` VALUES (658, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1236654\",\"password\":\"saaadsad\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520027);
+INSERT INTO `geek_admin_log` VALUES (660, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"12366542\",\"password\":\"saaadsad\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520041);
+INSERT INTO `geek_admin_log` VALUES (661, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"123665422\",\"password\":\"saaadsad\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520046);
+INSERT INTO `geek_admin_log` VALUES (662, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"13333999\",\"password\":\"123\",\"guid\":\"2\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"2\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520106);
+INSERT INTO `geek_admin_log` VALUES (663, 1, 'admin', '/admin/geek/agent/add/ids/7?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17560000000\",\"password\":\"1234\",\"guid\":\"7\",\"nickname\":\"guest_7\",\"status\":\"1\"},\"ids\":\"7\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586520488);
+INSERT INTO `geek_admin_log` VALUES (665, 1, 'admin', '/admin/geek/agent/add/ids/2?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17560000000\",\"password\":\"1234\",\"guid\":\"2\",\"nickname\":\"guest_2\",\"status\":\"1\"},\"ids\":\"2\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586520713);
+INSERT INTO `geek_admin_log` VALUES (666, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"12145645\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"guest_1\",\"status\":\"1\"},\"ids\":\"1\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400', 1586520808);
+INSERT INTO `geek_admin_log` VALUES (667, 1, 'admin', '/admin/geek/agent/add/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"123456\",\"password\":\"111\",\"guid\":\"5\",\"nickname\":\"guest_5\",\"status\":\"1\"},\"ids\":\"5\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520931);
+INSERT INTO `geek_admin_log` VALUES (668, 1, 'admin', '/admin/geek/agent/add/ids/4?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"6564613213\",\"password\":\"333\",\"guid\":\"4\",\"nickname\":\"guest_4\",\"status\":\"1\"},\"ids\":\"4\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520975);
+INSERT INTO `geek_admin_log` VALUES (669, 1, 'admin', '/admin/geek/club/edit/ids/46?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u963f\\u6253\\u7b97\"},\"ids\":\"46\"}', '192.168.2.57', 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko', 1586520988);
+INSERT INTO `geek_admin_log` VALUES (670, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"418ce98369c5e07ecfb51ab5fbcd5b19\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"015698297a590761703d65d31584067e9l\",\"geetest_validate\":\"18eee90704f1e9f5a878e8d4f94a13a0\",\"geetest_seccode\":\"18eee90704f1e9f5a878e8d4f94a13a0|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586521744);
+INSERT INTO `geek_admin_log` VALUES (671, 1, 'admin', '/admin/geek/agent/add/ids/1?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"654978450\",\"password\":\"123\",\"guid\":\"1\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"1\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586521756);
+INSERT INTO `geek_admin_log` VALUES (672, 1, 'admin', '/admin/geek/club/edit/ids/50?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u5927\\u8054\\u76df\\u7f51\"},\"ids\":\"50\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586521811);
+INSERT INTO `geek_admin_log` VALUES (673, 1, 'admin', '/admin/geek/player/addMoney/guid/1/ids/1?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500\",\"uid\":\"1\"},\"guid\":\"1\",\"ids\":\"1\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586521855);
+INSERT INTO `geek_admin_log` VALUES (674, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fclub%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/club\\/index?ref=addtabs\",\"__token__\":\"3980f56e3d12f12ef692dddca7fefbbf\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"78035ae6646ac55c282a4178d090580fgx\",\"geetest_validate\":\"2bd535c18261952fd3e2753c482657c7\",\"geetest_seccode\":\"2bd535c18261952fd3e2753c482657c7|jordan\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586522674);
+INSERT INTO `geek_admin_log` VALUES (675, 1, 'admin', '/admin/geek/agent/add/ids/100006?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"15688889999\",\"password\":\"123456\",\"guid\":\"100006\",\"nickname\":\"\\u5361\\u5361\\u5361\",\"status\":\"1\"},\"ids\":\"100006\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586522721);
+INSERT INTO `geek_admin_log` VALUES (676, 1, 'admin', '/admin/geek/player/addMoney/guid/100006/ids/51?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"100006\"},\"guid\":\"100006\",\"ids\":\"51\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586522756);
+INSERT INTO `geek_admin_log` VALUES (677, 1, 'admin', '/admin/geek/club/edit/ids/51?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u6d4b\\u8bd5\"},\"ids\":\"51\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586522769);
+INSERT INTO `geek_admin_log` VALUES (678, 1, 'admin', '/admin/geek/agent/add/ids/100004?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18328714948\",\"password\":\"123456\",\"guid\":\"100004\",\"nickname\":\"\\u4e13\\u4e1a\\u7801\",\"status\":\"1\"},\"ids\":\"100004\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586524382);
+INSERT INTO `geek_admin_log` VALUES (679, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"8c3457caaec3726cf294c0ee4b1424e8\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"61ac2e24d7afc93b8030c413c40257ffg7\",\"geetest_validate\":\"91f1b6b354b55c54a36e81219aca907f\",\"geetest_seccode\":\"91f1b6b354b55c54a36e81219aca907f|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586760411);
+INSERT INTO `geek_admin_log` VALUES (680, 1, 'admin', '/admin/geek/agent/add/ids/100002?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"133456789\",\"password\":\"222\",\"guid\":\"100002\",\"nickname\":\"......\",\"status\":\"1\"},\"ids\":\"100002\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586760431);
+INSERT INTO `geek_admin_log` VALUES (681, 1, 'admin', '/admin/geek/agent/add/ids/100009?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"13344556677\",\"password\":\"123456\",\"guid\":\"100009\",\"nickname\":\"\\u7eff\\u8336\",\"status\":\"1\"},\"ids\":\"100009\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586781771);
+INSERT INTO `geek_admin_log` VALUES (682, 1, 'admin', '/admin/geek/player/addMoney/guid/100009/ids/54?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"100\",\"uid\":\"100009\"},\"guid\":\"100009\",\"ids\":\"54\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586781880);
+INSERT INTO `geek_admin_log` VALUES (683, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"72e0c43056ab1c40bc41f7a5c5358383\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"714a2be16ef17f8ca19fd85edc6b576830\",\"geetest_validate\":\"ddfd38adadac29f4cab3594ef82da320\",\"geetest_seccode\":\"ddfd38adadac29f4cab3594ef82da320|jordan\"}', '118.116.19.214', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586782930);
+INSERT INTO `geek_admin_log` VALUES (684, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"46b2ff994b1e1b354dc300cf81e04a44\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c25be76623cca8ce3f32886d64289085in\",\"geetest_validate\":\"45f430d6ea447d1b977cbababa30b2a8\",\"geetest_seccode\":\"45f430d6ea447d1b977cbababa30b2a8|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586783287);
+INSERT INTO `geek_admin_log` VALUES (686, 1, 'admin', '/admin/geek/agent/add/ids/100010?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"13344556688\",\"password\":\"123456\",\"guid\":\"100010\",\"nickname\":\"\\u67ab\\u53f6\",\"status\":\"1\"},\"ids\":\"100010\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586784113);
+INSERT INTO `geek_admin_log` VALUES (687, 1, 'admin', '/admin/geek/club/edit/ids/54?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u7eff\\u8336\\u7b2c\\u4e00\"},\"ids\":\"54\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586784263);
+INSERT INTO `geek_admin_log` VALUES (688, 1, 'admin', '/admin/geek/player/addMoney/guid/100009/ids/100009?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"900\",\"uid\":\"100009\"},\"guid\":\"100009\",\"ids\":\"100009\"}', '171.221.129.243', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586785605);
+INSERT INTO `geek_admin_log` VALUES (689, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fplayer%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/player\\/index?ref=addtabs\",\"__token__\":\"d4a7fa528f9f6b9ad629f3fd260903b5\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"7f20a7fea0a59fbb3d01142e66820a86ba\",\"geetest_validate\":\"0aa81d046e271051e1dc2b7087734c55\",\"geetest_seccode\":\"0aa81d046e271051e1dc2b7087734c55|jordan\"}', '182.150.164.195', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1586871614);
+INSERT INTO `geek_admin_log` VALUES (690, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"77050515dd930df30f54204b40d2052b\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a3df69cc05157c2ecb01ed4fb4750235ar\",\"geetest_validate\":\"9c5328f230c2bce562dba9ff75ff3fa6\",\"geetest_seccode\":\"9c5328f230c2bce562dba9ff75ff3fa6|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586871718);
+INSERT INTO `geek_admin_log` VALUES (691, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"a8bbb797423db80581835a08e0242e50\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"3fef96bf1c910bab189a54b0d018d8d29i\",\"geetest_validate\":\"6d7c6f220e0f00d544084edc5e209cef\",\"geetest_seccode\":\"6d7c6f220e0f00d544084edc5e209cef|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586873055);
+INSERT INTO `geek_admin_log` VALUES (692, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"7e51396c793b1f3d4805ff49dec5cfc9\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"dd2071acf6dc2ed0526f236f4eebb9a68f\",\"geetest_validate\":\"ebdfdb116a4bf4f0bd647c141b343745\",\"geetest_seccode\":\"ebdfdb116a4bf4f0bd647c141b343745|jordan\"}', '118.113.134.101', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586873366);
+INSERT INTO `geek_admin_log` VALUES (693, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"8a464fa52f56e2d50e2479103611db5f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"d0fb9e17220ca2c7bd45b931291ca1cc8i\",\"geetest_validate\":\"a4e875d45fcfe3e290e34254db199577\",\"geetest_seccode\":\"a4e875d45fcfe3e290e34254db199577|jordan\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586935474);
+INSERT INTO `geek_admin_log` VALUES (694, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"965aab17f6104e0658bf750ecb8040c5\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"bc47dc86fabefeeb9a897a61efb5c59aip\",\"geetest_validate\":\"d132408f1afba8ed897764d968b53d93\",\"geetest_seccode\":\"d132408f1afba8ed897764d968b53d93|jordan\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1586935484);
+INSERT INTO `geek_admin_log` VALUES (695, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"0bd98bf6937ee2d9dd6241b2d3b46378\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"8b5141a4ba330118ad5a0d893bd68bfd57\",\"geetest_validate\":\"0962dfab84a125bb2c38d21733fcd388\",\"geetest_seccode\":\"0962dfab84a125bb2c38d21733fcd388|jordan\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587116925);
+INSERT INTO `geek_admin_log` VALUES (696, 1, 'admin', '/admin/geek/agent/add/ids/100011?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1000236\",\"password\":\"11\",\"guid\":\"100011\",\"nickname\":\"guest_100011\",\"status\":\"1\"},\"ids\":\"100011\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587116944);
+INSERT INTO `geek_admin_log` VALUES (697, 1, 'admin', '/admin/geek/player/addMoney/guid/100011/ids/100011?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500\",\"uid\":\"100011\"},\"guid\":\"100011\",\"ids\":\"100011\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587119914);
+INSERT INTO `geek_admin_log` VALUES (698, 1, 'admin', '/admin/geek/club/edit/ids/56?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u6d4b\\u8bd5\\u8054\\u76df\"},\"ids\":\"56\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587197754);
+INSERT INTO `geek_admin_log` VALUES (699, 1, 'admin', '/admin/geek/agent/add/ids/100012?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1213432\",\"password\":\"11\",\"guid\":\"100012\",\"nickname\":\"guest_100012\",\"status\":\"1\"},\"ids\":\"100012\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587197825);
+INSERT INTO `geek_admin_log` VALUES (700, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"75d2e1ca1ba5f2bc76f586412ca38bed\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"76b2aecf959abdd33ded6b96b4d5ff5edx\",\"geetest_validate\":\"b78cde572b25c08a0b27acaf76bfcf58\",\"geetest_seccode\":\"b78cde572b25c08a0b27acaf76bfcf58|jordan\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587382831);
+INSERT INTO `geek_admin_log` VALUES (701, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"a5d3a5e2def3bb066db2ad0ee67c788d\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"bd73da4d7f6343456e985a2ff736ded44z\",\"geetest_validate\":\"854d16acbeae3c1e6a2dd6a252b7766f\",\"geetest_seccode\":\"854d16acbeae3c1e6a2dd6a252b7766f|jordan\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587436068);
+INSERT INTO `geek_admin_log` VALUES (702, 1, 'admin', '/admin/geek/agent/add/ids/100008?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"4646456\",\"password\":\"5\",\"guid\":\"100008\",\"nickname\":\"\\u795e\\u51c0\\u8ba8\\u9b54\",\"status\":\"1\"},\"ids\":\"100008\"}', '182.150.134.28', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587438292);
+INSERT INTO `geek_admin_log` VALUES (703, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"afe766af8585b6f0bfad0a1092feb443\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"116ca7a9ee4e06f6f0d06a947bd6379a9u\",\"geetest_validate\":\"8a5a14c5ae25146f4f004b606de9740b\",\"geetest_seccode\":\"8a5a14c5ae25146f4f004b606de9740b|jordan\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587468595);
+INSERT INTO `geek_admin_log` VALUES (705, 1, 'admin', '/admin/geek/club/edit/ids/828430?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u6f02\\u6d41\\u74f6\"},\"ids\":\"828430\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587468830);
+INSERT INTO `geek_admin_log` VALUES (706, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"de329270a72df7f8631a3ece9d6710b1\",\"username\":\"admin\",\"captcha\":\"\",\"geetest_challenge\":\"\",\"geetest_validate\":\"\",\"geetest_seccode\":\"\",\"keeplogin\":\"1\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587525680);
+INSERT INTO `geek_admin_log` VALUES (707, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"7334e6e4a43f4f474cfe60bbeecac973\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"18472f26417410f1727906904009ae91fz\",\"geetest_validate\":\"d2f41b43a2619a7c5be45172a8c69914\",\"geetest_seccode\":\"d2f41b43a2619a7c5be45172a8c69914|jordan\",\"keeplogin\":\"1\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587525689);
+INSERT INTO `geek_admin_log` VALUES (708, 1, 'admin', '/LZuT4M69sU.php/index/login?url=%2FLZuT4M69sU.php', '登录', '{\"url\":\"\\/LZuT4M69sU.php\",\"__token__\":\"4498892b1575745b7c255592e6a8cf67\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"f393b8720bb20d09aad617a4c52837075h\",\"geetest_validate\":\"f3612d0aba38f78b8acc9d04d45c1682\",\"geetest_seccode\":\"f3612d0aba38f78b8acc9d04d45c1682|jordan\"}', '61.139.81.67', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36', 1587564585);
+INSERT INTO `geek_admin_log` VALUES (709, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"3133d8adc0c6d77795cb632d7dd201eb\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a10dbb1e5d1d47ea8273080af1758c4dm2\",\"geetest_validate\":\"fd22f17a8cb088672af66ae05efbb749\",\"geetest_seccode\":\"fd22f17a8cb088672af66ae05efbb749|jordan\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587717205);
+INSERT INTO `geek_admin_log` VALUES (710, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fclub%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/club\\/index?ref=addtabs\",\"__token__\":\"a846af19630ba8bd418e7336d7ad78b5\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"8df8ecfaa272bf8e6c0853aa4e3d15a83d\",\"geetest_validate\":\"c6c4e65012eaa3da028912f9e855f215\",\"geetest_seccode\":\"c6c4e65012eaa3da028912f9e855f215|jordan\",\"keeplogin\":\"1\"}', '182.150.135.204', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587733543);
+INSERT INTO `geek_admin_log` VALUES (711, 1, 'admin', '/admin/geek/player/addMoney/guid/100017/ids/100017?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"100017\"},\"guid\":\"100017\",\"ids\":\"100017\"}', '182.150.135.204', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587733581);
+INSERT INTO `geek_admin_log` VALUES (712, 1, 'admin', '/admin/geek/agent/add/ids/100017?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"13222222222\",\"password\":\"123456\",\"guid\":\"100017\",\"nickname\":\"????????\\u590f\\u590f\",\"status\":\"1\"},\"ids\":\"100017\"}', '182.150.135.204', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587733595);
+INSERT INTO `geek_admin_log` VALUES (713, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"31e5c007228f197585739078a0611cd0\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"e6f7817c0cab1ffef2fce5a510771ddfl8\",\"geetest_validate\":\"03570ede49f8286e18e7fb4834ea2415\",\"geetest_seccode\":\"03570ede49f8286e18e7fb4834ea2415|jordan\"}', '118.113.134.70', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587900570);
+INSERT INTO `geek_admin_log` VALUES (714, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"43921b3c85736aba8adb06c0c17dfbb6\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"b7dae938a9eb8e65a3267427955a330e8t\",\"geetest_validate\":\"dc961679ccc536e16cd446fd1129a01a\",\"geetest_seccode\":\"dc961679ccc536e16cd446fd1129a01a|jordan\",\"keeplogin\":\"1\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587967293);
+INSERT INTO `geek_admin_log` VALUES (715, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"8471274126062f929a0c4bc33dac0231\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"9fb63584c11b98dad2df1d3aadc7408b6n\",\"geetest_validate\":\"060daf4e15f16c0d8c699eee94a81693\",\"geetest_seccode\":\"060daf4e15f16c0d8c699eee94a81693|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587970924);
+INSERT INTO `geek_admin_log` VALUES (716, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"4d291d5dd5286eced15729c9873cb78e\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"6d0be1530d74b9f5b5687cff41d9d68bdq\",\"geetest_validate\":\"060980f1fe200f36fa1cee349b5e5f80\",\"geetest_seccode\":\"060980f1fe200f36fa1cee349b5e5f80|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587971704);
+INSERT INTO `geek_admin_log` VALUES (717, 1, 'admin', '/admin/index/login', '登录', '{\"__token__\":\"a4a7bb702af245893d03c166d3e81b05\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"9a1ef1c80cc318316be5b0a076bbe9e94q\",\"geetest_validate\":\"97609d0319d7bacb4ab0b7814a66b972\",\"geetest_seccode\":\"97609d0319d7bacb4ab0b7814a66b972|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587971884);
+INSERT INTO `geek_admin_log` VALUES (718, 1, 'admin', '/admin/geek/agent/add/ids/100003?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17665036371\",\"password\":\"654978450\",\"guid\":\"100003\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"100003\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587972295);
+INSERT INTO `geek_admin_log` VALUES (719, 1, 'admin', '/admin/geek/player/addMoney/guid/100003/ids/60?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500\",\"uid\":\"100003\"},\"guid\":\"100003\",\"ids\":\"60\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587972307);
+INSERT INTO `geek_admin_log` VALUES (720, 1, 'admin', '/admin/geek/club/edit/ids/833914?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u56db\\u5ddd\\u4f1a\\u6240\"},\"ids\":\"833914\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587972352);
+INSERT INTO `geek_admin_log` VALUES (721, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fdashboard%3Faddtabs%3D1', '登录', '{\"url\":\"\\/admin\\/dashboard?addtabs=1\",\"__token__\":\"39c1a43548301c325e71307e5bf49b1f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"872e4ca05cfbbcefdf6a42491abff4c2ay\",\"geetest_validate\":\"8c325d7d73307f46fc26b754cd376824\",\"geetest_seccode\":\"8c325d7d73307f46fc26b754cd376824|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587976691);
+INSERT INTO `geek_admin_log` VALUES (722, 1, 'admin', '/admin/geek/agent/add/ids/100002?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17665036371\",\"password\":\"654978450\",\"guid\":\"100002\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"100002\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587979536);
+INSERT INTO `geek_admin_log` VALUES (723, 1, 'admin', '/admin/geek/player/addMoney/guid/100002/ids/100002?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500\",\"uid\":\"100002\"},\"guid\":\"100002\",\"ids\":\"100002\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587979555);
+INSERT INTO `geek_admin_log` VALUES (724, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"2dfa6d7564cacba67bfb7056f726af22\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"886f472b2aec30ed21ed13442c87e6605i\",\"geetest_validate\":\"a3f0454781ed440635c61f84dde354ec\",\"geetest_seccode\":\"a3f0454781ed440635c61f84dde354ec|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Linux; Android 9; MIX 2S Build/PKQ1.180729.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.62 XWEB/2295 MMWEBSDK/200301 Mobile Safari/537.36 MMWEBID/236 MicroMessenger/7.0.13.1640(0x27000D39) Process/tools NetType', 1587980575);
+INSERT INTO `geek_admin_log` VALUES (725, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"45d84aacab1d47d6bf765c354da24e9f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"3bb21afbfbe00dc80e90ba0ac077dd21gz\",\"geetest_validate\":\"d1134d63d89b9c6b517f07c1c0e01b2b\",\"geetest_seccode\":\"d1134d63d89b9c6b517f07c1c0e01b2b|jordan\",\"keeplogin\":\"1\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1587982453);
+INSERT INTO `geek_admin_log` VALUES (726, 1, 'admin', '/admin/geek/agent/add/ids/100005?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17683146641\",\"password\":\"long5201314jie\",\"guid\":\"100005\",\"nickname\":\"\\u795e\\u51c0\\u8ba8\\u9b54\",\"status\":\"1\"},\"ids\":\"100005\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1587982879);
+INSERT INTO `geek_admin_log` VALUES (727, 1, 'admin', '/admin/geek/player/addMoney/guid/100005/ids/100005?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"2000\",\"uid\":\"100005\"},\"guid\":\"100005\",\"ids\":\"100005\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1587982927);
+INSERT INTO `geek_admin_log` VALUES (728, 1, 'admin', '/admin/geek/player/addMoney/guid/100002/ids/100002?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"300\",\"uid\":\"100002\"},\"guid\":\"100002\",\"ids\":\"100002\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587985092);
+INSERT INTO `geek_admin_log` VALUES (729, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fclub%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/club\\/index?ref=addtabs\",\"__token__\":\"7af4ed9cf83b061442f4d17e65f92fd0\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"d56d72e665be13829291290cbc6c1f3dbu\",\"geetest_validate\":\"12788ff9eed66ea22eaceecdf3a1da0e\",\"geetest_seccode\":\"12788ff9eed66ea22eaceecdf3a1da0e|jordan\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587985229);
+INSERT INTO `geek_admin_log` VALUES (730, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"7de03819bd362b13e1e0e9100da799f9\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"a431e74679fc8ab321476eed7ff7960bjr\",\"geetest_validate\":\"c8a2ee0e86a66ff2efe676fcfc01f044\",\"geetest_seccode\":\"c8a2ee0e86a66ff2efe676fcfc01f044|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587985390);
+INSERT INTO `geek_admin_log` VALUES (731, 1, 'admin', '/admin/geek/agent/add/ids/100006?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18328714948\",\"password\":\"123456\",\"guid\":\"100006\",\"nickname\":\"\\u4e00\\u5c0f\\u6b65\",\"status\":\"1\"},\"ids\":\"100006\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587988013);
+INSERT INTO `geek_admin_log` VALUES (732, 1, 'admin', '/admin/geek/player/addMoney/guid/100006/ids/63?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10000\",\"uid\":\"100006\"},\"guid\":\"100006\",\"ids\":\"63\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587988031);
+INSERT INTO `geek_admin_log` VALUES (733, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"72467f3cccd7b9d53fb378392d65f22f\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"ced05f90d9d28dee4668408c065bcd1b9w\",\"geetest_validate\":\"e067aeebf65f1c1a1ca9392b0ef506f3\",\"geetest_seccode\":\"e067aeebf65f1c1a1ca9392b0ef506f3|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587988963);
+INSERT INTO `geek_admin_log` VALUES (734, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"8effc860c8a2f29d549032a5ea1a578e\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"c8e5fce7a86c8ac74ee929373bd0ae0d9b\",\"geetest_validate\":\"2fb48bf9d1b35b22a40e7232f6a7d1db\",\"geetest_seccode\":\"2fb48bf9d1b35b22a40e7232f6a7d1db|jordan\"}', '171.223.98.213', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1587989134);
+INSERT INTO `geek_admin_log` VALUES (735, 1, 'admin', '/admin/index/login?url=%2Fadmin%2Fgeek%2Fclub%2Findex%3Fref%3Daddtabs', '登录', '{\"url\":\"\\/admin\\/geek\\/club\\/index?ref=addtabs\",\"__token__\":\"2ae02b53affc4e643f813edfe2aafc23\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"24a390c5f0c07d77ce3895734221ee91eu\",\"geetest_validate\":\"69f9d3646f3ec23620a74a6f5bff9c1a\",\"geetest_seccode\":\"69f9d3646f3ec23620a74a6f5bff9c1a|jordan\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587991267);
+INSERT INTO `geek_admin_log` VALUES (736, 1, 'admin', '/admin/geek/agent/add/ids/100004?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"13222222222\",\"password\":\"123456\",\"guid\":\"100004\",\"nickname\":\"\\u4f4e\\u8c03\",\"status\":\"1\"},\"ids\":\"100004\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587991360);
+INSERT INTO `geek_admin_log` VALUES (737, 1, 'admin', '/admin/geek/player/addMoney/guid/100004/ids/64?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"100\",\"uid\":\"100004\"},\"guid\":\"100004\",\"ids\":\"64\"}', '182.150.135.55', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1587991435);
+INSERT INTO `geek_admin_log` VALUES (738, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"7d14c591072c383563cbc921a7a0b538\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"2d6ce055c08442e17c33b1b96bf56f24bk\",\"geetest_validate\":\"20f67c10ed0998d6c4c45d8470ae0f9c\",\"geetest_seccode\":\"20f67c10ed0998d6c4c45d8470ae0f9c|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1588125833);
+INSERT INTO `geek_admin_log` VALUES (739, 1, 'admin', '/admin/geek/player/addMoney/guid/100009/ids/100009?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"100009\"},\"guid\":\"100009\",\"ids\":\"100009\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1588125876);
+INSERT INTO `geek_admin_log` VALUES (740, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"b07e5cd3e4f1a92bde132122f5a429e6\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"8c24c9972681ac40a029a1b8e23f69e5hm\",\"geetest_validate\":\"4187a48a825838a6b00b8222e82ac9b2\",\"geetest_seccode\":\"4187a48a825838a6b00b8222e82ac9b2|jordan\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1588240867);
+INSERT INTO `geek_admin_log` VALUES (741, 1, 'admin', '/admin/geek/agent/add/ids/100008?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"1192658478\",\"password\":\"123456\",\"guid\":\"100008\",\"nickname\":\"\\u6e90\\u6e90\\u4e0d\\u65ad\\u7684\\u5706\",\"status\":\"1\"},\"ids\":\"100008\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1588240978);
+INSERT INTO `geek_admin_log` VALUES (742, 1, 'admin', '/admin/geek/club/edit/ids/680128?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u6e90\\u6e90\\u4e0d\\u65ad\"},\"ids\":\"680128\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1588241092);
+INSERT INTO `geek_admin_log` VALUES (743, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"e65ebe1b0a3d37e645ae5d71544f7a6a\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"7554cff5271142bcceb6002c47c8f104j4\",\"geetest_validate\":\"1adcdf1b770e02c0319eecc60385008d\",\"geetest_seccode\":\"1adcdf1b770e02c0319eecc60385008d|jordan\"}', '171.214.211.79', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589012929);
+INSERT INTO `geek_admin_log` VALUES (744, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"60beb8b83d457e8cdba77ff9d37a5519\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"704fb7cca3e32877dcefb6aea51201fec5\",\"geetest_validate\":\"5963ec26a0ba098f99810a0b02da82fd\",\"geetest_seccode\":\"5963ec26a0ba098f99810a0b02da82fd|jordan\"}', '171.214.211.79', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589189998);
+INSERT INTO `geek_admin_log` VALUES (745, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"c8fa21c039b5cba1ddb4788b424ccf93\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"9d7382e72ea60f5e48f243f54c934f56ji\",\"geetest_validate\":\"2f73b0e3131c1015f3da1d661ce60fbf\",\"geetest_seccode\":\"2f73b0e3131c1015f3da1d661ce60fbf|jordan\",\"keeplogin\":\"1\"}', '171.214.211.79', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589193456);
+INSERT INTO `geek_admin_log` VALUES (746, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"10290ed4eb5c1fec7fcf1fc1ff38acf0\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"53e6542906831dc00f2e9c409e8429b689\",\"geetest_validate\":\"599110900117e6cd75508c1b69d56566\",\"geetest_seccode\":\"599110900117e6cd75508c1b69d56566|jordan\",\"keeplogin\":\"1\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589270558);
+INSERT INTO `geek_admin_log` VALUES (747, 1, 'admin', '/admin/geek/player/addMoney/guid/100008/ids/100008?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"50000\",\"uid\":\"100008\"},\"guid\":\"100008\",\"ids\":\"100008\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589352232);
+INSERT INTO `geek_admin_log` VALUES (748, 1, 'admin', '/admin/geek/agent/add/ids/100002?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17665036371\",\"password\":\"654978450\",\"guid\":\"100002\",\"nickname\":\"\\u5c0f\\u54b2QAQ\",\"status\":\"1\"},\"ids\":\"100002\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589537035);
+INSERT INTO `geek_admin_log` VALUES (749, 1, 'admin', '/admin/geek/player/addMoney/guid/100002/ids/100002?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"500000\",\"uid\":\"100002\"},\"guid\":\"100002\",\"ids\":\"100002\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589537043);
+INSERT INTO `geek_admin_log` VALUES (750, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"87954046fe5ad2ae1e3c104676c8b626\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"d27a03c9a5214e61209620276cef7dd6et\",\"geetest_validate\":\"73af1fbf52bbd498bcddc58d5f1262ec\",\"geetest_seccode\":\"73af1fbf52bbd498bcddc58d5f1262ec|jordan\"}', '125.70.163.180', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36', 1589537752);
+INSERT INTO `geek_admin_log` VALUES (751, 1, 'admin', '/admin/geek/club/edit/ids/636588?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"club_name\":\"\\u56db\\u5ddd\\u5a31\\u4e50\"},\"ids\":\"636588\"}', '118.113.135.37', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589539742);
+INSERT INTO `geek_admin_log` VALUES (752, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"251e125d6a5d1ee164db73c4273e7c52\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"dcc31929a515669208f9deb368e71860cd\",\"geetest_validate\":\"5914ff3754781752bbc57f12c5f2f0e7\",\"geetest_seccode\":\"5914ff3754781752bbc57f12c5f2f0e7|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961137);
+INSERT INTO `geek_admin_log` VALUES (753, 1, 'admin', '/admin/auth/rule/multi/ids/168', '', '{\"action\":\"\",\"ids\":\"168\",\"params\":\"ismenu=0\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961176);
+INSERT INTO `geek_admin_log` VALUES (754, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961176);
+INSERT INTO `geek_admin_log` VALUES (755, 1, 'admin', '/admin/auth/rule/multi/ids/168', '', '{\"action\":\"\",\"ids\":\"168\",\"params\":\"ismenu=1\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961178);
+INSERT INTO `geek_admin_log` VALUES (756, 1, 'admin', '/admin/index/index', '', '{\"action\":\"refreshmenu\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961179);
+INSERT INTO `geek_admin_log` VALUES (757, 1, 'admin', '/admin/geek/game/edit/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u53cb\\u95f2\\u68cb\\u724c\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u623f\\u5361\\u7c7b\\u578b\\uff0c\\u53ef\\u548c\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u65e0\\u66f4\\u65b0\\u3002\",\"cover\":\"\\/assets\\/img\\/qrcode.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/yxqp1.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/newyxqp1.plist\",\"status\":\"1\"},\"ids\":\"6\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961515);
+INSERT INTO `geek_admin_log` VALUES (758, 1, 'admin', '/admin/ajax/upload', '', '{\"name\":\"ic_launcher.png\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961565);
+INSERT INTO `geek_admin_log` VALUES (759, 1, 'admin', '/admin/geek/game/edit/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u6625\\u98ce\\u6597\\u5730\\u4e3b\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u5305\\u62ec\\u6597\\u5730\\u4e3b\\u73a9\\u6cd5\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/40fd993dd675d19d02b485543e0e1cbc.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/cfddz.apk\",\"ios_address\":\"https:\\/\\/get.signsadmin.com\\/ios\\/rss2\",\"status\":\"1\"},\"ids\":\"5\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961583);
+INSERT INTO `geek_admin_log` VALUES (760, 1, 'admin', '/admin/ajax/upload', '', '{\"name\":\"72_72.png\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961672);
+INSERT INTO `geek_admin_log` VALUES (761, 1, 'admin', '/admin/geek/game/edit/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u597d\\u53cb\\u4e92\\u5a31\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u56db\\u5ddd\\u8840\\u6218\\u9ebb\\u5c06\\uff0c\\u7ecf\\u5178\\u8dd1\\u5f97\\u5feb\\uff0c\\u4e8c\\u4eba\\u8dd1\\u5f97\\u5feb\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u5c06\\u589e\\u52a0\\u6597\\u5730\\u4e3b\\u7b49\\u73a9\\u6cd5\\uff0c\\u6839\\u636e\\u73a9\\u5bb6\\u5efa\\u8bae\\uff0c\\u4fdd\\u6301\\u66f4\\u65b0\\u7ef4\\u62a4\\u3002\\u6d4b\\u8bd5\\u671f\\uff0c\\u514d\\u8d39\",\"cover\":\"\\/uploads\\/20200520\\/cfa4bfab4c1383cea30169f37877e354.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/hyhy.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/hyhy.plist\",\"status\":\"1\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961706);
+INSERT INTO `geek_admin_log` VALUES (762, 1, 'admin', '/admin/ajax/upload', '', '{\"name\":\"ic_launcher.png\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961958);
+INSERT INTO `geek_admin_log` VALUES (763, 1, 'admin', '/admin/geek/game/edit/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u6625\\u98ce\\u6597\\u5730\\u4e3b\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u5305\\u62ec\\u6597\\u5730\\u4e3b\\u73a9\\u6cd5\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/3a158f91a9e1b629c6692b3d78497833.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/cfddz.apk\",\"ios_address\":\"https:\\/\\/get.signsadmin.com\\/ios\\/rss2\",\"status\":\"1\"},\"ids\":\"5\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961959);
+INSERT INTO `geek_admin_log` VALUES (764, 1, 'admin', '/admin/ajax/upload', '', '{\"name\":\"144_144.png\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961967);
+INSERT INTO `geek_admin_log` VALUES (765, 1, 'admin', '/admin/geek/game/edit/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u597d\\u53cb\\u4e92\\u5a31\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u56db\\u5ddd\\u8840\\u6218\\u9ebb\\u5c06\\uff0c\\u7ecf\\u5178\\u8dd1\\u5f97\\u5feb\\uff0c\\u4e8c\\u4eba\\u8dd1\\u5f97\\u5feb\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u5c06\\u589e\\u52a0\\u6597\\u5730\\u4e3b\\u7b49\\u73a9\\u6cd5\\uff0c\\u6839\\u636e\\u73a9\\u5bb6\\u5efa\\u8bae\\uff0c\\u4fdd\\u6301\\u66f4\\u65b0\\u7ef4\\u62a4\\u3002\\u6d4b\\u8bd5\\u671f\\uff0c\\u514d\\u8d39\",\"cover\":\"\\/uploads\\/20200520\\/acbc6fce30575763ebccc33b30de3796.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/hyhy.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/hyhy.plist\",\"status\":\"1\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1589961968);
+INSERT INTO `geek_admin_log` VALUES (766, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"bb01553ac44341d46cc3c09610ee3759\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"97b8a77671a8752e408ce0d26153b98ejg\",\"geetest_validate\":\"a75c62eaea4878698c3d5a2728e74f09\",\"geetest_seccode\":\"a75c62eaea4878698c3d5a2728e74f09|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589962215);
+INSERT INTO `geek_admin_log` VALUES (767, 1, 'admin', '/admin/ajax/upload', '', '{\"name\":\"ICON-512.png\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963896);
+INSERT INTO `geek_admin_log` VALUES (768, 1, 'admin', '/admin/geek/game/edit/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u53cb\\u95f2\\u68cb\\u724c\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u623f\\u5361\\u7c7b\\u578b\\uff0c\\u53ef\\u548c\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u65e0\\u66f4\\u65b0\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/8723e3b9e79cbef4ceebc92b9aa3e76c.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/yxqp1.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/newyxqp1.plist\",\"status\":\"1\"},\"ids\":\"6\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963898);
+INSERT INTO `geek_admin_log` VALUES (769, 1, 'admin', '/admin/geek/game/edit/ids/6?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u53cb\\u95f2\\u68cb\\u724c\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u623f\\u5361\\u7c7b\\u578b\\uff0c\\u53ef\\u548c\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u65e0\\u66f4\\u65b0\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/8723e3b9e79cbef4ceebc92b9aa3e76c.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/yxqp1.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/newyxqp1.plist\",\"status\":\"1\"},\"ids\":\"6\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963911);
+INSERT INTO `geek_admin_log` VALUES (770, 1, 'admin', '/admin/geek/game/edit/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u6625\\u98ce\\u6597\\u5730\\u4e3b\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u5305\\u62ec\\u6597\\u5730\\u4e3b\\u73a9\\u6cd5\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/3a158f91a9e1b629c6692b3d78497833.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/cfddz.apk\",\"ios_address\":\"https:\\/\\/get.signsadmin.com\\/ios\\/rss2\",\"status\":\"1\"},\"ids\":\"5\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963918);
+INSERT INTO `geek_admin_log` VALUES (771, 1, 'admin', '/admin/geek/game/edit/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u597d\\u53cb\\u4e92\\u5a31\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u56db\\u5ddd\\u8840\\u6218\\u9ebb\\u5c06\\uff0c\\u7ecf\\u5178\\u8dd1\\u5f97\\u5feb\\uff0c\\u4e8c\\u4eba\\u8dd1\\u5f97\\u5feb\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u5c06\\u589e\\u52a0\\u6597\\u5730\\u4e3b\\u7b49\\u73a9\\u6cd5\\uff0c\\u6839\\u636e\\u73a9\\u5bb6\\u5efa\\u8bae\\uff0c\\u4fdd\\u6301\\u66f4\\u65b0\\u7ef4\\u62a4\\u3002\\u6d4b\\u8bd5\\u671f\\uff0c\\u514d\\u8d39.\",\"cover\":\"\\/uploads\\/20200520\\/acbc6fce30575763ebccc33b30de3796.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/hyhy.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/hyhy.plist\",\"status\":\"1\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963942);
+INSERT INTO `geek_admin_log` VALUES (772, 1, 'admin', '/admin/geek/game/edit/ids/3?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u53cb\\u53cb\\u7ade\\u6280\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u56db\\u5ddd\\u8840\\u6218\\u9ebb\\u5c06\\uff0c\\u7ecf\\u5178\\u8dd1\\u5f97\\u5feb\\uff0c\\u4e8c\\u4eba\\u8dd1\\u5f97\\u5feb\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\uff0c\\u540e\\u7eed\\u5c06\\u589e\\u52a0\\u6597\\u5730\\u4e3b\\u7b49\\u73a9\\u6cd5\\uff0c\\u6839\\u636e\\u73a9\\u5bb6\\u5efa\\u8bae\\uff0c\\u4fdd\\u6301\\u66f4\\u65b0\\u7ef4\\u62a4\\u3002\\u6d4b\\u8bd5\\u671f\\uff0c\\u514d\\u8d39.\",\"cover\":\"\\/uploads\\/20200520\\/acbc6fce30575763ebccc33b30de3796.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/hyhy.apk\",\"ios_address\":\"itms-services:\\/\\/?action=download-manifest&amp;url=https:\\/\\/download.geekyoyo.cn\\/hyhy.plist\",\"status\":\"1\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1589963957);
+INSERT INTO `geek_admin_log` VALUES (773, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"21ffa1867dea7a80f09d7156cd6c2ac8\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"28d950d754a3fc5be54837ccba45d908ce\",\"geetest_validate\":\"ab59abca827802f63c2d18ec665e7c4a\",\"geetest_seccode\":\"ab59abca827802f63c2d18ec665e7c4a|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1590050381);
+INSERT INTO `geek_admin_log` VALUES (774, 1, 'admin', '/admin/auth/admin/add?dialog=1', '权限管理 管理员管理 添加', '{\"dialog\":\"1\",\"__token__\":\"b100a3141b3446f06bd5fdef2b22a792\",\"group\":[\"2\"],\"row\":{\"username\":\"feilanqing\",\"email\":\"1045370376@qq.com\",\"nickname\":\"\\u8d39\\u5170\\u6e05\",\"password\":\"123456\",\"status\":\"normal\"}}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1590050465);
+INSERT INTO `geek_admin_log` VALUES (775, 1, 'admin', '/admin/auth/admin/edit/ids/3?dialog=1', '权限管理 管理员管理 编辑', '{\"dialog\":\"1\",\"__token__\":\"91d9ded2a437c9c212641b979670b884\",\"group\":[\"2\"],\"row\":{\"username\":\"feilanqing\",\"email\":\"1045370376@qq.com\",\"nickname\":\"\\u8d39\\u5170\\u6e05\",\"password\":\"\",\"loginfailure\":\"0\",\"status\":\"normal\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1590050481);
+INSERT INTO `geek_admin_log` VALUES (776, 3, 'feilanqing', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"c76c39f17b20de15348021dc0360826f\",\"username\":\"feilanqing\",\"captcha\":\"ok\",\"geetest_challenge\":\"e75a368f330a62d975f3d6870d632dd5bc\",\"geetest_validate\":\"f6f1634234dc61f574e182f36086cd96\",\"geetest_seccode\":\"f6f1634234dc61f574e182f36086cd96|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1590050578);
+INSERT INTO `geek_admin_log` VALUES (777, 1, 'admin', '/admin/auth/admin/edit/ids/3?dialog=1', '权限管理 管理员管理 编辑', '{\"dialog\":\"1\",\"__token__\":\"b7ca09c105ce90f76437835941374755\",\"group\":[\"1\",\"2\"],\"row\":{\"username\":\"feilanqing\",\"email\":\"1045370376@qq.com\",\"nickname\":\"\\u8d39\\u5170\\u6e05\",\"password\":\"\",\"loginfailure\":\"0\",\"status\":\"normal\"},\"ids\":\"3\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1590050609);
+INSERT INTO `geek_admin_log` VALUES (778, 3, 'feilanqing', '/admin/geek/player/addMoney/guid/100009/ids/100009?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"200\",\"uid\":\"100009\"},\"guid\":\"100009\",\"ids\":\"100009\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1590051033);
+INSERT INTO `geek_admin_log` VALUES (779, 3, 'feilanqing', '/admin/geek/player/addMoney/guid/100008/ids/100008?dialog=1', '玩家管理 充值房卡', '{\"dialog\":\"1\",\"row\":{\"number\":\"10\",\"uid\":\"100008\"},\"guid\":\"100008\",\"ids\":\"100008\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1590051261);
+INSERT INTO `geek_admin_log` VALUES (780, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"76f33682e167dac7e4b6fbf8163886a9\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"0dd987f5ee9a28285fe5019cd21e76ebk4\",\"geetest_validate\":\"d4e44550561a95ecc2dfd3e809b685d8\",\"geetest_seccode\":\"d4e44550561a95ecc2dfd3e809b685d8|jordan\",\"keeplogin\":\"1\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1590055362);
+INSERT INTO `geek_admin_log` VALUES (781, 1, 'admin', '/admin/geek.player/addmoney', '玩家管理 充值房卡', '{\"number\":\"100\",\"uid\":\"100004\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1590056415);
+INSERT INTO `geek_admin_log` VALUES (782, 1, 'admin', '/admin/geek/agent/add/ids/100004?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"17683146641\",\"password\":\"long5201314jie\",\"guid\":\"100004\",\"nickname\":\"\\u795e\\u51c0\\u8ba8\\u9b54\",\"status\":\"1\"},\"ids\":\"100004\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1590057589);
+INSERT INTO `geek_admin_log` VALUES (783, 1, 'admin', '/admin/auth/admin/add?dialog=1', '权限管理 管理员管理 添加', '{\"dialog\":\"1\",\"__token__\":\"328568acab32fa5d83b6968a7a126c77\",\"group\":[\"2\"],\"row\":{\"username\":\"100004\",\"email\":\"1063737309@qq.com\",\"nickname\":\"\\u795e\\u51c0\\u8ba8\\u9b54\",\"password\":\"long5201314jie\",\"status\":\"normal\"}}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1590059067);
+INSERT INTO `geek_admin_log` VALUES (784, 4, '100004', '/admin/index/login', '登录', '{\"__token__\":\"dd094b22757541db5945158b2d9ce844\",\"username\":\"100004\",\"captcha\":\"ok\",\"geetest_challenge\":\"b296a9304c8f0a1815c9eda42c2623ad61\",\"geetest_validate\":\"a6ffea7df66a7650393fd2571702d3d4\",\"geetest_seccode\":\"a6ffea7df66a7650393fd2571702d3d4|jordan\",\"keeplogin\":\"1\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36', 1590059615);
+INSERT INTO `geek_admin_log` VALUES (785, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"539b52efde8a15bad6a014787f3aa02c\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"918155f79f5ffdee0a48270069345c5e5f\",\"geetest_validate\":\"235a591bbf1147bdba6a32f207b0635e\",\"geetest_seccode\":\"235a591bbf1147bdba6a32f207b0635e|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590064796);
+INSERT INTO `geek_admin_log` VALUES (786, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"52ddf5401aa508e08d55570ccb7661fd\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"277575ad62996ab6ae3b599ec89543878s\",\"geetest_validate\":\"f6beeb9130b38d77b247bdc6eccedbd1\",\"geetest_seccode\":\"f6beeb9130b38d77b247bdc6eccedbd1|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590064814);
+INSERT INTO `geek_admin_log` VALUES (787, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"b746cbb53465a5cc89493c199f6654f7\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"1ba17c849cdfe764c21df1e579af38ea60\",\"geetest_validate\":\"7498a821d1edaf3338ce324374759093\",\"geetest_seccode\":\"7498a821d1edaf3338ce324374759093|jordan\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590146650);
+INSERT INTO `geek_admin_log` VALUES (788, 1, 'admin', '/admin/geek/game/edit/ids/5?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"game_name\":\"\\u6625\\u98ce\\u6597\\u5730\\u4e3b\",\"desc\":\"\\u4ecb\\u7ecd\\uff1a\\u5305\\u62ec\\u6597\\u5730\\u4e3b\\u73a9\\u6cd5\\uff0c\\u53ef\\u4e0e\\u597d\\u53cb\\u4e00\\u8d77\\u73a9\\u800d\\u3002\",\"cover\":\"\\/uploads\\/20200520\\/3a158f91a9e1b629c6692b3d78497833.png\",\"android_address\":\"http:\\/\\/download.geekyoyo.cn\\/cfddz.apk\",\"ios_address\":\"https:\\/\\/get.signsadmin.com\\/ios\\/t8vc\",\"status\":\"1\"},\"ids\":\"5\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590146691);
+INSERT INTO `geek_admin_log` VALUES (789, 1, 'admin', '/admin/general.config/edit', '常规管理 系统配置 编辑', '{\"__token__\":\"afc79535212aecaee06e8799fab1e9ad\",\"row\":{\"name\":\"\\u4f11\\u95f2\\u7ea6\\u5c40-\\u6597\\u5730\\u4e3b\\u8dd1\\u5f97\\u5feb\",\"beian\":\"\",\"cdnurl\":\"\",\"version\":\"1.0.1\",\"timezone\":\"Asia\\/Shanghai\",\"forbiddenip\":\"\",\"languages\":\"{&quot;backend&quot;:&quot;zh-cn&quot;,&quot;frontend&quot;:&quot;zh-cn&quot;}\",\"fixedpage\":\"dashboard\"}}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590197478);
+INSERT INTO `geek_admin_log` VALUES (790, 1, 'admin', '/admin/general.config/edit', '常规管理 系统配置 编辑', '{\"__token__\":\"53497a26ed9735ab47237749c86fb0bb\",\"row\":{\"name\":\"\\u4f11\\u95f2\\u7ea6\\u5c40-\\u6597\\u5730\\u4e3b\\u8dd1\\u5f97\\u5feb\",\"beian\":\"\",\"cdnurl\":\"\",\"version\":\"1.0.1\",\"timezone\":\"Asia\\/Shanghai\",\"forbiddenip\":\"\",\"languages\":\"{&quot;backend&quot;:&quot;zh-cn&quot;,&quot;frontend&quot;:&quot;zh-cn&quot;}\",\"fixedpage\":\"dashboard\"}}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590197480);
+INSERT INTO `geek_admin_log` VALUES (791, 1, 'admin', '/admin/general.config/edit', '常规管理 系统配置 编辑', '{\"__token__\":\"264c0ec3a4078ad1675d7495c3764a24\",\"row\":{\"name\":\"\\u4f11\\u95f2\\u7ea6\\u5c40-\\u6597\\u5730\\u4e3b\\u8dd1\\u5f97\\u5feb\",\"beian\":\"\",\"cdnurl\":\"\",\"version\":\"1.0.1\",\"timezone\":\"Asia\\/Shanghai\",\"forbiddenip\":\"\",\"languages\":\"{&quot;backend&quot;:&quot;zh-cn&quot;,&quot;frontend&quot;:&quot;zh-cn&quot;}\",\"fixedpage\":\"dashboard\"}}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590197481);
+INSERT INTO `geek_admin_log` VALUES (792, 1, 'admin', '/admin/geek/agent/add/ids/124485?dialog=1', '', '{\"dialog\":\"1\",\"row\":{\"mobile\":\"18583601564\",\"password\":\"123456\",\"guid\":\"124485\",\"nickname\":\"A\\u53cb\\u95f2\\u55b5\\u55b5\",\"status\":\"1\"},\"ids\":\"124485\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590199802);
+INSERT INTO `geek_admin_log` VALUES (793, 1, 'admin', '/admin/geek.player/addmoney', '玩家管理 充值房卡', '{\"number\":\"1000\",\"uid\":\"124485\"}', '171.221.129.225', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36', 1590199815);
+INSERT INTO `geek_admin_log` VALUES (794, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"87e17884a23fda9e615fde42460bc71e\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"3e5771ed9123e23898ae1ce0e8dc3fa8lm\",\"geetest_validate\":\"e79140b8302f8aad7381164774551681\",\"geetest_seccode\":\"e79140b8302f8aad7381164774551681|jordan\",\"keeplogin\":\"1\"}', '183.202.161.127', 'Mozilla/5.0 (Linux; U; Android 10; zh-cn; MI 8 Build/QKQ1.190828.002) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.141 Mobile Safari/537.36 XiaoMi/MiuiBrowser/12.0.28', 1590342004);
+INSERT INTO `geek_admin_log` VALUES (795, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"8e9aec93809925e68e2f8794d555f38a\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"3e5771ed9123e23898ae1ce0e8dc3fa8lm\",\"geetest_validate\":\"e79140b8302f8aad7381164774551681\",\"geetest_seccode\":\"e79140b8302f8aad7381164774551681|jordan\",\"keeplogin\":\"1\"}', '183.202.161.127', 'Mozilla/5.0 (Linux; U; Android 10; zh-cn; MI 8 Build/QKQ1.190828.002) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.141 Mobile Safari/537.36 XiaoMi/MiuiBrowser/12.0.28', 1590342004);
+INSERT INTO `geek_admin_log` VALUES (796, 0, 'Unknown', '/admin/index/login?url=%2Fadmin', '', '{\"url\":\"\\/admin\",\"__token__\":\"ae78dcf5b5e23708c580efbd5941eb32\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"3e5771ed9123e23898ae1ce0e8dc3fa8lm\",\"geetest_validate\":\"e79140b8302f8aad7381164774551681\",\"geetest_seccode\":\"e79140b8302f8aad7381164774551681|jordan\",\"keeplogin\":\"1\"}', '183.202.161.127', 'Mozilla/5.0 (Linux; U; Android 10; zh-cn; MI 8 Build/QKQ1.190828.002) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.141 Mobile Safari/537.36 XiaoMi/MiuiBrowser/12.0.28', 1590342013);
+INSERT INTO `geek_admin_log` VALUES (807, 1, 'admin', '/admin/auth/adminlog/del/ids/806,805,804,803,802', '权限管理 管理员日志 删除', '{\"action\":\"del\",\"ids\":\"806,805,804,803,802\",\"params\":\"\"}', '183.202.161.156', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36', 1590388103);
+INSERT INTO `geek_admin_log` VALUES (808, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"59c2b88947ccc2517ba782645bef490d\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"65aba4607afe61454e6303eb1618359fgq\",\"geetest_validate\":\"2937c3ccaa8f63f0958392b3063fecf1\",\"geetest_seccode\":\"2937c3ccaa8f63f0958392b3063fecf1|jordan\"}', '182.150.160.196', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1590462949);
+INSERT INTO `geek_admin_log` VALUES (809, 1, 'admin', '/admin/index/login?url=%2Fadmin', '登录', '{\"url\":\"\\/admin\",\"__token__\":\"61bbfc7e0676b0982d1f5860400d0e93\",\"username\":\"admin\",\"captcha\":\"ok\",\"geetest_challenge\":\"6f5b18539053fac932860dd58209b7e7ay\",\"geetest_validate\":\"e3dc29cc3006056fb90620460b00d417\",\"geetest_seccode\":\"e3dc29cc3006056fb90620460b00d417|jordan\"}', '182.150.160.58', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER', 1591063908);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_area
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_area`;
-CREATE TABLE `geek_area`  (
+CREATE TABLE `geek_area` (
   `id` int(10) NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `pid` int(10) NULL DEFAULT NULL COMMENT '父id',
-  `shortname` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '简称',
-  `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '名称',
-  `mergename` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '全称',
-  `level` tinyint(4) NULL DEFAULT NULL COMMENT '层级 0 1 2 省市区县',
-  `pinyin` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '拼音',
-  `code` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '长途区号',
-  `zip` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '邮编',
-  `first` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '首字母',
-  `lng` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '经度',
-  `lat` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '纬度',
+  `pid` int(10) DEFAULT NULL COMMENT '父id',
+  `shortname` varchar(100) DEFAULT NULL COMMENT '简称',
+  `name` varchar(100) DEFAULT NULL COMMENT '名称',
+  `mergename` varchar(255) DEFAULT NULL COMMENT '全称',
+  `level` tinyint(4) DEFAULT NULL COMMENT '层级 0 1 2 省市区县',
+  `pinyin` varchar(100) DEFAULT NULL COMMENT '拼音',
+  `code` varchar(100) DEFAULT NULL COMMENT '长途区号',
+  `zip` varchar(100) DEFAULT NULL COMMENT '邮编',
+  `first` varchar(50) DEFAULT NULL COMMENT '首字母',
+  `lng` varchar(100) DEFAULT NULL COMMENT '经度',
+  `lat` varchar(100) DEFAULT NULL COMMENT '纬度',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `pid`(`pid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3749 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地区表' ROW_FORMAT = Dynamic;
+  KEY `pid` (`pid`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=3749 DEFAULT CHARSET=utf8 COMMENT='地区表';
 
 -- ----------------------------
 -- Records of geek_area
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_area` VALUES (1, 0, '北京', '北京', '中国,北京', 1, 'beijing', '', '', 'B', '116.405285', '39.904989');
 INSERT INTO `geek_area` VALUES (2, 1, '北京', '北京市', '中国,北京,北京市', 2, 'beijing', '010', '100000', 'B', '116.405285', '39.904989');
 INSERT INTO `geek_area` VALUES (3, 2, '东城', '东城区', '中国,北京,北京市,东城区', 3, 'dongcheng', '010', '100010', 'D', '116.41005', '39.93157');
@@ -4218,104 +4541,123 @@ INSERT INTO `geek_area` VALUES (3745, 3738, '氹仔岛', '氹仔岛', '中国,�
 INSERT INTO `geek_area` VALUES (3746, 3745, '嘉模堂区', '嘉模堂区', '中国,澳门特别行政区,氹仔岛,嘉模堂区', 3, 'ourladyofcarmel\'sparish', '00853', '999078', 'J', '113.565303', '22.149029');
 INSERT INTO `geek_area` VALUES (3747, 3738, '路环岛', '路环岛', '中国,澳门特别行政区,路环岛', 2, 'coloane', '00853', '999078', 'L', '113.564857', '22.116226');
 INSERT INTO `geek_area` VALUES (3748, 3747, '圣方济各堂区', '圣方济各堂区', '中国,澳门特别行政区,路环岛,圣方济各堂区', 3, 'stfrancisxavier\'sparish', '00853', '999078', 'S', '113.559954', '22.123486');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_attachment
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_attachment`;
-CREATE TABLE `geek_attachment`  (
-  `id` int(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `admin_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '管理员ID',
-  `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '会员ID',
-  `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '物理路径',
-  `imagewidth` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '宽度',
-  `imageheight` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '高度',
-  `imagetype` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '图片类型',
-  `imageframes` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '图片帧数',
-  `filesize` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '文件大小',
-  `mimetype` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'mime类型',
-  `extparam` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '透传数据',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建日期',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `uploadtime` int(10) NULL DEFAULT NULL COMMENT '上传时间',
-  `storage` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'local' COMMENT '存储位置',
-  `sha1` varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '文件 sha1编码',
+CREATE TABLE `geek_attachment` (
+  `id` int(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `admin_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '管理员ID',
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `url` varchar(255) NOT NULL DEFAULT '' COMMENT '物理路径',
+  `imagewidth` varchar(30) NOT NULL DEFAULT '' COMMENT '宽度',
+  `imageheight` varchar(30) NOT NULL DEFAULT '' COMMENT '高度',
+  `imagetype` varchar(30) NOT NULL DEFAULT '' COMMENT '图片类型',
+  `imageframes` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '图片帧数',
+  `filesize` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '文件大小',
+  `mimetype` varchar(100) NOT NULL DEFAULT '' COMMENT 'mime类型',
+  `extparam` varchar(255) NOT NULL DEFAULT '' COMMENT '透传数据',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建日期',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `uploadtime` int(10) DEFAULT NULL COMMENT '上传时间',
+  `storage` varchar(100) NOT NULL DEFAULT 'local' COMMENT '存储位置',
+  `sha1` varchar(40) NOT NULL DEFAULT '' COMMENT '文件 sha1编码',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '附件表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='附件表';
 
 -- ----------------------------
 -- Records of geek_attachment
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_attachment` VALUES (1, 1, 0, '/assets/img/qrcode.png', '150', '150', 'png', 0, 21859, 'image/png', '', 1499681848, 1499681848, 1499681848, 'local', '17163603d0263e4838b9387ff2cd4877e8b018f6');
+INSERT INTO `geek_attachment` VALUES (2, 1, 0, '/uploads/20200520/40fd993dd675d19d02b485543e0e1cbc.png', '72', '72', 'png', 0, 15664, 'image/png', '{\"name\":\"ic_launcher.png\"}', 1589961565, 1589961565, 1589961565, 'local', '3875f8c4bb052a64786adddca9984e1867f94a45');
+INSERT INTO `geek_attachment` VALUES (3, 1, 0, '/uploads/20200520/cfa4bfab4c1383cea30169f37877e354.png', '72', '72', 'png', 0, 15231, 'image/png', '{\"name\":\"72_72.png\"}', 1589961672, 1589961672, 1589961672, 'local', '9d3bc7c0e5c83723b2320f16e532869224ff5dc7');
+INSERT INTO `geek_attachment` VALUES (4, 1, 0, '/uploads/20200520/3a158f91a9e1b629c6692b3d78497833.png', '144', '144', 'png', 0, 41024, 'image/png', '{\"name\":\"ic_launcher.png\"}', 1589961958, 1589961958, 1589961958, 'local', '65c4164219913f8616804d76c57e55e6afd0e223');
+INSERT INTO `geek_attachment` VALUES (5, 1, 0, '/uploads/20200520/acbc6fce30575763ebccc33b30de3796.png', '144', '144', 'png', 0, 51919, 'image/png', '{\"name\":\"144_144.png\"}', 1589961967, 1589961967, 1589961967, 'local', '6d42074cfba2b05cb68fd46e147503d63684bd62');
+INSERT INTO `geek_attachment` VALUES (6, 1, 0, '/uploads/20200520/8723e3b9e79cbef4ceebc92b9aa3e76c.png', '512', '512', 'png', 0, 257622, 'image/png', '{\"name\":\"ICON-512.png\"}', 1589963896, 1589963896, 1589963896, 'local', 'dd1196b78d7cbf2f95057dee2f2fd416476657ea');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_auth_group
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_auth_group`;
-CREATE TABLE `geek_auth_group`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pid` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父组别',
-  `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '组名',
-  `rules` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '规则ID',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '状态',
+CREATE TABLE `geek_auth_group` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '父组别',
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '组名',
+  `rules` text NOT NULL COMMENT '规则ID',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `status` varchar(30) NOT NULL DEFAULT '' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '分组表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='分组表';
 
 -- ----------------------------
 -- Records of geek_auth_group
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_auth_group` VALUES (1, 0, 'Admin group', '*', 1490883540, 149088354, 'normal');
 INSERT INTO `geek_auth_group` VALUES (2, 1, 'Second group', '13,14,16,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,40,41,42,43,44,45,46,47,48,49,50,55,56,57,58,59,60,61,62,63,64,65,1,9,10,11,7,6,8,2,4,5', 1490883540, 1505465692, 'normal');
 INSERT INTO `geek_auth_group` VALUES (3, 2, 'Third group', '1,4,9,10,11,13,14,15,16,17,40,41,42,43,44,45,46,47,48,49,50,55,56,57,58,59,60,61,62,63,64,65,5', 1490883540, 1502205322, 'normal');
 INSERT INTO `geek_auth_group` VALUES (4, 1, 'Second group 2', '1,4,13,14,15,16,17,55,56,57,58,59,60,61,62,63,64,65', 1490883540, 1502205350, 'normal');
 INSERT INTO `geek_auth_group` VALUES (5, 2, 'Third group 2', '1,2,6,7,8,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34', 1490883540, 1502205344, 'normal');
+INSERT INTO `geek_auth_group` VALUES (6, 2, '推广员', '13,14,16,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,55,56,57,58,59,60,61,62,63,64,65,1,7,6,8,2,4', 1583734618, 1583734618, 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_auth_group_access
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_auth_group_access`;
-CREATE TABLE `geek_auth_group_access`  (
-  `uid` int(10) UNSIGNED NOT NULL COMMENT '会员ID',
-  `group_id` int(10) UNSIGNED NOT NULL COMMENT '级别ID',
-  UNIQUE INDEX `uid_group_id`(`uid`, `group_id`) USING BTREE,
-  INDEX `uid`(`uid`) USING BTREE,
-  INDEX `group_id`(`group_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '权限分组表' ROW_FORMAT = Dynamic;
+CREATE TABLE `geek_auth_group_access` (
+  `uid` int(10) unsigned NOT NULL COMMENT '会员ID',
+  `group_id` int(10) unsigned NOT NULL COMMENT '级别ID',
+  UNIQUE KEY `uid_group_id` (`uid`,`group_id`) USING BTREE,
+  KEY `uid` (`uid`) USING BTREE,
+  KEY `group_id` (`group_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='权限分组表';
 
 -- ----------------------------
 -- Records of geek_auth_group_access
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_auth_group_access` VALUES (1, 1);
+INSERT INTO `geek_auth_group_access` VALUES (2, 6);
+INSERT INTO `geek_auth_group_access` VALUES (3, 1);
+INSERT INTO `geek_auth_group_access` VALUES (3, 2);
+INSERT INTO `geek_auth_group_access` VALUES (4, 1);
+INSERT INTO `geek_auth_group_access` VALUES (4, 2);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_auth_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_auth_rule`;
-CREATE TABLE `geek_auth_rule`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `type` enum('menu','file') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'file' COMMENT 'menu为菜单,file为权限节点',
-  `pid` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父ID',
-  `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '规则名称',
-  `title` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '规则名称',
-  `icon` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '图标',
-  `condition` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '条件',
-  `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '备注',
-  `ismenu` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否为菜单',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `weigh` int(10) NOT NULL DEFAULT 0 COMMENT '权重',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '状态',
+CREATE TABLE `geek_auth_rule` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `type` enum('menu','file') NOT NULL DEFAULT 'file' COMMENT 'menu为菜单,file为权限节点',
+  `pid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '父ID',
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `title` varchar(50) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `icon` varchar(50) NOT NULL DEFAULT '' COMMENT '图标',
+  `condition` varchar(255) NOT NULL DEFAULT '' COMMENT '条件',
+  `remark` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
+  `ismenu` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否为菜单',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `weigh` int(10) NOT NULL DEFAULT '0' COMMENT '权重',
+  `status` varchar(30) NOT NULL DEFAULT '' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `name`(`name`) USING BTREE,
-  INDEX `pid`(`pid`) USING BTREE,
-  INDEX `weigh`(`weigh`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 173 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '节点表' ROW_FORMAT = Dynamic;
+  UNIQUE KEY `name` (`name`) USING BTREE,
+  KEY `pid` (`pid`) USING BTREE,
+  KEY `weigh` (`weigh`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8 COMMENT='节点表';
 
 -- ----------------------------
 -- Records of geek_auth_rule
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_auth_rule` VALUES (1, 'file', 0, 'dashboard', 'Dashboard', 'fa fa-dashboard', '', 'Dashboard tips', 1, 1497429920, 1497429920, 143, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (2, 'file', 0, 'general', 'General', 'fa fa-cogs', '', '', 1, 1497429920, 1497430169, 137, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (4, 'file', 0, 'addon', 'Addon', 'fa fa-rocket', '', 'Addon tips', 1, 1502035509, 1502035509, 0, 'normal');
@@ -4380,14 +4722,14 @@ INSERT INTO `geek_auth_rule` VALUES (86, 'file', 85, 'general/database/index', '
 INSERT INTO `geek_auth_rule` VALUES (87, 'file', 85, 'general/database/query', '查询', 'fa fa-circle-o', '', '', 0, 1576464261, 1576464261, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (88, 'file', 85, 'general/database/backup', '备份', 'fa fa-circle-o', '', '', 0, 1576464261, 1576464261, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (89, 'file', 85, 'general/database/restore', '恢复', 'fa fa-circle-o', '', '', 0, 1576464261, 1576464261, 0, 'normal');
-INSERT INTO `geek_auth_rule` VALUES (90, 'file', 0, 'command', '在线命令管理', 'fa fa-terminal', '', '', 0, 1576464262, 1577333741, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (90, 'file', 0, 'command', '在线命令管理', 'fa fa-terminal', '', '', 0, 1576464262, 1590387670, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (91, 'file', 90, 'command/index', '查看', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (92, 'file', 90, 'command/add', '添加', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (93, 'file', 90, 'command/detail', '详情', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (94, 'file', 90, 'command/execute', '运行', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (95, 'file', 90, 'command/del', '删除', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (96, 'file', 90, 'command/multi', '批量更新', 'fa fa-circle-o', '', '', 0, 1576464262, 1576464262, 0, 'normal');
-INSERT INTO `geek_auth_rule` VALUES (97, 'file', 0, 'account', '会员管理', 'fa fa-address-book', '', '', 0, 1577264702, 1583493656, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (97, 'file', 0, 'account', '会员管理', 'fa fa-address-book', '', '', 0, 1577264702, 1583735465, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (99, 'file', 97, 'manager/member', '用户列表', 'fa fa-circle-o', '', '', 0, 1577265676, 1583493652, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (100, 'file', 0, 'example', '开发示例管理', 'fa fa-magic', '', '', 1, 1577265799, 1583476730, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (101, 'file', 100, 'example/bootstraptable', '表格完整示例', 'fa fa-table', '', '', 1, 1577265799, 1577265799, 0, 'normal');
@@ -4449,43 +4791,47 @@ INSERT INTO `geek_auth_rule` VALUES (160, 'file', 159, 'geek/player/index', '玩
 INSERT INTO `geek_auth_rule` VALUES (161, 'file', 0, 'geek/promote', '成员管理', 'fa fa-circle-o', '', '', 1, 1583307533, 1583461555, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (162, 'file', 161, 'geek/promote/index', '推广员&代理员管理', 'fa fa-circle-o', '', '', 0, 1583307572, 1583309334, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (163, 'file', 161, 'geek/member_agent/index/ids/1', '代理员列表', 'fa fa-circle-o', '', '', 1, 1583309279, 1583488762, 0, 'normal');
-INSERT INTO `geek_auth_rule` VALUES (164, 'file', 161, 'geek/member_agent/index/ids/2', '推广员列表', 'fa fa-circle-o', '', '', 1, 1583309325, 1583488774, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (164, 'file', 161, 'geek/member_agent/index/ids/2', '推广员列表', 'fa fa-circle-o', '', '', 0, 1583309325, 1583734815, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (165, 'file', 0, 'club', '联盟/亲友群管理', 'fa fa-circle-o', '', '', 1, 1583311327, 1583461562, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (166, 'file', 165, 'geek/club/index', '联盟/亲友群列表', 'fa fa-circle-o', '', '', 1, 1583311367, 1583311367, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (167, 'file', 159, 'geek/log', '玩家战绩查询', 'fa fa-circle-o', '', '', 1, 1583372429, 1583474360, 0, 'normal');
-INSERT INTO `geek_auth_rule` VALUES (168, 'file', 0, 'game', '游戏管理', 'fa fa-circle-o', '', '', 1, 1583378118, 1583461569, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (168, 'file', 0, 'game', '游戏管理', 'fa fa-circle-o', '', '', 1, 1583378118, 1589961178, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (169, 'file', 168, 'geek/statistics', '游戏统计', 'fa fa-circle-o', '', '', 1, 1583378141, 1583402739, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (170, 'file', 165, 'geek/recharge_record/index', '充值流水', 'fa fa-circle-o', '', '', 0, 1583395155, 1583488828, 0, 'normal');
-INSERT INTO `geek_auth_rule` VALUES (171, 'file', 0, 'agent', '代理管理', 'fa fa-circle-o', '', '', 1, 1583465295, 1583465295, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (171, 'file', 0, 'agent', '代理管理', 'fa fa-circle-o', '', '', 0, 1583465295, 1583720908, 0, 'normal');
 INSERT INTO `geek_auth_rule` VALUES (172, 'file', 2, 'geek/day_log', '统计日志', 'fa fa-circle-o', '', '', 1, 1583560550, 1583560550, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (173, 'file', 159, 'geek/player/addmoney', '充值房卡', 'fa fa-circle-o', '', '', 0, 1583734448, 1583735488, 0, 'normal');
+INSERT INTO `geek_auth_rule` VALUES (174, 'file', 168, 'geek/game', '游戏下载配置', 'fa fa-space-shuttle', '', '', 1, 1589869334, 1589869334, 0, 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_category
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_category`;
-CREATE TABLE `geek_category`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pid` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父ID',
-  `type` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '栏目类型',
-  `name` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `nickname` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `flag` set('hot','index','recommend') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `image` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '图片',
-  `keywords` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '关键字',
-  `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `diyname` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '自定义名称',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `weigh` int(10) NOT NULL DEFAULT 0 COMMENT '权重',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '状态',
+CREATE TABLE `geek_category` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '父ID',
+  `type` varchar(30) NOT NULL DEFAULT '' COMMENT '栏目类型',
+  `name` varchar(30) NOT NULL DEFAULT '',
+  `nickname` varchar(50) NOT NULL DEFAULT '',
+  `flag` set('hot','index','recommend') NOT NULL DEFAULT '',
+  `image` varchar(100) NOT NULL DEFAULT '' COMMENT '图片',
+  `keywords` varchar(255) NOT NULL DEFAULT '' COMMENT '关键字',
+  `description` varchar(255) NOT NULL DEFAULT '' COMMENT '描述',
+  `diyname` varchar(30) NOT NULL DEFAULT '' COMMENT '自定义名称',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `weigh` int(10) NOT NULL DEFAULT '0' COMMENT '权重',
+  `status` varchar(30) NOT NULL DEFAULT '' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `weigh`(`weigh`, `id`) USING BTREE,
-  INDEX `pid`(`pid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '分类表' ROW_FORMAT = Dynamic;
+  KEY `weigh` (`weigh`,`id`) USING BTREE,
+  KEY `pid` (`pid`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COMMENT='分类表';
 
 -- ----------------------------
 -- Records of geek_category
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_category` VALUES (1, 0, 'page', '官方新闻', 'news', 'recommend', '/assets/img/qrcode.png', '', '', 'news', 1495262190, 1495262190, 1, 'normal');
 INSERT INTO `geek_category` VALUES (2, 0, 'page', '移动应用', 'mobileapp', 'hot', '/assets/img/qrcode.png', '', '', 'mobileapp', 1495262244, 1495262244, 2, 'normal');
 INSERT INTO `geek_category` VALUES (3, 2, 'page', '微信公众号', 'wechatpublic', 'index', '/assets/img/qrcode.png', '', '', 'wechatpublic', 1495262288, 1495262288, 3, 'normal');
@@ -4499,47 +4845,49 @@ INSERT INTO `geek_category` VALUES (10, 7, 'page', 'CRM系统 ', 'company-crm', 
 INSERT INTO `geek_category` VALUES (11, 7, 'page', 'SASS平台软件', 'company-sass', 'recommend', '/assets/img/qrcode.png', '', '', 'company-sass', 1495262515, 1495262515, 11, 'normal');
 INSERT INTO `geek_category` VALUES (12, 0, 'test', '测试1', 'test1', 'recommend', '/assets/img/qrcode.png', '', '', 'test1', 1497015727, 1497015727, 12, 'normal');
 INSERT INTO `geek_category` VALUES (13, 0, 'test', '测试2', 'test2', 'recommend', '/assets/img/qrcode.png', '', '', 'test2', 1497015738, 1497015738, 13, 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_command
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_command`;
-CREATE TABLE `geek_command`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `type` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '类型',
-  `params` varchar(1500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '参数',
-  `command` varchar(1500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '命令',
-  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '返回结果',
-  `executetime` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '执行时间',
-  `createtime` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-  `updatetime` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-  `status` enum('successed','failured') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'failured' COMMENT '状态',
+CREATE TABLE `geek_command` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `type` varchar(30) NOT NULL DEFAULT '' COMMENT '类型',
+  `params` varchar(1500) NOT NULL DEFAULT '' COMMENT '参数',
+  `command` varchar(1500) NOT NULL DEFAULT '' COMMENT '命令',
+  `content` text COMMENT '返回结果',
+  `executetime` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '执行时间',
+  `createtime` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updatetime` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
+  `status` enum('successed','failured') NOT NULL DEFAULT 'failured' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线命令表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='在线命令表';
 
 -- ----------------------------
 -- Table structure for geek_config
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_config`;
-CREATE TABLE `geek_config`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '变量名',
-  `group` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '分组',
-  `title` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '变量标题',
-  `tip` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '变量描述',
-  `type` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '类型:string,text,int,bool,array,datetime,date,file',
-  `value` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '变量值',
-  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '变量字典数据',
-  `rule` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '验证规则',
-  `extend` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '扩展属性',
+CREATE TABLE `geek_config` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) NOT NULL DEFAULT '' COMMENT '变量名',
+  `group` varchar(30) NOT NULL DEFAULT '' COMMENT '分组',
+  `title` varchar(100) NOT NULL DEFAULT '' COMMENT '变量标题',
+  `tip` varchar(100) NOT NULL DEFAULT '' COMMENT '变量描述',
+  `type` varchar(30) NOT NULL DEFAULT '' COMMENT '类型:string,text,int,bool,array,datetime,date,file',
+  `value` text NOT NULL COMMENT '变量值',
+  `content` text NOT NULL COMMENT '变量字典数据',
+  `rule` varchar(100) NOT NULL DEFAULT '' COMMENT '验证规则',
+  `extend` varchar(255) NOT NULL DEFAULT '' COMMENT '扩展属性',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统配置' ROW_FORMAT = Dynamic;
+  UNIQUE KEY `name` (`name`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8 COMMENT='系统配置';
 
 -- ----------------------------
 -- Records of geek_config
 -- ----------------------------
-INSERT INTO `geek_config` VALUES (1, 'name', 'basic', 'Site name', '请填写站点名称', 'string', '极客互娱', '', 'required', '');
+BEGIN;
+INSERT INTO `geek_config` VALUES (1, 'name', 'basic', 'Site name', '请填写站点名称', 'string', '休闲约局-斗地主跑得快', '', 'required', '');
 INSERT INTO `geek_config` VALUES (2, 'beian', 'basic', 'Beian', '粤ICP备15000000号-1', 'string', '', '', '', '');
 INSERT INTO `geek_config` VALUES (3, 'cdnurl', 'basic', 'Cdn url', '如果静态资源使用第三方云储存请配置该值', 'string', '', '', '', '');
 INSERT INTO `geek_config` VALUES (4, 'version', 'basic', 'Version', '如果静态资源有变动请重新配置该值', 'string', '1.0.1', '', 'required', '');
@@ -4556,180 +4904,214 @@ INSERT INTO `geek_config` VALUES (14, 'mail_smtp_user', 'email', 'Mail smtp user
 INSERT INTO `geek_config` VALUES (15, 'mail_smtp_pass', 'email', 'Mail smtp password', '（填写您的密码）', 'string', 'password', '', '', '');
 INSERT INTO `geek_config` VALUES (16, 'mail_verify_type', 'email', 'Mail vertify type', '（SMTP验证方式[推荐SSL]）', 'select', '2', '[\"None\",\"TLS\",\"SSL\"]', '', '');
 INSERT INTO `geek_config` VALUES (17, 'mail_from', 'email', 'Mail from', '', 'string', '10000@qq.com', '', '', '');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_ems
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_ems`;
-CREATE TABLE `geek_ems`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `event` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '事件',
-  `email` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '邮箱',
-  `code` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '验证码',
-  `times` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '验证次数',
-  `ip` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'IP',
-  `createtime` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '创建时间',
+CREATE TABLE `geek_ems` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `event` varchar(30) NOT NULL DEFAULT '' COMMENT '事件',
+  `email` varchar(100) NOT NULL DEFAULT '' COMMENT '邮箱',
+  `code` varchar(10) NOT NULL DEFAULT '' COMMENT '验证码',
+  `times` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '验证次数',
+  `ip` varchar(30) NOT NULL DEFAULT '' COMMENT 'IP',
+  `createtime` int(10) unsigned DEFAULT '0' COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '邮箱验证码表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='邮箱验证码表';
+
+-- ----------------------------
+-- Table structure for geek_game_download
+-- ----------------------------
+DROP TABLE IF EXISTS `geek_game_download`;
+CREATE TABLE `geek_game_download` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `game_name` char(15) DEFAULT '' COMMENT '游戏名',
+  `desc` varchar(255) DEFAULT '' COMMENT '游戏描述',
+  `cover` varchar(255) DEFAULT '' COMMENT '封面图',
+  `android_address` varchar(255) DEFAULT '' COMMENT '安卓下载地址',
+  `ios_address` varchar(255) DEFAULT '' COMMENT 'ios下载地址',
+  `status` tinyint(1) DEFAULT '1' COMMENT '是否启用 1 0',
+  `created_at` int(10) DEFAULT '0' COMMENT '添加时间',
+  `updated_at` int(10) DEFAULT '0' COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COMMENT='游戏下载配置表';
+
+-- ----------------------------
+-- Records of geek_game_download
+-- ----------------------------
+BEGIN;
+INSERT INTO `geek_game_download` VALUES (3, '友友竞技', '介绍：四川血战麻将，经典跑得快，二人跑得快，可与好友一起玩耍，后续将增加斗地主等玩法，根据玩家建议，保持更新维护。测试期，免费.', '/uploads/20200520/acbc6fce30575763ebccc33b30de3796.png', 'http://download.geekyoyo.cn/hyhy.apk', 'itms-services://?action=download-manifest&url=https://download.geekyoyo.cn/hyhy.plist', 1, 1589870728, 1589963957);
+INSERT INTO `geek_game_download` VALUES (5, '春风斗地主', '介绍：包括斗地主玩法，可与好友一起玩耍。', '/uploads/20200520/3a158f91a9e1b629c6692b3d78497833.png', 'http://download.geekyoyo.cn/cfddz.apk', 'https://get.signsadmin.com/ios/t8vc', 1, 1589870981, 1590146691);
+INSERT INTO `geek_game_download` VALUES (6, '友闲棋牌', '介绍：房卡类型，可和好友一起玩耍，后续无更新。', '/uploads/20200520/8723e3b9e79cbef4ceebc92b9aa3e76c.png', 'http://download.geekyoyo.cn/yxqp1.apk', 'itms-services://?action=download-manifest&url=https://download.geekyoyo.cn/newyxqp1.plist', 1, 1589871930, 1589963898);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_sms
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_sms`;
-CREATE TABLE `geek_sms`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `event` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '事件',
-  `mobile` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '手机号',
-  `code` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '验证码',
-  `times` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '验证次数',
-  `ip` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'IP',
-  `createtime` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '创建时间',
+CREATE TABLE `geek_sms` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `event` varchar(30) NOT NULL DEFAULT '' COMMENT '事件',
+  `mobile` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号',
+  `code` varchar(10) NOT NULL DEFAULT '' COMMENT '验证码',
+  `times` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '验证次数',
+  `ip` varchar(30) NOT NULL DEFAULT '' COMMENT 'IP',
+  `createtime` int(10) unsigned DEFAULT '0' COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '短信验证码表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='短信验证码表';
 
 -- ----------------------------
 -- Table structure for geek_test
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_test`;
-CREATE TABLE `geek_test`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `admin_id` int(10) NOT NULL DEFAULT 0 COMMENT '管理员ID',
-  `category_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '分类ID(单选)',
-  `category_ids` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '分类ID(多选)',
-  `week` enum('monday','tuesday','wednesday') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '星期(单选):monday=星期一,tuesday=星期二,wednesday=星期三',
-  `flag` set('hot','index','recommend') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '标志(多选):hot=热门,index=首页,recommend=推荐',
-  `genderdata` enum('male','female') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'male' COMMENT '性别(单选):male=男,female=女',
-  `hobbydata` set('music','reading','swimming') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '爱好(多选):music=音乐,reading=读书,swimming=游泳',
-  `title` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '标题',
-  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '内容',
-  `image` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '图片',
-  `images` varchar(1500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '图片组',
-  `attachfile` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '附件',
-  `keywords` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '关键字',
-  `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `city` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '省市',
-  `json` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '配置:key=名称,value=值',
-  `price` float(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '价格',
-  `views` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '点击',
-  `startdate` date NULL DEFAULT NULL COMMENT '开始日期',
-  `activitytime` datetime(0) NULL DEFAULT NULL COMMENT '活动时间(datetime)',
-  `year` year NULL DEFAULT NULL COMMENT '年',
-  `times` time(0) NULL DEFAULT NULL COMMENT '时间',
-  `refreshtime` int(10) NULL DEFAULT NULL COMMENT '刷新时间(int)',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `deletetime` int(10) NULL DEFAULT NULL COMMENT '删除时间',
-  `weigh` int(10) NOT NULL DEFAULT 0 COMMENT '权重',
-  `switch` tinyint(1) NOT NULL DEFAULT 0 COMMENT '开关',
-  `status` enum('normal','hidden') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'normal' COMMENT '状态',
-  `state` enum('0','1','2') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '1' COMMENT '状态值:0=禁用,1=正常,2=推荐',
+CREATE TABLE `geek_test` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `admin_id` int(10) NOT NULL DEFAULT '0' COMMENT '管理员ID',
+  `category_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '分类ID(单选)',
+  `category_ids` varchar(100) NOT NULL COMMENT '分类ID(多选)',
+  `week` enum('monday','tuesday','wednesday') NOT NULL COMMENT '星期(单选):monday=星期一,tuesday=星期二,wednesday=星期三',
+  `flag` set('hot','index','recommend') NOT NULL DEFAULT '' COMMENT '标志(多选):hot=热门,index=首页,recommend=推荐',
+  `genderdata` enum('male','female') NOT NULL DEFAULT 'male' COMMENT '性别(单选):male=男,female=女',
+  `hobbydata` set('music','reading','swimming') NOT NULL COMMENT '爱好(多选):music=音乐,reading=读书,swimming=游泳',
+  `title` varchar(50) NOT NULL DEFAULT '' COMMENT '标题',
+  `content` text NOT NULL COMMENT '内容',
+  `image` varchar(100) NOT NULL DEFAULT '' COMMENT '图片',
+  `images` varchar(1500) NOT NULL DEFAULT '' COMMENT '图片组',
+  `attachfile` varchar(100) NOT NULL DEFAULT '' COMMENT '附件',
+  `keywords` varchar(100) NOT NULL DEFAULT '' COMMENT '关键字',
+  `description` varchar(255) NOT NULL DEFAULT '' COMMENT '描述',
+  `city` varchar(100) NOT NULL DEFAULT '' COMMENT '省市',
+  `json` varchar(255) DEFAULT NULL COMMENT '配置:key=名称,value=值',
+  `price` float(10,2) unsigned NOT NULL DEFAULT '0.00' COMMENT '价格',
+  `views` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '点击',
+  `startdate` date DEFAULT NULL COMMENT '开始日期',
+  `activitytime` datetime DEFAULT NULL COMMENT '活动时间(datetime)',
+  `year` year(4) DEFAULT NULL COMMENT '年',
+  `times` time DEFAULT NULL COMMENT '时间',
+  `refreshtime` int(10) DEFAULT NULL COMMENT '刷新时间(int)',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `deletetime` int(10) DEFAULT NULL COMMENT '删除时间',
+  `weigh` int(10) NOT NULL DEFAULT '0' COMMENT '权重',
+  `switch` tinyint(1) NOT NULL DEFAULT '0' COMMENT '开关',
+  `status` enum('normal','hidden') NOT NULL DEFAULT 'normal' COMMENT '状态',
+  `state` enum('0','1','2') NOT NULL DEFAULT '1' COMMENT '状态值:0=禁用,1=正常,2=推荐',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='测试表';
 
 -- ----------------------------
 -- Records of geek_test
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_test` VALUES (1, 0, 12, '12,13', 'monday', 'hot,index', 'male', 'music,reading', '我是一篇测试文章', '<p>我是测试内容</p>', '/assets/img/avatar.png', '/assets/img/avatar.png,/assets/img/qrcode.png', '/assets/img/avatar.png', '关键字', '描述', '广西壮族自治区/百色市/平果县', '{\"a\":\"1\",\"b\":\"2\"}', 0.00, 0, '2017-07-10', '2017-07-10 18:24:45', 2017, '18:24:45', 1499682285, 1499682526, 1499682526, NULL, 0, 1, 'normal', '1');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_user
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user`;
-CREATE TABLE `geek_user`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `group_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '组别ID',
-  `username` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '用户名',
-  `nickname` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '昵称',
-  `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '密码',
-  `salt` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '密码盐',
-  `email` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '电子邮箱',
-  `mobile` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '手机号',
-  `avatar` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '头像',
-  `level` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '等级',
-  `gender` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '性别',
-  `birthday` date NULL DEFAULT NULL COMMENT '生日',
-  `bio` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '格言',
-  `money` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '余额',
-  `score` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '积分',
-  `successions` int(10) UNSIGNED NOT NULL DEFAULT 1 COMMENT '连续登录天数',
-  `maxsuccessions` int(10) UNSIGNED NOT NULL DEFAULT 1 COMMENT '最大连续登录天数',
-  `prevtime` int(10) NULL DEFAULT NULL COMMENT '上次登录时间',
-  `logintime` int(10) NULL DEFAULT NULL COMMENT '登录时间',
-  `loginip` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '登录IP',
-  `loginfailure` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '失败次数',
-  `joinip` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '加入IP',
-  `jointime` int(10) NULL DEFAULT NULL COMMENT '加入时间',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `token` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'Token',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '状态',
-  `verification` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '验证',
+CREATE TABLE `geek_user` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `group_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '组别ID',
+  `username` varchar(32) NOT NULL DEFAULT '' COMMENT '用户名',
+  `nickname` varchar(50) NOT NULL DEFAULT '' COMMENT '昵称',
+  `password` varchar(32) NOT NULL DEFAULT '' COMMENT '密码',
+  `salt` varchar(30) NOT NULL DEFAULT '' COMMENT '密码盐',
+  `email` varchar(100) NOT NULL DEFAULT '' COMMENT '电子邮箱',
+  `mobile` varchar(11) NOT NULL DEFAULT '' COMMENT '手机号',
+  `avatar` varchar(255) NOT NULL DEFAULT '' COMMENT '头像',
+  `level` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '等级',
+  `gender` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '性别',
+  `birthday` date DEFAULT NULL COMMENT '生日',
+  `bio` varchar(100) NOT NULL DEFAULT '' COMMENT '格言',
+  `money` decimal(10,2) unsigned NOT NULL DEFAULT '0.00' COMMENT '余额',
+  `score` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '积分',
+  `successions` int(10) unsigned NOT NULL DEFAULT '1' COMMENT '连续登录天数',
+  `maxsuccessions` int(10) unsigned NOT NULL DEFAULT '1' COMMENT '最大连续登录天数',
+  `prevtime` int(10) DEFAULT NULL COMMENT '上次登录时间',
+  `logintime` int(10) DEFAULT NULL COMMENT '登录时间',
+  `loginip` varchar(50) NOT NULL DEFAULT '' COMMENT '登录IP',
+  `loginfailure` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '失败次数',
+  `joinip` varchar(50) NOT NULL DEFAULT '' COMMENT '加入IP',
+  `jointime` int(10) DEFAULT NULL COMMENT '加入时间',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `token` varchar(50) NOT NULL DEFAULT '' COMMENT 'Token',
+  `status` varchar(30) NOT NULL DEFAULT '' COMMENT '状态',
+  `verification` varchar(255) NOT NULL DEFAULT '' COMMENT '验证',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `username`(`username`) USING BTREE,
-  INDEX `email`(`email`) USING BTREE,
-  INDEX `mobile`(`mobile`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员表' ROW_FORMAT = Dynamic;
+  KEY `username` (`username`) USING BTREE,
+  KEY `email` (`email`) USING BTREE,
+  KEY `mobile` (`mobile`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='会员表';
 
 -- ----------------------------
 -- Records of geek_user
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_user` VALUES (1, 1, 'admin', 'admin', 'c13f62012fd6a8fdf06b3452a94430e5', 'rpR6Bv', 'admin@163.com', '13888888888', '', 0, 0, '2017-04-15', '', 0.00, 0, 1, 1, 1516170492, 1516171614, '127.0.0.1', 0, '127.0.0.1', 1491461418, 0, 1516171614, '', 'normal', '');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_user_group
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user_group`;
-CREATE TABLE `geek_user_group`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '组名',
-  `rules` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '权限节点',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '添加时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `status` enum('normal','hidden') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
+CREATE TABLE `geek_user_group` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) DEFAULT '' COMMENT '组名',
+  `rules` text COMMENT '权限节点',
+  `createtime` int(10) DEFAULT NULL COMMENT '添加时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `status` enum('normal','hidden') DEFAULT NULL COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员组表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='会员组表';
 
 -- ----------------------------
 -- Records of geek_user_group
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_user_group` VALUES (1, '默认组', '1,2,3,4,5,6,7,8,9,10,11,12', 1515386468, 1516168298, 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_user_money_log
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user_money_log`;
-CREATE TABLE `geek_user_money_log`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '会员ID',
-  `money` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '变更余额',
-  `before` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '变更前余额',
-  `after` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '变更后余额',
-  `memo` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '备注',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
+CREATE TABLE `geek_user_money_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `money` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '变更余额',
+  `before` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '变更前余额',
+  `after` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '变更后余额',
+  `memo` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员余额变动表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='会员余额变动表';
 
 -- ----------------------------
 -- Table structure for geek_user_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user_rule`;
-CREATE TABLE `geek_user_rule`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pid` int(10) NULL DEFAULT NULL COMMENT '父ID',
-  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '名称',
-  `title` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '标题',
-  `remark` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `ismenu` tinyint(1) NULL DEFAULT NULL COMMENT '是否菜单',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `updatetime` int(10) NULL DEFAULT NULL COMMENT '更新时间',
-  `weigh` int(10) NULL DEFAULT 0 COMMENT '权重',
-  `status` enum('normal','hidden') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
+CREATE TABLE `geek_user_rule` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `pid` int(10) DEFAULT NULL COMMENT '父ID',
+  `name` varchar(50) DEFAULT NULL COMMENT '名称',
+  `title` varchar(50) DEFAULT '' COMMENT '标题',
+  `remark` varchar(100) DEFAULT NULL COMMENT '备注',
+  `ismenu` tinyint(1) DEFAULT NULL COMMENT '是否菜单',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `updatetime` int(10) DEFAULT NULL COMMENT '更新时间',
+  `weigh` int(10) DEFAULT '0' COMMENT '权重',
+  `status` enum('normal','hidden') DEFAULT NULL COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员规则表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COMMENT='会员规则表';
 
 -- ----------------------------
 -- Records of geek_user_rule
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_user_rule` VALUES (1, 0, 'index', '前台', '', 1, 1516168079, 1516168079, 1, 'normal');
 INSERT INTO `geek_user_rule` VALUES (2, 0, 'api', 'API接口', '', 1, 1516168062, 1516168062, 2, 'normal');
 INSERT INTO `geek_user_rule` VALUES (3, 1, 'user', '会员模块', '', 1, 1515386221, 1516168103, 12, 'normal');
@@ -4742,56 +5124,59 @@ INSERT INTO `geek_user_rule` VALUES (9, 4, 'api/user/login', '登录', '', 0, 15
 INSERT INTO `geek_user_rule` VALUES (10, 4, 'api/user/register', '注册', '', 0, 1515386262, 1516015236, 8, 'normal');
 INSERT INTO `geek_user_rule` VALUES (11, 4, 'api/user/index', '会员中心', '', 0, 1516015012, 1516015012, 10, 'normal');
 INSERT INTO `geek_user_rule` VALUES (12, 4, 'api/user/profile', '个人资料', '', 0, 1516015012, 1516015012, 3, 'normal');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for geek_user_score_log
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user_score_log`;
-CREATE TABLE `geek_user_score_log`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '会员ID',
-  `score` int(10) NOT NULL DEFAULT 0 COMMENT '变更积分',
-  `before` int(10) NOT NULL DEFAULT 0 COMMENT '变更前积分',
-  `after` int(10) NOT NULL DEFAULT 0 COMMENT '变更后积分',
-  `memo` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '备注',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
+CREATE TABLE `geek_user_score_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `score` int(10) NOT NULL DEFAULT '0' COMMENT '变更积分',
+  `before` int(10) NOT NULL DEFAULT '0' COMMENT '变更前积分',
+  `after` int(10) NOT NULL DEFAULT '0' COMMENT '变更后积分',
+  `memo` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员积分变动表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='会员积分变动表';
 
 -- ----------------------------
 -- Table structure for geek_user_token
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_user_token`;
-CREATE TABLE `geek_user_token`  (
-  `token` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'Token',
-  `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '会员ID',
-  `createtime` int(10) NULL DEFAULT NULL COMMENT '创建时间',
-  `expiretime` int(10) NULL DEFAULT NULL COMMENT '过期时间',
+CREATE TABLE `geek_user_token` (
+  `token` varchar(50) NOT NULL COMMENT 'Token',
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `createtime` int(10) DEFAULT NULL COMMENT '创建时间',
+  `expiretime` int(10) DEFAULT NULL COMMENT '过期时间',
   PRIMARY KEY (`token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员Token表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='会员Token表';
 
 -- ----------------------------
 -- Table structure for geek_version
 -- ----------------------------
 DROP TABLE IF EXISTS `geek_version`;
-CREATE TABLE `geek_version`  (
+CREATE TABLE `geek_version` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `oldversion` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '旧版本号',
-  `newversion` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '新版本号',
-  `packagesize` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '包大小',
-  `content` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '升级内容',
-  `downloadurl` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '下载地址',
-  `enforce` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '强制更新',
-  `createtime` int(10) NOT NULL DEFAULT 0 COMMENT '创建时间',
-  `updatetime` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-  `weigh` int(10) NOT NULL DEFAULT 0 COMMENT '权重',
-  `status` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '状态',
+  `oldversion` varchar(30) NOT NULL DEFAULT '' COMMENT '旧版本号',
+  `newversion` varchar(30) NOT NULL DEFAULT '' COMMENT '新版本号',
+  `packagesize` varchar(30) NOT NULL DEFAULT '' COMMENT '包大小',
+  `content` varchar(500) NOT NULL DEFAULT '' COMMENT '升级内容',
+  `downloadurl` varchar(255) NOT NULL DEFAULT '' COMMENT '下载地址',
+  `enforce` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '强制更新',
+  `createtime` int(10) NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updatetime` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
+  `weigh` int(10) NOT NULL DEFAULT '0' COMMENT '权重',
+  `status` varchar(30) NOT NULL DEFAULT '' COMMENT '状态',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '版本表' ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='版本表';
 
 -- ----------------------------
 -- Records of geek_version
 -- ----------------------------
+BEGIN;
 INSERT INTO `geek_version` VALUES (1, '1.1.1,2', '1.2.1', '20M', '更新内容', 'https://www.fastadmin.net/download.html', 1, 1520425318, 0, 0, 'normal');
+COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

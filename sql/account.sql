@@ -1,18 +1,21 @@
 /*
- Navicat MySQL Data Transfer
+ Navicat Premium Data Transfer
 
- Source Server         : localhost
+ Source Server         : rm-wz94y9xl0w2t60i92.mysql.rds.aliyuncs.com
  Source Server Type    : MySQL
- Source Server Version : 50728
- Source Host           : localhost:3306
+ Source Server Version : 50726
+ Source Host           : rm-wz94y9xl0w2t60i92.mysql.rds.aliyuncs.com:3306
  Source Schema         : account
 
  Target Server Type    : MySQL
- Target Server Version : 50728
+ Target Server Version : 50726
  File Encoding         : 65001
 
- Date: 07/03/2020 17:06:07
+ Date: 02/06/2020 15:11:18
 */
+
+CREATE DATABASE IF NOT EXISTS account;
+USE account;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -21,162 +24,70 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for black_alipay
 -- ----------------------------
 DROP TABLE IF EXISTS `black_alipay`;
-CREATE TABLE `black_alipay`  (
-  `alipay` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '支付宝账号(加黑将导致提现被挂起)',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '加黑的原因',
-  `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
+CREATE TABLE `black_alipay` (
+  `alipay` varchar(64) NOT NULL COMMENT '支付宝账号(加黑将导致提现被挂起)',
+  `reason` varchar(255) DEFAULT NULL COMMENT '加黑的原因',
+  `handler` varchar(255) DEFAULT NULL COMMENT '操作用户',
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '操作时间',
   PRIMARY KEY (`alipay`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for black_guid
 -- ----------------------------
 DROP TABLE IF EXISTS `black_guid`;
-CREATE TABLE `black_guid`  (
+CREATE TABLE `black_guid` (
   `guid` int(11) NOT NULL COMMENT 'guid(加黑将导致提现被挂起)',
-  `phone` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联加黑的手机号，即account',
-  `mac` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联加黑的imei',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '加黑的原因',
-  `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
+  `phone` varchar(64) DEFAULT NULL COMMENT '关联加黑的手机号，即account',
+  `mac` varchar(255) DEFAULT NULL COMMENT '关联加黑的imei',
+  `reason` varchar(255) DEFAULT NULL COMMENT '加黑的原因',
+  `handler` varchar(255) DEFAULT NULL COMMENT '操作用户',
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '操作时间',
   PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for cash_ali_account
--- ----------------------------
-DROP TABLE IF EXISTS `cash_ali_account`;
-CREATE TABLE `cash_ali_account`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `ali_account` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
-  `admin_account` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of cash_ali_account
--- ----------------------------
-INSERT INTO `cash_ali_account` VALUES (1, 'rojmloj', '2019-08-15 00:14:26', '2019-08-15 00:14:26', 'admin@163.com');
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for feedback
 -- ----------------------------
 DROP TABLE IF EXISTS `feedback`;
-CREATE TABLE `feedback`  (
+CREATE TABLE `feedback` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
-  `processing_status` int(11) NULL DEFAULT NULL,
-  `guid` int(11) NULL DEFAULT NULL,
-  `reply_id` int(11) NULL DEFAULT NULL,
-  `account` int(11) NULL DEFAULT NULL,
-  `content` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  `is_readme` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  `author` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL,
-  `processing_at` timestamp(0) NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `processing_status` int(11) DEFAULT NULL,
+  `guid` int(11) DEFAULT NULL,
+  `reply_id` int(11) DEFAULT NULL,
+  `account` int(11) DEFAULT NULL,
+  `content` varchar(255) DEFAULT NULL,
+  `is_readme` varchar(255) DEFAULT NULL,
+  `author` varchar(255) DEFAULT NULL,
+  `processing_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for feng_guid
--- ----------------------------
-DROP TABLE IF EXISTS `feng_guid`;
-CREATE TABLE `feng_guid`  (
-  `guid` int(11) NOT NULL COMMENT '要封掉的guid',
-  `phone` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联封掉的手机号，即account',
-  `mac` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联封掉的imei',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '封号的原因',
-  `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
-  PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for feng_guid_copy
--- ----------------------------
-DROP TABLE IF EXISTS `feng_guid_copy`;
-CREATE TABLE `feng_guid_copy`  (
-  `guid` int(11) NOT NULL COMMENT '要封掉的guid',
-  `phone` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联封掉的手机号，即account',
-  `mac` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '关联封掉的imei',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '封号的原因',
-  `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
-  PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for feng_ip
--- ----------------------------
-DROP TABLE IF EXISTS `feng_ip`;
-CREATE TABLE `feng_ip`  (
-  `ip` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '封掉的IP',
-  `area` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '该IP所在的区域',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '封IP的原因',
-  `handler` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '操作用户',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
-  PRIMARY KEY (`ip`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for imei_update_fail_list
--- ----------------------------
-DROP TABLE IF EXISTS `imei_update_fail_list`;
-CREATE TABLE `imei_update_fail_list`  (
-  `guid` int(11) NOT NULL COMMENT '玩家ID',
-  `platform_id` smallint(6) NULL DEFAULT 0 COMMENT '平台id',
-  `ip` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户端ip',
-  `imei` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '准备更新的imei',
-  `deprecated_imei` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '原imei 即guid 现在所对应的imei',
-  `created_at` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '创建时间',
-  PRIMARY KEY (`guid`, `created_at`) USING BTREE,
-  INDEX `index_imei`(`imei`) USING BTREE,
-  INDEX `index_deprecated_imei`(`deprecated_imei`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for kill_guid
--- ----------------------------
-DROP TABLE IF EXISTS `kill_guid`;
-CREATE TABLE `kill_guid`  (
-  `guid` int(11) NOT NULL COMMENT '玩家ID',
-  `user` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '操作人',
-  `created_at` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  PRIMARY KEY (`guid`) USING BTREE,
-  INDEX `idx_created_at`(`created_at`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of kill_guid
--- ----------------------------
-INSERT INTO `kill_guid` VALUES (21, 'admin@163.com', '2019-08-15 22:21:41');
-INSERT INTO `kill_guid` VALUES (24, 'admin@163.com', '2019-08-15 11:16:58');
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Table structure for menus
 -- ----------------------------
 DROP TABLE IF EXISTS `menus`;
-CREATE TABLE `menus`  (
+CREATE TABLE `menus` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `active` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `child` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
-  `updated_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
-  `sort` int(10) NULL DEFAULT NULL,
-  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `pid` int(11) NULL DEFAULT NULL,
-  `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `active` varchar(255) DEFAULT NULL,
+  `url` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `child` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `sort` int(10) DEFAULT NULL,
+  `slug` varchar(255) DEFAULT NULL,
+  `pid` int(11) DEFAULT NULL,
+  `icon` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of menus
 -- ----------------------------
+BEGIN;
 INSERT INTO `menus` VALUES (1, '0', '/account/index', '玩家管理', '1', '2019-08-17 13:08:16', '2019-08-17 13:08:16', NULL, 'account.index', NULL, NULL);
 INSERT INTO `menus` VALUES (2, '0', '/index/index', '系统管理', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'index.index', NULL, NULL);
 INSERT INTO `menus` VALUES (3, '0', '/users/index', '用户列表', NULL, '2019-08-17 00:18:13', '2019-08-17 00:18:15', NULL, 'users.index', NULL, NULL);
@@ -218,23 +129,25 @@ INSERT INTO `menus` VALUES (41, '0', '/account/logLogin', '登陆日志', NULL, 
 INSERT INTO `menus` VALUES (42, '0', '/gameConfig/index', '游戏配置', '1', '2019-08-17 13:19:33', '2019-08-17 13:19:33', NULL, 'gameconfig.index', NULL, NULL);
 INSERT INTO `menus` VALUES (43, '0', '/gameConfig/index', '配置首页', NULL, '2019-08-17 13:20:08', '2019-08-17 13:20:08', NULL, 'gameconfig.index', 42, NULL);
 INSERT INTO `menus` VALUES (44, '0', '/fengBlack/fengIp', 'IP封禁列表', NULL, '2019-08-17 13:19:46', '2019-08-17 13:19:46', NULL, 'fengblack.fengIp', 1, NULL);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for permission_role
 -- ----------------------------
 DROP TABLE IF EXISTS `permission_role`;
-CREATE TABLE `permission_role`  (
+CREATE TABLE `permission_role` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
-  `permission_id` int(11) NULL DEFAULT NULL,
-  `role_id` int(11) NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `permission_id` int(11) DEFAULT NULL,
+  `role_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Records of permission_role
 -- ----------------------------
+BEGIN;
 INSERT INTO `permission_role` VALUES (8, '2019-08-16 23:44:35', '2019-08-16 23:44:35', 409, 5);
 INSERT INTO `permission_role` VALUES (9, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 409, 4);
 INSERT INTO `permission_role` VALUES (10, '2019-08-17 13:02:48', '2019-08-17 13:02:48', 410, 4);
@@ -272,44 +185,48 @@ INSERT INTO `permission_role` VALUES (41, '2019-08-17 13:02:51', '2019-08-17 13:
 INSERT INTO `permission_role` VALUES (42, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 413, 4);
 INSERT INTO `permission_role` VALUES (43, '2019-08-17 13:02:51', '2019-08-17 13:02:51', 414, 4);
 INSERT INTO `permission_role` VALUES (44, '2019-08-21 23:23:03', '2019-08-21 23:23:03', 415, 4);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for permission_user
 -- ----------------------------
 DROP TABLE IF EXISTS `permission_user`;
-CREATE TABLE `permission_user`  (
+CREATE TABLE `permission_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NULL DEFAULT NULL,
-  `permission_id` int(11) NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `permission_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Records of permission_user
 -- ----------------------------
+BEGIN;
 INSERT INTO `permission_user` VALUES (1, 3, 409, '2019-08-16 23:58:51', NULL);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for permissions
 -- ----------------------------
 DROP TABLE IF EXISTS `permissions`;
-CREATE TABLE `permissions`  (
+CREATE TABLE `permissions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `model` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `level` int(10) NULL DEFAULT 0,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `slug` varchar(255) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `model` varchar(255) DEFAULT NULL,
+  `level` int(10) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 416 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=416 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of permissions
 -- ----------------------------
+BEGIN;
 INSERT INTO `permissions` VALUES (210, '玩家管理', 'account.index', '', 'account', 0, '2019-08-16 21:12:10', '2019-08-23 10:05:29');
 INSERT INTO `permissions` VALUES (211, '系统管理', 'index.index', NULL, 'index', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
 INSERT INTO `permissions` VALUES (212, '用户列表', 'users.index', NULL, 'users', 0, '2019-08-16 21:12:19', '2019-08-16 21:12:19');
@@ -516,1334 +433,303 @@ INSERT INTO `permissions` VALUES (412, '游戏配置', 'gameconfig.index', NULL,
 INSERT INTO `permissions` VALUES (413, '配置首页', 'gameconfig.index', NULL, 'gameConfig', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
 INSERT INTO `permissions` VALUES (414, 'IP封禁列表', 'fengblack.fengip', NULL, 'fengBlack', 0, '2019-08-16 21:14:19', '2019-08-16 21:14:19');
 INSERT INTO `permissions` VALUES (415, '牌局记录', 'record.board', '查看牌局记录', 'record', 0, '2019-08-21 23:21:51', '2019-08-22 00:16:10');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for plant_statistics
 -- ----------------------------
 DROP TABLE IF EXISTS `plant_statistics`;
-CREATE TABLE `plant_statistics`  (
+CREATE TABLE `plant_statistics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `order_sum` int(11) NULL DEFAULT NULL,
-  `order_count` int(11) NULL DEFAULT NULL,
-  `order_fail_sum` int(11) NULL DEFAULT NULL,
-  `order_fail_count` int(11) NULL DEFAULT NULL,
-  `order_success_sum` int(11) NULL DEFAULT NULL,
-  `order_success_user` int(11) NULL DEFAULT NULL,
-  `order_success_count` int(11) NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
+  `order_sum` int(11) DEFAULT NULL,
+  `order_count` int(11) DEFAULT NULL,
+  `order_fail_sum` int(11) DEFAULT NULL,
+  `order_fail_count` int(11) DEFAULT NULL,
+  `order_success_sum` int(11) DEFAULT NULL,
+  `order_success_user` int(11) DEFAULT NULL,
+  `order_success_count` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Table structure for plant_statistics_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `plant_statistics_detail`;
-CREATE TABLE `plant_statistics_detail`  (
+CREATE TABLE `plant_statistics_detail` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `order_sum` int(11) NULL DEFAULT NULL,
-  `order_count` int(11) NULL DEFAULT NULL,
-  `order_fail_sum` int(11) NULL DEFAULT NULL,
-  `order_fail_count` int(11) NULL DEFAULT NULL,
-  `order_success_sum` int(11) NULL DEFAULT NULL,
-  `order_success_user` int(11) NULL DEFAULT NULL,
-  `order_success_count` int(11) NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
+  `order_sum` int(11) DEFAULT NULL,
+  `order_count` int(11) DEFAULT NULL,
+  `order_fail_sum` int(11) DEFAULT NULL,
+  `order_fail_count` int(11) DEFAULT NULL,
+  `order_success_sum` int(11) DEFAULT NULL,
+  `order_success_user` int(11) DEFAULT NULL,
+  `order_success_count` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Table structure for promoter_own_ips
 -- ----------------------------
 DROP TABLE IF EXISTS `promoter_own_ips`;
-CREATE TABLE `promoter_own_ips`  (
-  `bag_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '渠道包ID',
-  `ip` char(15) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ip(如果在该表有查不到的IP，那么推广员ID为0，即默认推广员)',
+CREATE TABLE `promoter_own_ips` (
+  `bag_id` varchar(255) NOT NULL COMMENT '渠道包ID',
+  `ip` char(15) NOT NULL COMMENT 'ip(如果在该表有查不到的IP，那么推广员ID为0，即默认推广员)',
   `promoter_id` int(11) NOT NULL COMMENT '推广员ID(也是guid)',
-  `uptime` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
-  PRIMARY KEY (`bag_id`, `ip`) USING BTREE,
-  INDEX `idx_ip_bag_id`(`ip`, `bag_id`) USING BTREE,
-  INDEX `idx_promoter_id`(`promoter_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+  `uptime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`bag_id`,`ip`) USING BTREE,
+  KEY `idx_ip_bag_id` (`ip`,`bag_id`) USING BTREE,
+  KEY `idx_promoter_id` (`promoter_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for quick_reply_type
 -- ----------------------------
 DROP TABLE IF EXISTS `quick_reply_type`;
-CREATE TABLE `quick_reply_type`  (
+CREATE TABLE `quick_reply_type` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `status` int(11) NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
-  `updated_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `status` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `name` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of quick_reply_type
 -- ----------------------------
+BEGIN;
 INSERT INTO `quick_reply_type` VALUES (5, 1, NULL, NULL, '测试');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for role_user
 -- ----------------------------
 DROP TABLE IF EXISTS `role_user`;
-CREATE TABLE `role_user`  (
+CREATE TABLE `role_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NULL DEFAULT NULL,
-  `role_id` int(11) NULL DEFAULT NULL,
-  `created_at` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `updated_at` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
+  `user_id` int(11) DEFAULT NULL,
+  `role_id` int(11) DEFAULT NULL,
+  `created_at` varchar(255) DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of role_user
 -- ----------------------------
+BEGIN;
 INSERT INTO `role_user` VALUES (2, 1, 4, '2019-08-16 21:17:16', NULL);
 INSERT INTO `role_user` VALUES (3, 2, 5, '2019-08-16 22:02:43', '2019-08-17 16:15:26');
 INSERT INTO `role_user` VALUES (4, 3, 5, '2019-08-16 23:58:51', NULL);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for roles
 -- ----------------------------
 DROP TABLE IF EXISTS `roles`;
-CREATE TABLE `roles`  (
-  `id` int(11) UNSIGNED ZEROFILL NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `level` int(255) NULL DEFAULT NULL COMMENT '0',
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
+CREATE TABLE `roles` (
+  `id` int(11) unsigned zerofill NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `slug` varchar(255) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `level` int(255) DEFAULT NULL COMMENT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of roles
 -- ----------------------------
+BEGIN;
 INSERT INTO `roles` VALUES (00000000004, 'admin', 'admin', '测试', 0, '2019-08-16 21:14:13', '2019-08-21 23:23:03');
 INSERT INTO `roles` VALUES (00000000005, 'admin1', 'admin1', 'admin1', 0, '2019-08-16 23:44:34', '2019-08-17 00:00:38');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for sms
 -- ----------------------------
 DROP TABLE IF EXISTS `sms`;
-CREATE TABLE `sms`  (
+CREATE TABLE `sms` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '发送手机号',
-  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '发送内容',
-  `status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
-  `return` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '返回值',
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
+  `phone` varchar(11) DEFAULT NULL COMMENT '发送手机号',
+  `content` varchar(255) DEFAULT NULL COMMENT '发送内容',
+  `status` varchar(255) DEFAULT NULL COMMENT '状态',
+  `return` varchar(255) DEFAULT NULL COMMENT '返回值',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of sms
--- ----------------------------
-INSERT INTO `sms` VALUES (10, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.2/sid:0824222328639185', '2019-08-24 22:23:28', '2019-08-24 22:23:28');
-INSERT INTO `sms` VALUES (11, '15328200638', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88.1/sid:0824223035782227', '2019-08-24 22:30:35', '2019-08-24 22:30:35');
-INSERT INTO `sms` VALUES (12, '18808165675', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:88/sid:0824223214325105', '2019-08-24 22:32:14', '2019-08-24 22:32:14');
-INSERT INTO `sms` VALUES (13, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.9/sid:0824223647905783', '2019-08-24 22:36:48', '2019-08-24 22:36:48');
-INSERT INTO `sms` VALUES (14, '15328200638', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.8/sid:0824223653376493', '2019-08-24 22:36:53', '2019-08-24 22:36:53');
-INSERT INTO `sms` VALUES (15, '13733414639', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.7/sid:0824223844264544', '2019-08-24 22:38:44', '2019-08-24 22:38:44');
-INSERT INTO `sms` VALUES (16, '16606911141', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.6/sid:0825095742682193', '2019-08-25 09:57:42', '2019-08-25 09:57:42');
-INSERT INTO `sms` VALUES (17, '18583968687', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.5/sid:0825104325984363', '2019-08-25 10:43:26', '2019-08-25 10:43:26');
-INSERT INTO `sms` VALUES (18, '18808165675', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.3/sid:0825141841964238', '2019-08-25 14:18:42', '2019-08-25 14:18:42');
-INSERT INTO `sms` VALUES (19, '16606911142', '您正在将账户绑定此手机，验证码358478。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.2/sid:0825144143519146', '2019-08-25 14:41:43', '2019-08-25 14:41:43');
-INSERT INTO `sms` VALUES (20, '15328200638', '您正在将账户绑定此手机，验证码464962。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87.1/sid:0825144711449757', '2019-08-25 14:47:11', '2019-08-25 14:47:11');
-INSERT INTO `sms` VALUES (21, '18728483303', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:87/sid:0825145031584582', '2019-08-25 14:50:31', '2019-08-25 14:50:31');
-INSERT INTO `sms` VALUES (22, '15608008806', '您正在将账户绑定此手机，验证码467041。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.9/sid:0825155649355426', '2019-08-25 15:56:49', '2019-08-25 15:56:49');
-INSERT INTO `sms` VALUES (23, '18728483303', '您正在将账户绑定此手机，验证码500334。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.8/sid:0825155851855526', '2019-08-25 15:58:51', '2019-08-25 15:58:51');
-INSERT INTO `sms` VALUES (24, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.7/sid:0825172318142773', '2019-08-25 17:23:18', '2019-08-25 17:23:18');
-INSERT INTO `sms` VALUES (25, '16606911142', '您正在将账户绑定此手机，验证码724169。感谢您的支持！', '000', '000/Send:1/Consumption:.1/Tmoney:86.6/sid:0825174306293789', '2019-08-25 17:43:06', '2019-08-25 17:43:06');
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Table structure for t_account
 -- ----------------------------
 DROP TABLE IF EXISTS `t_account`;
-CREATE TABLE `t_account`  (
-  `guid` int(11) NOT NULL AUTO_INCREMENT COMMENT '全局唯一标识符',
-  `account` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '账号',
-  `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '密码',
-  `is_guest` int(11) NOT NULL DEFAULT 0 COMMENT '是否是游客 1是游客',
-  `nickname` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '昵称',
-  `head_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '头像',
-  `openid` char(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT 'openid',
-  `enable_transfer` int(11) NOT NULL DEFAULT 0 COMMENT '1能够转账，0不能给其他玩家转账',
-  `bank_password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '银行密码',
-  `vip` int(11) NOT NULL DEFAULT 0 COMMENT 'vip等级',
-  `alipay_name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '加了星号的支付宝姓名',
-  `alipay_name_y` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '支付宝姓名',
-  `alipay_account` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '加了星号的支付宝账号',
-  `alipay_account_y` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '支付宝账号',
-  `bang_alipay_time` timestamp(0) NULL DEFAULT NULL COMMENT '支付宝绑时间',
-  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `register_time` timestamp(0) NULL DEFAULT NULL COMMENT '注册时间',
-  `login_time` timestamp(0) NULL DEFAULT NULL COMMENT '登陆时间',
-  `logout_time` timestamp(0) NULL DEFAULT NULL COMMENT '退出时间',
-  `online_time` int(11) NULL DEFAULT 0 COMMENT '累计在线时间',
-  `login_count` int(11) NULL DEFAULT 1 COMMENT '登录次数',
-  `phone` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '手机名字：ios，android',
-  `phone_type` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '手机具体型号',
-  `version` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '版本号',
-  `channel_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '渠道号',
-  `package_name` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '安装包名字',
-  `imei` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '设备唯一码',
-  `ip` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户端ip',
-  `last_login_phone` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录手机名字：ios，android',
-  `last_login_phone_type` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录手机具体型号',
-  `last_login_version` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录版本号',
-  `last_login_channel_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录渠道号',
-  `last_login_package_name` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录安装包名字',
-  `last_login_imei` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录设备唯一码',
-  `last_login_ip` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '最后登录IP',
-  `change_alipay_num` int(11) NULL DEFAULT 6 COMMENT '允许修改支付宝账号次数',
-  `disabled` tinyint(4) NULL DEFAULT 0 COMMENT '0启用  1禁用',
-  `risk` tinyint(4) NULL DEFAULT 0 COMMENT '危险等级0-9  9最危险',
-  `recharge_count` bigint(20) NULL DEFAULT 0 COMMENT '总充值金额',
-  `cash_count` bigint(20) NULL DEFAULT 0 COMMENT '总提现金额',
-  `inviter_guid` int(11) NULL DEFAULT 0 COMMENT '邀请人的id',
-  `invite_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '邀请码',
-  `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '平台id',
-  `proxy_money` bigint(20) NULL DEFAULT 0 COMMENT '代理充值累计金额',
-  `bank_card_name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '**' COMMENT '银行卡姓名',
-  `bank_card_num` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '**' COMMENT '银行卡号',
-  `change_bankcard_num` int(11) NULL DEFAULT 6 COMMENT '允许修改银行卡号次数',
-  `which_bank` int(11) NULL DEFAULT 0 COMMENT '所属银行',
-  `band_bankcard_time` timestamp(0) NULL DEFAULT NULL COMMENT '银行卡绑定时间',
-  `seniorpromoter` int(11) NOT NULL DEFAULT 0 COMMENT '所属推广员guid',
-  `type` tinyint(1) NOT NULL DEFAULT 0 COMMENT '默认值：0,1:线上推广员,2:线下推广员',
-  `level` tinyint(1) NOT NULL DEFAULT 0 COMMENT '默认值:0,待激活:99,1-5一到五级推广员',
-  `promoter_time` timestamp(0) NULL DEFAULT NULL COMMENT '成为推广员时间',
-  `shared_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '共享设备码',
-  PRIMARY KEY (`guid`) USING BTREE,
-  UNIQUE INDEX `index_nickname`(`nickname`) USING BTREE,
-  UNIQUE INDEX `index_imei`(`imei`, `platform_id`) USING BTREE,
-  UNIQUE INDEX `index_account`(`account`, `platform_id`) USING BTREE,
-  INDEX `index_invite_code`(`invite_code`) USING BTREE,
-  INDEX `index_bang_alipay_time`(`bang_alipay_time`) USING BTREE,
-  INDEX `index_create_time`(`create_time`) USING BTREE,
-  INDEX `index_login_time`(`login_time`) USING BTREE,
-  INDEX `index_register_time`(`register_time`) USING BTREE,
-  INDEX `index_alipay_account_y`(`alipay_account_y`) USING BTREE,
-  INDEX `index_ip_register_time`(`ip`, `register_time`) USING BTREE,
-  INDEX `index_login_ip_time`(`last_login_ip`, `login_time`) USING BTREE,
-  INDEX `index_bank_card_num`(`bank_card_num`) USING BTREE,
-  INDEX `index_type_level`(`type`, `level`) USING BTREE,
-  INDEX `index_seniorpromoter`(`seniorpromoter`, `guid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '账号表' ROW_FORMAT = Dynamic;
+CREATE TABLE `t_account` (
+  `guid` int(8) NOT NULL AUTO_INCREMENT COMMENT '全局唯一标识符',
+  `account` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '账号',
+  `password` varchar(32) CHARACTER SET utf8 DEFAULT NULL COMMENT '密码',
+  `is_guest` int(11) NOT NULL DEFAULT '0' COMMENT '是否是游客 1是游客',
+  `nickname` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '昵称',
+  `head_url` varchar(255) CHARACTER SET utf8 DEFAULT '' COMMENT '头像',
+  `openid` char(60) CHARACTER SET utf8 DEFAULT '' COMMENT 'openid',
+  `enable_transfer` int(11) NOT NULL DEFAULT '0' COMMENT '1能够转账，0不能给其他玩家转账',
+  `bank_password` varchar(32) CHARACTER SET utf8 DEFAULT NULL COMMENT '银行密码',
+  `vip` int(11) NOT NULL DEFAULT '0' COMMENT 'vip等级',
+  `alipay_name` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '加了星号的支付宝姓名',
+  `alipay_name_y` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '支付宝姓名',
+  `alipay_account` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '加了星号的支付宝账号',
+  `alipay_account_y` varchar(64) CHARACTER SET utf8 DEFAULT NULL COMMENT '支付宝账号',
+  `bang_alipay_time` timestamp NULL DEFAULT NULL COMMENT '支付宝绑时间',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `register_time` timestamp NULL DEFAULT NULL COMMENT '注册时间',
+  `login_time` timestamp NULL DEFAULT NULL COMMENT '登陆时间',
+  `logout_time` timestamp NULL DEFAULT NULL COMMENT '退出时间',
+  `online_time` int(11) DEFAULT '0' COMMENT '累计在线时间',
+  `login_count` int(11) DEFAULT '1' COMMENT '登录次数',
+  `phone` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '手机名字：ios，android',
+  `phone_type` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '手机具体型号',
+  `version` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '版本号',
+  `channel_id` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '渠道号',
+  `package_name` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '安装包名字',
+  `imei` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '设备唯一码',
+  `ip` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '客户端ip',
+  `last_login_phone` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录手机名字：ios，android',
+  `last_login_phone_type` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录手机具体型号',
+  `last_login_version` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录版本号',
+  `last_login_channel_id` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录渠道号',
+  `last_login_package_name` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录安装包名字',
+  `last_login_imei` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录设备唯一码',
+  `last_login_ip` varchar(256) CHARACTER SET utf8 DEFAULT NULL COMMENT '最后登录IP',
+  `change_alipay_num` int(11) DEFAULT '6' COMMENT '允许修改支付宝账号次数',
+  `disabled` tinyint(4) DEFAULT '0' COMMENT '0启用  1禁用',
+  `risk` tinyint(4) DEFAULT '0' COMMENT '危险等级0-9  9最危险',
+  `recharge_count` bigint(20) DEFAULT '0' COMMENT '总充值金额',
+  `cash_count` bigint(20) DEFAULT '0' COMMENT '总提现金额',
+  `inviter_guid` int(11) DEFAULT '0' COMMENT '邀请人的id',
+  `invite_code` varchar(32) CHARACTER SET utf8 DEFAULT '0' COMMENT '邀请码',
+  `platform_id` varchar(256) CHARACTER SET utf8 DEFAULT '0' COMMENT '平台id',
+  `proxy_money` bigint(20) DEFAULT '0' COMMENT '代理充值累计金额',
+  `bank_card_name` varchar(64) CHARACTER SET utf8 DEFAULT '**' COMMENT '银行卡姓名',
+  `bank_card_num` varchar(64) CHARACTER SET utf8 DEFAULT '**' COMMENT '银行卡号',
+  `change_bankcard_num` int(11) DEFAULT '6' COMMENT '允许修改银行卡号次数',
+  `which_bank` int(11) DEFAULT '0' COMMENT '所属银行',
+  `band_bankcard_time` timestamp NULL DEFAULT NULL COMMENT '银行卡绑定时间',
+  `seniorpromoter` int(11) NOT NULL DEFAULT '0' COMMENT '所属推广员guid',
+  `type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '默认值：0,1:线上推广员,2:线下推广员',
+  `level` tinyint(1) NOT NULL DEFAULT '0' COMMENT '默认值:0,待激活:99,1-5一到五级推广员',
+  `promoter_time` timestamp NULL DEFAULT NULL COMMENT '成为推广员时间',
+  `shared_id` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '共享设备码',
+  PRIMARY KEY (`guid`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=124522 DEFAULT CHARSET=utf8mb4 COMMENT='账号表';
 
 -- ----------------------------
 -- Records of t_account
 -- ----------------------------
-INSERT INTO `t_account` VALUES (1, '11', NULL, 0, 'guest_1', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '11', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:21:36', '2020-03-02 14:21:36', '2020-03-06 17:51:19', '2020-03-06 14:54:31', 1646881, 75, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (2, 'ddc1', NULL, 0, 'guest_2', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc1', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:00', '2020-03-02 14:22:00', '2020-03-07 13:48:06', '2020-03-07 13:48:06', 7146871, 57, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (3, 'ddc2', NULL, 0, 'guest_3', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc2', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:01', '2020-03-02 14:22:01', '2020-03-02 14:22:01', '2020-03-07 14:40:59', 2804095, 85, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (4, 'ddc3', NULL, 0, 'guest_4', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc3', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:22:02', '2020-03-02 14:22:02', '2020-03-07 14:53:07', '2020-03-06 19:17:26', 1248313, 82, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (5, '111', NULL, 0, 'guest_5', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '111', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-02 14:25:42', '2020-03-06 19:17:36', 11295000, 100, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (6, '222', NULL, 0, 'guest_6', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '222', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:04', '2020-03-02 14:31:04', '2020-03-06 17:35:04', '2020-03-06 14:48:59', 2604785, 56, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (7, '333', NULL, 0, 'guest_7', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '333', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:09', '2020-03-02 14:31:09', '2020-03-06 17:35:03', '2020-03-06 14:56:41', 927811, 52, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (8, '444', NULL, 0, 'guest_8', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '444', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:13', '2020-03-02 14:31:13', '2020-03-07 14:58:07', '2020-03-06 14:56:42', 645965, 48, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (9, '555', NULL, 0, 'guest_9', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '555', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 14:31:27', '2020-03-02 14:31:27', '2020-03-06 17:35:03', '2020-03-06 17:33:33', 8238652, 96, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.3', '', 'H5', '0.4.19', 'nil', 'gzmj', '', '192.168.2.3', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (10, 'ddc4', NULL, 0, 'guest_10', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc4', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-02 18:23:17', '2020-03-02 18:23:17', '2020-03-02 18:23:17', '2020-03-07 14:39:50', 1936868, 77, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (11, '777', NULL, 0, 'guest_11', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '777', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 10:45:25', '2020-03-03 11:15:07', 9366, 19, NULL, 'H5', '0.4.19', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.19', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (12, 'ddc`', NULL, 0, 'guest_12', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc`', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:46', '2020-03-03 15:18:52', 6, 2, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.20', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (13, '22', NULL, 0, 'guest_13', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '22', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:21', '2020-03-03 16:06:21', '2020-03-06 19:25:37', '2020-03-06 14:54:31', 1000862, 113, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (14, '33', NULL, 0, 'guest_14', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '33', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-03 16:06:24', '2020-03-03 16:06:24', '2020-03-06 19:25:37', '2020-03-06 14:54:31', 1181113, 113, NULL, 'H5', '0.4.20', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.20', 'nil', 'gzmj', '', '192.168.2.31', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (15, 'ddc5', NULL, 0, 'guest_15', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc5', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-04 19:17:26', '2020-03-04 19:17:26', '2020-03-06 18:05:50', '2020-03-06 14:53:51', 156985, 29, NULL, 'H5', '0.4.25', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.25', 'nil', 'gzmj', '', '192.168.2.57', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (16, '44', NULL, 0, 'guest_16', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', '44', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-05 09:59:21', '2020-03-05 09:59:21', '2020-03-05 09:59:21', '2020-03-05 16:32:03', 61321, 16, NULL, 'H5', '0.4.25', NULL, 'gzmj', NULL, '192.168.2.31', '', 'H5', '0.4.25', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-INSERT INTO `t_account` VALUES (17, 'ddc', NULL, 0, 'guest_17', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ZRXhHw2YeMsgrMBsIz2fEJJrNnga5xtjlwKdzZXeGD4QCx0ljZpBoIicIlDStHEibFic8pgkALGDScZhewwaZl83w/132', 'ddc', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-03-07 13:52:47', '2020-03-07 13:52:47', '2020-03-07 13:52:47', '2020-03-07 14:46:55', 3248, 2, NULL, 'H5', '0.4.28', NULL, 'gzmj', NULL, '192.168.2.57', '', 'H5', '0.4.28', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
-
--- ----------------------------
--- Table structure for t_account_bank
--- ----------------------------
-DROP TABLE IF EXISTS `t_account_bank`;
-CREATE TABLE `t_account_bank`  (
-  `id` int(11) NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci ROW_FORMAT = Dynamic;
+BEGIN;
+INSERT INTO `t_account` VALUES (100002, 'oi09jv5EPTMqCNV4S4T7zSK7dxeY', NULL, 0, '小咲QAQ', 'http://thirdwx.qlogo.cn/mmopen/vi_32/DYAIOgq83eqCJWibGZ3n8PRnmds0ibZKAibrBPnqbcAvfgeWaDwRnJ9C0biaicNjicGwb9neqfUzKKBbffqhvceKg5fA/132', 'oi09jv5EPTMqCNV4S4T7zSK7dxeY', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-15 17:57:46', '2020-05-15 17:57:46', '2020-06-02 13:12:34', '2020-06-02 13:12:36', 4647062, 56, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '118.113.135.37', '', 'Android', '1.4.61', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100003, 'oi09jv4fBKG3c2VVswBviXk30r28', NULL, 0, '......', 'http://thirdwx.qlogo.cn/mmopen/vi_32/AXLO2MHYamhQ2SiaNtNnkOtXmgh1fSfLfWDrKnt5msl2RJsHJskkmcf7ibgFurDvYafvOPZ7SibuVliauwU5riaX9mg/132', 'oi09jv4fBKG3c2VVswBviXk30r28', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-15 18:03:11', '2020-05-15 18:03:11', '2020-05-31 13:28:15', '2020-05-31 13:29:17', 15573152, 32, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '118.113.135.37', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100004, 'oi09jv73hGfMtEu1eOEMa2Q_0FlQ', NULL, 0, '神净讨魔', 'http://thirdwx.qlogo.cn/mmopen/vi_32/PiajxSqBRaEJbytqc5zicmA1lkVmO7k64uJJgADSEhPEjicNZ6kmtf4vIlMVX1rEp2TkLv16x310ILzdwo4ibd3BgQ/132', 'oi09jv73hGfMtEu1eOEMa2Q_0FlQ', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-15 18:08:39', '2020-05-15 18:08:39', '2020-05-15 19:01:45', '2020-05-22 18:26:02', 5214660, 16, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '118.113.135.37', '', 'Android', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100005, 'oi09jvywAota9LaJaCCgv6rVPz08', NULL, 0, '源源不断的圆', 'http://thirdwx.qlogo.cn/mmopen/vi_32/FES6APrrkR4HlPDASs3CFeFRTZsHz6ViaQNliaORspVIAqO2csJFw3OYVwb76Gyjbksq54scUGQDmH2miaaSibibJDw/132', 'oi09jvywAota9LaJaCCgv6rVPz08', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-15 18:11:36', '2020-05-15 18:11:36', '2020-05-25 16:28:13', '2020-05-27 14:51:31', 1208211, 10, NULL, 'Ios', '1.4.59', NULL, 'gzmj', NULL, '118.113.135.37', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100006, 'oi09jv5hBl9_-PPLQJBsUV8awwdE', NULL, 0, '罗艺&互联网&游戏', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJGCjMHxibsI7uoD5zbVqrciaAzeIcy3Xj0CLicOcLeocvBu9H4l3YicNUyToNJF2XdHZXbk0ZkssDTFw/132', 'oi09jv5hBl9_-PPLQJBsUV8awwdE', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-19 03:37:58', '2020-05-19 03:37:58', '2020-05-19 03:47:29', '2020-05-19 03:48:13', 631, 5, NULL, 'Ios', '1.4.59', NULL, 'gzmj', NULL, '182.148.13.147', '', 'Ios', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100007, 'oi09jvydMN-0wYRV1snwMXEoYgIc', NULL, 0, '平儿4134    教您自己调百病', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIwZLMettqia5WJfxOQFSKiaYuAuhYIvGzssURAiaZhgsMgqO4PUdQtibNqwMJL3LJ5Vu3lAAUlmGLUcw/132', 'oi09jvydMN-0wYRV1snwMXEoYgIc', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-20 21:39:56', '2020-05-20 21:39:56', '2020-05-20 21:39:56', '2020-05-21 13:15:52', 56193, 3, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '117.136.4.187', '', 'Android', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100008, 'oi09jvwfvVWnherWQRDMCIwGhp-Q', NULL, 0, '豹子头、零充', 'https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIDeujlOxcicMK2icU36or5U3cATibzaZJuaP2giaYXCGndsg1T4hibCUGjiaZ89otK5IFKdkrJgsjib5Zibg/132', 'oi09jvwfvVWnherWQRDMCIwGhp-Q', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-20 22:34:58', '2020-05-20 22:34:58', '2020-05-20 22:34:58', '2020-05-31 18:14:34', 3815712, 25, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '218.26.55.87', '', 'Android', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (100009, 'oi09jvyllXcnrZOTBqDkdVB0iKw0', NULL, 0, '费费', 'http://thirdwx.qlogo.cn/mmopen/vi_32/mXjxRicmKncbODXoUHdEiaiaxQmBMH4mkcdoiabGJrg0A0d4OPdlTLibAYT0nf0Z6ibM2icYgAwrialdcJDFibdJ6bW30Ag/132', 'oi09jvyllXcnrZOTBqDkdVB0iKw0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-21 16:28:29', '2020-05-21 16:28:29', '2020-05-21 16:28:29', '2020-05-29 13:49:02', 1131764, 17, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '171.221.129.225', '', 'Android', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124483, 'oi09jv4EBEWJesq4m35kx-Yml_J0', NULL, 0, '宋二胡', 'http://thirdwx.qlogo.cn/mmopen/vi_32/6xPbQ8o3TswQiaXgiaqeq7V3psNj2EkH3YTMvHU095ibRqs5ZEzYQG7QzZdKILz0PbcD9XBMSfeOvHc5urTWO4ticg/132', 'oi09jv4EBEWJesq4m35kx-Yml_J0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-22 10:54:21', '2020-05-22 10:54:21', '2020-05-22 10:54:21', '2020-05-22 10:58:09', 357, 5, NULL, 'Android', '1.4.59', NULL, 'gzmj', NULL, '223.104.197.212', '', 'Android', '1.4.59', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124484, 'oi09jv4SljwIh0hI4QHFD44UFYns', NULL, 0, '还好', 'http://thirdwx.qlogo.cn/mmopen/vi_32/suRycuEh9liaZfqjZ3gUmTnStt0s7EMyTQxS2GT21TzFZMRKh1ZJlmUWSQVv5CwKft2QfmSibqcP8l5R0vNkJUkg/132', 'oi09jv4SljwIh0hI4QHFD44UFYns', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-22 18:50:28', '2020-05-22 18:50:28', '2020-05-22 18:50:28', '2020-05-29 14:43:15', 718894, 5, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '171.221.129.225', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124485, 'oi09jv8pR2wYBCsfugNBlJNnGYTA', NULL, 0, 'A友闲喵喵', 'http://thirdwx.qlogo.cn/mmopen/vi_32/wq6RVDiaICJvWEgcibtnNLG7a4TtwTuaAQkLfick4EVQrFyzibFPsMy2Hsw9k3ic7Hvsjicw5A4BNUkKSufEVibX2dksA/132', 'oi09jv8pR2wYBCsfugNBlJNnGYTA', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-23 09:59:34', '2020-05-23 09:59:34', '2020-05-23 10:11:04', '2020-05-23 20:26:41', 191939, 17, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '171.221.129.225', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124486, 'oi09jv33mDX5Z2dZH7NhleEit2WA', NULL, 0, '心寒', 'http://thirdwx.qlogo.cn/mmopen/vi_32/nqnft3b1rdqiaSBRzic1sDsBd9uWlECnexPdFDic52yEJicTqSv7tLLhP0fqr7k6l1FPK2axvyVKxDh5hj5cWdan0Q/132', 'oi09jv33mDX5Z2dZH7NhleEit2WA', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-24 18:32:06', '2020-05-24 18:32:06', '2020-05-24 18:32:06', '2020-05-25 14:37:04', 72398, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '124.164.37.148', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124487, 'oi09jv8z_GDojE_ejzkfhYAfLx4g', NULL, 0, '大江', 'http://thirdwx.qlogo.cn/mmopen/vi_32/DYAIOgq83epGSrV5olX0T17jibeqhKZFMUN6Ff4gt4A5eQlHOKJibNcuTyscrPn8ic13YfRSv2gBK83z4w4NTAIUw/132', 'oi09jv8z_GDojE_ejzkfhYAfLx4g', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-25 18:01:12', '2020-05-25 18:01:12', '2020-05-25 18:01:12', '2020-05-25 18:01:24', 12, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '112.101.249.241', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124488, 'oi09jvxCuf4aexcsooyRPwUeqews', NULL, 0, '', 'https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKnXqrCwxoUGshicwWVOvq2G2Mp7YSyia6cnS37B3MBUEAL8Yz8tlGhqxFVlpmrgNPxdookWeE8jxew/132', 'oi09jvxCuf4aexcsooyRPwUeqews', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-25 22:40:16', '2020-05-25 22:40:16', '2020-05-25 22:40:16', '2020-05-25 22:42:07', 176, 4, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '223.104.197.5', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124489, 'oi09jv2rTPjIm3xqmgf-Vp5mhhNg', NULL, 0, '不喇叭', 'http://thirdwx.qlogo.cn/mmopen/vi_32/gWve9qJ3eqzDZEJGDaJFt1FA4ceZXjSLXzl2DWWfGw70qnibNUfDfjHS7xj4eR2UvxcibEBuX9rkdib52P3odRbqA/132', 'oi09jv2rTPjIm3xqmgf-Vp5mhhNg', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-26 10:31:25', '2020-05-26 10:31:25', '2020-05-26 10:31:25', '2020-05-26 10:42:51', 1757, 6, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '202.186.172.244', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124490, 'oi09jv1bFLE0naBQov6hTTeEDK70', NULL, 0, 'AAA熊猫金库', 'http://thirdwx.qlogo.cn/mmopen/vi_32/ORJaR9vwpaJrhJJSIMbV8UPMU9icXgiaIvCBia6zxZvPO7JOVJBXrHrN2GeLG2cXSsaRwj7wZsB2bpNyw6e7S4rew/132', 'oi09jv1bFLE0naBQov6hTTeEDK70', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-26 10:41:09', '2020-05-26 10:41:09', '2020-05-26 10:41:09', '2020-05-26 10:41:53', 44, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '183.223.254.12', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124491, 'oi09jv2zdod__m_Jyy4liGD6yKM0', NULL, 0, '阿郎', 'http://thirdwx.qlogo.cn/mmopen/vi_32/rYPM1MkTJ32icFB9Xpj0Ux9ErlFn4pSWQZqLgGicAkHZPERALtL5MC2W6u19ZkshgWFI1Mp73Hs3iaUkXwEOrEA0g/132', 'oi09jv2zdod__m_Jyy4liGD6yKM0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-26 18:22:29', '2020-05-26 18:22:29', '2020-05-26 18:22:29', '2020-05-26 18:37:53', 6452, 12, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '101.206.170.103', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124492, 'oi09jv6rH0euWtgTJeZBA8YouhkY', NULL, 0, '小角色', 'http://thirdwx.qlogo.cn/mmopen/vi_32/DYAIOgq83erZSzAbWpicMjMRz0cRxdiaPQgcTTM4IN5piadjrkZfLzuge3sKbh0WBEbKlCZibguKKGbOXicHicYBRibWw/132', 'oi09jv6rH0euWtgTJeZBA8YouhkY', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-27 12:23:04', '2020-05-27 12:23:04', '2020-05-27 12:23:04', '2020-05-27 19:34:32', 51891, 6, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '218.26.55.102', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124493, 'oi09jv41jucLjkfOuYEnirhUd6fg', NULL, 0, '刘朋', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKDYj9IQXhWOh0IX8VOltcIV94OmqJ13kQ4gNQBV0I6iaLJye8h9aWDZAQwqicHUibibUicVceCeiaEXDTw/132', 'oi09jv41jucLjkfOuYEnirhUd6fg', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-27 22:37:56', '2020-05-27 22:37:56', '2020-05-27 22:37:56', '2020-05-27 22:52:00', 1206, 5, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '218.26.54.245', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124494, 'oi09jv-MKp6EdMQPUv2fMNyJJhn8', NULL, 0, '赵海东', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLUoMalkP03Glot6gpFNOFrykhRiccjA6aPCtbj4pqsnzE3vUBd3MFvtmrfMpQHiabrzxpPYhLZMDdQ/132', 'oi09jv-MKp6EdMQPUv2fMNyJJhn8', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-28 20:00:36', '2020-05-28 20:00:36', '2020-05-28 20:00:36', '2020-05-28 20:00:51', 26, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '60.220.238.139', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124495, 'oi09jv8R9vZHtQilRYUlHJAY3L2E', NULL, 0, '...', 'http://thirdwx.qlogo.cn/mmopen/vi_32/QouKUlZzB3r19nZUjWeBMba3dBg8XXeurorUc1RtXib7oOtRYmD4JJcry5UicsD5n4sCWW0ppN92bk4ZmLKlcllA/132', 'oi09jv8R9vZHtQilRYUlHJAY3L2E', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-28 20:52:44', '2020-05-28 20:52:44', '2020-05-28 20:52:44', '2020-05-28 20:53:25', 41, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '171.117.22.59', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124496, 'oi09jvyOArNYLczktGQAANBPtFpA', NULL, 0, '二凯', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLDMEGhjbUnMCMCkSvnia1aib9G4wk8Z0OxfrOGrG7KQ0SaK3OkZeeVqzjwRQL0oa0DPib5WbjqszUcQ/132', 'oi09jvyOArNYLczktGQAANBPtFpA', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-28 22:14:38', '2020-05-28 22:14:38', '2020-05-28 22:14:38', '2020-05-28 22:19:49', 395, 5, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.91.228', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124497, 'oi09jvyHN02VX-4V-Eo3mJga4ivM', NULL, 0, '启辰@加油', 'http://thirdwx.qlogo.cn/mmopen/vi_32/R9JHfb2MI5jRp31d5MVetWwfb70w1JXcgfGs7X5zFV6NrxaEM6xDJrLzFZhnrUrCLjWtLtjJ8ibnBibIezGIFDgg/132', 'oi09jvyHN02VX-4V-Eo3mJga4ivM', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-29 13:13:49', '2020-05-29 13:13:49', '2020-05-29 13:13:49', '2020-05-29 13:14:01', 12, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.4.96', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124498, 'oi09jv8YR3YJMN_H5lOC1u_TWWcU', NULL, 0, '八零飛', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTI51cu6AvvQV2pIUBveCT5kicMlTCyjgsMCOCZZSdnrHnNiam7qicwnqkTfUS4JCtTc7WrrrLpdeFSmg/132', 'oi09jv8YR3YJMN_H5lOC1u_TWWcU', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-29 13:34:42', '2020-05-29 13:34:42', '2020-05-29 13:34:42', '2020-05-29 13:36:02', 89, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.4.67', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124499, 'oi09jv8oggbrNY6cBQzWw-MZLS4g', NULL, 0, '平儿', 'http://thirdwx.qlogo.cn/mmopen/vi_32/tjHqSRko78RP9RfOJuTiaA62Kic4JDtIweYqf8hbkM9RrHyMVpcLXR6btUG2UUfyJ00b5LBrBGTd2pwtr2kqHKTg/132', 'oi09jv8oggbrNY6cBQzWw-MZLS4g', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-29 13:44:11', '2020-05-29 13:44:11', '2020-05-29 13:44:11', '2020-05-29 13:53:21', 650, 4, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '223.104.197.141', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124500, 'oi09jv8acMcdr8U0E6wXEE2wzxQU', NULL, 0, '你好', 'http://thirdwx.qlogo.cn/mmopen/vi_32/1ls9wYOvWHHAribQt43SpNBYnjgGPz23hqyZ4BA8TvaeesibMtsnGGdehTw22Q8zh8EE3ibOBPrAIQVhjglLCwHQw/132', 'oi09jv8acMcdr8U0E6wXEE2wzxQU', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-29 17:28:19', '2020-05-29 17:28:19', '2020-05-29 17:28:19', '2020-05-29 17:31:14', 197, 3, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '124.164.66.51', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124501, 'oi09jvyk57ZrzXfa2dkeQnDh8H8o', NULL, 0, '郭先生', 'http://thirdwx.qlogo.cn/mmopen/vi_32/IPBNdriaTRVFGZ5BicAjcpZ5aU9dtFr9uKCoXy0ab3D6icBUacfeDDcsWPicIG4SjWshanv9dxZ2uXhr3mUljtpjkA/132', 'oi09jvyk57ZrzXfa2dkeQnDh8H8o', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-29 22:15:16', '2020-05-29 22:15:16', '2020-05-29 22:15:16', '2020-05-29 22:16:52', 146, 4, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.4.78', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124502, 'oi09jv-DtWq92zbcsbDhEbDm4xYI', NULL, 0, '太平洋售后申纬洲', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLmNlrYPEF0wFmd2OJayeCBbB2Woia6ibeMaKpzQJ63FX6up5OvYicJsMht7NA9JEzhLrFzxWN2jU4Qg/132', 'oi09jv-DtWq92zbcsbDhEbDm4xYI', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-30 16:27:27', '2020-05-30 16:27:27', '2020-05-30 16:27:27', '2020-05-30 16:27:44', 17, 2, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '223.104.197.224', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124503, 'oi09jv2j6Es3plnARLUTMpRFRqt4', NULL, 0, '暖阳下', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Uu5UgEkp1w2NH5QicyDwUFxGnKUOnEfHAVH5IFBzjdjI2HBKAf9ib3740DM9iasAIdcNvhanTdHkIfmx4lsMMGxwg/132', 'oi09jv2j6Es3plnARLUTMpRFRqt4', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-30 18:12:40', '2020-05-30 18:12:40', '2020-05-30 18:12:40', '2020-05-30 18:31:52', 1192, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.90.139', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124504, 'oi09jv_-DBOfhfr0UZtlBhJprm4g', NULL, 0, '愿得一人心，不愿去相亲', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIY0OylgicaH6OrANBr1UJfib5rYJ7SGRrv300hZgNO7rrdfFHkGQiakuMoW3smAVgq2OU2YTXlwrLsQ/132', 'oi09jv_-DBOfhfr0UZtlBhJprm4g', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-30 18:32:23', '2020-05-30 18:32:23', '2020-05-30 18:32:23', '2020-05-30 18:32:38', 23, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '183.202.24.8', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124505, 'oi09jvxt9n8L9RKV0xwD3i3rBsF0', NULL, 0, '兲〃', 'http://thirdwx.qlogo.cn/mmopen/vi_32/lwUjqAFRa6mVUtCJwh4rAQF6u4pvyYviaegGSs4qVLm6Dsicibp7mYNQiaQQQIoH0rziart7FN6Nh0W7uOB5TGtKYyA/132', 'oi09jvxt9n8L9RKV0xwD3i3rBsF0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-30 19:13:02', '2020-05-30 19:13:02', '2020-05-30 19:13:02', '2020-05-30 19:29:46', 1021, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '183.200.57.193', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124506, 'oi09jvzHXm372PNQl1NbnZhfppK4', NULL, 0, '幸福人生', 'http://thirdwx.qlogo.cn/mmopen/vi_32/7VMCppG7Q45jNRwF4GTt1gAuMq3O39MRVmMKgdszOfwNZmpmrppiarbDkQmHWgib0XZZGJ7COHbltOL7av5oq9gw/132', 'oi09jvzHXm372PNQl1NbnZhfppK4', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-30 23:04:32', '2020-05-30 23:04:32', '2020-05-30 23:04:32', '2020-05-31 00:17:19', 14437, 8, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '223.104.192.92', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124507, 'oi09jv7t28nHFtk4cWD-jlgQ8b0Q', NULL, 0, '王家乐', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJa2C5FUP1yn9ewFxaucrLQiaYeoX4RYHK1vIYE5ZVEVib4cLWBQ1z6kWeGIzrMeE9WZ8ItI6tPRUDg/132', 'oi09jv7t28nHFtk4cWD-jlgQ8b0Q', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-31 11:00:30', '2020-05-31 11:00:30', '2020-05-31 11:00:30', '2020-05-31 13:00:34', 14349, 4, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '117.136.90.98', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124508, 'oi09jv0QwhGXnEg2a6Gb3MKI-H6I', NULL, 0, '时光荏苒', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJLELZJibUBoicicFnmNYG0JL1DsSDJzyEava0uHm22MccUvVTr2FYtfhkrzJib0QB79HOFic49YlZkj8Q/132', 'oi09jv0QwhGXnEg2a6Gb3MKI-H6I', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-31 11:04:13', '2020-05-31 11:04:13', '2020-05-31 11:04:13', '2020-05-31 11:04:19', 6, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '183.202.72.255', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124509, 'oi09jv-3YQUVqygMVEeBXJsFaTC0', NULL, 0, '迷迷糊糊', 'http://thirdwx.qlogo.cn/mmopen/vi_32/UeaZXP1mibibH45Lic4srhNIsRYXEniaYuqvrUD1RtMyqVXhZFoSTibzrvYSyKdV6m67NPsXFWibLEUY1RibCXe89Wzsg/132', 'oi09jv-3YQUVqygMVEeBXJsFaTC0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-31 17:03:18', '2020-05-31 17:03:18', '2020-05-31 17:03:18', '2020-05-31 17:03:53', 40, 3, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '223.104.197.43', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124510, 'oi09jv4nujoKTNwCjZiFApBMLQ2Y', NULL, 0, '现实', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJAEDER5XgbFibB9pd2kr6BKkXktiaStfLwyrZjkZiaZnr7S6C66Z8cNYpLnSfLJvl7qpia2mdSB73LrA/132', 'oi09jv4nujoKTNwCjZiFApBMLQ2Y', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-31 18:58:14', '2020-05-31 18:58:14', '2020-05-31 18:58:14', '2020-05-31 18:58:39', 34, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '112.224.2.241', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124511, 'oi09jv0x5ELDT43jMUQiVLo74I5Y', NULL, 0, '落日', 'https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIFMicib2CVhQBlvh5iaVrQxruI3YnDUScKL2xq3A9KgxfgkvuicKDu0xIuDLxphibKLibnrdZxOrPYarQA/132', 'oi09jv0x5ELDT43jMUQiVLo74I5Y', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-05-31 21:04:40', '2020-05-31 21:04:40', '2020-05-31 21:04:40', '2020-05-31 21:11:37', 1737, 9, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '1.68.110.1', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124512, 'oi09jv57eiGD-QM02ISZHxLQxyhk', NULL, 0, '三好先森', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKMbB7doSjNovDnicohSvIc3icpyF9mOUX4EbEaIXfDjshIhvRGwaXw8adtJHEtXicXickYwmvJfjPQGA/132', 'oi09jv57eiGD-QM02ISZHxLQxyhk', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 11:16:59', '2020-06-01 11:16:59', '2020-06-01 11:16:59', '2020-06-01 11:24:05', 766, 6, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '223.104.197.41', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124513, 'oi09jv0JraJnj_Q0iIdM3MKWYrr0', NULL, 0, 'ST', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLqWOPyTPysTdMZQkw2pibqdkm4ibP0o62NXk3XiccLNFbAzqoflUibTGmVhCETZXZ8O9fYjT85uqAEFw/132', 'oi09jv0JraJnj_Q0iIdM3MKWYrr0', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 14:17:17', '2020-06-01 14:17:17', '2020-06-01 14:17:17', '2020-06-01 14:18:06', 49, 2, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '223.104.147.37', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124514, 'oi09jvw2MEWG5FPV3Z8RKlUz5MGI', NULL, 0, '孤狼', 'http://thirdwx.qlogo.cn/mmopen/vi_32/4allw31a0bqgg45pQvzDTDaHa2n03CAllcRxv8jsZPUiaDDsyAwrNiac5KDWZ3Ju6GwibHIKTElmCU4paCN0TQjNA/132', 'oi09jvw2MEWG5FPV3Z8RKlUz5MGI', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 14:47:43', '2020-06-01 14:47:43', '2020-06-01 14:47:43', '2020-06-01 14:48:14', 31, 2, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '153.99.135.5', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124515, 'oi09jv-7lkDrRcE1HRnbYQz9um8I', NULL, 0, 'L-', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIrwqXCejt9ZhtPxUrWOibicRwk0nLudjibx0Y7hvJy9eCrxsibeyibaI7dtoG2U4Y3XI0ZN9ib8kJNXn8Q/132', 'oi09jv-7lkDrRcE1HRnbYQz9um8I', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 16:23:06', '2020-06-01 16:23:06', '2020-06-01 16:23:05', '2020-06-01 16:23:45', 40, 2, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '118.73.128.236', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124516, 'oi09jv9eLOQxvr_oU8we5DHZxwXw', NULL, 0, 'A兜兜里没有糖', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJOVrjicIjtZ2uBujXfic4eNDCJrA6yepSY1Iziby6yxdE6cfTBHERVGSibsWnHo60fO1R8TJEZOOE4LA/132', 'oi09jv9eLOQxvr_oU8we5DHZxwXw', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 16:48:12', '2020-06-01 16:48:12', '2020-06-01 16:48:12', '2020-06-01 16:48:21', 9, 2, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '118.76.183.13', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124517, 'oi09jvyKRd_djufdvWcUHGD5x2rA', NULL, 0, '靳.', 'http://thirdwx.qlogo.cn/mmopen/vi_32/DYAIOgq83erTibWKxNLFdPRhXkjCiawKsOanbqwh2ibQZAOM9kwLt44uzic92RONicBfDzUxEsUhdS2Pq4cWDRqxvfQ/132', 'oi09jvyKRd_djufdvWcUHGD5x2rA', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 16:54:00', '2020-06-01 16:54:00', '2020-06-01 16:54:00', '2020-06-01 16:55:20', 240, 6, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '117.136.90.79', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124518, 'oi09jv1rGzzToHpjfTthBbj_2ZEk', NULL, 0, '随便', 'http://thirdwx.qlogo.cn/mmopen/vi_32/LOj2uWOlbMo2XU93rRblqnKSYkeHcsbHEQ6OkZGEl9QYuFLyZfswXgRgTurFTebxBtvzZVJKUQKMYZHiatSkjIA/132', 'oi09jv1rGzzToHpjfTthBbj_2ZEk', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 17:15:23', '2020-06-01 17:15:23', '2020-06-01 17:15:23', '2020-06-01 17:17:05', 123, 3, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '49.90.43.175', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124519, 'oi09jv2KFwsq90n_JEarmtQP4AmM', NULL, 0, '但愿如此', 'http://thirdwx.qlogo.cn/mmopen/vi_32/9VE30oTuD4q5hia1mTJ7cJf47BnicsHHdYLiaicDAo6yp2JrhGKnYt7c0B63njOO7nWuZpkWNMia8k56xuXciaSqV4FQ/132', 'oi09jv2KFwsq90n_JEarmtQP4AmM', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 19:07:06', '2020-06-01 19:07:06', '2020-06-01 19:07:06', '2020-06-01 19:07:24', 18, 2, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '211.97.129.47', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124520, 'oi09jv9P2lwl-MUktCp6LkB0GFvI', NULL, 0, 'Nest', 'http://thirdwx.qlogo.cn/mmopen/vi_32/PiajxSqBRaEKoibod8bfkvZaXibnsTNHIK41ymIZ1SpwmN4W0VcHE5FrwPbz5mUpiazx903c9ZnG3XeQcv68bZNRPA/132', 'oi09jv9P2lwl-MUktCp6LkB0GFvI', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 19:16:08', '2020-06-01 19:16:08', '2020-06-01 19:16:08', '2020-06-01 19:17:10', 76, 3, NULL, 'Ios', '1.4.60', NULL, 'gzmj', NULL, '117.136.90.1', '', 'Ios', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+INSERT INTO `t_account` VALUES (124521, 'oi09jv-ywkK1joxt2304rUXpb5Rc', NULL, 0, '对方正在输入', 'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJp0JzSialEHSINeA1LcGBcDpKZ6UE04vl4n1neXr9lwkny3p02Qkf3icPdWEGZGLlbdURkgtialGu2w/132', 'oi09jv-ywkK1joxt2304rUXpb5Rc', 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2020-06-01 21:48:29', '2020-06-01 21:48:29', '2020-06-01 21:48:29', '2020-06-01 21:57:41', 2199, 9, NULL, 'Android', '1.4.60', NULL, 'gzmj', NULL, '223.11.219.157', '', 'Android', '1.4.60', 'nil', 'gzmj', '', 'nil', 6, 0, 0, 0, 0, 0, '0', '0', 0, '**', '**', 6, 0, NULL, 0, 0, 0, NULL, NULL);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for t_account_extend_info
 -- ----------------------------
 DROP TABLE IF EXISTS `t_account_extend_info`;
-CREATE TABLE `t_account_extend_info`  (
+CREATE TABLE `t_account_extend_info` (
   `guid` int(11) NOT NULL COMMENT '全局唯一标识符',
-  `key` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '键',
-  `value` varchar(1024) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '值',
-  `created_at` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  PRIMARY KEY (`guid`, `key`) USING BTREE,
-  INDEX `idx_key`(`key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+  `key` varchar(256) NOT NULL DEFAULT '' COMMENT '键',
+  `value` varchar(1024) NOT NULL DEFAULT '' COMMENT '值',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`guid`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for t_agent
+-- ----------------------------
+DROP TABLE IF EXISTS `t_agent`;
+CREATE TABLE `t_agent` (
+  `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '代理ID',
+  `mobile` char(12) DEFAULT '' COMMENT '代理手机号码',
+  `password` varchar(64) DEFAULT '' COMMENT '代理密码',
+  `guid` int(10) DEFAULT '0' COMMENT '游戏ID',
+  `nickname` char(15) CHARACTER SET utf8mb4 DEFAULT '' COMMENT '昵称',
+  `desc` varchar(255) DEFAULT '' COMMENT '备注',
+  `type` tinyint(1) DEFAULT '1' COMMENT '类型 1代理员 2推广员',
+  `status` tinyint(1) DEFAULT '1' COMMENT '状态  1启用 2删除',
+  `created_at` int(10) DEFAULT '0' COMMENT '添加时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=latin1 COMMENT='代理表';
+
+-- ----------------------------
+-- Records of t_agent
+-- ----------------------------
+BEGIN;
+INSERT INTO `t_agent` VALUES (66, '17665036371', '$2y$10$G/zz8KKEDZYdRcnB.QSVFe9xHIqFu7/kf34eLZp29bFF1ecWWl1sW', 100002, '??QAQ', '', 1, 1, 1589537035);
+INSERT INTO `t_agent` VALUES (67, '17683146641', '$2y$10$MlTAKHwkA9VBC69fRHzVmuBSkxxwPu0ahxnq8emZTu271qbCbsCYO', 100004, '神净讨魔', '', 1, 1, 1590057589);
+INSERT INTO `t_agent` VALUES (68, '18583601564', '$2y$10$F7R9ZwFk4RRDkjQT51n33uJS4T850kZKe0/jzWp6Q6aBKRQTAaiEy', 124485, 'A友闲喵喵', '', 1, 1, 1590199802);
+COMMIT;
 
 -- ----------------------------
 -- Table structure for t_channel_invite
 -- ----------------------------
 DROP TABLE IF EXISTS `t_channel_invite`;
-CREATE TABLE `t_channel_invite`  (
-  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `channel_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '渠道号',
-  `channel_lock` tinyint(3) NULL DEFAULT 0 COMMENT '1开启 0关闭',
-  `big_lock` tinyint(3) NULL DEFAULT 1 COMMENT '1开启 0关闭',
-  `tax_rate` int(11) UNSIGNED NOT NULL DEFAULT 1 COMMENT '税率 百分比',
+CREATE TABLE `t_channel_invite` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `channel_id` varchar(255) DEFAULT NULL COMMENT '渠道号',
+  `channel_lock` tinyint(3) DEFAULT '0' COMMENT '1开启 0关闭',
+  `big_lock` tinyint(3) DEFAULT '1' COMMENT '1开启 0关闭',
+  `tax_rate` int(11) unsigned NOT NULL DEFAULT '1' COMMENT '税率 百分比',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for t_channel_validatebox
--- ----------------------------
-DROP TABLE IF EXISTS `t_channel_validatebox`;
-CREATE TABLE `t_channel_validatebox`  (
-  `id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '渠道id',
-  `login_validatebox` tinyint(1) NOT NULL COMMENT '是否开启登陆验证框',
-  `create_validatebox` tinyint(1) NOT NULL COMMENT '是否开启创建账号验证框',
-  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '添加验证码原因',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for t_globle_append_info
--- ----------------------------
-DROP TABLE IF EXISTS `t_globle_append_info`;
-CREATE TABLE `t_globle_append_info`  (
-  `globle_key` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'key',
-  `info` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '内容',
-  `status` tinyint(2) NULL DEFAULT 0 COMMENT '1 激活 其它未激活',
-  `channel_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '渠道号',
-  `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '平台id',
-  `created_time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`globle_key`, `created_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of t_globle_append_info
--- ----------------------------
-INSERT INTO `t_globle_append_info` VALUES ('risk', '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0}', 1, NULL, '', '2019-08-22 15:28:26');
-
--- ----------------------------
--- Table structure for t_guest_id
--- ----------------------------
-DROP TABLE IF EXISTS `t_guest_id`;
-CREATE TABLE `t_guest_id`  (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `id_key` int(11) NOT NULL DEFAULT 0 COMMENT '用于更新',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `index_id_key`(`id_key`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10071 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of t_guest_id
--- ----------------------------
-INSERT INTO `t_guest_id` VALUES (10070, 0);
-
--- ----------------------------
--- Table structure for t_member
--- ----------------------------
-DROP TABLE IF EXISTS `t_member`;
-CREATE TABLE `t_member`  (
-  `id` int(11) NOT NULL,
-  `open_id` char(36) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '用户openid',
-  `client_version` char(10) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '客户端版本号',
-  `phone` char(15) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '手机号',
-  `bank` char(32) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '保险箱',
-  `nickname` char(15) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '昵称',
-  `user_type` tinyint(1) NULL DEFAULT 0 COMMENT '是否是代理',
-  `diamond` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '钻石余额',
-  `head_url` varchar(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '头像',
-  `level` tinyint(2) NULL DEFAULT 0 COMMENT '用户等级 1-9',
-  `money` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '分数',
-  `room_card` mediumint(5) NULL DEFAULT 0 COMMENT '房卡数量',
-  `last_login_ip` char(20) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '最后登录ip',
-  `last_login_time` int(11) NULL DEFAULT 0 COMMENT '登录时间',
-  `imei` char(30) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '识别码',
-  `account` char(50) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '' COMMENT '账号',
-  `parent_id` mediumint(8) NULL DEFAULT 0 COMMENT '上级',
-  `promote_id` mediumint(7) NULL DEFAULT 0 COMMENT '推广人的ID',
-  `is_guest` tinyint(1) NULL DEFAULT 0 COMMENT '是不是游客',
-  `created_at` int(11) NULL DEFAULT 0,
-  `updated_at` int(11) NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '会员表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of t_member
--- ----------------------------
-INSERT INTO `t_member` VALUES (1, '1', '1', '15046676081', '1', '123', 1, 0.00, 'https://wx.qlogo.cn/mmopen/vi_32/DYAIOgq83erFVWKCQECibWxDPfrbEr5icT5XZNc5VFoRwjErM4lgztdFQOZFYSd9IBtWjX2Lmb5ic9icpK0QPK3JAg/132', 1, 100.00, 0, '1', 1, '1', '123123', 1, 1, 0, 0, 0);
-
--- ----------------------------
--- Table structure for t_online_account
--- ----------------------------
-DROP TABLE IF EXISTS `t_online_account`;
-CREATE TABLE `t_online_account`  (
-  `guid` int(11) NOT NULL DEFAULT 0 COMMENT '全局唯一标识符',
-  `first_game_type` int(11) NULL DEFAULT NULL COMMENT '5斗地主 6炸金花 8百人牛牛',
-  `second_game_type` int(11) NULL DEFAULT NULL COMMENT '1新手场 2初级场 3 高级场 4富豪场',
-  `game_id` int(11) NULL DEFAULT NULL COMMENT '游戏ID',
-  `in_game` int(11) NOT NULL DEFAULT 0 COMMENT '1在玩游戏，0在大厅',
-  PRIMARY KEY (`guid`) USING BTREE,
-  INDEX `index_guid_game_id`(`guid`, `game_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线账号表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of t_online_account
--- ----------------------------
-INSERT INTO `t_online_account` VALUES (54, 27, 1, 27001, 1);
-INSERT INTO `t_online_account` VALUES (65, 25, 1, 15001, 1);
-INSERT INTO `t_online_account` VALUES (66, 25, 1, 15001, 1);
-INSERT INTO `t_online_account` VALUES (77, 25, 1, 15001, 0);
-
--- ----------------------------
--- Table structure for t_player_bankcard
--- ----------------------------
-DROP TABLE IF EXISTS `t_player_bankcard`;
-CREATE TABLE `t_player_bankcard`  (
-  `guid` int(11) NOT NULL DEFAULT 0 COMMENT '账号guid',
-  `bank_card_name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '银行卡姓名',
-  `bank_card_num` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '银行卡号',
-  `change_bankcard_num` int(11) NULL DEFAULT 6 COMMENT '允许修改银行卡号次数',
-  `bank_name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '所属银行',
-  `bank_province` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '开户省',
-  `bank_city` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '开户市',
-  `bank_branch` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '开户支行',
-  `platform_id` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '平台id',
-  `created_time` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for t_player_proxy
--- ----------------------------
-DROP TABLE IF EXISTS `t_player_proxy`;
-CREATE TABLE `t_player_proxy`  (
-  `guid` int(11) NOT NULL DEFAULT 0 COMMENT '申请成为代理商的账号guid',
-  `proxy_id` int(11) NOT NULL DEFAULT 0 COMMENT '代理商id',
-  `proxy_guid` int(11) NULL DEFAULT NULL COMMENT '创建的代理商账号guid',
-  `status` tinyint(4) NULL DEFAULT 0 COMMENT ' 创建代理商账号状态：0未创建 ，1 account创建成功等待创建t_player 2创建完毕',
-  PRIMARY KEY (`proxy_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for t_promote
--- ----------------------------
-DROP TABLE IF EXISTS `t_promote`;
-CREATE TABLE `t_promote`  (
-  `id` int(8) NOT NULL AUTO_INCREMENT,
-  `username` char(64) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '',
-  `password` char(64) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT '',
-  `mobile` varchar(20) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT '' COMMENT '手机号',
-  `nick_name` varchar(30) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT NULL COMMENT '用户名',
-  `game_id` mediumint(8) NOT NULL DEFAULT 0 COMMENT '游戏id',
-  `agent_id` mediumint(8) NULL DEFAULT 0 COMMENT '代理id',
-  `room_card` mediumint(5) NULL DEFAULT 0 COMMENT '房卡数量',
-  `diamond_num` decimal(10, 0) NULL DEFAULT 0 COMMENT '钻石数',
-  `total` decimal(10, 0) NULL DEFAULT NULL COMMENT '购钻总额',
-  `created_at` int(10) NULL DEFAULT NULL,
-  `updated_at` int(10) NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = latin1 COLLATE = latin1_swedish_ci COMMENT = '推广员表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of t_promote
--- ----------------------------
-INSERT INTO `t_promote` VALUES (1, '17500000000', '$2y$10$Z1CWneAuCFTbuz5OVg2QsuYBQe4ViQAr9lHDLKHXfJwApgQjuSYlK', '17500000000', 'laoz', 0, 0, 0, 100, NULL, NULL, NULL);
-
--- ----------------------------
--- Table structure for t_validatebox_feng_ip
--- ----------------------------
-DROP TABLE IF EXISTS `t_validatebox_feng_ip`;
-CREATE TABLE `t_validatebox_feng_ip`  (
-  `ip` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '封掉的IP,当天禁止注册账号',
-  `time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '操作时间',
-  `enabled` int(11) NOT NULL DEFAULT 1 COMMENT '是否开启此功能(1开启 0不开启)',
-  PRIMARY KEY (`ip`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for tj_update_password_log
--- ----------------------------
-DROP TABLE IF EXISTS `tj_update_password_log`;
-CREATE TABLE `tj_update_password_log`  (
-  `guid` int(11) NOT NULL COMMENT '玩家ID',
-  `oldpassword` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '旧密码',
-  `newpassword` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '新密码',
-  `uptime` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`uptime`, `guid`) USING BTREE,
-  INDEX `guid`(`guid`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for users
--- ----------------------------
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `remember_token` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `created_at` timestamp(0) NULL DEFAULT NULL,
-  `updated_at` timestamp(0) NULL DEFAULT NULL,
-  `deleted_at` timestamp(0) NULL DEFAULT NULL,
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of users
--- ----------------------------
-INSERT INTO `users` VALUES (1, 'admin@163.com', '$2y$10$fF68LHYl.d5YjMH.qhcyROSKruKT.7opZF0jK8rBuGV4L./bZPkQ2', '3KV0pTT1uNMXEzGbDPfRk1tOSsIUJEr8d7HxAyN6QP63BIhEFzVKmQviXYDh', NULL, '2019-08-19 15:54:45', NULL, 'admin@163.com');
-INSERT INTO `users` VALUES (2, 'test', '$2y$10$WD8Rntg9Zh6YXPoWc6ZQ0ulfX8eySvxIO6yAa93FmeHUIU5Pkfhvq', 'VACIKPdpwPIaRdNfLdSxjJ1L7WxWajW4vXNHv2QfhRVE6x8bxv3WGf7omRi9', '2019-08-16 22:02:42', '2019-08-17 23:37:35', NULL, 'test@163.com');
-INSERT INTO `users` VALUES (3, 'test1', '$2y$10$Zftw380CEpeZTI.YFl0nY.VNYiX4ODsKdIZ6jIY4sBlzMdkYz2/bK', '6e8q6hp3ddqK3UkeoheRz3pRLwlLrvxDVWU8Yxw1Ct4pQVD9MAkciqAlmdrm', '2019-08-16 23:58:50', '2019-08-17 00:23:14', NULL, 'test1@163.com');
-
--- ----------------------------
--- Procedure structure for charge_rate
--- ----------------------------
-DROP PROCEDURE IF EXISTS `charge_rate`;
-delimiter ;;
-CREATE PROCEDURE `charge_rate`(IN `GUID_` int)
-  COMMENT 'GUID_ '
-BEGIN
-    
-    DECLARE charge_num_         INTEGER DEFAULT 0; 
-    DECLARE charge_money_       INTEGER DEFAULT 0; 
-    DECLARE agent_num_          INTEGER DEFAULT 0; 
-    DECLARE agent_money_        INTEGER DEFAULT 0; 
-    DECLARE charge_success_num_ INTEGER DEFAULT 0;
-    DECLARE agent_success_num_  INTEGER DEFAULT 0;
-    DECLARE agent_rate_def_     INTEGER DEFAULT 0;
-    DECLARE charge_max_         INTEGER DEFAULT 0;
-    DECLARE charge_time_        INTEGER DEFAULT 0;
-    DECLARE charge_times_       INTEGER DEFAULT 0;
-    DECLARE charge_moneys_      INTEGER DEFAULT 0;
-    DECLARE agent_rate_other_   INTEGER DEFAULT 0;
-    DECLARE agent_rate_add_     INTEGER DEFAULT 0;
-    DECLARE agent_close_times_  INTEGER DEFAULT 0;
-    DECLARE agent_rate_decr_    INTEGER DEFAULT 0;
-    
-    select count(1),ifnull(sum(exchange_gold),0) into charge_num_,charge_money_ from t_recharge_order where pay_status = 1 and server_status = 1 and guid = GUID_;
-    select count(1),ifnull(sum(transfer_money),0) into agent_num_,agent_money_ from `t_Agent_recharge_order` where proxy_status = 1 and player_status = 1 and player_guid = GUID_ and transfer_type = '1';
-    select `charge_success_num` ,`agent_success_num` , `agent_rate_def` , `charge_max` , `charge_time` , `charge_times` , `charge_moneys` , `agent_rate_other` , `agent_rate_add` , `agent_close_times` , `agent_rate_decr` into
-        charge_success_num_ , agent_success_num_ , agent_rate_def_ , charge_max_ , charge_time_ , charge_times_ , charge_moneys_ , agent_rate_other_ , agent_rate_add_ , agent_close_times_ , agent_rate_decr_ from t_recharge_config;
-
-    select charge_num_ as charge_num ,charge_money_ as charge_money,  agent_num_ as agent_num , agent_money_ as agent_money, 
-    charge_success_num_ as charge_success_num , agent_success_num_ as agent_success_num , agent_rate_def_ as agent_rate_def , charge_max_ as charge_max , charge_time_ as charge_time , charge_times_ as charge_times , 
-    charge_moneys_ as charge_moneys , agent_rate_other_ as agent_rate_other , agent_rate_add_ as agent_rate_add , agent_close_times_ as agent_close_times , agent_rate_decr_ as agent_rate_decr;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for check_is_agent
--- ----------------------------
-DROP PROCEDURE IF EXISTS `check_is_agent`;
-delimiter ;;
-CREATE PROCEDURE `check_is_agent`(IN `guid_1` int,IN `guid_2` int,IN `ignore_platform` int)
-  COMMENT '查询guid1，guid2 是否为代理商却是否支持转账功能'
-label_pro:BEGIN
-	DECLARE guidAflg int;
-	DECLARE guidBflg int;
-	DECLARE platform VARCHAR(256) DEFAULT '';
-
-	select enable_transfer,platform_id into guidAflg,platform from t_account where guid = guid_1;
-	IF ignore_platform = 1 THEN
-		select enable_transfer into guidBflg from t_account where guid = guid_2;
-	ELSE
-		select enable_transfer into guidBflg from t_account where guid = guid_2 and platform_id = platform;
-	END IF;
-	
-
-	if guidAflg is null then
-		set guidAflg = 9;
-	end if;
-	if guidBflg is null then
-		set guidBflg = 9;
-	end if;
-	
-	select guidAflg * 10 + guidBflg as retCode,platform as platform_id;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for check_platform
--- ----------------------------
-DROP PROCEDURE IF EXISTS `check_platform`;
-delimiter ;;
-CREATE PROCEDURE `check_platform`(IN `guid1_` int,IN `guid2_` int)
-BEGIN
-	DECLARE platform1 VARCHAR(256);
-	DECLARE platform2 VARCHAR(256);
-	DECLARE ret INT DEFAULT 0;
-	DECLARE platform VARCHAR(256) DEFAULT '';
-
-	SELECT platform_id INTO platform1 FROM t_account WHERE guid = guid1_;
-	SELECT platform_id INTO platform2 FROM t_account WHERE guid = guid2_;
-	IF platform1 IS NULL OR platform2 IS NULL THEN
-		SET ret = 0;
-	ELSEIF platform1 = platform2 THEN
-		SET ret = 1;
-		SET platform = platform1;
-	ELSE
-		SET ret = 0;
-	END IF;
-
-	SELECT ret AS retCode,platform AS platform_id;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for create_account
--- ----------------------------
-DROP PROCEDURE IF EXISTS `create_account`;
-delimiter ;;
-CREATE PROCEDURE `create_account`(IN `account_` VARCHAR(64), IN `phone_` varchar(256), IN `phone_type_` varchar(256), IN `version_` varchar(256), IN `channel_id_` varchar(256), IN `package_name_` varchar(256), IN `imei_` varchar(256), IN `ip_` varchar(256) ,IN `platform_id_` varchar(256),IN `validatebox_feng_ip_` int , IN `shared_id_` varchar(256))
-  COMMENT '创建账号'
-label_pro:BEGIN
-	DECLARE ret INT DEFAULT 0;
-	DECLARE password_ VARCHAR(32) DEFAULT '0';
-	DECLARE nickname_ VARCHAR(32) DEFAULT '0';
-	DECLARE registerCount int DEFAULT '0';
-	DECLARE ip_contorl varchar(64);
-	DECLARE register_time_ INT;
-	DECLARE feng_ip_ INT DEFAULT 0;
-	DECLARE using_login_validatebox_ INT DEFAULT 0;
-    DECLARE seniorpromoter_ int DEFAULT 0;
-	DECLARE guid_ INT DEFAULT 0;
-
-	IF validatebox_feng_ip_ > 0 THEN
-		select count(*) into feng_ip_ from t_validatebox_feng_ip where ip = ip_ and enabled = 1 and time > date_sub(curdate(),interval 0 day);
-		IF feng_ip_ > 0 THEN
-			SELECT '-100' AS account, '-99' AS password, -99 AS guid, '-99' AS nickname, using_login_validatebox_ as using_login_validatebox;
-			LEAVE label_pro;
-		END IF;
-	END IF;
-
-	select count(*) into registerCount from t_account where ip = ip_ and create_time > date_sub(curdate(),interval 0 day);	
-	if registerCount < 20 then
-			SELECT create_validatebox INTO using_login_validatebox_ FROM t_channel_validatebox WHERE id = channel_id_;
-                if registerCount >= 3 and using_login_validatebox_ = 0 then
-                    set using_login_validatebox_ = 1;
-                end if;
-			select ip into ip_contorl from feng_ip where ip = ip_;
-			if ip_contorl is null then
-				SET password_ = MD5(account_);
-				-- SET nickname_ = CONCAT("guest_", get_guest_id());
-                select UNIX_TIMESTAMP(now()) into register_time_;
-				if shared_id_ = "" then
-					set shared_id_ = null;
-				end if;
-				INSERT INTO t_account (account,password,is_guest,nickname,create_time,phone,phone_type,version,channel_id,package_name,imei,ip,`platform_id`,register_time,shared_id)
-                VALUES (account_,password_,0,account_,NOW(),phone_,phone_type_,version_,channel_id_,package_name_,imei_,ip_,platform_id_,FROM_UNIXTIME(register_time_),ifnull(shared_id_,NULL));
-                
-                set guid_ = LAST_INSERT_ID();
-                
-                select promoter_id into seniorpromoter_ from promoter_own_ips where ip = ip_ and bag_id = channel_id_ and uptime>=DATE_SUB(NOW(),INTERVAL 2 HOUR);
-                if seniorpromoter_ <> null or seniorpromoter_ <> 0 then
-                    update t_account set seniorpromoter = seniorpromoter_ where guid = guid_;
-                end if;
-                
-				SELECT account_ AS account, password_ AS password, guid_ AS guid, account_ AS nickname , register_time_ as register_time, using_login_validatebox_ as using_login_validatebox ,seniorpromoter_ as seniorpromoter;
-                
-                
-			ELSE
-				SET ret = 15;
-				SELECT '-99' AS account, '-99' AS password, -99 AS guid, '-99' AS nickname, using_login_validatebox_ as using_login_validatebox;
-			end if;
-		
-	else
-		SELECT '-99' AS account, '-99' AS password, -99 AS guid, '-99' AS nickname, using_login_validatebox_ as using_login_validatebox;
-	end if;	
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for create_guest_account
--- ----------------------------
-DROP PROCEDURE IF EXISTS `create_guest_account`;
-delimiter ;;
-CREATE PROCEDURE `create_guest_account`(IN `phone_` varchar(256), IN `phone_type_` varchar(256), IN `version_` varchar(256), IN `channel_id_` varchar(256), IN `package_name_` varchar(256), IN `imei_` varchar(256), IN `ip_` varchar(256),IN `deprecated_imei_` varchar(256), IN `platform_id_` varchar(256),IN `validatebox_feng_ip_` int,IN `shared_id_` varchar(256),IN `promotion_info_` varchar(1024))
-  COMMENT '创建游客账号'
-label_pro:BEGIN
-	DECLARE guest_id_ BIGINT;
-	DECLARE feng_ip_ INT DEFAULT 0;
-	DECLARE ret INT DEFAULT 0;
-	DECLARE guid_ INT DEFAULT 0;
-	DECLARE account_ VARCHAR(64) DEFAULT '0';
-	DECLARE no_bank_password INT DEFAULT 0;
-	DECLARE vip_ INT DEFAULT 0;
-	DECLARE login_time_ INT;
-	DECLARE logout_time_ INT;
-	DECLARE is_guest_ INT DEFAULT 0;
-	DECLARE nickname_ VARCHAR(32) DEFAULT '0';
-	DECLARE password_ VARCHAR(32) DEFAULT '0';
-	DECLARE alipay_account_ VARCHAR(32) DEFAULT '0';
-	DECLARE alipay_name_ VARCHAR(32) DEFAULT '0';
-	DECLARE change_alipay_num_ INT DEFAULT 0;
-	DECLARE disabled_ INT DEFAULT 0;
-	DECLARE risk_ INT DEFAULT 0;
-	DECLARE enable_transfer_ INT DEFAULT 0;
-	DECLARE is_first INT DEFAULT 1;
-	DECLARE channel_lock_ INT DEFAULT 0;
-	DECLARE registerCount int DEFAULT '0';
-	DECLARE ip_contorl varchar(64);
-	DECLARE create_time_ INT;
-	DECLARE register_time_ INT;
-  	DECLARE bank_password_ varchar(32);
-  	DECLARE imeitemp VARCHAR(256) DEFAULT '';
-	DECLARE using_login_validatebox_ INT DEFAULT 0;
-	DECLARE bank_card_name_ VARCHAR(64) DEFAULT '**';
-	DECLARE bank_card_num_ VARCHAR(64) DEFAULT '**';
-  	DECLARE change_bankcard_num_ INT DEFAULT 1;
-  	DECLARE bank_name_ varchar(64) DEFAULT '';
-  	DECLARE bank_province_ varchar(64) DEFAULT '';
-  	DECLARE bank_city_ varchar(64) DEFAULT '';
-	DECLARE bank_branch_ varchar(64) DEFAULT '';
-	DECLARE seniorpromoter_ int DEFAULT 0;
-	DECLARE promotion_info_temp varchar(1024) DEFAULT '';
-
-	IF validatebox_feng_ip_ > 0 THEN
-		select count(*) into feng_ip_ from t_validatebox_feng_ip where ip = ip_ and enabled = 1 and time > date_sub(curdate(),interval 0 day);
-		IF feng_ip_ > 0 THEN
-			SELECT is_first,998 AS ret, guid_ as guid, account_ as account, no_bank_password, vip_ as vip, IFNULL(login_time_, 0) as login_time, IFNULL(logout_time_, 0) as logout_time, nickname_ as nickname, is_guest_ as is_guest, password_ as password, alipay_account_ as alipay_account, alipay_name_ as alipay_name, 
-			change_alipay_num_ as change_alipay_num, risk_ as risk, channel_id_ as channel_id, enable_transfer_ as enable_transfer,IFNULL(create_time_,0) as create_time , IFNULL(register_time_,0) as register_time , ifnull(bank_password_ , "") as bank_password, imeitemp as imei, using_login_validatebox_ as using_login_validatebox,
-			bank_card_name_ as bank_card_name, bank_card_num_ as bank_card_num,change_bankcard_num_ as change_bankcard_num , bank_name_ as bank_name , bank_province_ as bank_province , bank_city_ as bank_city , bank_branch_ as bank_branch ,seniorpromoter_ as seniorpromoter;
-			LEAVE label_pro;
-		END IF;
-	END IF;
-	
-
-	select count(*) into registerCount from t_account where ip = ip_ and create_time > date_sub(curdate(),interval 0 day);
-	
-	SELECT create_validatebox INTO using_login_validatebox_ FROM t_channel_validatebox WHERE id = channel_id_;
-	if registerCount >= 3 and using_login_validatebox_ = 0 then
-		set using_login_validatebox_ = 1;
-	end if;
-	select ip into ip_contorl from feng_ip where ip = ip_;
-	if ip_contorl is null then
-		SELECT guid,ifnull(bank_password,""), account, ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, password, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,IFNULL(UNIX_TIMESTAMP(create_time),0),IFNULL(UNIX_TIMESTAMP(register_time),0)
-		INTO guid_,bank_password_ , account_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, password_, alipay_account_, alipay_name_, change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,create_time_,register_time_
-		FROM t_account WHERE imei = imei_ and platform_id = platform_id_;
-		
-		
-		IF guid_ = 0 THEN
-		
-			SELECT guid,ifnull(bank_password,""), account, ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, password, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,IFNULL(UNIX_TIMESTAMP(create_time),0),IFNULL(UNIX_TIMESTAMP(register_time),0)
-			INTO guid_,bank_password_ , account_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, password_, alipay_account_, alipay_name_,change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,create_time_,register_time_
-			FROM t_account WHERE imei = deprecated_imei_ and platform_id = platform_id_;
-			
-			
-			IF guid_ = 0 THEN
-
-				if registerCount < 20 and char_length(imei_) > 0 then
-
-					SET guid_ = get_guest_id();
-					SET account_ = CONCAT(CONCAT("guest_temp_", guid_),UNIX_TIMESTAMP(now()));
-					SET password_ = MD5(account_);
-					SET nickname_ = CONCAT(CONCAT("guest_temp_", guid_),UNIX_TIMESTAMP(now()));
-
-					SELECT channel_lock INTO channel_lock_ FROM t_channel_invite WHERE channel_id=channel_id_ AND big_lock=1;
-					IF channel_lock_ != 1 THEN
-						SET is_first = 2;
-					END IF;
-					
-					if shared_id_ = "" then
-						set shared_id_ = null;
-					end if;
-
-					INSERT INTO t_account (account,password,is_guest,nickname,create_time,phone,phone_type,version,channel_id,package_name,imei,ip,invite_code,login_count,login_time,
-					`last_login_phone`,`last_login_phone_type`,`last_login_version`,`last_login_channel_id`,`last_login_package_name`,`last_login_imei`,`last_login_ip`,`platform_id`,`shared_id`) 
-					VALUES (account_,password_,1,nickname_,NOW(),phone_,phone_type_,version_,channel_id_,package_name_,imei_,ip_,HEX(guid_),1,now(),phone_,phone_type_,version_,channel_id_,package_name_,imei_,ip_,platform_id_,ifnull(shared_id_,NULL));
-					
-					
-					SET guid_ = LAST_INSERT_ID();
-					SET account_ = CONCAT("guest_", guid_);
-					SET password_ = MD5(account_);
-					SET nickname_ = CONCAT("guest_", guid_);
-					
-					if char_length(promotion_info_) > 0 then
-						INSERT INTO t_account_append_info(guid , `key`, `value`) 
-						values(guid_ , 'promotion_info' , promotion_info_);
-					end if;
-					
-					update t_account set account = account_ , password = password_, nickname = nickname_ where guid = guid_;
-					
-					SELECT guid,ifnull(bank_password,""), account, ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, password, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,UNIX_TIMESTAMP(NOW()),0
-					INTO guid_,bank_password_, account_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, password_, alipay_account_, alipay_name_, change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,create_time_,register_time_ FROM t_account WHERE imei = imei_;
-					
-					select promoter_id into seniorpromoter_ from promoter_own_ips where ip = ip_ and bag_id = channel_id_ and uptime>=DATE_SUB(NOW(),INTERVAL 2 HOUR);
-					if seniorpromoter_ <> null or seniorpromoter_ <> 0 then
-						update t_account set seniorpromoter = seniorpromoter_ where guid = guid_;
-					end if;
-					
-					select bank_card_name,bank_card_num,change_bankcard_num,bank_name,bank_province,bank_city,bank_branch into bank_card_name_,bank_card_num_,change_bankcard_num_,bank_name_,bank_province_,bank_city_,bank_branch_ from t_player_bankcard where guid = guid_;
-					
-				else
-					set ret = 999;
-				end if;
-			ELSE
-				SET is_first = 2;
-				IF disabled_ = 1 THEN
-					SET ret = 15;
-				ELSE
-					set imeitemp = deprecated_imei_;
-					UPDATE t_account SET login_count = login_count+1,last_login_phone = phone_ , last_login_phone_type = phone_type_,last_login_version = version_,last_login_channel_id = channel_id_,last_login_imei = deprecated_imei_,last_login_ip = ip_,login_time = now() WHERE guid=guid_;
-				END IF;
-			END IF;
-		ELSE
-			SET is_first = 2;
-			IF disabled_ = 1 THEN
-				SET ret = 15;
-			ELSE
-				set imeitemp = imei_;
-				UPDATE t_account SET login_count = login_count+1,last_login_phone = phone_ , last_login_phone_type = phone_type_,last_login_version = version_,last_login_channel_id = channel_id_,last_login_imei = imei_,last_login_ip = ip_,login_time = now() WHERE guid=guid_;
-				select bank_card_name,bank_card_num,change_bankcard_num,bank_name,bank_province,bank_city,bank_branch into bank_card_name_,bank_card_num_,change_bankcard_num_,bank_name_,bank_province_,bank_city_,bank_branch_ from t_player_bankcard where guid = guid_;
-			END IF;
-		END IF;
-	ELSE 
-		set ret = 15;
-	end if;
-	SELECT is_first,ret, guid_ as guid, account_ as account, no_bank_password, vip_ as vip, IFNULL(login_time_, 0) as login_time, IFNULL(logout_time_, 0) as logout_time, nickname_ as nickname, is_guest_ as is_guest, password_ as password, alipay_account_ as alipay_account, alipay_name_ as alipay_name, 
-	change_alipay_num_ as change_alipay_num, risk_ as risk, channel_id_ as channel_id, enable_transfer_ as enable_transfer,IFNULL(create_time_,0) as create_time , IFNULL(register_time_,0) as register_time , ifnull(bank_password_ , "") as bank_password, imeitemp as imei, using_login_validatebox_ as using_login_validatebox,
-	bank_card_name_ as bank_card_name, bank_card_num_ as bank_card_num,change_bankcard_num_ as change_bankcard_num, bank_name_ as bank_name , bank_province_ as bank_province, bank_city_ as bank_city , bank_branch_ as bank_branch , seniorpromoter_ as seniorpromoter;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for create_or_update_bankcard
--- ----------------------------
-DROP PROCEDURE IF EXISTS `create_or_update_bankcard`;
-delimiter ;;
-CREATE PROCEDURE `create_or_update_bankcard`(IN `guid_` int,IN `platform_id_` varchar(256),IN bank_card_num_ varchar(64),IN bank_card_name_ varchar(64),IN bank_name_ varchar(64)
-                                    ,IN bank_province_ varchar(64),IN bank_city_ varchar(64),IN bank_branch_ varchar(64))
-  COMMENT '得到月盈利榜'
-BEGIN
-	DECLARE bank_card_name_old varchar(64);
-    DECLARE bank_card_num_old varchar(64);
-  
-    select bank_card_name, bank_card_num into bank_card_name_old,bank_card_num_old from t_player_bankcard where guid = guid_ and platform_id = platform_id_;
-    
-    if (bank_card_name_old is null or bank_card_name_old = '**') and (bank_card_num_old is null or bank_card_num_old = '**') then
-        insert into t_player_bankcard( guid , bank_card_name , bank_card_num , bank_name, bank_province, bank_city , bank_branch , platform_id) 
-                     values(guid_, bank_card_name_, bank_card_num_, bank_name_, bank_province_, bank_city_, bank_branch_, platform_id_) on duplicate key update bank_card_name = bank_card_name_, 
-                     bank_card_num = bank_card_num_, bank_name = bank_name_, bank_province = bank_province_, bank_city = bank_city_, bank_branch = bank_branch_, change_bankcard_num = change_bankcard_num - 1;
-        select 1 ;
-    else
-        select 2 ;
-    end if;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for create_proxy_account
--- ----------------------------
-DROP PROCEDURE IF EXISTS `create_proxy_account`;
-delimiter ;;
-CREATE PROCEDURE `create_proxy_account`(IN `guid_` int,IN `proxy_id_` int,IN `platform_id_` varchar(256))
-label_pro:BEGIN
-
-	DECLARE ret INT DEFAULT -1;
-	DECLARE proxy_guid_ INTEGER DEFAULT 0; 
-	DECLARE status_ TINYINT DEFAULT 0; 
-	DECLARE order_count_ INT DEFAULT 0;
-	DECLARE guest_id_ BIGINT;
-	
-	DECLARE account_ VARCHAR(64) DEFAULT '0';
-	DECLARE password_ VARCHAR(32) DEFAULT '0';
-	DECLARE nickname_ VARCHAR(32) DEFAULT '0';
-	DECLARE phone_ VARCHAR(256) DEFAULT NULL;
-	DECLARE phone_type_ VARCHAR(256) DEFAULT NULL;
-	DECLARE version_ VARCHAR(256) DEFAULT NULL;
-	DECLARE channel_id_ VARCHAR(256) DEFAULT NULL;
-	DECLARE package_name_ VARCHAR(256) DEFAULT NULL;
-	DECLARE imei_ VARCHAR(256) DEFAULT NULL;
-	DECLARE ip_ VARCHAR(256) DEFAULT NULL;
-	DECLARE invite_code_ varchar(32) DEFAULT '0';
-
-	SELECT proxy_guid,status,1 FROM t_player_proxy WHERE guid = guid_ AND proxy_id = proxy_id_ INTO proxy_guid_,status_,order_count_;
-
-	IF order_count_ = 0 THEN
-		INSERT INTO t_player_proxy(guid,proxy_id,proxy_guid,status) VALUES(guid_,proxy_id_,0,0);
-		IF ROW_COUNT() = 0 THEN
-			SET ret = 1;
-			SELECT ret,0 as proxy_guid,'0' as account,'0' as nickname;
-			leave label_pro;
-		END IF;
-
-		SET proxy_guid_ = 0;
-		SET status_ = 0;
-
-	END IF;
-
-	IF status_ = 0 THEN        
-        SET guest_id_ = get_guest_id();
-        SET account_ = CONCAT(CONCAT("guest_temp_", guest_id_),UNIX_TIMESTAMP(now()));
-        SET password_ = MD5(account_);
-        SET nickname_ = CONCAT(CONCAT("guest_temp_", guest_id_),UNIX_TIMESTAMP(now()));
-
-		SELECT password,phone,phone_type,version,channel_id,package_name,imei,ip,invite_code FROM t_account WHERE guid = guid_
-		INTO password_,phone_,phone_type_,version_,channel_id_,package_name_,imei_,ip_,invite_code_;
-
-		SET imei_ =  CONCAT(imei_, "_", guest_id_);
-
-		INSERT INTO t_account (account,password,is_guest,nickname,enable_transfer,create_time,phone,phone_type,version,channel_id,package_name,imei,ip,invite_code,login_count,platform_id) 
-					VALUES (account_,password_,1,nickname_,1,NOW(),phone_,phone_type_,version_,channel_id_,package_name_,imei_,ip_,invite_code_,0,platform_id_);
-
-		SELECT LAST_INSERT_ID() INTO proxy_guid_;
-        
-        SET account_ = CONCAT("guest_", proxy_guid_);
-        SET password_ = MD5(account_);
-        SET nickname_ = CONCAT("guest_", proxy_guid_);
-        
-        update t_account set account = account_ , password = password_, nickname = nickname_ where guid = proxy_guid_;
-
-		UPDATE t_player_proxy SET proxy_guid = proxy_guid_, status = 1 WHERE guid = guid_ AND proxy_id = proxy_id_;
-
-		IF ROW_COUNT() > 0 THEN
-			SET ret = 0;
-		ELSE
-			SET ret = 2;
-		END IF;
-
-	ELSEIF status_ = 1 THEN
-		SELECT account,nickname FROM t_account WHERE guid = proxy_guid_ INTO account_,nickname_;
-		SET ret = 3;
-	ELSEIF status_ = 2 THEN
-		SET ret = 4;
-	
-	END IF;
-
-	SELECT ret,proxy_guid_ as proxy_guid,account_ as account,nickname_ as nickname;
-	
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for create_test_account
--- ----------------------------
-DROP PROCEDURE IF EXISTS `create_test_account`;
-delimiter ;;
-CREATE PROCEDURE `create_test_account`()
-BEGIN
-	DECLARE account_ VARCHAR(64) DEFAULT '0';
-	DECLARE i INT DEFAULT 0;
-	WHILE i < 50 DO
-		SET i = i + 1;
-		SET account_ = CONCAT("test_",i);
-		INSERT INTO t_account (account,password,nickname,create_time,phone,phone_type,version,channel_id,package_name,imei,ip) VALUES (account_,MD5("123456"),account_,NOW(),"windows", "windows-test", "1.1", "test", "package-test", account_, "127.0.0.1");
-	END WHILE;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for FreezeAccount
--- ----------------------------
-DROP PROCEDURE IF EXISTS `FreezeAccount`;
-delimiter ;;
-CREATE PROCEDURE `FreezeAccount`(IN guid_ int(11),
-                 IN status_ tinyint(4))
-  COMMENT '封号，参数guid_：账号id，status_：设置的状态'
-BEGIN
-  DECLARE ret INT DEFAULT 0;
-  DECLARE guid_t int(11);
-  DECLARE status_t tinyint(4);
-  
-  update account.t_account set disabled = status_ where guid = guid_;
-  
-  select guid , disabled into guid_t , status_t from account.t_account where guid = guid_;
-  
-  if guid_t is null then
-    set guid_t = -1;
-  end if;
-  if status_t is null then
-    set status_t = -1;
-  end if;
-  
-  if guid_t != guid_ or status_t != status_ then
-    set ret = 1;
-  else
-    set ret = 0;
-  end if;
-  select ret as retCode , concat(guid_t,'|',status_t) as  retData;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for get_account_count
--- ----------------------------
-DROP PROCEDURE IF EXISTS `get_account_count`;
-delimiter ;;
-CREATE PROCEDURE `get_account_count`(IN `guid_` int, IN `platform_id_`  varchar(256))
-BEGIN
-	DECLARE ip_ varchar(256);
-	DECLARE last_login_channel_id_ VARCHAR(256) DEFAULT '';
-	DECLARE is_guest_ INT DEFAULT 0;
-	DECLARE registerCount int DEFAULT '0';
-	select ip,last_login_channel_id,is_guest into ip_,last_login_channel_id_,is_guest_ from t_account where guid = guid_ and platform_id = platform_id_;
-	if ip_ is not null then 
-		select count(*) into registerCount from t_account where ip = ip_ and create_time > date_sub(curdate(),interval 0 day);
-		if registerCount > 3 then
-			select "0" as retcode ,last_login_channel_id_ as last_login_channel_id ,is_guest_ as is_guest;
-		else
-			select "1" as retcode ,last_login_channel_id_ as last_login_channel_id ,is_guest_ as is_guest;
-		end if;
-	else
-		select "0" as retcode ,last_login_channel_id_ as last_login_channel_id ,is_guest_ as is_guest ;
-	end if;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Function structure for get_guest_id
--- ----------------------------
-DROP FUNCTION IF EXISTS `get_guest_id`;
-delimiter ;;
-CREATE FUNCTION `get_guest_id`()
- RETURNS bigint(20)
-BEGIN
-	REPLACE INTO t_guest_id SET id_key = 0;
-	RETURN LAST_INSERT_ID();
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for get_player_append_info
--- ----------------------------
-DROP PROCEDURE IF EXISTS `get_player_append_info`;
-delimiter ;;
-CREATE PROCEDURE `get_player_append_info`(IN `GUID_` int)
-  COMMENT 'GUID_ '
-BEGIN
-
-    -- 推广员数据
-    DECLARE seniorpromoter_ int DEFAULT 0;
-    DECLARE identity_type_  int default 0;
-    DECLARE identity_param_  int default 0;
-    DECLARE risk_ int default 0;
-    DECLARE create_time_ varchar(256) default '';
-    
-    -- 危险等级显示代理充值对应概率
-    DECLARE risk_show_proxy_ varchar(64) default '';
-    
-    select seniorpromoter,type,level,risk,unix_timestamp(create_time) into seniorpromoter_,identity_type_,identity_param_,risk_,create_time_ FROM t_account WHERE guid = GUID_;
-    if seniorpromoter_ = GUID_ then
-        set seniorpromoter_ = 0;
-    end if;
-    
-    select info into risk_show_proxy_ from t_globle_Append_info where `globle_key` = 'risk' and status = 1;
-    
-    select ifnull(seniorpromoter_ , 0) as seniorpromoter , ifnull ( identity_type_ , 0 ) as identity_type , ifnull (identity_param_ , 0 ) as identity_param , risk_ as risk , ifnull(risk_show_proxy_ , '') as risk_show_proxy,
-    -- ifnull(create_time_,date_format(CURRENT_TIMESTAMP,'%Y-%m-%d %k:%i:%s'));
-    ifnull(create_time_,unix_timestamp(now())) as create_time;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for get_player_data
--- ----------------------------
-DROP PROCEDURE IF EXISTS `get_player_data`;
-delimiter ;;
-CREATE PROCEDURE `get_player_data`(IN `guid_` int,IN `account_` varchar(64),IN `nick_` varchar(64),IN `money_` int)
-BEGIN
-	DECLARE guid_tmp INTEGER DEFAULT 0;
-    DECLARE header_icon_ int default 0;
-	#DECLARE t_error INTEGER DEFAULT 0; 
-	#DECLARE done INT DEFAULT 0; 
-	#DECLARE suc INT DEFAULT 1; 
-	#DECLARE tmp_val INTEGER DEFAULT 0; 
-	#DECLARE tmp_total INTEGER DEFAULT 0;
-	#DECLARE updateNum INT DEFAULT 1;
-	#DECLARE deleteNum INT DEFAULT 0;
-	#DECLARE selectNum INT DEFAULT 0;
-
-	#DECLARE mycur CURSOR FOR SELECT `val` FROM t_channel_invite_tax WHERE guid=guid_;#定义光标 
-	#DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET t_error=1;  
-	#DECLARE CONTINUE HANDLER FOR SQLSTATE '02000' SET done = 1;
-					
-
-	SELECT guid INTO guid_tmp FROM t_player WHERE guid=guid_;
-	IF guid_tmp = 0 THEN
-        select mod(RAND() * 10, 10) into header_icon_;
-		REPLACE INTO t_player SET guid=guid_,account=account_,nickname=nick_,money=money_,header_icon = header_icon_;
-		#ELSE
-			#START TRANSACTION; #打开光标  
-			#OPEN mycur; #开始循环 
-			#REPEAT 
-			#		FETCH mycur INTO tmp_val;
-			#		 IF NOT done THEN
-			#				SET selectNum = selectNum+1;
-			#				SET tmp_total = tmp_total + tmp_val;
-			#				IF t_error = 1 THEN 
-			#					SET suc = 0;
-			#				END IF;  
-			#		 END IF; 
-			#UNTIL done END REPEAT;
-			#CLOSE mycur;
-
-
-			#IF tmp_total > 0 THEN
-			#	UPDATE t_player SET money=money+(tmp_total) WHERE guid=guid_;
-			#	SET updateNum = row_count();
-			#END IF;
-
-			#DELETE FROM t_channel_invite_tax WHERE guid=guid_;
-			#SET deleteNum = row_count();
-
-			
-			#IF suc = 0 OR updateNum < 1 OR deleteNum != selectNum THEN
-			#		ROLLBACK;
-			#ELSE
-			#		COMMIT; 
-			#END IF;
-			#SET suc = 1;
-	END IF;
-	SELECT level, money, bank, login_award_day, login_award_receive_day, online_award_time, online_award_num, relief_payment_count, header_icon, slotma_addition FROM t_player WHERE guid=guid_;
-	
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for get_player_identity
--- ----------------------------
-DROP PROCEDURE IF EXISTS `get_player_identity`;
-delimiter ;;
-CREATE PROCEDURE `get_player_identity`(IN `GUID_` int)
-  COMMENT 'GUID_ '
-BEGIN
-    DECLARE seniorpromoter_ int DEFAULT 0;
-    DECLARE identity_type_  int default 0;
-    DECLARE identity_param_  int default 0;
-    DECLARE create_ip_ varchar(64);
-    DECLARE platform_id_ varchar(256);
-    
-    select seniorpromoter,type,level into seniorpromoter_,identity_type_,identity_param_ FROM t_account WHERE guid = GUID_;
-    
-    if seniorpromoter_ = GUID_ then
-        set seniorpromoter_ = 0;
-    end if;
-    
-    select ifnull(seniorpromoter_ , 0) as seniorpromoter , ifnull ( identity_type_ , 0 ) as identity_type , ifnull (identity_param_ , 0 ) as identity_param;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for sms_login
--- ----------------------------
-DROP PROCEDURE IF EXISTS `sms_login`;
-delimiter ;;
-CREATE PROCEDURE `sms_login`(IN `account_` varchar(64),IN `ip_` varchar(64),IN `phone_` varchar(256),IN `imei_` varchar(256), IN `platform_id_` varchar(256), IN `shared_id_` varchar(256))
-  COMMENT '验证账号，参数account_：账号，password_：密码'
-BEGIN
-	DECLARE ret INT DEFAULT 0;
-	DECLARE guid_ INT DEFAULT 0;
-	DECLARE no_bank_password INT DEFAULT 0;
-	DECLARE vip_ INT DEFAULT 0;
-	DECLARE login_time_ INT;
-	DECLARE logout_time_ INT;
-	DECLARE is_guest_ INT DEFAULT 0;
-	DECLARE nickname_ VARCHAR(32) DEFAULT '0';
-	DECLARE password_ VARCHAR(32) DEFAULT '0';
-	DECLARE alipay_account_ VARCHAR(32) DEFAULT '0';
-	DECLARE alipay_name_ VARCHAR(32) DEFAULT '0';
-	DECLARE change_alipay_num_ INT DEFAULT 0;
-	DECLARE disabled_ INT DEFAULT 0;
-	DECLARE risk_ INT DEFAULT 0;
-	DECLARE channel_id_ VARCHAR(256) DEFAULT '0';
-	DECLARE enable_transfer_ INT DEFAULT 0;
-	DECLARE invite_code_ VARCHAR(32) DEFAULT '0';
-	DECLARE inviter_guid_ INT DEFAULT 0;
-  	DECLARE ip_contorl varchar(64);
-	DECLARE create_time_ INT;
-	DECLARE register_time_ INT;
-  	DECLARE bank_password_ varchar(32);
-	DECLARE using_login_validatebox_ INT DEFAULT 0;
-	DECLARE feng_ip_ INT DEFAULT 0;
-	DECLARE bank_card_name_ VARCHAR(64) DEFAULT '**';
-	DECLARE bank_card_num_ VARCHAR(64) DEFAULT '**';
-  	DECLARE change_bankcard_num_ INT DEFAULT 1;
-  	DECLARE bank_name_ varchar(64) DEFAULT '';
-  	DECLARE bank_province_ varchar(64) DEFAULT '';
-  	DECLARE bank_city_ varchar(64) DEFAULT '';
-	DECLARE bank_branch_ varchar(64) DEFAULT '';	
-	DECLARE shared_id_t VARCHAR(256) DEFAULT '0';
-
-
-	SELECT guid,ifnull(bank_password,""), ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, password, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,inviter_guid,invite_code,IFNULL(UNIX_TIMESTAMP(create_time),0),IFNULL(UNIX_TIMESTAMP(register_time),0),ifnull(shared_id,"")
-	INTO guid_, bank_password_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, password_, alipay_account_, alipay_name_, change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,inviter_guid_,invite_code_,create_time_,register_time_,shared_id_t
-	FROM t_account WHERE account = account_ and platform_id = platform_id_;
-	IF guid_ = 0 THEN
-		SELECT guid,ifnull(bank_password,""), ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, password, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,inviter_guid,invite_code,IFNULL(UNIX_TIMESTAMP(create_time),0),IFNULL(UNIX_TIMESTAMP(register_time),0),ifnull(shared_id,"")
-	INTO guid_, bank_password_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, password_, alipay_account_, alipay_name_, change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,inviter_guid_,invite_code_,create_time_,register_time_,shared_id_t
-	FROM t_account WHERE imei = imei_ and platform_id = platform_id_;
-		if guid_ = 0 THEN
-			SET ret = 3;
-		ELSEIF is_guest_ = 1 THEN
-				update t_account set account = account_, is_guest = 2 where imei = imei_ and platform_id = platform_id_;
-				set is_guest_ = 0;
-		end if;
-	END IF;
-		
-	IF shared_id_t = "" AND (ifnull(shared_id_,"")  != "") AND  guid_ != 0 THEN
-		UPDATE t_account SET shared_id = shared_id_ WHERE guid = guid_;
-	END IF;
-	
-	IF enable_transfer_ = 1 THEN
-		SET ret = 37;
-	ELSEIF disabled_ = 1 THEN
-		SET ret = 15;
-	END IF;
-	
-	-- select ip into ip_contorl from feng_ip where ip = ip_;
-	-- if ip_contorl is not null then
-	--	 update t_account set disabled = 1 where guid = guid_;
-	--	 insert ignore into `account`.`feng_guid` (`guid`, `phone`, `mac`, `reason`, `handler`) 
-	--	 VALUES (guid_,phone_,imei_,'login ip disabled','verify_account');
-	--	 SET ret = 15;
-	-- end if;
-	
-	IF ret = 0 THEN
-		UPDATE t_account SET login_count = login_count+1 WHERE guid=guid_;
-		SELECT login_validatebox INTO using_login_validatebox_ FROM t_channel_validatebox WHERE id = channel_id_;
-	END IF;
-	
-	
-	select count(*) into feng_ip_ from t_validatebox_feng_ip where ip = ip_ and enabled = 1 and time > date_sub(curdate(),interval 0 day);
-	if feng_ip_ > 0 then
-		set ret = 41;
-	end if;
-	
-	SELECT ret, phone_ as phoneType, guid_ as guid, no_bank_password, vip_ as vip, IFNULL(login_time_, 0) as login_time, IFNULL(logout_time_, 0) as logout_time, nickname_ as nickname, is_guest_ as is_guest, password_ as password, alipay_account_ as alipay_account, alipay_name_ as alipay_name, 
-	change_alipay_num_ as change_alipay_num, risk_ as risk, channel_id_ as channel_id, enable_transfer_ as enable_transfer, inviter_guid_ as inviter_guid, invite_code_ as invite_code,IFNULL(create_time_,0) as create_time , IFNULL(register_time_,0) as register_time, ifnull(bank_password_ , "") as bank_password, using_login_validatebox_ as using_login_validatebox,
-	bank_card_name_ as bank_card_name, bank_card_num_ as  bank_card_num, change_bankcard_num_ as change_bankcard_num, bank_name_ as bank_name , bank_province_ as bank_province, bank_city_ as bank_city , bank_branch_ as bank_branch ;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Procedure structure for verify_account
--- ----------------------------
-DROP PROCEDURE IF EXISTS `verify_account`;
-delimiter ;;
-CREATE PROCEDURE `verify_account`(IN `account_` varchar(64),IN `password_` varchar(32),IN `ip_` varchar(64),IN `phone_` varchar(256),IN `phone_type_` varchar(256),IN `version_` varchar(256),IN `l_channel_id_` varchar(256),
-                                    IN `package_name_` varchar(256),IN `imei_` varchar(256),IN `deprecated_imei_` varchar(256),IN `platform_id_` varchar(256),IN `shared_id_` varchar(256))
-  COMMENT '验证账号，参数account_：账号，password_：密码'
-BEGIN
-    DECLARE ret INT DEFAULT 0;
-    DECLARE guid_ INT DEFAULT 0;
-    DECLARE no_bank_password INT DEFAULT 0;
-    DECLARE bank_password_ varchar(32);
-    DECLARE vip_ INT DEFAULT 0;
-    DECLARE login_time_ INT;
-    DECLARE logout_time_ INT;
-    DECLARE is_guest_ INT DEFAULT 0;
-    DECLARE nickname_ VARCHAR(32) DEFAULT '0';
-    DECLARE alipay_account_ VARCHAR(32) DEFAULT '0';
-    DECLARE alipay_name_ VARCHAR(32) DEFAULT '0';
-    DECLARE change_alipay_num_ INT DEFAULT 0;
-    DECLARE disabled_ INT DEFAULT 0;
-    DECLARE risk_ INT DEFAULT 0;
-    DECLARE channel_id_ VARCHAR(256) DEFAULT '0';
-    DECLARE enable_transfer_ INT DEFAULT 0;
-    DECLARE invite_code_ VARCHAR(32) DEFAULT '0';
-    DECLARE inviter_guid_ INT DEFAULT 0;
-    DECLARE ip_contorl varchar(64);
-    DECLARE create_time_ INT;
-    DECLARE register_time_ INT;
-    DECLARE imeitemp VARCHAR(256) DEFAULT '';
-    DECLARE playerTemp int default 0;
-    DECLARE registerCount int DEFAULT '0';
-    DECLARE using_login_validatebox_ INT DEFAULT 0;
-	DECLARE feng_ip_ INT DEFAULT 0;
-	DECLARE bank_card_name_ VARCHAR(64) DEFAULT '**';
-	DECLARE bank_card_num_ VARCHAR(64) DEFAULT '**';
-  	DECLARE change_bankcard_num_ INT DEFAULT 1;
-  	DECLARE bank_name_ varchar(64) DEFAULT '';
-  	DECLARE bank_province_ varchar(64) DEFAULT '';
-  	DECLARE bank_city_ varchar(64) DEFAULT '';
-    DECLARE bank_branch_ varchar(64) DEFAULT '';
-    DECLARE seniorpromoter_ INT DEFAULT 0;
-    DECLARE shared_id_t VARCHAR(256) DEFAULT '0';
-
-    SELECT login_validatebox INTO using_login_validatebox_ FROM t_channel_validatebox WHERE id = l_channel_id_;
-    select count(*) into registerCount from t_account where ip = ip_ and create_time > date_sub(curdate(),interval 0 day);
-    
-    if registerCount >= 3 and using_login_validatebox_ = 0 then
-        set using_login_validatebox_ = 1;
-    end if;
-    
-    SELECT guid,ifnull(bank_password,""), ISNULL(bank_password), vip, UNIX_TIMESTAMP(login_time), UNIX_TIMESTAMP(logout_time), is_guest, nickname, alipay_account, alipay_name, change_alipay_num, disabled, risk, channel_id, enable_transfer,inviter_guid,invite_code,
-    IFNULL(UNIX_TIMESTAMP(create_time),0),IFNULL(UNIX_TIMESTAMP(register_time),0),imei,seniorpromoter,ifnull(shared_id,"")
-    INTO guid_,bank_password_, no_bank_password, vip_, login_time_, logout_time_, is_guest_, nickname_, alipay_account_, alipay_name_, change_alipay_num_, disabled_, risk_, channel_id_, enable_transfer_,inviter_guid_,invite_code_,create_time_,register_time_,imeitemp,
-    seniorpromoter_,shared_id_t FROM t_account WHERE account = account_ AND password = password_ and platform_id = platform_id_;
-	
-	IF shared_id_t = "" AND (ifnull(shared_id_,"")  != "") AND  guid_ != 0 THEN
-		UPDATE t_account SET shared_id = shared_id_ WHERE guid = guid_;
-	END IF;
-	
-    IF guid_ = 0 THEN
-        SET ret = 27;
-        SELECT 3 INTO ret FROM t_account WHERE account = account_ LIMIT 1;
-    END IF;
-
-    IF enable_transfer_ = 1 THEN
-        SET ret = 37;
-        ELSEIF disabled_ = 1 THEN
-        SET ret = 15;
-    END IF;
-
-    -- select ip into ip_contorl from feng_ip where ip = ip_;
-    -- if ip_contorl is not null then
-    --   update t_account set disabled = 1 where guid = guid_;
-    -- 
-    --   insert ignore into `account`.`feng_guid` (`guid`, `phone`, `mac`, `reason`, `handler`) 
-    --   VALUES (guid_,phone_,imei_,'login ip disabled','verify_account');
-    -- 
-    --   SET ret = 15;
-    -- end if;
-
-    select count(*) into feng_ip_ from t_validatebox_feng_ip where ip = ip_ and enabled = 1 and time > date_sub(curdate(),interval 0 day);
-    if feng_ip_ > 0 then
-        set ret = 41;
-    end if;
-
-    IF ret = 0 THEN
-        select bank_card_name,bank_card_num,change_bankcard_num,bank_name,bank_province,bank_city,bank_branch into bank_card_name_,bank_card_num_,change_bankcard_num_,bank_name_,bank_province_,bank_city_,bank_branch_ from t_player_bankcard where guid = guid_;
-        select count(1) into playerTemp from t_account where imei = imei_ and platform_id = platform_id_; 
-        if left(imeitemp,4) <> 'new_' and imeitemp = deprecated_imei_ and left(imei_,4) = 'new_'  then
-            if playerTemp = 0 then
-                UPDATE t_account SET imei = imei_,login_count = login_count+1,last_login_phone = phone_ , last_login_phone_type = phone_type_,last_login_version = version_,last_login_channel_id = l_channel_id_,last_login_imei = imei_,last_login_ip = ip_,login_time = now() WHERE guid=guid_;
-            else
-                insert into imei_update_fail_list (`guid` , `platform_id` , `imei` , `deprecated_imei` , `ip`) 
-                VALUES (guid_, platform_id_, imei_ , deprecated_imei_, ip_);
-                UPDATE t_account SET              login_count = login_count+1,last_login_phone = phone_ , last_login_phone_type = phone_type_,last_login_version = version_,last_login_channel_id = l_channel_id_,last_login_imei = imei_,last_login_ip = ip_,login_time = now() WHERE guid=guid_;
-            end if;
-        else
-            UPDATE t_account SET              login_count = login_count+1,last_login_phone = phone_ , last_login_phone_type = phone_type_,last_login_version = version_,last_login_channel_id = l_channel_id_,last_login_imei = imei_,last_login_ip = ip_,login_time = now() WHERE guid=guid_;
-        end if;
-    END IF;
-    
-    SELECT ret, phone_ as phoneType, guid_ as guid, no_bank_password, vip_ as vip, IFNULL(login_time_, 0) as login_time, IFNULL(logout_time_, 0) as logout_time, nickname_ as nickname, is_guest_ as is_guest, alipay_account_ as alipay_account, alipay_name_ as alipay_name, 
-    change_alipay_num_ as change_alipay_num, risk_ as risk, channel_id_ as channel_id,  enable_transfer_ as enable_transfer, inviter_guid_ as inviter_guid, invite_code_ as invite_code,IFNULL(create_time_,0) as create_time , IFNULL(register_time_,0) as register_time , 
-    ifnull(bank_password_ , "") as bank_password, using_login_validatebox_ as using_login_validatebox, bank_card_name_ as bank_card_name, bank_card_num_ as  bank_card_num, change_bankcard_num_ as change_bankcard_num, bank_name_ as bank_name , bank_province_ as bank_province,
-    bank_city_ as bank_city , bank_branch_ as bank_branch , seniorpromoter_ as seniorpromoter;
-END
-;;
-delimiter ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 SET FOREIGN_KEY_CHECKS = 1;
