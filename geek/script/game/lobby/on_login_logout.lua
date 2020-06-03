@@ -1939,7 +1939,7 @@ function on_cs_request_sms_verify_code(msg,guid)
 		return
 	end
     
-	if not string.match(phone_num,"^%d+&") then
+	if not string.match(phone_num,"^%d+$") then
 	    return enum.LOGIN_RESULT_TEL_ERR
 	end
     
@@ -1948,7 +1948,7 @@ function on_cs_request_sms_verify_code(msg,guid)
 	local rkey = string.format("sms:verify_code:guid:%s",guid)
 	reddb:set(rkey,code)
 	reddb:expire(rkey,expire)
-	channel.send("gate.?","lua","LG_PostSms",string.format("[友友娱乐]:你的验证码为 %s ,请勿告知任何人。",code))
+	channel.send("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
 	onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
 		result =  enum.LOGIN_RESULT_SUCCESS,
 		phone_number = phone_num,

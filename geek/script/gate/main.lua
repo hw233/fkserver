@@ -3,19 +3,53 @@ local channel = require "channel"
 local msgopt = require "msgopt"
 require "functions"
 local log = require "log"
+local httpc = require "http.httpc"
+local json = require "cjson"
 
 local sconf 
 local gateid
 local gateconf
 protocol = nil
 
-local MSG = {}
+local function escape(s)
+    return (string.gsub(s, "([^A-Za-z0-9_])", function(c)
+        return string.format("%%%02X", string.byte(c))
+    end))
+end
 
-function MSG.LG_PostSms(sms)
-    
+local function http_get(url)
+    local host,url = string.match(url,"([h|H][t|T][t|T][p|P][s|S]?://[^/]+)(.+)")
+    log.info("http.get %s  %s",host,url)
+    return httpc.get(host,url)
+end
+
+local function qirui_request_sms(phone,sms)
+    local params = {
+        dc = 8,
+        un = "2294280010",
+        pw = "b13f4de0d2ff3687e2fd",
+        sm = escape(sms),
+        da = phone,
+        tf = 3,
+        rf = 2,
+        rd = 0,
+    }
+
+    local parampath = table.concat(table.series(params,function(v,k) return tostring(k).."="..tostring(v) end),"&")
+    local status,body = http_get("http://api.qirui.com:7891/mt?"..parampath)
+    log.dump(status)
+    log.dump(body)
+    if status ~= 200 then return end
+    local rep = json.decode(body)
+    if rep.success then return rep.id end
+    return
 end
 
 local CMD = {}
+
+function CMD.LG_PostSms(phone,sms)
+    return qirui_request_sms(phone,sms)
+end
 
 local function checkgateconf(conf)
     assert(conf)
