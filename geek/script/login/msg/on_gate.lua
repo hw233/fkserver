@@ -267,7 +267,7 @@ local function sms_login(msg,_,session_id)
         ret,info =  reg_account({
             ip = msg.ip,
             open_id = uuid,
-            nickname = string.sub(phone,1,3) .. "****" .. string.sub(phone,8),
+            nickname = "guest_"..tostring(math.random(20003,999999)),
             icon = math.random(1,1000),
             sex = math.random(1,2),
             package_name = msg.package_name,
