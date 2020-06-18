@@ -153,3 +153,10 @@ message CLUB_TEAM_TEMPLATE_CONF{
     int32   commission = 3;
     float   commission_rate = 4;
 }
+
+enum NOTICE_TYPE {
+    NT_NIL = 0;
+    GLOBAL = 1;
+    HALL = 2;
+    CLUB = 3;
+}

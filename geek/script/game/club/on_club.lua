@@ -52,6 +52,7 @@ local club_op = {
     UNBLOCK_CLUB    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","UNBLOCK_CLUB"),
     CLOSE_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CLOSE_CLUB"),
     OPEN_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OPEN_CLUB"),
+    OP_DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_DISMISS_CLUB"),
 }
 
 local function rand_union_club_id()
@@ -405,42 +406,6 @@ function on_cs_club_invite_join_club(msg,guid)
     })
 
     player_request[club.owner] = nil
-end
-
-function on_cs_club_dismiss(msg,guid)
-    local club_id = msg.club_id
-    local player = base_players[guid]
-    if not player then
-        log.error("internal error,recv msg but guid not online.")
-        return {
-            club_id = club_id,
-            result = enum.CLUB_OP_RESULT_INTERNAL_ERROR,
-        }
-    end
-
-    if not player:has_club_rights() then
-        return {
-            club_id = club_id,
-            result = enum.CLUB_OP_RESULT_NO_RIGHTS,
-        }
-    end
-
-    local club = base_clubs[club_id]
-    if not club then
-        return {
-            club_id = club_id,
-            result = enum.CLUB_OP_RESULT_NO_CLUB,
-        }
-    end
-
-    club:dismiss()
-    club_member[club_id] = nil
-    base_clubs[club_id] = nil
-
-    return {
-        club_id = club_id,
-        result = enum.CLUB_OP_RESULT_SUCCESS,
-    }
 end
 
 local function get_club_tables(club)
@@ -1096,29 +1061,7 @@ local function on_cs_club_partner(msg,guid)
     end
 end
 
-local function on_cs_club_kickout_club_boss(msg,guid)
-    log.dump(msg)
-    local club_id = msg.club_id
-    local boss_guid = msg.target_id
-
-    local club
-    for cid,_ in pairs(player_club[boss_guid][enum.CT_UNION]) do
-        local c = base_clubs[cid]
-        if c.owner == boss_guid then
-            club = c
-            break
-        end
-    end
-
-    if not club then 
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_NOT_FOUND,
-            op = club_op.OP_EXIT_AGREED,
-            target_id = boss_guid,
-        })
-        return
-    end
-
+local function dismiss_club(club)
     log.dump(club)
 
     local function is_member_in_gaming(c)
@@ -1155,23 +1098,13 @@ local function on_cs_club_kickout_club_boss(msg,guid)
     end
 
     if deep_is_member_in_gaming(club) then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_IN_GAME,
-            op = club_op.OP_EXIT_AGREED,
-            target_id = boss_guid,
-        })
-        return
+        return enum.ERROR_PLAYER_IN_GAME
     end
 
     local money_id = club_money_type[club.id]
     local member_money = deep_member_money_sum(club,money_id)
     if member_money > 0 then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_MORE_MAX_LIMIT,
-            op = club_op.OP_EXIT_AGREED,
-            target_id = boss_guid,
-        })
-        return
+        return enum.ERROR_MORE_MAX_LIMIT
     end
 
     local function deep_dismiss_club(c,money_id)
@@ -1194,9 +1127,57 @@ local function on_cs_club_kickout_club_boss(msg,guid)
     end
 
     deep_dismiss_club(club,money_id)
+    return enum.ERROR_NONE
+end
 
+function on_cs_club_dismiss(msg,guid)
+    local club_id = msg.target_id
+    local club = base_clubs[club_id]
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = club_op.OP_EXIT_AGREED,
+            target_id = club_id,
+        })
+        return
+    end
+
+    local result = dismiss_club(club)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-        result = enum.ERROR_NONE,
+        result = result,
+        op = club_op.OP_EXIT_AGREED,
+        target_id = club_id,
+    })
+end
+
+local function on_cs_club_kickout_club_boss(msg,guid)
+    log.dump(msg)
+    local club_id = msg.club_id
+    local boss_guid = msg.target_id
+
+    local club
+    for cid,_ in pairs(player_club[boss_guid][enum.CT_UNION]) do
+        local c = base_clubs[cid]
+        if c.owner == boss_guid then
+            club = c
+            break
+        end
+    end
+
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = club_op.OP_EXIT_AGREED,
+            target_id = boss_guid,
+        })
+        return
+    end
+
+    log.dump(club)
+
+    local result = dismiss_club(club)
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = result,
         op = club_op.OP_EXIT_AGREED,
         target_id = boss_guid,
     })
@@ -1433,6 +1414,7 @@ local operator = {
     [club_op.UNBLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,0) end,
     [club_op.CLOSE_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,1) end,
     [club_op.OPEN_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,0) end,
+    [club_op.OP_DISMISS_CLUB] = on_cs_club_dismiss,
 }
 
 function on_cs_club_operation(msg,guid)

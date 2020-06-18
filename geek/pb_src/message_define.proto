@@ -1638,3 +1638,18 @@ message SC_RequestBindWx {
 	int32 result = 1;
 	PlayerBaseInfo 	pb_base_info = 2;
 }
+
+
+message CS_PUBLISH_NOTICE {
+	enum MsgID { Nil = 0; ID = 1218; }
+	NOTICE_TYPE type = 1;
+	int32 club_id = 3;
+}
+
+message SC_PUBLISH_NOTICE{
+	enum MsgID { Nil = 0; ID = 1219; }
+	int32 result = 1;
+	NOTICE_TYPE type = 2;
+	string content = 3;
+	int32 club_id = 4;
+}

@@ -58,6 +58,7 @@ message C2S_TABLE_TEMPLATE_EDIT{
     int32  op = 3;
     int32  game_type = 4;
     string rule = 5;
+    string name = 6;
 }
 
 message S2C_TABLE_TEMPLATE_EDIT_RES{
@@ -123,6 +124,7 @@ message C2S_CLUB_OP_REQ{
         OP_APPLY_EXIT = 12;        //12、退出俱乐部
         CLOSE_CLUB = 13;            //打烊俱乐部
         OPEN_CLUB = 14;             //俱乐部开始营业
+        OP_DISMISS_CLUB = 15;       // 解散俱乐部
     }
 
     int32 op = 1;
@@ -416,3 +418,5 @@ message S2C_CLUB_FORCE_DISMISS_TABLE{
     enum MsgID {NIL = 0;ID = 14096;}
     int32 result = 1;
 }
+
+
