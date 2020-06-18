@@ -1287,7 +1287,7 @@ function base_table:cost_private_fee()
 		for _,p in pairs(self.players) do
 			p:cost_money({{
 				money_id = 0,
-				money = money_each,
+				money = -money_each,
 			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
 		end
 	elseif pay.option == enum.PAY_OPTION_BOSS then
