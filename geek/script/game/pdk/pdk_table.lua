@@ -736,7 +736,9 @@ end
 function  pdk_table:reconnect(player)
 	-- 新需求 玩家掉线不暂停游戏 只是托管
 	log.info("pdk_table:reconnect guid:%s",player.guid)
-	self:send_desk_enter_data(player,true)
+	if self:is_play(player) then
+		self:send_desk_enter_data(player,true)
+	end
 	if self.status == TABLE_STATUS.PLAY then
 		send2client_pb(player,"SC_PdkDiscardRound",{
 			chair_id = self.cur_discard_chair

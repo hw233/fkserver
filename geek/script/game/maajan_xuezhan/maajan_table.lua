@@ -2390,7 +2390,12 @@ function maajan_table:send_huan_pai_status(player)
 end
 
 function maajan_table:reconnect(player)
-	log.info("player reconnect : ".. player.chair_id)
+    log.info("player reconnect : ".. player.chair_id)
+    
+    if not self:is_play(player) then
+        base_table.reconnect(self,player)
+        return
+    end
     
     if self.cur_state_FSM == FSM_S.FAST_START_VOTE then
         self:safe_event({type = ACTION.RECONNECT,player = player,})
