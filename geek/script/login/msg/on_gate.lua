@@ -432,8 +432,10 @@ function on_cl_login(msg,gate,session_id)
     info = clone(info)
 
     -- 重连判断
-    local game_id = reddb:hget("player:online:guid:"..tostring(info.guid),"server")
-    if game_id then
+    local onlineinfo = reddb:hgetall(string.format("player:online:guid:%s",info.guid))
+    local game_id = tonumber(onlineinfo.server)
+    local first_game_type = tonumber(onlineinfo.first_game_type)
+    if game_id  and tonumber(first_game_type) ~= 1 then
         log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", info.guid, game_id, info.session_id, info.gate_id)
         info.result = enum.LOGIN_RESULT_SUCCESS
         local reconnect = 1

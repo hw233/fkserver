@@ -29,6 +29,7 @@ local util = require "util"
 local reddb = redisopt.default
 
 local dismiss_timeout = 60
+local auto_dismiss_timeout = 10 * 60
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
 -- 奖池
@@ -832,6 +833,8 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 		return can
 	end
 
+	self:cancel_delay_dismiss()
+
 	player.table_id = self.table_id_
 	player.chair_id = chair_id
 	self.players[chair_id] = player
@@ -1014,6 +1017,23 @@ function base_table:is_private()
 	return self.private_id and self.conf
 end
 
+function base_table:delay_dismiss(player)
+	self.dismiss_timer = timer_manager:new_timer(auto_dismiss_timeout,function()
+		self.room_:exit_server(player)
+		self.elapsed_dismiss = nil
+	end)
+end
+
+function base_table:cancel_delay_dismiss()
+	if not self.dismiss_timer then
+		return
+	end
+
+	local timer = self.dismiss_timer
+	timer:kill()
+	self.dismiss_timer = nil
+end
+
 -- 玩家站起
 function base_table:player_stand_up(player, reason)
 	log.info("base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s,offline:%s",
@@ -1029,6 +1049,12 @@ function base_table:player_stand_up(player, reason)
 	end
 
 	if self:can_stand_up(player, reason) then
+		local player_count = table.nums(self.players)
+		-- 最后一个玩家掉线不直接解散,针对邀请玩家进入房间情况
+		if self.private_id and player_count == 1  and reason == enum.STANDUP_REASON_OFFLINE then
+			self:delay_dismiss(player)
+			return
+		end
 		log.info("base_table:player_stand_up success")
 		local chairid = player.chair_id
 		local p = self.players[chairid]
@@ -1041,8 +1067,6 @@ function base_table:player_stand_up(player, reason)
 		if self:is_ready(chairid) then
 			self:cancel_ready(chairid)
 		end
-
-		local player_count = table.nums(self.players)
 
 		if self.private_id and player == self.conf.owner and player_count > 1 then
 			self:transfer_owner()
@@ -1076,7 +1100,9 @@ function base_table:player_stand_up(player, reason)
 		end
 
 		if self.private_id and player_count == 1 then
-			self:dismiss()
+			if reason ~= enum.STANDUP_REASON_OFFLINE then
+				self:dismiss()
+			end
 		end
 
 		self.players[chairid] = nil
@@ -1485,7 +1511,7 @@ function base_table:private_init(private_id,rule,conf)
 	self.rule = rule
 	self.chair_count = conf.chair_count
 	self.conf = conf
-
+	self.dismiss_timer = nil
 	self:on_private_inited()
 end
 
