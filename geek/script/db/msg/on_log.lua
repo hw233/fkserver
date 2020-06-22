@@ -175,7 +175,12 @@ function on_sd_request_share_param(sid)
         return
     end
 
-    local res = dbopt.log:query([[SELECT * FROM t_log_share_code WHERE sid = "%s";]],sid)
+    local res = dbopt.log:query([[SELECT s.* FROM 
+        t_log_share_code  s
+        LEFT JOIN
+        t_log_install_trace t
+        ON t.shareId = s.sid
+        WHERE s.sid = "%s" OR t.traceId = "%s";]],sid,sid)
     if res.errno then
         log.error("on_sd_request_share_param SELECT t_log_share_code errno:%d,errstr:%s.",res.errno,res.err)
         return
