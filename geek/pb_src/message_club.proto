@@ -131,6 +131,7 @@ message C2S_CLUB_OP_REQ{
     int32 club_id = 2;
     int32 target_id = 3;
     int32 request_id = 4;
+    string sid = 5;							//邀请ID,通过网页进入
 }
 
 //俱乐部操作反馈

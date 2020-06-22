@@ -169,4 +169,18 @@ function on_sd_log_club_commission_contribution(msg)
     end
 end
 
+function on_sd_request_share_param(sid)
+    if not sid or sid == "" then
+        log.error("on_sd_request_share_param got nil sid!")
+        return
+    end
+
+    local res = dbopt.log:query([[SELECT * FROM t_log_share_code WHERE sid = "%s";]],sid)
+    if res.errno then
+        log.error("on_sd_request_share_param SELECT t_log_share_code errno:%d,errstr:%s.",res.errno,res.err)
+        return
+    end
+
+    return res[1]
+end
 

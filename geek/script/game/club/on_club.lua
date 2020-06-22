@@ -31,6 +31,8 @@ local enum = require "pb_enums"
 local json = require "cjson"
 local club_fast_template = require "game.club.club_fast_template"
 local base_private_table = require "game.lobby.base_private_table"
+local crypt = require "skynet.crypt"
+local url = require "url"
 require "functions"
 
 local g_room = g_room
@@ -678,7 +680,7 @@ function on_cs_club_join_req(msg,guid)
         return
     end
 
-    if club_member[club_id][guid] then
+    if recusive_is_in_club(club_utils.root(club),guid) then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = enum.ERROR_AREADY_MEMBER,
@@ -897,6 +899,52 @@ local function on_cs_club_exit(msg,guid)
     return enum.CLUB_OP_RESULT_SUCCESS
 end
 
+local function on_cs_club_agree_join_club_with_share_id(msg,guid)
+    local base64sid = url.unescape(msg.sid)
+    local sid = crypt.base64decode(base64sid)
+    local sharerance = channel.call("db.?","msg","SD_RequestShareParam",sid)
+    if not sharerance then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_OPERATION_INVALID,
+            op = msg.op,
+        })
+        return
+    end
+
+    local param = json.decode(sharerance.param)
+    if param.type ~= "joinclub" or not param.club or not param.guid then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_OPERATION_INVALID,
+            op = msg.op,
+        })
+        return
+    end
+
+    local club = base_clubs[tonumber(param.club)]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = msg.op,
+        })
+        return
+    end
+
+    if recusive_is_in_club(club_utils.root(club),guid) then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_AREADY_MEMBER,
+            op = msg.op,
+        })
+        return
+    end
+
+    club:join(guid)
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = msg.op,
+    })
+end
+
 local function on_cs_club_agree_request(msg,guid)
     local player = base_players[guid]
     if not player then
@@ -904,8 +952,21 @@ local function on_cs_club_agree_request(msg,guid)
         
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
-            op_type = msg.op,
+            op = msg.op,
         })
+        return
+    end
+
+    if not msg.reqeust_id and (not msg.sid or msg.sid == "") then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            op = msg.op,
+        })
+        return
+    end
+
+    if msg.sid and msg.sid ~= "" then
+        on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
@@ -914,7 +975,7 @@ local function on_cs_club_agree_request(msg,guid)
         log.error("unknown player when agree request id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_OPERATION_INVALID,
-            op_type = msg.op,
+            op = msg.op,
         })
         return
     end
@@ -924,7 +985,7 @@ local function on_cs_club_agree_request(msg,guid)
         log.error("agree request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = err,
-            op_type = msg.op,
+            op = msg.op,
         })
 
         return
@@ -937,7 +998,7 @@ local function on_cs_club_agree_request(msg,guid)
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
-        op_type = msg.op,
+        op = msg.op,
     })
 end
 
