@@ -1604,11 +1604,11 @@ message C2SPlayerInteraction{
 //表情互动回复
 message S2CPlayerInteraction{
 	enum MsgID{Nil = 0; ID = 1213;}
-    int32 result = 1;
-    int32 content_idx = 2;    // 表情语音 编号
-    int32 type = 3;     // 类型 0：表情   1：快捷语言   2:魔法表情
-    int32 sender = 4;    //发起人
-    int32 receiver = 5;  //接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+	int32 result = 1;
+	int32 content_idx = 2;    // 表情语音 编号
+	int32 type = 3;     // 类型 0：表情   1：快捷语言   2:魔法表情
+	int32 sender = 4;    //发起人
+	int32 receiver = 5;  //接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
 }
 
 // 绑定手机
@@ -1642,14 +1642,21 @@ message SC_RequestBindWx {
 
 message CS_PUBLISH_NOTICE {
 	enum MsgID { Nil = 0; ID = 1218; }
-	NOTICE_TYPE type = 1;
-	int32 club_id = 3;
+	NOTICE notice = 1;
 }
 
 message SC_PUBLISH_NOTICE{
 	enum MsgID { Nil = 0; ID = 1219; }
 	int32 result = 1;
-	NOTICE_TYPE type = 2;
-	string content = 3;
-	int32 club_id = 4;
+}
+
+message CS_NOTICE_REQ{
+	enum MsgID { Nil = 0; ID = 1220; }
+	int32 club_id = 1;
+}
+
+message SC_NOTICE_RES{
+	enum MsgID { Nil = 0; ID = 1220; }
+	int32 result = 1;
+	repeated NOTICE notices = 2;
 }

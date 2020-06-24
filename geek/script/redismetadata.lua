@@ -133,5 +133,15 @@ redismetadata.money = redismeta:create({
     },
 })
 
+redismetadata.notice = redismeta:create({
+    fields = {
+        id = "string",
+        club = "number",
+        type = "number",
+        where = "number",
+        content = "json",
+    },
+})
+
 
 return redismetadata

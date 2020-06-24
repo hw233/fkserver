@@ -154,9 +154,22 @@ message CLUB_TEAM_TEMPLATE_CONF{
     float   commission_rate = 4;
 }
 
-enum NOTICE_TYPE {
-    NT_NIL = 0;
+enum NOTICE_WHERE {
+    NW_NIL = 0;
     GLOBAL = 1;
     HALL = 2;
     CLUB = 3;
+    GAME = 4;
+}
+
+enum NOTICE_TYPE{
+    NT_NIL = 0;
+}
+
+
+message NOTICE{
+    int32 type = 1;
+    int32 where = 2;
+	string content = 3;
+	int32 club_id = 4;
 }

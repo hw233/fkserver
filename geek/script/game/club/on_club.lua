@@ -631,7 +631,7 @@ function on_cs_club_list(msg,guid)
     local clubs = table.series(player_club[guid][msg.type or enum.CT_DEFAULT],function(_,cid)
         return base_clubs[cid]
     end)
-
+    
     if msg.owned_myself then
         clubs = table.select(clubs,function(c) return c.owner == guid end)
     end

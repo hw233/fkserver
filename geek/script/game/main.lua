@@ -97,6 +97,7 @@ function CMD.start(conf)
 	require "game.club.register"
 	require "game.mail.register"
 	require "game.reddot.register"
+	require "game.notice.register"
 	require "hotfix"
 	require "game.lobby.base_android"
 	require "game.lobby.gm_cmd"
@@ -104,15 +105,16 @@ function CMD.start(conf)
 	
 	local base_passive_android = base_passive_android
 	local room = g_room
-	
-    local function on_tick()
-        timer_manager:tick()
-        base_players:save_all()
-        base_passive_android:on_tick()
-        room:tick()
+		
+	local function on_tick()
+		timer_manager:tick()
+		base_players:save_all()
+		base_passive_android:on_tick()
+		room:tick()
 
-        skynet.timeout(4,on_tick)
-    end
+		skynet.timeout(4,on_tick)
+	end
+	
 	on_tick()
 
 	clean_private_table()
