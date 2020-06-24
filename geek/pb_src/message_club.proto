@@ -44,29 +44,6 @@ message S2C_JOIN_CLUB_RES {
     int32 result = 1;
 }
 
-message C2S_TABLE_TEMPLATE_EDIT{
-    enum MsgID {NIL = 0;ID = 14061;}
-    enum TEMPLATE_OP_TYPE {
-        TOT_NONE = 0;
-        TOT_NEW = 1;
-        TOT_EDIT = 2;
-        TOT_DEL = 3;
-    }
-
-    int32  template_id = 1;
-    int32  club_id = 2;
-    int32  op = 3;
-    int32  game_type = 4;
-    string rule = 5;
-    string name = 6;
-}
-
-message S2C_TABLE_TEMPLATE_EDIT_RES{
-    enum MsgID {NIL = 0;ID = 14062;}
-    int32 result = 1;
-    int32 template_id = 2;
-}
-
 //请求
 message C2S_CLUB_INFO_REQ{
     enum MsgID {NIL = 0;ID = 14016;}
