@@ -2728,14 +2728,20 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 		"SET AUTOCOMMIT = 1;",
 	}
 
-	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	local gamedb = dbopt.game
+
+	local transid,res = gamedb:begin_trans()
+
+	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
 	if res.errno then
-		dbopt.game:rollback_trans(transid)
+		gamedb:rollback_trans(transid)
 		log.error("transfer_money_club2player do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
+
+	gamedb:commit_trans(transid)
 
 	local old_club_money = res[3] and res[3][1] and res[3][1].money or nil
 	local new_club_money = res[5] and res[5][1] and res[5][1].money or nil
@@ -2761,24 +2767,25 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	log.info("transfer_money_player2club club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		"SET AUTOCOMMIT = 0;",
-		"BEGIN;",
 		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
 		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],- amount,guid,money_id),
 		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
 		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
-		"COMMIT;",
-		"SET AUTOCOMMIT=1;"
 	}
 
-	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	local gamedb = dbopt.game
+
+	local transid,res = gamedb:begin_trans()
+	transid,res = gamedb:do_trans(nil,table.concat(sqls,"\n"))
 	if res.errno then
-		dbopt.game:rollback_trans(transid)
+		gamedb:rollback_trans(transid)
 		log.error("transfer_money_player2club do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
+
+	gamedb:commit_trans(transid)
 
 	local old_player_money = res[3] and res[3][1] and res[3][1].money or nil
 	local new_player_money = res[5] and res[5][1] and res[5][1].money or nil
@@ -2804,28 +2811,29 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	log.info("transfer_money_club2club from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id_from,club_id_to,money_id,amount,why,why_ext)
 	local sqls = {
-		"SET AUTOCOMMIT = 0;",
-		"BEGIN;",
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
 		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]], -amount,club_id_from,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
 		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id_to,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
-		"COMMIT;",
-		"SET AUTOCOMMIT=1;"
 	}
 
 	log.dump(sqls)
 
-	local transid,res = dbopt.game:do_trans(nil,table.concat(sqls,"\n"))
+	local gamedb = dbopt.game
+
+	local transid,res = gamedb:begin_trans()
+	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
 	if res.errno then
-		dbopt.game:rollback_trans(transid)
+		gamedb:rollback_trans(transid)
 		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
+
+	gamedb:commit_trans(transid)
 
 	local old_from_money = res[3] and res[3][1] and res[3][1].money or nil
 	local new_from_money = res[5] and res[5][1] and res[5][1].money or nil
