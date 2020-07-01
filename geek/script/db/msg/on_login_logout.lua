@@ -2743,10 +2743,10 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 
 	gamedb:commit_trans(transid)
 
-	local old_club_money = res[3] and res[3][1] and res[3][1].money or nil
-	local new_club_money = res[5] and res[5][1] and res[5][1].money or nil
-	local old_player_money = res[6] and res[6][1] and res[6][1].money or nil
-	local new_player_money = res[8] and res[8][1] and res[8][1].money or nil
+	local old_club_money = res[1] and res[1][1] and res[1][1].money or nil
+	local new_club_money = res[3] and res[3][1] and res[3][1].money or nil
+	local old_player_money = res[4] and res[4][1] and res[4][1].money or nil
+	local new_player_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
 		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
@@ -2787,10 +2787,10 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 
 	gamedb:commit_trans(transid)
 
-	local old_player_money = res[3] and res[3][1] and res[3][1].money or nil
-	local new_player_money = res[5] and res[5][1] and res[5][1].money or nil
-	local old_club_money = res[6] and res[6][1] and res[6][1].money or nil
-	local new_club_money = res[8] and res[8][1] and res[8][1].money or nil
+	local old_player_money = res[1] and res[1][1] and res[1][1].money or nil
+	local new_player_money = res[3] and res[3][1] and res[3][1].money or nil
+	local old_club_money = res[4] and res[4][1] and res[4][1].money or nil
+	local new_club_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
 		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
@@ -2835,10 +2835,10 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 
 	gamedb:commit_trans(transid)
 
-	local old_from_money = res[3] and res[3][1] and res[3][1].money or nil
-	local new_from_money = res[5] and res[5][1] and res[5][1].money or nil
-	local old_to_money = res[6] and res[6][1] and res[6][1].money or nil
-	local new_to_money = res[8] and res[8][1] and res[8][1].money or nil
+	local old_from_money = res[1] and res[1][1] and res[1][1].money or nil
+	local new_from_money = res[3] and res[3][1] and res[3][1].money or nil
+	local old_to_money = res[4] and res[4][1] and res[4][1].money or nil
+	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
 		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
