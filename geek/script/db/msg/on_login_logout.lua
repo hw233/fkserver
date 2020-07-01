@@ -2716,16 +2716,12 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		"SET AUTOCOMMIT = 0;",
-		"BEGIN;",
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
 		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],- amount,club_id,money_id),
 		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
 		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
 		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],amount,guid,money_id),
 		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
-		"COMMIT;",
-		"SET AUTOCOMMIT = 1;",
 	}
 
 	local gamedb = dbopt.game
