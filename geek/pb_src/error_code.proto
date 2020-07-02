@@ -12,6 +12,7 @@ enum ERROR_CODE {
     ERROR_TABLE_STATUS_GAMING = 102;  //房间游戏中
     ERROR_OPERATION_EXPIRE = 103;     //操作过期
     ERROR_REQUEST_REPEATED = 105;   //重复申请
+    ERROR_LESS_GOLD = 106;     //金币不足
     ERROR_LESS_ROOM_CARD = 107;     //房卡不足
     ERROR_OPERATION_REPEATED = 108;        //重复操作
     ERROR_TEMPLATE_NOT_EXISTS = 109; //模板不存在
