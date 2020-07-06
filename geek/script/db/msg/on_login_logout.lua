@@ -110,12 +110,12 @@ function on_s_logout(msg)
 	local db = dbopt.account
 	local sql
 	if msg.phone then
-		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d), online_time = online_time + %d, last_login_phone = '%s', 
+		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d),ast_login_phone = '%s', 
 			last_login_phone_type = '%s', last_login_version = '%s', last_login_channel_id = '%s', last_login_package_name = '%s', last_login_imei = '%s', last_login_ip = '%s' WHERE guid = %d;]],
-			msg.login_time, msg.logout_time, msg.logout_time - msg.login_time, msg.phone, msg.phone_type, msg.version, msg.channel_id, msg.package_name, msg.imei, msg.ip, msg.guid)
+			msg.login_time, msg.logout_time, msg.phone, msg.phone_type, msg.version, msg.channel_id, msg.package_name, msg.imei, msg.ip, msg.guid)
 	else
-		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d), online_time = online_time + %d WHERE guid = %d;]],
-			msg.login_time, msg.logout_time, msg.logout_time-msg.login_time, msg.guid)
+		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d) WHERE guid = %d;]],
+			msg.login_time, msg.logout_time, msg.guid)
 	end
 	local ret = db:query(sql)
 	if ret.errno then
