@@ -436,6 +436,9 @@ function land_table:on_compete_landlord_over()
 	local card_counts = table.map(self.landlord_cards,function(c) return c,1 end)
 	table.mergeto(p.hand_cards,card_counts,function(l,r) return (l or 0) + (r or 0) end)
 
+	self.game_log.landlord = self.landlord
+	self.game_log.landlord_cards = self.landlord_cards
+
 	self.game_log.base_score = self.base_score
 	self.game_log.base_times = 2 ^ self.multi
 	self.cur_discard_chair = self.landlord
