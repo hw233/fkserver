@@ -68,6 +68,7 @@ local land_table = base_table:new()
 function land_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
 	self.status = TABLE_STATUS.FREE
+	self.cur_competer = nil
 end
 
 function land_table:on_private_inited()
@@ -197,11 +198,14 @@ end
 
 function land_table:begin_compete_landlord()
 	local play = self.rule.play
-	if play.random_call then
-		self.cur_competer = math.random(self.chair_count)
-	else
-		self.cur_competer = self.conf.owner_chair_id
+	if self.cur_round == 1 then
+		if play.random_call then
+			self.cur_competer = math.random(self.chair_count)
+		else
+			self.cur_competer = self.conf.owner_chair_id
+		end
 	end
+
 	self:allow_compete_landlord()
 end
 
@@ -212,7 +216,6 @@ function land_table:allow_compete_landlord()
 end
 
 function land_table:next_landlord_competer()
-	local play = self.rule.play
 	local competer = self.cur_competer
 	repeat
 		competer = competer  % self.start_count + 1
@@ -598,7 +601,7 @@ end
 
 function land_table:on_process_over()
     self.start_count = self.chair_count
-
+	self.cur_competer = nil
     self:broadcast2client("SC_DdzFinalGameOver",{
 	players = table.series(self.players,function(p,chair)
 		local statistics = table.series(p.statistics or {},function(c,t) 
@@ -887,6 +890,8 @@ function  land_table:is_play( ... )
 end
 
 function land_table:game_balance(winner)
+	self.cur_competer = winner.chair_id
+
 	local is_chuntian = table.logic_and(self.players,function(p)
 		if p.chair_id == self.landlord then return true end
 		return not p.discard_count or p.discard_count == 0
