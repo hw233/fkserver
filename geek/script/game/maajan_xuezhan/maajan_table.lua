@@ -2393,6 +2393,7 @@ function maajan_table:reconnect(player)
     log.info("player reconnect : ".. player.chair_id)
     
     if not self:is_play(player) then
+        self:send_data_to_enter_player(player,true)
         base_table.reconnect(self,player)
         return
     end
