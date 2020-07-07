@@ -1928,10 +1928,12 @@ function maajan_table:on_game_overed()
             desk_tiles = {},
         }
 
-        if v.deposit then
-            v:forced_exit()
-        elseif v:is_android() then
-            self:ready(v)
+        if not self.private_id then
+            if v.deposit then
+                v:forced_exit()
+            elseif v:is_android() then
+                self:ready(v)
+            end
         end
     end
 
