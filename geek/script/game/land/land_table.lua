@@ -462,6 +462,16 @@ function land_table:set_trusteeship(player,trustee)
 	base_table.set_trusteeship(player,trustee)
 end
 
+function land_table:get_max_times()
+	local play = self.rule.play
+	if play and play.max_times then
+		local times_conf = self.room_.conf.private_conf.times
+		return times_conf and times_conf[play.max_times + 1] or 16
+	end
+
+	return 16
+end
+
 function land_table:begin_discard()
 	self:broadcast2client("SC_DdzDiscardRound",{
 		chair_id = self.cur_discard_chair
@@ -494,6 +504,9 @@ function land_table:begin_discard()
 end
 
 function land_table:send_desk_enter_data(player,reconnect)
+	local times = 2 ^ (self.multi or 0 + self.bomb or 0)
+	local max_times = self:get_max_times()
+	times = max_times > times and times or max_times
 	local msg = {
 		status = self.status,
 		landlord = self.landlord,
@@ -501,7 +514,7 @@ function land_table:send_desk_enter_data(player,reconnect)
 		act_time_limit = nil,
 		is_reconnect = reconnect,
 		round = self.cur_round  or 1,
-		times = 2 ^ (self.multi or 0 + self.bomb or 0),
+		times = times,
 		base_score = self.base_score,
 	}
 
@@ -874,8 +887,6 @@ function  land_table:is_play( ... )
 end
 
 function land_table:game_balance(winner)
-	local multi = 2 ^ (self.bomb + (self.multi or 0))
-
 	local is_chuntian = table.logic_and(self.players,function(p)
 		if p.chair_id == self.landlord then return true end
 		return not p.discard_count or p.discard_count == 0
@@ -883,9 +894,13 @@ function land_table:game_balance(winner)
 
 	local is_fanchun = self.landlord ~= winner.chair_id and self.players[self.landlord].discard_count == 1
 
+	local multi = 2 ^ (self.bomb + (self.multi or 0))
 	if is_fanchun or is_chuntian then
 		multi = multi * 2
 	end
+
+	local max_times = self:get_max_times()
+	multi = max_times > multi and multi or max_times
 
 	local function  is_win(chair)
 		if winner.chair_id == self.landlord then
