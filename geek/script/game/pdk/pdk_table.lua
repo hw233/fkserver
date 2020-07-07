@@ -203,16 +203,6 @@ function pdk_table:on_started(player_count)
 
 	self:update_status(TABLE_STATUS.PLAY)
 
-	self:ding_zhuang()
-
-	self:foreach(function(p) 
-		p.win = nil
-		p.round_score = nil
-		p.round_money = nil
-		p.discard_times = nil
-		p.bomb = nil
-	end)
-
 	self.game_log = {
 		start_game_time = os.time(),
 		players = table.map(self.players,function(p,chair) 
@@ -236,9 +226,19 @@ function pdk_table:on_started(player_count)
 	end)
 
 	self:deal_cards()
+	self:ding_zhuang()
 	self.cur_discard_chair = self.zhuang
 	self.first_discard = true
 	self.game_log.zhuang = self.zhuang
+
+	self:foreach(function(p)
+		p.win = nil
+		p.round_score = nil
+		p.round_money = nil
+		p.discard_times = nil
+		p.bomb = nil
+	end)
+
 	self:begin_discard()
 end
 
