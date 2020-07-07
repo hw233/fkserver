@@ -1,6 +1,6 @@
 -- 注册诈金花消息
 
-require "game.maajan_customized.on_maajan"
+require "game.maajan_menhu.on_maajan"
 
 --------------------------------------------------------------------
 -- 注册客户端发过来的消息分派函数

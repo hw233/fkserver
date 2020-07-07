@@ -1,5 +1,5 @@
 local base_room = require "game.lobby.base_room"
-local maajan_table = require "game.maajan_customized.maajan_table"
+local maajan_table = require "game.maajan_menhu.maajan_table"
 
 local maajan_room = base_room:new()
 

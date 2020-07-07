@@ -1,5 +1,5 @@
-local rule = require "game.maajan_customized.base.rule"
-local def = require "game.maajan_customized.base.define"
+local rule = require "game.maajan_menhu.base.rule"
+local def = require "game.maajan_menhu.base.define"
 local log = require "log"
 require "functions"
 

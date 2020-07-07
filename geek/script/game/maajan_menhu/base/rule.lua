@@ -1,4 +1,4 @@
-local def = require "game.maajan_customized.base.define"
+local def = require "game.maajan_menhu.base.define"
 local log = require "log"
 require "functions"
 
