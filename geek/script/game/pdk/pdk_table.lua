@@ -158,9 +158,11 @@ function pdk_table:ding_zhuang()
 	end
 
 	local function winner_zhuang()
+		log.dump(self.cur_round)
 		if not self.cur_round or self.cur_round == 1 then return end
 
 		for chair,p in pairs(self.players) do
+			log.dump(p.win)
 			if p.win then return chair end
 		end
 	end
@@ -201,6 +203,8 @@ function pdk_table:on_started(player_count)
 
 	self:update_status(TABLE_STATUS.PLAY)
 
+	self:ding_zhuang()
+
 	self:foreach(function(p) 
 		p.win = nil
 		p.round_score = nil
@@ -232,7 +236,6 @@ function pdk_table:on_started(player_count)
 	end)
 
 	self:deal_cards()
-	self:ding_zhuang()
 	self.cur_discard_chair = self.zhuang
 	self.first_discard = true
 	self.game_log.zhuang = self.zhuang
