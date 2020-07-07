@@ -90,6 +90,12 @@ function maajan_table:on_private_inited()
     self.tiles = chair_count_tiles[self.chair_count or 4]
 end
 
+function maajan_table:on_private_pre_dismiss()
+    if self.cur_round and self.cur_round > 0 then
+        self:on_final_game_overed()
+    end
+end
+
 function maajan_table:on_private_dismissed()
     self.cur_round = nil
     self.zhuang = nil
@@ -101,8 +107,8 @@ function maajan_table:on_private_dismissed()
     end
 end
 
-function maajan_table:on_started()
-    base_table.on_started(self)
+function maajan_table:on_started(player_count)
+    base_table.on_started(self,player_count)
 	for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
@@ -1608,7 +1614,7 @@ function maajan_table:calculate_ji(p,ji_tiles)
                     local jiao_count = table.sum(self.players,function(pi) return (pi.hu or pi.ting or pi.men or pi.jiao) and 1 or 0 end)
                     if jiao_count > 0 then
                         table.insert(table.get(types,p.chair_id,{}),{type = t,score = - tscore * c.count,tile = tile,count = jiao_count})
-                        table.walk_on(self.players,function(pj)
+                        table.walk(self.players,function(pj)
                             table.insert(table.get(types,pj.chair_id,{}),{type = t,score = tscore * c.count ,tile = tile,count = 1})
                         end,function(pj)
                             return p ~= pj and (pj.hu or pj.men or pj.ting or pj.jiao)
@@ -1796,7 +1802,6 @@ function maajan_table:on_game_balance()
     local fan_pai_tile,ji_tiles = self:gen_ji_tiles()
     log.dump(ji_tiles)
     local items = self:game_balance(ji_tiles)
-    -- log.dump(items,9)
     local scores = {}
     for chair_id,item in pairs(items) do
         scores[chair_id] =
@@ -1886,8 +1891,6 @@ function maajan_table:on_game_balance()
         p_log.win_money = money
     end
 
-    -- log.dump(msg,9)
-
     self:broadcast2client("SC_Maajan_Game_Finish",msg)
 
     self:notify_game_money()
@@ -1906,6 +1909,7 @@ end
 
 
 function maajan_table:on_game_overed()
+    log.error("maajan_table:on_game_overed")
     self.game_log = {}
     self:ding_zhuang()
 
@@ -1913,22 +1917,21 @@ function maajan_table:on_game_overed()
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
 
-    if not self.private_id then
-        for _,v in ipairs(self.players) do
-            v.hu = nil
-            v.men = nil
-            v.ting = nil
-            v.jiao = nil
-            v.pai = {
-                ming_pai = {},
-                shou_pai = {},
-                desk_tiles = {},
-            }
-            if v.deposit then
-                v:forced_exit()
-            elseif v:is_android() then
-                self:ready(v)
-            end
+    for _,v in ipairs(self.players) do
+        v.hu = nil
+        v.men = nil
+        v.ting = nil
+        v.jiao = nil
+        v.pai = {
+            ming_pai = {},
+            shou_pai = {},
+            desk_tiles = {},
+        }
+
+        if v.deposit then
+            v:forced_exit()
+        elseif v:is_android() then
+            self:ready(v)
         end
     end
 
@@ -2476,7 +2479,8 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     if is_reconnect then
         msg.pb_rec_data = {
             last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
-            last_chu_pai = last_tile
+            last_chu_pai = last_tile,
+            total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
         }
     end
 
@@ -2488,16 +2492,20 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         end
 
         if self.chu_pai_player_index == player.chair_id then
-            send2client_pb(player,"SC_Maajan_Draw",{
-                chair_id = player.chair_id,
-                tile = player.mo_pai,
-            })
+            if player.mo_pai then
+                send2client_pb(player,"SC_Maajan_Draw",{
+                    chair_id = player.chair_id,
+                    tile = player.mo_pai,
+                })
+            end
             send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         end
 
-        local player_actions = self.waiting_player_actions[player.chair_id]
-        if player_actions  then
-            self:send_action_waiting(player_actions)
+        if self.waiting_player_actions then
+            local player_actions = self.waiting_player_actions[player.chair_id]
+            if player_actions  then
+                self:send_action_waiting(player_actions)
+            end
         end
     end
 end
