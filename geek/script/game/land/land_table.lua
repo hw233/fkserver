@@ -921,6 +921,18 @@ function land_table:game_balance(winner)
 		p.round_money = moneies[chair]
 	end)
 
+	self:foreach(function(p,chair)
+		local plog = self.game_log.players[chair]
+		plog.total_money = p.total_money
+		plog.total_score = p.total_score
+		plog.round_money = p.round_money
+		plog.score = p.round_score
+		plog.nickname = p.nickname
+		plog.head_url = p.icon
+		plog.guid = p.guid
+		plog.sex = p.sex
+	end)
+
 	self:broadcast2client("SC_DdzGameOver",{
 		player_balance = table.series(self.players,function(p,chair)
 			return {
