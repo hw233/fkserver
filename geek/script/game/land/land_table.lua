@@ -107,6 +107,7 @@ function land_table:check_dismiss_commit(agrees)
 end
 
 function land_table:on_process_start()
+	self.cur_competer = nil
 	self:foreach(function(p) 
 		p.statistics = {}
 		p.total_score = 0
