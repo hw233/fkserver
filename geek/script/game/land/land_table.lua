@@ -501,7 +501,7 @@ function land_table:send_desk_enter_data(player,reconnect)
 		act_time_limit = nil,
 		is_reconnect = reconnect,
 		round = self.cur_round  or 1,
-		times = 2 ^ (self.multi + self.bomb),
+		times = 2 ^ (self.multi or 0 + self.bomb or 0),
 		base_score = self.base_score,
 	}
 
