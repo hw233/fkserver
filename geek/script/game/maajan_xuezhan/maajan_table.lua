@@ -1873,7 +1873,7 @@ function maajan_table:game_balance()
             end)
         elseif p.jiao then
             self:foreach_except(p,function(pi)
-                if p.hu or p.jiao then return end
+                if pi.hu or pi.jiao then return end
                 local chair_i = pi.chair_id
                 scores[chair_id] = (scores[chair_id] or 0) + fan_score
                 scores[chair_i] = (scores[chair_i] or 0) - fan_score
