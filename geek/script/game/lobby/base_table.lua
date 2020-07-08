@@ -1211,12 +1211,15 @@ function base_table:check_ready(player)
 end
 
 function base_table:can_stand_up(player,reason)
-	if reason == enum.STANDUP_REASON_OFFLINE or 
-		reason == enum.STANDUP_REASON_FORCE or 
+	if  reason == enum.STANDUP_REASON_FORCE or 
 		reason == enum.STANDUP_REASON_DISMISS then
 		--掉线 用于结算
 		log.info("set Dropped true")
 		return true
+	end
+
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		return false
 	end
 
 	return self.room_:get_ready_mode() ~= enum.GAME_READY_MODE_NONE

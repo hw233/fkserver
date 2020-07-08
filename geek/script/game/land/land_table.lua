@@ -508,37 +508,42 @@ function land_table:begin_discard()
 end
 
 function land_table:send_desk_enter_data(player,reconnect)
-	local times = 2 ^ (self.multi or 0 + self.bomb or 0)
+	local times = 2 ^ ((self.multi or 0) + (self.bomb or 0))
 	local max_times = self:get_max_times()
 	times = max_times > times and times or max_times
-	local msg = {
-		status = self.status,
-		landlord = self.landlord,
-		self_chair_id = player.chair_id,
-		act_time_limit = nil,
-		is_reconnect = reconnect,
-		round = self.cur_round  or 1,
-		times = times,
-		base_score = self.base_score,
-	}
 
-	msg.pb_players = table.series(self.players,function(p,chair)
-		local d = {
-			chair_id = chair,
-			total_score = p.total_score,
-		}
+	local msg = {}
 
-		if self.status == TABLE_STATUS.COMPETE_LANDLORD or self.status == TABLE_STATUS.PLAY then
-			if p == player then  d.hand_cards = table.keys(p.hand_cards)
-			else  d.hand_cards = table.fill({},255,1,table.nums(p.hand_cards)) end
-		end
+	if self:is_play(player) then
+		table.mergeto(msg,{
+			status = self.status,
+			landlord = self.landlord,
+			self_chair_id = player.chair_id,
+			act_time_limit = nil,
+			is_reconnect = reconnect,
+			round = self.cur_round  or 1,
+			times = times,
+			base_score = self.base_score,
+		})
 
-		if self.status ~= TABLE_STATUS.FREE then
-			d.round_score = p.round_score
-		end
+		msg.pb_players = table.series(self.players,function(p,chair)
+			local d = {
+				chair_id = chair,
+				total_score = p.total_score,
+			}
 
-		return d
-	end)
+			if self.status == TABLE_STATUS.COMPETE_LANDLORD or self.status == TABLE_STATUS.PLAY then
+				if p == player then  d.hand_cards = table.keys(p.hand_cards)
+				else  d.hand_cards = table.fill({},255,1,table.nums(p.hand_cards)) end
+			end
+
+			if self.status ~= TABLE_STATUS.FREE then
+				d.round_score = p.round_score
+			end
+
+			return d
+		end)
+	end
 
 	if reconnect then
 		msg.pb_rec_data =  {
@@ -557,7 +562,10 @@ function land_table:send_desk_enter_data(player,reconnect)
 			self:set_trusteeship(player)
 		end
 	end
-	send2client_pb(player,"SC_DdzDeskEnter",msg)
+
+	if self.cur_round and self.cur_round > 0 then
+		send2client_pb(player,"SC_DdzDeskEnter",msg)
+	end
 end
 
 
@@ -595,7 +603,9 @@ function land_table:on_game_overed()
         if trustee_type and trustee_type == 3 then
             self:set_trusteeship(p)
         end
-    end)
+	end)
+	
+	self:update_status(TABLE_STATUS.FREE)
 
     base_table.on_game_overed(self)
 end
@@ -650,6 +660,10 @@ function land_table:can_stand_up(player, reason)
     if reason == enum.STANDUP_REASON_DISMISS or
         reason == enum.STANDUP_REASON_FORCE then
         return true
+	end
+	
+	if reason == enum.STANDUP_REASON_OFFLINE then
+        return false
     end
 
     return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round

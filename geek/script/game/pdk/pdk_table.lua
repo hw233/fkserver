@@ -372,7 +372,10 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 			self:set_trusteeship(player)
 		end
 	end
-	send2client_pb(player,"SC_PdkDeskEnter",msg)
+
+	if self.cur_round and self.cur_round > 0 then
+		send2client_pb(player,"SC_PdkDeskEnter",msg)
+	end
 end
 
 
@@ -465,6 +468,10 @@ function pdk_table:can_stand_up(player, reason)
     if reason == enum.STANDUP_REASON_DISMISS or
         reason == enum.STANDUP_REASON_FORCE then
         return true
+	end
+	
+	if reason == enum.STANDUP_REASON_OFFLINE then
+        return false
     end
 
     return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round
@@ -739,9 +746,7 @@ end
 function  pdk_table:reconnect(player)
 	-- 新需求 玩家掉线不暂停游戏 只是托管
 	log.info("pdk_table:reconnect guid:%s",player.guid)
-	if self:is_play(player) then
-		self:send_desk_enter_data(player,true)
-	end
+	self:send_desk_enter_data(player,true)
 	if self.status == TABLE_STATUS.PLAY then
 		send2client_pb(player,"SC_PdkDiscardRound",{
 			chair_id = self.cur_discard_chair

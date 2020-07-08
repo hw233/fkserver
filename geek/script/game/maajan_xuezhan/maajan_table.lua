@@ -2041,6 +2041,10 @@ function maajan_table:can_stand_up(player, reason)
         return true
     end
 
+    if reason == enum.STANDUP_REASON_OFFLINE then
+        return false
+    end
+
     return not self.cur_state_FSM
 end
 
@@ -2318,7 +2322,9 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
 
     log.dump(msg.pb_rec_data)
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    if self.cur_round and self.cur_round > 0 then
+        send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    end
 end
 
 function maajan_table:send_hu_status(player)
@@ -2392,19 +2398,19 @@ end
 function maajan_table:reconnect(player)
     log.info("player reconnect : ".. player.chair_id)
     
+    player.deposit = nil
+    self:send_data_to_enter_player(player,true)
+
     if not self:is_play(player) then
-        self:send_data_to_enter_player(player,true)
         base_table.reconnect(self,player)
         return
     end
-    
+
     if self.cur_state_FSM == FSM_S.FAST_START_VOTE then
         self:safe_event({type = ACTION.RECONNECT,player = player,})
+        base_table.reconnect(self,player)
         return
     end
-
-    player.deposit = nil
-    self:send_data_to_enter_player(player,true)
 
     if self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.PER_BEGIN then
         self:safe_event({type = ACTION.RECONNECT,player = player,})

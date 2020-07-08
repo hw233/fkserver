@@ -1909,7 +1909,6 @@ end
 
 
 function maajan_table:on_game_overed()
-    log.error("maajan_table:on_game_overed")
     self.game_log = {}
     self:ding_zhuang()
 
@@ -2087,6 +2086,10 @@ function maajan_table:can_stand_up(player, reason)
     if reason == enum.STANDUP_REASON_DISMISS or
         reason == enum.STANDUP_REASON_FORCE then
         return true
+    end
+
+    if reason == enum.STANDUP_REASON_OFFLINE then
+        return false
     end
 
     return not self:is_play()
@@ -2443,7 +2446,6 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         pb_players = {},
     }
 
-    
     for chair_id,v in pairs(self.players) do
         local tplayer = {}
         tplayer.chair_id = v.chair_id
@@ -2486,7 +2488,9 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         }
     end
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    if self.cur_round and self.cur_round > 0 then
+        send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    end
 
     if is_reconnect then
         if self.dealer then
@@ -2517,6 +2521,7 @@ function maajan_table:reconnect(player)
     
     player.deposit = nil
     self:send_data_to_enter_player(player,true)
+
     base_table.reconnect(self,player)
 end
 
