@@ -512,38 +512,34 @@ function land_table:send_desk_enter_data(player,reconnect)
 	local max_times = self:get_max_times()
 	times = max_times > times and times or max_times
 
-	local msg = {}
+	local msg = {
+		status = self.status,
+		landlord = self.landlord,
+		self_chair_id = player.chair_id,
+		act_time_limit = nil,
+		is_reconnect = reconnect,
+		round = self.cur_round  or 1,
+		times = times,
+		base_score = self.base_score,
+	}
 
-	if self:is_play(player) then
-		table.mergeto(msg,{
-			status = self.status,
-			landlord = self.landlord,
-			self_chair_id = player.chair_id,
-			act_time_limit = nil,
-			is_reconnect = reconnect,
-			round = self.cur_round  or 1,
-			times = times,
-			base_score = self.base_score,
-		})
+	msg.pb_players = table.series(self.players,function(p,chair)
+		local d = {
+			chair_id = chair,
+			total_score = p.total_score,
+		}
 
-		msg.pb_players = table.series(self.players,function(p,chair)
-			local d = {
-				chair_id = chair,
-				total_score = p.total_score,
-			}
+		if self.status == TABLE_STATUS.COMPETE_LANDLORD or self.status == TABLE_STATUS.PLAY then
+			if p == player then  d.hand_cards = table.keys(p.hand_cards)
+			else  d.hand_cards = table.fill({},255,1,table.nums(p.hand_cards)) end
+		end
 
-			if self.status == TABLE_STATUS.COMPETE_LANDLORD or self.status == TABLE_STATUS.PLAY then
-				if p == player then  d.hand_cards = table.keys(p.hand_cards)
-				else  d.hand_cards = table.fill({},255,1,table.nums(p.hand_cards)) end
-			end
+		if self.status ~= TABLE_STATUS.FREE then
+			d.round_score = p.round_score
+		end
 
-			if self.status ~= TABLE_STATUS.FREE then
-				d.round_score = p.round_score
-			end
-
-			return d
-		end)
-	end
+		return d
+	end)
 
 	if reconnect then
 		msg.pb_rec_data =  {
