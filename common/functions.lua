@@ -460,6 +460,10 @@ function table.merge(dest,src,agg)
         ret[k] = agg and agg(dest[k],v) or v
     end
 
+    for k,v in pairs(dest or {}) do
+        ret[k] = agg and agg(dest[k],v) or v
+    end
+
     return ret
 end
 
