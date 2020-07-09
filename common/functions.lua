@@ -454,13 +454,9 @@ function table.values(tb)
 end
 
 function table.merge(dest,src,agg)
-    local ret = {}
+    local ret = clone(dest or {})
 
     for k,v in pairs(src or {}) do
-        ret[k] = agg and agg(dest[k],v) or v
-    end
-
-    for k,v in pairs(dest or {}) do
         ret[k] = agg and agg(dest[k],v) or v
     end
 
@@ -468,7 +464,7 @@ function table.merge(dest,src,agg)
 end
 
 function table.merge_x(src,fn,dest)
-    local ret = {}
+    local ret = clone(dest or {})
 
     for k,v in pairs(src or {}) do
         ret[k] = fn and fn(dest[k],v) or v
