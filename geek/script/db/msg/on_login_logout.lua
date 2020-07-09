@@ -2014,23 +2014,12 @@ function on_sd_set_nickname(msg)
 	local guid = msg.guid
 	local nickname = msg.nickname
 
-	local reply = {}
-	reply.guid = guid
-	reply.nickname = nickname
-
-	local ret = db.account:query("UPDATE t_account SET `nickname` = '%s' WHERE guid = %d", nickname, guid)
+	local ret = dbopt.game:query("UPDATE t_player SET `nickname` = '%s' WHERE guid = %d;", nickname, guid)
 	if ret.errno then
 		log.error(ret.err)
-		reply.ret = LOGIN_RESULT_SET_NICKNAME_DUP_NICKNAME
-	elseif ret.effected_rows > 0 then
-		reply.ret = LOGIN_RESULT_SUCCESS
-	else
-		reply.ret = LOGIN_RESULT_SET_NICKNAME_FAILED
 	end
 
-	db.game:query("UPDATE t_player SET nickname='%s' WHERE guid=%d", nickname, guid)
-
-	return reply
+	return 
 end
 
 function on_sd_update_earnings( msg )

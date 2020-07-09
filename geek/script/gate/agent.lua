@@ -150,33 +150,6 @@ function MSG.CL_GetInviterInfo(msg)
     netmsgopt.send(fd,"LC_GetInviterInfo",scmsg)
 end
 
-function MSG.CS_SetNickname(msg) 
-    if not msg.nickname then
-        netmsgopt.send(fd,"SC_SetNickname",{
-            result = enum.LOGIN_RESULT_NICKNAME_EMPTY,
-        })
-        return true
-    end
-
-    local reply = {
-        nickname = msg.nickname,
-    }
-    local gbknickname = gbk.fromutf8(msg.nickname)
-    local nicknamelen = gbk.len(gbknickname)
-    if nicknamelen < 4 or nicknamelen > 14 then
-        netmsgopt.send(fd,"SC_SetNickname",{
-            result = enum.LOGIN_RESULT_NICKNAME_LIMIT,
-        })
-        return true
-    end
-
-    local scmsg = channel.call(":.game.?","msg","CS_SetNickname",msg)
-    netmsgopt.send(fd,"SC_SetNickname",scmsg)
-
-	return true
-end
-
-
 function MSG.CS_ResetAccount(msg) 
 	if not inserverid then
 		log.warning( "game_id == 0" )

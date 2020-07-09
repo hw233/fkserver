@@ -1572,10 +1572,36 @@ function on_cs_set_password_by_sms(player, msg)
 end
 
 -- 设置昵称
-function on_cs_set_nickname(player, msg)
-	send2db_pb("SD_SetNickname", {
-		guid = player.guid,
-		nickname = msg.nickname,
+function on_cs_set_nickname(msg,guid)
+	log.dump(msg)
+	log.dump(guid)
+	local nickname = msg.nickname
+	if not nickname or nickname == "" then
+		send2client_pb(guid,"SC_SetNickname",{
+			result = enum.ERORR_PARAMETER_ERROR
+		})
+		return
+	end
+	
+	local player = base_players[guid]
+	if not player then
+		send2client_pb(guid,"SC_SetNickname",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	reddb:hset(string.format("player:info:%d",guid),"nickname",nickname)
+	player.nickname = nickname
+
+	channel.call("db.?","msg","SD_SetNickname", {
+		guid = guid,
+		nickname = nickname,
+	})
+
+	send2client_pb(guid,"SC_SetNickname",{
+		nickname = nickname,
+		result = enum.ERROR_NONE,
 	})
 end
 
