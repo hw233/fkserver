@@ -1907,49 +1907,29 @@ end
 function on_cs_request_sms_verify_code(msg,guid)
 	local phone_num = msg.phone_number
 	if not guid then
-	    onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-		    result =  enum.LOGIN_RESULT_SMS_FAILED,
-		    phone_number = phone_num,
-	    })
-	    return
+	    return enum.LOGIN_RESULT_SMS_FAILED
 	end
     
 	local verify_code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
 	if verify_code and verify_code ~= "" then
-		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-			result =  enum.LOGIN_RESULT_SMS_REPEATED,
-			phone_number = phone_num,
-		})
-		return
+		return enum.LOGIN_RESULT_SMS_REPEATED
 	end
     
 	log.info( "RequestSms session [%s] =================", guid )
 	if not phone_num then
 		log.error( "RequestSms session [%s] =================tel not find", guid)
-		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-			result =  enum.LOGIN_RESULT_TEL_ERR,
-			phone_number = phone_num,
-		})
-		return
+		return enum.LOGIN_RESULT_TEL_ERR
 	end
     
 	log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
 	local phone_num_len = string.len(phone_num)
 	if phone_num_len < 7 or phone_num_len > 18 then
-		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-			result =  enum.LOGIN_RESULT_TEL_LEN_ERR,
-			phone_number = phone_num,
-		})
-		return
+		return enum.LOGIN_RESULT_TEL_LEN_ERR
 	end
     
 	local prefix = string.sub(phone_num,0, 3)
 	if prefix == "170" or prefix == "171" then
-		onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-			result =  enum.LOGIN_RESULT_TEL_ERR,
-			phone_number = phone_num,
-		})
-		return
+		return enum.LOGIN_RESULT_TEL_ERR
 	end
     
 	if prefix == "999" then
@@ -1958,11 +1938,7 @@ function on_cs_request_sms_verify_code(msg,guid)
 	    local rkey = string.format("sms:verify_code:guid:%s",guid)
 	    reddb:set(rkey,code)
 	    reddb:expire(rkey,expire)
-	    onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-			result =  enum.LOGIN_RESULT_SUCCESS,
-			phone_number = phone_num,
-		})
-		return
+		return enum.LOGIN_RESULT_SUCCESS
 	end
     
 	if not string.match(phone_num,"^%d+$") then
@@ -1975,9 +1951,5 @@ function on_cs_request_sms_verify_code(msg,guid)
 	reddb:set(rkey,code)
 	reddb:expire(rkey,expire)
 	channel.send("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
-	onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
-		result =  enum.LOGIN_RESULT_SUCCESS,
-		phone_number = phone_num,
-	})
-	return
+	return enum.LOGIN_RESULT_SUCCESS
 end

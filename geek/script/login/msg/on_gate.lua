@@ -728,6 +728,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
     channel.publish("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+    return enum.ERROR_NONE
 end
 
 function on_cs_chat_world(msg)  
