@@ -34,6 +34,7 @@ local club_money_type = require "game.club.club_money_type"
 require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
+local runtime_conf = require "game.runtime_conf"
 
 local reddb = redisopt.default
 
@@ -888,6 +889,11 @@ local function check_rule(rule)
 end
 
 local function check_create_table_limit(player,rule,club)
+	if not runtime_conf.private_fee_switch[0] then
+		log.warning("check_create_table_limit room fee switch is closed.")
+		return
+	end
+
 	local payopt = rule.pay.option
 	local roomfee = g_room.conf.private_conf.fee[(rule.round.option or 0) + 1]
 	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
@@ -904,7 +910,8 @@ local function check_create_table_limit(player,rule,club)
 			return enum.ERORR_PARAMETER_ERROR
 		end
 
-		if root:check_money_limit(roomfee,0) then
+		local boss = base_players[root.owner]
+		if boss:check_money_limit(roomfee,0) then
 			return enum.ERROR_LESS_MIN_LIMIT
 		end
 	end

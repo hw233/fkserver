@@ -25,6 +25,7 @@ local club_utils = require "game.club.club_utils"
 local club_role = require "game.club.club_role"
 local json = require "cjson"
 local util = require "util"
+local runtime_conf = require "game.runtime_conf"
 
 local reddb = redisopt.default
 
@@ -1310,6 +1311,11 @@ function base_table:cost_private_fee()
 	log.dump(rule)
 
 	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
+	if not runtime_conf.private_fee_switch[0] then
+		log.warning("base_table:cost_private_fee private fee switch is closed.")
+		return
+	end
+
 	local pay = rule.pay
 	if pay.option == enum.PAY_OPTION_AA then
 		local money_each = money
@@ -1326,7 +1332,9 @@ function base_table:cost_private_fee()
 			return
 		end
 
-		root:incr_money({
+		local boss = base_players[root.owner]
+
+		boss:incr_money({
 			money_id = 0,
 			money = - money,
 		},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
