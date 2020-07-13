@@ -274,7 +274,7 @@ end
 function gmd.online_player(_)
     local count = reddb:get("player:online:count")
     return {
-        result = error.SUCCESS,
+        errcode = error.SUCCESS,
         count = tonumber(count) or 0,
     }
 end
@@ -457,6 +457,26 @@ function gmd.transfer_money(data)
             errcode = error.DATA_ERROR,
             errstr = "transfer_type is not support!",
         }
+end
+
+function gmd.runtime_conf()
+    local roomcard_switch = reddb:get("runtime_conf:private_fee:0")
+    local diamond_switch = reddb:get("runtime_conf:private_fee:-1")
+    return {
+        errcode = error.SUCCESS,
+        data = {
+            roomcard = roomcard_switch,
+            diamond = diamond_switch,
+        }
+    }
+end
+
+function gmd.turn_diamond_switch(data)
+    reddb:set("runtime_conf:private_fee:-1",(data and data.open and data.open ~= 0) and 1 or 0)
+end
+
+function gmd.turn_roomcard_switch(data)
+    reddb:set("runtime_conf:private_fee:0",(data and data.open and data.open ~= 0) and 1 or 0)
 end
 
 gmd["club/create"] = gmd.create_club
