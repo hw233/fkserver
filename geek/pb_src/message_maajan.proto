@@ -109,6 +109,8 @@ enum HU_TYPE{
 	JIANG_QI_DUI			= 104;	//将七对
 	QUAN_YAO_JIU			= 105;	//全幺九
 	DAI_GOU 				= 106;	//带根
+	DI_LONG					= 107;  //地龙
+	QING_DI_LONG 			= 108;  //清地龙
 }
 
 

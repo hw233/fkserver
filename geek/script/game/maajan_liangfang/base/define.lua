@@ -218,6 +218,8 @@ local HU_TYPE = {
 	ZHE_REN_JING_JI				= pb.enum("HU_TYPE","ZHE_REN_JING_JI"), --责任金鸡
 	ZHE_REN_JING_WU_GU			= pb.enum("HU_TYPE","ZHE_REN_JING_WU_GU"),--责任金乌骨鸡
 	GANG_SHANG_PAO				= pb.enum("HU_TYPE","GANG_SHANG_PAO"),--杠上炮
+	DI_LONG 					= pb.enum("HU_TYPE","DI_LONG"), --地龙
+	QING_DI_LONG				= pb.enum("HU_TYPE","QING_DI_LONG"), -- 清地龙
 }
 
 define.HU_TYPE = HU_TYPE
@@ -324,6 +326,8 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 2},	--责任金鸡
 	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 4}, --责任金乌骨
 	[HU_TYPE.GANG_SHANG_PAO]		= {name = "GANG_SHANG_PAO",score = 1}, --杠上炮
+	[HU_TYPE.DI_LONG]				= {name = "DI_LONG",score = 30}, --地龙
+	[HU_TYPE.QING_DI_LONG]			= {name = "QING_DI_LONG",score = 40}, --清地龙
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
@@ -398,6 +402,7 @@ local UNIQUE_HU_TYPE = {
 	[HU_TYPE.QING_QI_DUI]			= {[HU_TYPE.QI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
 	[HU_TYPE.QING_LONG_BEI] 		= {[HU_TYPE.LONG_QI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
 	[HU_TYPE.QING_DA_DUI]			= {[HU_TYPE.DA_DUI_ZI] = true,[HU_TYPE.QING_YI_SE]=true},
+	[HU_TYPE.QING_DI_LONG]			= {[HU_TYPE.DI_LONG] = true,[HU_TYPE.QING_YI_SE]=true},
 }
 
 

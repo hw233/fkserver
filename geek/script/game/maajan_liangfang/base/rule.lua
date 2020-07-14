@@ -227,6 +227,24 @@ local function is_qi_dui(state)
 	return dui_zi_count == 7
 end
 
+local function is_di_long(pai,in_pai)
+	local dui_zi_count = table.sum(pai.shou_pai,function(c)
+		return c == 4 and 2 or c == 2 and 1 or 0
+	end)
+
+	if dui_zi_count ~= 5 then
+		return false
+	end
+
+	for _,s in pairs(pai.ming_pai) do
+		if s.type == SECTION_TYPE.PENG and ((in_pai and s.tile == in_pai) or pai.shou_pai[s.tile] == 1) then
+			return true
+		end
+	end
+
+	return false
+end
+
 local function is_hu(state)
 	local counts = state.counts
 	local tiles = counts_2_tiles(counts)
@@ -268,7 +286,7 @@ local HU_TYPE = def.HU_TYPE
 local UNIQUE_HU_TYPE = def.UNIQUE_HU_TYPE
 
 
-function rule.is_hu(pai,in_pai)
+function rule.is_hu(pai,in_pai,opt_di_long)
 	local cache = {}
 	for i=1,50 do
 		cache[i] = pai.shou_pai[i] or 0
@@ -278,7 +296,7 @@ function rule.is_hu(pai,in_pai)
 		sections = {},
 		counts = cache,
 	}
-	return is_hu(state) or is_qi_dui(state)
+	return is_hu(state) or is_qi_dui(state) or (opt_di_long and is_di_long(pai,in_pai))
 end
 
 local function unique_hu_types(base_hu_types)
@@ -419,7 +437,7 @@ local function merge_same_type(alltypes)
 	return table.values(types)
 end
 
-function rule.hu(pai,inPai)
+function rule.hu(pai,inPai,opt_di_long)
 	local cache = {}
 	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
 	if inPai then table.incr(cache,inPai) end
@@ -432,8 +450,20 @@ function rule.hu(pai,inPai)
 	hu(state)
 
 	local alltypes = {}
-
 	local base_types = {}
+
+	local qing_yi_se = is_qing_yi_se(pai,cache)
+	if opt_di_long then
+		local di_long = is_di_long(pai,inPai)
+		if di_long then
+			if qing_yi_se then
+				base_types[HU_TYPE.QING_DI_LONG] = true
+			else
+				base_types[HU_TYPE.DI_LONG] = true
+			end
+		end
+	end
+
 	local qi_dui = is_qi_dui(state)
 	if table.nums(state.hu) == 0 and not qi_dui then
 		base_types[HU_TYPE.WEI_HU] = true
@@ -447,7 +477,7 @@ function rule.hu(pai,inPai)
 			base_types[HU_TYPE.QI_DUI] = true
 		end
 
-		if is_qing_yi_se(pai,cache) then
+		if qing_yi_se then
 			base_types[HU_TYPE.QING_YI_SE] = true
 		end
 

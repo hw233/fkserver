@@ -53,7 +53,7 @@ function mj_util.tile_men(tile)
 	return math.floor(tile / 10)
 end
 
-function mj_util.get_actions(pai, mo_pai,in_pai)
+function mj_util.get_actions(pai,mo_pai,in_pai,opt_di_long)
 	local actions = {}
 	local counts = pai.shou_pai
 
@@ -99,26 +99,24 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		end
 	end
 
-	if in_pai and rule.is_hu(pai, in_pai)  then
+	if in_pai and rule.is_hu(pai, in_pai,opt_di_long)  then
 		actions[ACTION.HU] = {[in_pai] = true,}
-		actions[ACTION.MEN] = {[in_pai] = true,}
 	end
 
-	if mo_pai and rule.is_hu(pai,mo_pai) then
+	if mo_pai and rule.is_hu(pai,mo_pai,opt_di_long) then
 		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
-		actions[ACTION.MEN_ZI_MO] = {[mo_pai] = true,}
 	end
 
 	-- table.mergeto(actions,rule.is_chi(pai,inPai))
 	return actions
 end
 
-function mj_util.is_hu(pai, inPai)
-	return rule.is_hu(pai,inPai)
+function mj_util.is_hu(pai, inPai,opt_di_long)
+	return rule.is_hu(pai,inPai,opt_di_long)
 end
 
-function mj_util.hu(pai,inPai)
-	return rule.hu(pai,inPai)
+function mj_util.hu(pai,inPai,opt_di_long)
+	return rule.hu(pai,inPai,opt_di_long)
 end
 
 function mj_util.panGangWithOutInPai(pai)
