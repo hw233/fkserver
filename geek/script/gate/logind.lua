@@ -55,10 +55,11 @@ function MSG.C_RequestPublicKey(msg,session)
 end
 
 function MSG.CS_RequestSmsVerifyCode(msg,session)
-    local result = channel.call("login.?","msg","CS_RequestSmsVerifyCode",msg,session.fd)
+    local result,timeout = channel.call("login.?","msg","CS_RequestSmsVerifyCode",msg,session.fd)
     netmsgopt.send(session.fd,"SC_RequestSmsVerifyCode",{
         result = result,
         phone_number = msg.phone_number,
+        timeout = timeout,
     })
 end
 

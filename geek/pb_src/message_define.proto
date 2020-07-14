@@ -114,6 +114,7 @@ message CS_RequestSmsVerifyCode {
 	string phone_number = 1;						// 手机号
 	int32 guid = 2;
 	string platform_id = 3;	// 客户端 平台id
+	
 }
 
 // 申请短信验证回复
@@ -122,6 +123,7 @@ message SC_RequestSmsVerifyCode {
 	int32 	result = 1;						// LOGIN_RESULT
 	string sms_no = 2;						// 验证码
 	string phone_number = 3;						// 手机号
+	int32  timeout = 4;//过期时间
 }
 
 // 完善账号

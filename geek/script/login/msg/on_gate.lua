@@ -687,7 +687,9 @@ function on_cs_request_sms_verify_code(msg,session_id)
 
     local verify_code = reddb:get(string.format("sms:verify_code:session:%s",session_id))
     if verify_code and verify_code ~= "" then
-        return enum.LOGIN_RESULT_SMS_REPEATED
+        local ttl = reddb:ttl(string.format("sms:verify_code:session:%s",session_id))
+        ttl = tonumber(ttl)
+        return enum.LOGIN_RESULT_SMS_REPEATED,ttl
     end
 
     local phone_num = msg.phone_number
@@ -714,7 +716,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
         local rkey = string.format("sms:verify_code:session:%s",session_id)
         reddb:set(rkey,code)
         reddb:expire(rkey,expire or 60)
-        return enum.LOGIN_RESULT_SUCCESS
+        return enum.LOGIN_RESULT_SUCCESS,expire
     end
 
     if not  string.match(phone_num,"^%d+$") then
@@ -728,7 +730,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
     channel.publish("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
-    return enum.ERROR_NONE
+    return enum.ERROR_NONE,expire
 end
 
 function on_cs_chat_world(msg)  
