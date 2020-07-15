@@ -243,20 +243,20 @@ local function sms_login(msg,_,session_id)
         return enum.LOGIN_RESULT_SMS_FAILED
     end
 
-    local verify_code = reddb:get(string.format("sms:verify_code:session:%s",session_id))
+    local phone = msg.phone
+    if not phone then
+        return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    local verify_code = reddb:get(string.format("sms:verify_code:phone:%s",phone))
     if not verify_code or verify_code == "" then
         return enum.LOGIN_RESULT_SMS_CLOSED
     end
 
-    reddb:del(string.format("sms:verify_code:session:%s",session_id))
+    reddb:del(string.format("sms:verify_code:phone:%s",phone))
 
     if string.lower(verify_code) ~= string.lower(msg.sms_verify_no) then
         return enum.LOGIN_RESULT_SMS_FAILED
-    end
-
-    local phone = msg.phone
-    if not phone then
-        return enum.LOGIN_RESULT_TEL_ERR
     end
 
     local ret,info
@@ -685,18 +685,18 @@ function on_cs_request_sms_verify_code(msg,session_id)
         return enum.LOGIN_RESULT_SMS_FAILED
     end
 
-    local verify_code = reddb:get(string.format("sms:verify_code:session:%s",session_id))
-    if verify_code and verify_code ~= "" then
-        local ttl = reddb:ttl(string.format("sms:verify_code:session:%s",session_id))
-        ttl = tonumber(ttl)
-        return enum.LOGIN_RESULT_SMS_REPEATED,ttl
-    end
-
     local phone_num = msg.phone_number
     log.info( "RequestSms session [%s] =================", session_id )
     if not phone_num then
         log.error( "RequestSms session [%s] =================tel not find", session_id)
         return enum.LOGIN_RESULT_TEL_ERR
+    end
+
+    local verify_code = reddb:get(string.format("sms:verify_code:phone:%s",phone_num))
+    if verify_code and verify_code ~= "" then
+        local ttl = reddb:ttl(string.format("sms:verify_code:phone:%s",phone_num))
+        ttl = tonumber(ttl)
+        return enum.LOGIN_RESULT_SMS_REPEATED,ttl
     end
 
     log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
@@ -713,7 +713,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
     if prefix == "999" then
         local expire = math.floor(global_conf.sms_expire_time or 60)
         local code =  string.sub(phone_num,phone_num_len - 4 + 1)
-        local rkey = string.format("sms:verify_code:session:%s",session_id)
+        local rkey = string.format("sms:verify_code:phone:%s",phone_num)
         reddb:set(rkey,code)
         reddb:expire(rkey,expire or 60)
         return enum.LOGIN_RESULT_SUCCESS,expire
@@ -726,7 +726,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
 
     local expire = math.floor(global_conf.sms_expire_time or 60)
     local code = string.format("%4d",math.random(4001,9999))
-    local rkey = string.format("sms:verify_code:session:%s",session_id)
+    local rkey = string.format("sms:verify_code:phone:%s",phone_num)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
     channel.publish("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
