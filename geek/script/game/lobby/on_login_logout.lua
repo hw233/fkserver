@@ -898,7 +898,7 @@ local function check_create_table_limit(player,rule,club)
 	local roomfee = g_room.conf.private_conf.fee[(rule.round.option or 0) + 1]
 	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
 		if player:check_money_limit(roomfee,0) then
-			return enum.ERROR_LESS_MIN_LIMIT
+			return enum.ERROR_LESS_ROOM_CARD
 		end
 	elseif payopt == enum.PAY_OPTION_BOSS then
 		if not club then 
@@ -912,7 +912,7 @@ local function check_create_table_limit(player,rule,club)
 
 		local boss = base_players[root.owner]
 		if boss:check_money_limit(roomfee,0) then
-			return enum.ERROR_LESS_MIN_LIMIT
+			return enum.ERROR_LESS_ROOM_CARD
 		end
 	end
 
