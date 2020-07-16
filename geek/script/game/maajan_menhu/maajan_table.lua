@@ -126,12 +126,12 @@ function maajan_table:on_started(player_count)
 
         v.ji                    = {
             chong_feng = {
-                wu_gu = false,
-                normal = false,
+                wu_gu = nil,
+                normal = nil,
             },
             zhe_ren = {
-                wu_gu = false,
-                normal = false,
+                wu_gu = nil,
+                normal = nil,
             }
         }
 
@@ -1540,7 +1540,7 @@ function maajan_table:get_ji_items(p,ji_tiles)
             end
 
             table.get(p_ming_ji_tiles,t,{})[tile] = {count = 1}
-            p.ji.chong_feng.normal = false
+            p.ji.chong_feng.normal = nil
         elseif tile == 18 and p.ji.chong_feng.wu_gu and ji_tiles[18] then
             local t = HU_TYPE.CHONG_FENG_WU_GU
             if ji_tiles[18] and ji_tiles[18][HU_TYPE.JING_WU_GU_JI] then
@@ -1548,10 +1548,10 @@ function maajan_table:get_ji_items(p,ji_tiles)
             end
 
             table.get(p_ming_ji_tiles,t,{})[tile] = {count = 1}
-            p.ji.chong_feng.wu_gu = false
+            p.ji.chong_feng.wu_gu = nil
+        else
+            table.incr(desk_tiles,tile)
         end
-
-        table.incr(desk_tiles,tile)
     end
 
     for tile,c in pairs(desk_tiles) do
@@ -2334,15 +2334,15 @@ function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
     local _,last_tile = self:get_last_chu_pai()
     if tile == 21 and last_tile == 21 then
         local pi = self:chu_pai_player()
-        pi.ji.chong_feng.normal = false
-        p.ji.chong_feng.normal = false
+        pi.ji.chong_feng.normal = nil
+        p.ji.chong_feng.normal = nil
         p.ji.zhe_ren.normal = true
     end
 
     if self.rule.play.wu_gu_ji and tile == 18 and last_tile == 18  then
         local pi = self:chu_pai_player()
-        pi.ji.chong_feng.normal = false
-        p.ji.chong_feng.wu_gu = false
+        pi.ji.chong_feng.normal = nil
+        p.ji.chong_feng.wu_gu = nil
         p.ji.zhe_ren.wu_gu = true
     end
 end
