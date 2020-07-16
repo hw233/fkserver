@@ -412,7 +412,7 @@ end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
     if  not p.ting and not p.men and table.nums(p.pai.ming_pai) == 0 and
-        (p.chu_pai_count == 0 or (self.rule.yi_zhang_bao_ting and p.chu_pai_count == 1)) then
+        (p.chu_pai_count == 0 or (self.rule.play.yi_zhang_bao_ting and p.chu_pai_count == 1)) then
         local ting_tiles = mj_util.is_ting(p.pai)
         if table.nums(ting_tiles) > 0 and not mo_pai and not in_pai then
             return {
@@ -429,7 +429,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         actions[ACTION.BA_GANG] = nil
         actions[ACTION.FREE_BA_GANG] = nil
         actions[ACTION.FREE_AN_GANG] = nil
-        if (actions[ACTION.MEN] or actions[ACTION.MEN_ZI_MO]) and not self.rule.bao_ting_ke_men then
+        if (actions[ACTION.MEN] or actions[ACTION.MEN_ZI_MO]) and not self.rule.play.bao_ting_ke_men then
             actions[ACTION.MEN] = nil
             actions[ACTION.MEN_ZI_MO] = nil
         end
@@ -438,7 +438,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
     if mo_pai then
         if  not p.ting and not p.men and
             (p.chu_pai_count == 0 or
-            (self.rule.yi_zhang_bao_ting and p.chu_pai_count == 1)) and
+            (self.rule.play.yi_zhang_bao_ting and p.chu_pai_count == 1)) and
             table.nums(p.pai.ming_pai) == 0 then
             local pai = clone(p.pai)
             table.incr(pai.shou_pai,mo_pai)
@@ -1130,9 +1130,9 @@ function maajan_table:calculate_lian_zhuang(p,hu)
 end
 
 function maajan_table:calculate_zhuang(p,hu)
-    if self.rule.yi_kou_er then
+    if self.rule.play.yi_kou_er then
         return self:calculate_yi_kou_er(p,hu)
-    elseif self.rule.lian_zhuang then
+    elseif self.rule.play.lian_zhuang then
         return self:calculate_lian_zhuang(p,hu)
     end
 
@@ -1639,7 +1639,8 @@ end
 function maajan_table:gen_ji_tiles()
     local ji_tiles = {}
     local ben_ji_tile
-    local is_chui_fen_ji = self.rule.chui_feng_ji
+    local play = self.rule.play
+    local is_chui_fen_ji = play.chui_feng_ji
     if self.dealer.remain_count > 0 then
         repeat
             ben_ji_tile = self.dealer:deal_one()
@@ -1655,12 +1656,12 @@ function maajan_table:gen_ji_tiles()
             local fan_pai_ji = math.floor(ben_ji_tile / 10) * 10 + ben_ji_value % 9 + 1
             table.get(ji_tiles,fan_pai_ji,{})[HU_TYPE.FAN_PAI_JI] = true
 
-            if self.rule.yao_bai_ji then
+            if play.yao_bai_ji then
                 local yao_bai_ji = math.floor(ben_ji_tile / 10) * 10 + (ben_ji_value - 2) % 9 + 1
                 table.get(ji_tiles,yao_bai_ji,{})[HU_TYPE.FAN_PAI_JI] = true
             end
 
-            if self.rule.ben_ji then
+            if play.ben_ji then
                 table.get(ji_tiles,ben_ji_tile,{})[HU_TYPE.FAN_PAI_JI] = true
             end
         until true
@@ -1668,11 +1669,11 @@ function maajan_table:gen_ji_tiles()
 
     table.get(ji_tiles,21,{})[HU_TYPE.NORMAL_JI] = true
 
-    if self.rule.wu_gu_ji then
+    if play.wu_gu_ji then
         table.get(ji_tiles,18,{})[HU_TYPE.WU_GU_JI] = true
     end
 
-    if self.rule.xing_qi_ji then
+    if play.xing_qi_ji then
         local today = tonumber(os.date("%w"))
         if table.keyof(self.tiles,today) then
             table.get(ji_tiles,today,{})[HU_TYPE.XING_QI_JI] = true
@@ -2305,7 +2306,7 @@ function maajan_table:check_ji_tile_when_chu_pai(p,tile)
         end
     end
 
-    if self.rule.wu_gu_ji and tile == 18 then
+    if self.rule.play.wu_gu_ji and tile == 18 then
         p.ji = p.ji or {
             chong_feng = {},
             zhe_ren = {},
@@ -2338,7 +2339,7 @@ function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
         p.ji.zhe_ren.normal = true
     end
 
-    if self.rule.wu_gu_ji and tile == 18 and last_tile == 18  then
+    if self.rule.play.wu_gu_ji and tile == 18 and last_tile == 18  then
         local pi = self:chu_pai_player()
         pi.ji.chong_feng.normal = false
         p.ji.chong_feng.wu_gu = false
