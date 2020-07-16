@@ -957,7 +957,7 @@ local function on_cs_club_agree_request(msg,guid)
         return
     end
 
-    if not msg.reqeust_id and (not msg.sid or msg.sid == "") then
+    if not msg.request_id and (not msg.sid or msg.sid == "") then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERORR_PARAMETER_ERROR,
             op = msg.op,
