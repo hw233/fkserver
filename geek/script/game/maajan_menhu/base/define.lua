@@ -319,8 +319,8 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.ZHE_REN_WU_GU]			= {name = "ZHE_REN_WU_GU",score = 2}, --责任乌骨鸡
 	[HU_TYPE.JING_JI]				= {name = "JING_JI",fan = 0,score = 2}, --金鸡
 	[HU_TYPE.JING_WU_GU_JI]			= {name = "JING_WU_GU_JI",score = 4},	--金乌骨鸡
-	[HU_TYPE.CHONG_FENG_JING_JI]	= {name = "CHONG_FENG_JING_JI",fan = 1,score = 4}, -- 冲锋金鸡
-	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 1,score = 8}, -- 冲锋金乌骨鸡
+	[HU_TYPE.CHONG_FENG_JING_JI]	= {name = "CHONG_FENG_JING_JI",fan = 0,score = 4}, -- 冲锋金鸡
+	[HU_TYPE.CHONG_FENG_JING_WU_GU]	= {name = "CHONG_FENG_JING_WU_GU",fan = 0,score = 8}, -- 冲锋金乌骨鸡
 	[HU_TYPE.ZHE_REN_JING_JI]		= {name = "ZHE_REN_JING_JI",score = 2},	--责任金鸡
 	[HU_TYPE.ZHE_REN_JING_WU_GU]	= {name = "ZHE_REN_JING_WU_GU",score = 4}, --责任金乌骨
 	[HU_TYPE.GANG_SHANG_PAO]		= {name = "GANG_SHANG_PAO",score = 1}, --杠上炮
