@@ -2,6 +2,7 @@ local serviceconf = require "serviceconf"
 local channel = require "channel"
 local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
+local base_players = require "game.lobby.base_players"
 
 local reddb  = redisopt.default
 
@@ -37,4 +38,5 @@ function switch_room(guid,room_id)
 	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	onlineguid[guid] = nil
+	base_players[guid] = nil
 end

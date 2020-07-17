@@ -1009,7 +1009,8 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		switch_room(player.guid,room_id)
+		
+		switch_room(guid,room_id)
 		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
 		return
 	end
@@ -1209,6 +1210,7 @@ function on_cs_join_private_room(msg,guid)
 		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid)
+		base_players[guid] = nil
 		return
 	end
 

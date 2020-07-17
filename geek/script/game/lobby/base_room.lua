@@ -795,21 +795,22 @@ end
 -- 玩家退出房间
 function base_room:player_exit_room(player,offline)
 	log.info("base_room:player_exit_room, guid %s, room_id %s",player.guid,def_game_id)
-	base_players[player.guid] = nil
-	self.players[player.guid] = nil
+	local guid = player.guid
+	base_players[guid] = nil
+	self.players[guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
 	if offline then
-		log.info("player_exit_room set guid[%d] onlineinfo",player.guid)
-		local online_key = string.format("player:online:guid:%d",player.guid)
+		log.info("player_exit_room set guid[%d] onlineinfo",guid)
+		local online_key = string.format("player:online:guid:%d",guid)
 		reddb:hdel(online_key,"first_game_type")
 		reddb:hdel(online_key,"second_game_type")
 	else
-		log.info("player_exit_room not set guid[%d] onlineinfo",player.guid)
+		log.info("player_exit_room not set guid[%d] onlineinfo",guid)
 		local room_id = find_best_room(1)
-		switch_room(player.guid,room_id)
+		switch_room(guid,room_id)
 	end
 
-	onlineguid[player.guid] = nil
+	onlineguid[guid] = nil
 end
 
 function base_room:get_suitable_table(player,bool_change_table)
