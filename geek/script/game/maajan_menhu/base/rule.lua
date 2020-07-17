@@ -200,19 +200,19 @@ local function ting(state)
 end
 
 local function ting_qi_dui(state)
-	local count_tiles = table.fill(nil,{},1,4)
+	local count_tiles = {{},{},{},{}}
 	for tile,c in pairs(state.counts) do
 		if c > 0 then
 			table.insert(count_tiles[c],tile)
 		end
 	end
 
-	local even_count = #count_tiles[2] + #count_tiles[4]
-	if count_tiles[1] == 1 and even_count == 6 then
+	local even_count = #count_tiles[2] + #count_tiles[4] * 2
+	if #count_tiles[1] == 1 and even_count == 6 then
 		return count_tiles[1][1]
 	end
 
-	if count_tiles[3] == 1 and even_count == 5 then
+	if #count_tiles[3] == 1 and even_count == 5 then
 		return count_tiles[3][1]
 	end
 	

@@ -200,19 +200,19 @@ local function ting(state)
 end
 
 local function ting_qi_dui(state)
-	local count_tiles = table.fill(nil,{},1,4)
+	local count_tiles = {{},{},{},{}}
 	for tile,c in pairs(state.counts) do
 		if c > 0 then
 			table.insert(count_tiles[c],tile)
 		end
 	end
 
-	local even_count = #count_tiles[2] + #count_tiles[4]
-	if count_tiles[1] == 1 and even_count == 6 then
+	local even_count = #count_tiles[2] + #count_tiles[4] * 2
+	if #count_tiles[1] == 1 and even_count == 6 then
 		return count_tiles[1][1]
 	end
 
-	if count_tiles[3] == 1 and even_count == 5 then
+	if #count_tiles[3] == 1 and even_count == 5 then
 		return count_tiles[3][1]
 	end
 	
@@ -590,20 +590,15 @@ function rule.is_chi(pai,tile)
 	}
 end
 
-
--- local tiles = {11,12,12,13,15,15,15,16,18,24,25,25,25}
--- local counts = table.fill(nil,0,1,30)
+-- local tiles = {11,11,12,12,13,13,14,14,22,22,23,23,27}
+-- local counts = {}
 -- for _,tile in pairs(tiles) do
--- 	counts[tile] = counts[tile] + 1
+-- 	counts[tile] = (counts[tile] or 0) + 1
 -- end
 
--- local test = rule.is_hu({
+-- local test = rule.ting({
 -- 	shou_pai = counts,
--- 	ming_pai = {{
--- 		type = SECTION_TYPE.MING_GANG,
--- 		tile = 24,
--- 	}},
--- },1)
+-- })
 
 -- dump(test)
 
