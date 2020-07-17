@@ -2341,7 +2341,7 @@ function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
 
     if self.rule.play.wu_gu_ji and tile == 18 and last_tile == 18  then
         local pi = self:chu_pai_player()
-        pi.ji.chong_feng.normal = nil
+        pi.ji.chong_feng.wu_gu = nil
         p.ji.chong_feng.wu_gu = nil
         p.ji.zhe_ren.wu_gu = true
     end

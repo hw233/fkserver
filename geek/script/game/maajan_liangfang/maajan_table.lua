@@ -367,7 +367,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     local pre_tiles = {
-        -- [1] = {11,11,11,12,12,12,21,22,23,24,25,26,27},
+        -- [1] = {11,11,12,12,13,13,14,14,22,22,23,23,27},
         -- [2] = {22,22,23,23,24,24,25,25,26,26,27,27,28},
     }
 
@@ -2159,6 +2159,8 @@ function maajan_table:check_ji_tile_when_chu_pai(p,tile)
 end
 
 function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
+    log.dump(action)
+    log.dump(tile)
     if action ~= ACTION.MING_GANG and action ~= ACTION.PENG then
         return
     end
@@ -2166,15 +2168,15 @@ function maajan_table:check_ji_tile_when_peng_gang(p,action,tile)
     local _,last_tile = self:get_last_chu_pai()
     if tile == 21 and last_tile == 21 then
         local pi = self:chu_pai_player()
-        pi.ji.chong_feng.normal = false
-        p.ji.chong_feng.normal = false
+        pi.ji.chong_feng.normal = nil
+        p.ji.chong_feng.normal = nil
         p.ji.zhe_ren.normal = true
     end
 
     if self.rule.play.wu_gu_ji and tile == 18 and last_tile == 18  then
         local pi = self:chu_pai_player()
-        pi.ji.chong_feng.normal = false
-        p.ji.chong_feng.wu_gu = false
+        pi.ji.chong_feng.wu_gu = nil
+        p.ji.chong_feng.wu_gu = nil
         p.ji.zhe_ren.wu_gu = true
     end
 end
