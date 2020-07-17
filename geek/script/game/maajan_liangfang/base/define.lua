@@ -317,7 +317,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.YING_BAO]				= {name = "YING_BAO",score = 20},		--硬报
 	[HU_TYPE.RUAN_BAO]				= {name = "RUAN_BAO",score = 10},		--软报
 	[HU_TYPE.HONG_ZHONG]			= {name = "HONG_ZHONG",score = 1},		--红中
-	[HU_TYPE.CHONG_FENG_WU_GU]		= {name = "CHONG_FENG_WU_GU",score = 2}, --冲锋乌骨鸡
+	[HU_TYPE.CHONG_FENG_WU_GU]		= {name = "CHONG_FENG_WU_GU",score = 4}, --冲锋乌骨鸡
 	[HU_TYPE.ZHE_REN_WU_GU]			= {name = "ZHE_REN_WU_GU",score = 2}, --责任乌骨鸡
 	[HU_TYPE.JING_JI]				= {name = "JING_JI",fan = 0,score = 2}, --金鸡
 	[HU_TYPE.JING_WU_GU_JI]			= {name = "JING_WU_GU_JI",score = 4},	--金乌骨鸡
