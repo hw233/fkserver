@@ -1064,9 +1064,7 @@ function maajan_table:calculate_lian_zhuang(p,hu)
 end
 
 function maajan_table:calculate_zhuang(p,hu)
-    if self.rule.play.yi_kou_er then
-        return self:calculate_yi_kou_er(p,hu)
-    elseif self.rule.play.lian_zhuang then
+    if self.rule.play.lian_zhuang then
         return self:calculate_lian_zhuang(p,hu)
     end
 
