@@ -323,7 +323,7 @@ function base_table:calc_score_money(score)
 	return score * 100 * base_multi
 end
 
-function base_table:do_commission(taxes,commission_root)
+function base_table:do_commission(taxes)
 	local money_id = self:get_money_id()
 	if not money_id then
 		log.error("base_table:do_commission [%d] got nil private money id.",self.private_id)
@@ -363,42 +363,37 @@ function base_table:do_commission(taxes,commission_root)
 
 	local root = club_utils.root(private_table.club_id)
 
-	if commission_root then
-		local total = table.sum(taxes)
-		root:incr_commission(total,self.round_id)
-	else
-		local commissions = {}
-		for guid,tax in pairs(taxes) do
-			local club_id = get_belong_club(root,guid,enum.CT_UNION)
-			local last_rate = 0
-			while club_id and club_id ~= 0 do
-				local club = base_clubs[club_id]
-				local commission_rate = calc_club_template_commission_rate(club,private_table.template)
-				local commission = math.floor(tax * (commission_rate - last_rate))
-				last_rate = commission_rate
-				commissions[club] = (commissions[club] or 0) + commission
+	local commissions = {}
+	for guid,tax in pairs(taxes) do
+		local club_id = get_belong_club(root,guid,enum.CT_UNION)
+		local last_rate = 0
+		while club_id and club_id ~= 0 do
+			local club = base_clubs[club_id]
+			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
+			local commission = math.floor(tax * (commission_rate - last_rate))
+			last_rate = commission_rate
+			commissions[club] = (commissions[club] or 0) + commission
 
-				if club.parent ~= 0 then
-					local parent = base_clubs[club.parent]
-					local parent_rate = calc_club_template_commission_rate(parent,private_table.template)
-					local comission_contribution = math.floor(tax * (parent_rate - commission_rate))
-					channel.publish("db.?","msg","SD_LogClubCommissionContributuion",{
-						parent = club.parent,
-						club = club_id,
-						commission = comission_contribution,
-						template = private_table.template,
-					})
+			if club.parent ~= 0 then
+				local parent = base_clubs[club.parent]
+				local parent_rate = calc_club_template_commission_rate(parent,private_table.template)
+				local comission_contribution = math.floor(tax * (parent_rate - commission_rate))
+				channel.publish("db.?","msg","SD_LogClubCommissionContributuion",{
+					parent = club.parent,
+					club = club_id,
+					commission = comission_contribution,
+					template = private_table.template,
+				})
 
-					log.info("club:%d,parent:%d,commission:%d",club_id,club.parent,comission_contribution)
-				end
-
-				club_id = club.parent
+				log.info("club:%d,parent:%d,commission:%d",club_id,club.parent,comission_contribution)
 			end
+
+			club_id = club.parent
 		end
-		for club,commission in pairs(commissions) do
-			if commission > 0 then
-				club:incr_commission(commission,self.round_id)
-			end
+	end
+	for club,commission in pairs(commissions) do
+		if commission > 0 then
+			club:incr_commission(commission,self.round_id)
 		end
 	end
 end
@@ -488,7 +483,6 @@ function base_table:cost_tax(winlose)
 
 		table.sort(winloselist,function(l,r) return l.change > r.change end)
 
-		local commission_root = false
 		local maxwin = winloselist[1].change
 		local tax = {}
 		local totalwin = 0
@@ -496,23 +490,23 @@ function base_table:cost_tax(winlose)
 			local change = c.change
 			if change == maxwin then
 				local bigwin = taxconf.big_win
-				if change > 0 and change <= (bigwin[1] and bigwin[1][1] or 0) then
-					totalwin = totalwin + bigwin[1][2]
-					tax[c.guid] = bigwin[1][2]
-					commission_root = true
-				elseif change > (bigwin[1] and bigwin[1][1] or 0) and change <= (bigwin[2] and bigwin[2][1] or 0) then
-					totalwin = totalwin + bigwin[2][2]
-					tax[c.guid] = bigwin[2][2]
-					commission_root = true
-				elseif change > (bigwin[2] and bigwin[2][1] or 0) and change <= (bigwin[3] and bigwin[3][1] or 0) then
-					totalwin = totalwin + bigwin[3][2]
-					tax[c.guid] = bigwin[3][2]
-				else
-					totalwin = totalwin + 0
-					commission_root = true
+				local threshold = 0
+				for _,s in ipairs(bigwin) do
+					if not s then
+						break
+					end
+					if change > threshold and change <= (s[1] or -1) then
+						totalwin = totalwin + (s[2] or 0)
+						tax[c.guid] = s[2] or 0
+						break
+					end
+					threshold = s[1]
 				end
 			end
 		end
+
+		log.dump(tax)
+		log.dump(totalwin)
 
 		local eachwin = totalwin / table.nums(self.players)
 		local commission_tax = {}
@@ -521,7 +515,7 @@ function base_table:cost_tax(winlose)
 		end
 
 		do_cost_tax_money(tax)
-		self:do_commission(commission_tax,commission_root)
+		self:do_commission(commission_tax)
 		return
 	end
 end

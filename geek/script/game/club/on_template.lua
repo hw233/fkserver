@@ -67,8 +67,18 @@ local function calc_club_template_commission(club,template)
         return 0
     end
 
+    local function get_bigwin_commission(big_win)
+        for _,s in pairs(big_win) do
+            if s[2] and s[2] ~= 0 then
+                return s[2]
+            end
+        end
+
+        return 0
+    end
+
     local tax = template.rule.union.tax
-    local commission = tax and tax.AA or (tax.big_win[3] and tax.big_win[3][2] or 0)
+    local commission = tax and tax.AA or get_bigwin_commission(tax.big_win)
     local commission_rate = calc_club_template_commission_rate(club,template)
     commission = commission * commission_rate
     return math.floor(commission)

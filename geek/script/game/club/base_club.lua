@@ -362,15 +362,11 @@ local function check_rule(rule)
             return
         end
         if tax.big_win then
-            if table.nums(tax.big_win) == 0 then
+            if  type(tax.big_win) ~= "table" or
+                table.nums(tax.big_win) == 0 or
+                not table.logic_and(tax.big_win,function(v) return type(v) == "table" end)
+            then
                 return
-            end
-
-            local last_money,last_tax = 0,0
-            for _,v in ipairs(tax.big_win) do
-                if v[1] < last_money or v[2] < last_tax then
-                    return
-                end
             end
         end
     end
