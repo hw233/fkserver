@@ -105,12 +105,6 @@ function maajan_table:get_trustee_conf()
     return nil
 end
 
-function maajan_table:on_private_pre_dismiss()
-    if self.cur_round and self.cur_round > 0 then
-        self:on_final_game_overed()
-    end
-end
-
 function maajan_table:check_dismiss_commit(agrees)
     if table.sum(agrees,function(agree) return not agree and 1 or 0  end) > 0 then
 		return
@@ -1930,7 +1924,11 @@ function maajan_table:on_game_overed()
     self:clear_event_pump()
 end
 
-function maajan_table:on_final_game_overed()
+function maajan_table:on_process_start(player_count)
+    base_table.on_process_start(self,player_count)
+end
+
+function maajan_table:on_process_over()
     self.start_count = self.chair_count
 
     self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
@@ -1952,10 +1950,7 @@ function maajan_table:on_final_game_overed()
         end
     end)
 
-    local total_winlose = {}
-    for _,p in pairs(self.players) do
-        total_winlose[p.guid] = p.total_money or 0
-    end
+    local total_winlose = table.map(self.players,function(p) return p.guid,p.total_money or 0 end)
 
     self:cost_tax(total_winlose)
 
@@ -1967,7 +1962,7 @@ function maajan_table:on_final_game_overed()
 
     self.zhuang = nil
     self.cur_state_FSM = nil
-    base_table.on_final_game_overed(self)
+    base_table.on_process_over(self)
 end
 
 function maajan_table:ding_zhuang()

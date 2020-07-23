@@ -90,12 +90,6 @@ function maajan_table:on_private_inited()
     self.tiles = chair_count_tiles[self.chair_count or 4]
 end
 
-function maajan_table:on_private_pre_dismiss()
-    if self.cur_round and self.cur_round > 0 then
-        self:on_final_game_overed()
-    end
-end
-
 function maajan_table:on_private_dismissed()
     self.cur_round = nil
     self.zhuang = nil
@@ -1940,7 +1934,11 @@ function maajan_table:on_game_overed()
     base_table.on_game_overed(self)
 end
 
-function maajan_table:on_final_game_overed()
+function maajan_table:on_process_start(player_count)
+    base_table.on_process_start(self,player_count)
+end
+
+function maajan_table:on_process_over()
     local final_scores = {}
     for chair_id,p in pairs(self.players) do
         table.insert(final_scores,{
@@ -1954,10 +1952,7 @@ function maajan_table:on_final_game_overed()
         player_scores = final_scores,
     })
 
-    local total_winlose = {}
-    for _,p in pairs(self.players) do
-        total_winlose[p.guid] = p.total_money or 0
-    end
+    local total_winlose = table.map(self.players,function(p) return p.guid,p.total_money or 0 end)
     
     self:cost_tax(total_winlose)
 
