@@ -443,8 +443,7 @@ function base_table:cost_tax(winlose)
 
 	local function do_cost_tax_money(taxes)
 		for _,p in pairs(self.players) do
-			local guid = p.guid
-			local change = taxes[guid] or 0
+			local change = taxes[p.guid] or 0
 
 			if change ~= 0 then
 				p:cost_money({{
@@ -476,6 +475,7 @@ function base_table:cost_tax(winlose)
 	if taxconf.big_win and winlose then
 		log.dump(winlose)
 		log.dump(taxconf)
+		local bigwin = taxconf.big_win
 		local winloselist = {}
 		for guid,change in pairs(winlose) do
 			table.insert(winloselist,{guid = guid,change = change})
@@ -489,13 +489,10 @@ function base_table:cost_tax(winlose)
 		for _,c in pairs(winloselist) do
 			local change = c.change
 			if change == maxwin then
-				local bigwin = taxconf.big_win
 				local threshold = 0
 				for _,s in ipairs(bigwin) do
-					if not s then
-						break
-					end
-					if change > threshold and change <= (s[1] or -1) then
+					if not s then break end
+					if change > threshold and (change <= s[1] or s[1] < 0) then
 						totalwin = totalwin + (s[2] or 0)
 						tax[c.guid] = s[2] or 0
 						break
@@ -884,7 +881,9 @@ function base_table:player_sit_down_finished(player)
 end
 
 function base_table:on_private_pre_dismiss()
-
+	if self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+        self:on_final_game_overed()
+    end
 end
 
 function base_table:on_private_dismissed()
