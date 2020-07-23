@@ -1,21 +1,12 @@
 [submodule "3rd/jemalloc"]
 	path = 3rd/jemalloc
 	url = https://gitee.com/thinblog/jemalloc.git
-[submodule "3rd/pbc"]
-	path = 3rd/pbc
-	url = https://gitee.com/thinblog/pbc.git
-[submodule "3rd/luabitop"]
-	path = 3rd/luabitop
-	url = https://github.com/LuaDist/luabitop.git
 [submodule "3rd/lua-openssl"]
 	path = 3rd/lua-openssl
 	url = https://gitee.com/thinblog/lua-openssl.git
 [submodule "3rd/lua-cjson"]
 	path = 3rd/lua-cjson
 	url = https://gitee.com/thinblog/lua-cjson.git
-[submodule "3rd/luaossl"]
-	path = 3rd/luaossl
-	url = https://gitee.com/thinblog/luaossl.git
 [submodule "3rd/luagbk"]
 	path = 3rd/luagbk
 	url = https://gitee.com/thinblog/luagbk.git
@@ -28,11 +19,3 @@
 [submodule "3rd/lua-protobuf"]
 	path = 3rd/lua-protobuf
 	url = https://gitee.com/thinblog/lua-protobuf.git
-[submodule "3rd/pbc_v3"]
-	path = 3rd/pbc_v3
-	url = https://gitee.com/thinblog/pbc_v3.git
-	branch = proto_v3
-[submodule "common/FDaysORM"]
-	path = common/FDaysORM
-	url = https://gitee.com/thinblog/FDaysORM.git
-	branch = skynet
