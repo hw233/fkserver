@@ -22,6 +22,7 @@ local player_club = require "game.lobby.player_club"
 local club_commission = require "game.club.club_commission"
 local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_team = require "game.club.club_team"
+local club_partners = require "game.club.club_partners"
 local util = require "util"
 
 local reddb = redisopt.default
@@ -185,10 +186,16 @@ end
 function base_club:invite_join(invitee,inviter,inviter_club,type)
     if string.lower(type) == "invite_join" then
         local inviter_role = club_role[self.id][inviter]
-        if inviter_role ~= enum.CRT_ADMIN and inviter_role ~= enum.CRT_PARTNER and inviter_role ~= enum.CRT_BOSS then
-            return enum.ERORR_PARAMETER_ERROR
+        if inviter_role == enum.CRT_ADMIN or inviter_role == enum.CRT_BOSS then
+            local partner = club_partners[self.id][self.owner]
+            log.dump(partner)
+            partner:join(invitee)
+        elseif inviter_role == enum.CRT_PARTNER then
+            local partner = club_partners[self.id][inviter]
+            partner:join(invitee)
+        else
+            return enum.ERROR_PLAYER_NO_RIGHT
         end
-
 
         self:join(invitee,inviter)
         club_member[self.id] = nil

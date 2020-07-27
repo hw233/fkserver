@@ -33,6 +33,11 @@ local club_fast_template = require "game.club.club_fast_template"
 local base_private_table = require "game.lobby.base_private_table"
 local crypt = require "skynet.crypt"
 local url = require "url"
+local club_partner = require "game.club.club_partner"
+local club_member_partner = require "game.club.club_member_partner"
+local club_partners = require "game.club.club_partners"
+local club_partner_member = require "game.club.club_partner_member"
+local club_partner_commission = require "game.club.club_partner_commission"
 require "functions"
 
 local g_room = g_room
@@ -364,15 +369,19 @@ function on_cs_club_invite_join_club(msg,guid)
             return
         end
 
-        local root = club_utils.root(club)
-        for cid,_ in pairs(player_club[invitee][enum.CT_UNION]) do
-            local c = base_clubs[cid]
-            if c and club_utils.root(c) == root then
-                onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-                    result = enum.ERROR_AREADY_MEMBER
-                })
-                return
-            end
+        local inviter_role = club_role[club_id][guid]
+        if not inviter_role or inviter_role == enum.CRT_PLAYER then
+            onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                result = enum.ERROR_PLAYER_NO_RIGHT
+            })
+            return
+        end
+
+        if player_club[invitee][enum.CT_UNION][invitee] then
+            onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+                result = enum.ERROR_AREADY_MEMBER
+            })
+            return
         end
     elseif invite_type == "invite_create" then
         local p = base_players[invitee]
@@ -402,9 +411,9 @@ function on_cs_club_invite_join_club(msg,guid)
         end
     end
 
-    local code = club:invite_join(invitee,guid,club,invite_type)
+    local result = club:invite_join(invitee,guid,club,invite_type)
     onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
-        result = code,
+        result = result,
     })
 
     player_request[club.owner] = nil
@@ -726,8 +735,12 @@ end
 
 function on_cs_club_query_memeber(msg,guid)
     local club_id = msg.club_id
+    local partner = msg.partner
+    local owner = partner or guid
+    local req_role = msg.role
 
-    if not base_clubs[club_id] then
+    local club = base_clubs[club_id]
+    if not club then
         onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
             club_id = club_id,
@@ -735,8 +748,8 @@ function on_cs_club_query_memeber(msg,guid)
         return
     end
 
-    local role = club_role[club_id][guid]
-    if not role or role == enum.CRT_PLAYER then
+    local self_role = club_role[club_id][guid]
+    if not self_role or self_role == enum.CRT_PLAYER then
         onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
             result = enum.ERROR_PLAYER_NO_RIGHT,
             club_id = club_id,
@@ -744,24 +757,38 @@ function on_cs_club_query_memeber(msg,guid)
         return
     end
 
+    local owner_role = club_role[club_id][owner]
+    if not owner_role or owner_role == enum.CRT_PLAYER then
+        onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
+            result = enum.ERORR_PARAMETER_ERROR,
+            club_id = club_id,
+        })
+        return
+    end
+
     local money_id = club_money_type[club_id]
+    local mems = (partner and partner ~= 0) and club_partner_member[club_id][partner] or club_member[club_id]
+
     local ms = {}
-    for mem,_ in pairs(club_member[club_id]) do
+    for mem,_ in pairs(mems or {}) do
         local p = base_players[mem]
         if p then
-            table.insert(ms,{
-                info = {
-                    guid = p.guid,
-                    icon = p.icon,
-                    nickname = p.nickname,
-                    sex = p.sex,
-                },
-                role = club_role[club_id][p.guid] or enum.CRT_PLAYER,
-                money = {
-                    money_id = money_id,
-                    count = player_money[p.guid][money_id] or 0,
-                }
-            })
+            local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+            if not req_role or req_role == 0 or req_role == role then
+                table.insert(ms,{
+                    info = {
+                        guid = p.guid,
+                        icon = p.icon,
+                        nickname = p.nickname,
+                        sex = p.sex,
+                    },
+                    role = role,
+                    money = {
+                        money_id = money_id,
+                        count = player_money[p.guid][money_id] or 0,
+                    }
+                })
+            end
         end
     end
 
@@ -769,6 +796,7 @@ function on_cs_club_query_memeber(msg,guid)
         result = enum.ERROR_NONE,
         club_id = club_id,
         player_list = ms,
+        role = req_role,
     })
 end
 
@@ -1065,7 +1093,8 @@ local function on_cs_club_partner(msg,guid)
         result = enum.ERROR_NONE,
     }
 
-    if not base_clubs[club_id] then
+    local club = base_clubs[club_id]
+    if not club then
         res.result = enum.ERROR_CLUB_NOT_FOUND
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
@@ -1078,7 +1107,7 @@ local function on_cs_club_partner(msg,guid)
     end
 
     local role = club_role[club_id][guid]
-    if not role or (role ~= enum.CRT_BOSS and role ~= enum.CRT_ADMIN) then
+    if not role or role == enum.CRT_PLAYER then
         res.result = enum.ERROR_PLAYER_NO_RIGHT
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
@@ -1092,31 +1121,86 @@ local function on_cs_club_partner(msg,guid)
             return
         end
 
-        local id = math.random(1000000,9999999)
-        for _ = 1,1000 do
-            if not base_clubs[id] then break end
-            id = math.random(1000000,9999999)
+        local parent = guid
+        if role == enum.CRT_BOSS or role == enum.CRT_ADMIN then
+            parent = club.owner
         end
-    
-        base_club:create(id,"","",target_guid,enum.CT_UNION,club_id)
 
-        reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_PARTNER)
-        club_role[club_id][target_guid] = nil
-
+        local result = club_partner:create(club_id,target_guid,parent)
+        res.result = result
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
 
     if msg.op == club_op.REMOVE_PARTNER then
         local target_role = club_role[club_id][target_guid]
-        if target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER or target_role == enum.CRT_ADMIN  then
+        if target_role ~= enum.CRT_PARTNER then
+            res.result = enum.ERROR_OPERATION_INVALID
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+            return
+        end
+
+        if target_role == enum.CRT_BOSS or target_role == enum.CRT_ADMIN  then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
         end
 
-        reddb:hdel(string.format("club:role:%d",club_id),target_guid)
-        club_role[club_id][target_guid] = nil
+        if role == enum.CRT_PARTNER then
+            local parent = club_member_partner[club_id][target_guid]
+            while parent do
+                if parent == guid then
+                    break
+                end
+
+                parent = club_member_partner[club_id][parent]
+            end
+
+            if not parent then
+                res.result = enum.ERROR_PLAYER_NO_RIGHT
+                onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+                return
+            end
+        end
+
+        local function recursive_sum_member_all_money(c,partner_id)
+            local sum = club_partner_commission[c.id][partner_id]
+            local money_id = club_money_type[c.id]
+            for mem_id,_ in pairs(club_partner_member[c.id][partner_id] or {}) do
+                local mrole = club_role[c.id][mem_id]
+                if mrole == enum.CRT_PARTNER then
+                    sum = sum + recursive_sum_member_all_money(c.id,mem_id)
+                end
+
+                sum = sum + player_money[mem_id][money_id]
+            end
+
+            return sum
+        end
+
+        local function recursive_dismiss_partner(c,partner_id)
+            for mem_id,_ in pairs(club_partner_member[c.id][partner_id]) do
+                local mrole = club_role[c.id][mem_id]
+                if mrole == enum.CRT_PARTNER then
+                    local result = recursive_dismiss_partner(c.id,mem_id)
+                    if result ~= enum.ERROR_NONE then
+                        return result
+                    end
+                end
+            end
+
+            local partner = club_partners[club_id][target_guid]
+            return partner:dismiss()
+        end
+
+        if recursive_sum_member_all_money(club,target_guid) > 0 then
+            res.result = enum.ERROR_OPERATION_INVALID
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+            return
+        end
+
+        local result = recursive_dismiss_partner(club,target_guid)
+        res.result = result
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end

@@ -221,3 +221,33 @@ function on_sd_edit_club_template(msg)
         log.error("on_sd_edit_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)
     end
 end
+
+function on_sd_create_partner(msg)
+    local club = msg.club
+    local guid = msg.guid
+    
+    local res = dbopt.game:query(string.format([[
+        INSERT INTO t_player_commission(club,guid,money_id,commission) SELECT %s,%s,money_id,0 FROM t_club_money_type WHERE club = %s;
+    ]],club,guid,club))
+    if res.errno then
+        log.error("on_sd_create_partner INSERT INTO t_player_commission errno:%d,errstr:%s",res.errno,res.err)
+    end
+
+    return true
+end
+
+function on_sd_join_partner(msg)
+    local club = msg.club
+    local guid = msg.guid
+    local partner = msg.partner
+
+    local res = dbopt.game:query(string.format([[
+        INSERT INTO t_partner_member(club,guid,partner) VALUES(%s,%s,%s);
+    ]],club,guid,partner or "NULL"))
+    if res.errno then
+        log.error("on_sd_join_partner INSERT INTO t_partner_member errno:%d,errstr:%s",res.errno,res.err)
+    end
+
+    return true
+end
+

@@ -69,7 +69,8 @@ message S2C_CLUB_INFO_RES {
 message C2S_CLUB_PLAYER_LIST_REQ{ 
     enum MsgID {NIL = 0;ID = 14024;}
     int32 club_id = 1;      //俱乐部ID
-    int32 guid = 2;    //玩家ID，SEARCH_LIST时需要传递此参数
+    int32 partner = 2;    //玩家ID，SEARCH_LIST时需要传递此参数
+    int32 role = 3;    //下属类型
 }
 
 //俱乐部成员列表数据
@@ -79,6 +80,7 @@ message S2C_CLUB_PLAYER_LIST_RES{
     int32 result = 1;
     int32 club_id = 2;
     repeated CLUB_MEMBER player_list = 3; //玩家列表
+    int32 role = 4;
 }
 
 //俱乐部成员管理，基础操作
