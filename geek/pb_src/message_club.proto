@@ -270,6 +270,7 @@ message C2S_CLUB_TRANSFER_MONEY_REQ{
     int32 target_type = 3;
     int32 target_id = 4;
     int32 money = 5;
+    int32 ext_data = 6;
 }
 
 //转帐回复
@@ -281,6 +282,7 @@ message S2C_CLUB_TRANSFER_MONEY_RES{
     int32 target_type = 4;
     int32 target_id = 5;
     int32 money = 6;
+    int32 ext_data = 7;
 }
 
 
@@ -328,6 +330,7 @@ message C2S_GET_CLUB_TEMPLATE_COMMISSION{
     int32   club_id = 1;
     int32   team_id = 2;
     int32   template_id = 3;
+    int32   partner_id = 4;
 }
 
 message S2C_GET_CLUB_TEMPLATE_COMMISSION{
@@ -335,7 +338,8 @@ message S2C_GET_CLUB_TEMPLATE_COMMISSION{
     int32    result = 1;
     int32    club_id = 2;
     int32    team_id = 3;
-    repeated CLUB_TEMPLATE_CONF confs = 4;
+    int32    partner_id = 4;
+    repeated CLUB_TEMPLATE_CONF confs = 5;
 }
 
 message C2S_EXCHANGE_CLUB_COMMISSON_REQ{ 

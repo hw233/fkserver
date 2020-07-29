@@ -73,6 +73,8 @@ redismetadata.conf = redismeta:create({
         visual = "boolean",
         club_id = "number",
         template_id = "number",
+        team_commission_rate = "number",
+        partner_id = "number",
     }
 })
 

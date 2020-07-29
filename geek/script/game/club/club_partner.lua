@@ -9,6 +9,7 @@ local club_partner_member = require "game.club.club_partner_member"
 local club_money_type = require "game.club.club_money_type"
 local club_partner_commission = require "game.club.club_partner_commission"
 local player_money = require "game.lobby.player_money"
+local base_players = require "game.lobby.base_players"
 local util = require "util"
 
 local reddb = redisopt.default
@@ -111,8 +112,8 @@ end
 
 function club_partner:dismiss()
     if not channel.call("db.?","msg","SD_DismissPartner",{
-        club_id = self.club_id,
-        guid = self.guid
+        club = self.club_id,
+        partner = self.guid
     }) then
         log.error("club_partner:dismiss unknown db error.")
         return enum.ERROR_INTERNAL_UNKOWN
@@ -123,6 +124,7 @@ function club_partner:dismiss()
     end
 
     reddb:del(string.format("club:partner:member:%s:%s",self.club_id,self.guid))
+    reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
     return enum.ERROR_NONE
 end
 
@@ -138,11 +140,11 @@ function club_partner:notify_money()
     end
 
     onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
-        "PARTNER",{
+        "PLAYER",{
             club_id = self.club_id,
             guid = self.guid,
         },{
-            money = player_money[self.club_id][money_id],
+            money = player_money[self.guid][money_id],
             commission = club_partner_commission[self.club_id][self.guid],
             money_id = money_id,
         }
@@ -167,14 +169,12 @@ function club_partner:incr_commission(money,round_id)
     newmoney = newmoney and tonumber(newmoney) or 0
     club_partner_commission[self.club_id] = nil
 
-
-
     self:notify_money()
     return newmoney
 end
 
 function club_partner:exchange_commission(money)
-    local commission = club_partner_commission[self.club_id]
+    local commission = club_partner_commission[self.club_id][self.guid]
     if money < 0 then money = commission  end
 
     if money == 0 then return enum.ERROR_NONE end
@@ -183,9 +183,9 @@ function club_partner:exchange_commission(money)
 
     if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
 
-    reddb:incrby(string.format("club:partner:commission:%s",self.club_id),-math.floor(money))
+    reddb:hincrby(string.format("club:partner:commission:%s",self.club_id),self.guid,-math.floor(money))
     local money_id = club_money_type[self.club_id]
-    self:incr_money({
+    base_players[self.guid]:incr_money({
         money_id = money_id,
         money = money,
     },enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)

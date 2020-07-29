@@ -15,6 +15,7 @@ local club_money_type = require "game.club.club_money_type"
 local channel = require "channel"
 local item_details_table = item_details_table
 local base_active_android = base_active_android
+local club_partner_commission = require "game.club.club_partner_commission"
 
 require "game.net_func"
 require "table_func"
@@ -498,6 +499,24 @@ function base_player:notify_money(money_id)
 			money_id = money_id,
 		},{
 			money = player_money[self.guid][money_id] or 0
+		}
+	))
+end
+
+function base_player:notify_commission(club_id)
+	local money_id = club_money_type[club_id]
+	if not money_id then
+		log.error("base_player:notify_commission [%s] got nil money_id.",self.guid)
+		return
+	end
+
+	onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
+		"PLAYER",{
+			guid = self.guid,
+			money_id = money_id,
+			club_id = club_id,
+		},{
+			commission = club_partner_commission[club_id][self.guid] or 0
 		}
 	))
 end

@@ -26,7 +26,11 @@ local club_role = require "game.club.club_role"
 local json = require "cjson"
 local util = require "util"
 local runtime_conf = require "game.runtime_conf"
-
+local club_partner_commission = require "game.club.club_partner_commission"
+local club_member_partner = require "game.club.club_member_partner"
+local club_partner_template_commission = require "game.club.club_partner_template_commission"
+local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
+local club_partners = require "game.club.club_partners"
 local reddb = redisopt.default
 
 local dismiss_timeout = 60
@@ -340,60 +344,55 @@ function base_table:do_commission(taxes)
 		return
 	end
 
-	if not private_table.club_id then
+	local club_id = private_table.club_id
+	if not club_id then
 		log.error("base_table:do_commission [%d] got private club.",self.private_id)
 		return
 	end
 
-	local function get_belong_club(root,guid,club_type)
-		local maxlevel = 0
-		local max_level_club_id = 0
-		local club_ids = player_club[guid][club_type]
-		for club_id,_ in pairs(club_ids or {}) do
-			local level = club_utils.level(club_id)
-			local r = club_utils.root(club_id)
-			if maxlevel < level and root.id == r.id then
-				max_level_club_id = club_id
-				maxlevel = level
-			end
-		end
-
-		return max_level_club_id
+	local template_id = private_table.template
+	if not template_id then
+		log.error("base_table:do_commission [%d] got nil template.",self.private_id)
+		return
 	end
 
-	local root = club_utils.root(private_table.club_id)
+	local function get_club_partner_template_commission_rate(c_id,t_id,partner_id)
+		local commission_rate = club_partner_template_commission[c_id][t_id][partner_id]
+		if not commission_rate then
+			partner_id = club_member_partner[c_id][partner_id]
+			if not partner_id then
+				return 1
+			end
+			commission_rate = club_partner_template_default_commission[c_id][t_id][partner_id]
+		end
+	
+		return commission_rate and commission_rate / 10000 or 0
+	end
 
 	local commissions = {}
 	for guid,tax in pairs(taxes) do
-		local club_id = get_belong_club(root,guid,enum.CT_UNION)
 		local last_rate = 0
-		while club_id and club_id ~= 0 do
-			local club = base_clubs[club_id]
-			local commission_rate = calc_club_template_commission_rate(club,private_table.template)
-			local commission = math.floor(tax * (commission_rate - last_rate))
-			last_rate = commission_rate
-			commissions[club] = (commissions[club] or 0) + commission
+		local p_guid = guid
+		while p_guid and p_guid ~= 0 do
+			local role = club_role[club_id][p_guid]
+			if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
+				local commission_rate = get_club_partner_template_commission_rate(club_id,template_id,p_guid)
+				local commission = tax * (commission_rate - last_rate)
+				last_rate = commission_rate
 
-			if club.parent ~= 0 then
-				local parent = base_clubs[club.parent]
-				local parent_rate = calc_club_template_commission_rate(parent,private_table.template)
-				local comission_contribution = math.floor(tax * (parent_rate - commission_rate))
-				channel.publish("db.?","msg","SD_LogClubCommissionContributuion",{
-					parent = club.parent,
-					club = club_id,
-					commission = comission_contribution,
-					template = private_table.template,
-				})
+				commissions[p_guid] = (commissions[p_guid] or 0) + commission
 
-				log.info("club:%d,parent:%d,commission:%d",club_id,club.parent,comission_contribution)
+				log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)
 			end
 
-			club_id = club.parent
+			p_guid = club_member_partner[club_id][p_guid]
 		end
 	end
-	for club,commission in pairs(commissions) do
+
+	for guid,commission in pairs(commissions) do
+		commission = math.floor(commission + 0.0001)
 		if commission > 0 then
-			club:incr_commission(commission,self.round_id)
+			club_partners[club_id][guid]:incr_commission(commission,self.round_id)
 		end
 	end
 end

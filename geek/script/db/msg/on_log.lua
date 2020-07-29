@@ -141,7 +141,7 @@ function on_sd_log_recharge(msg)
     log.dump(sqls)
     local res = dbopt.log:query(table.concat(sqls,"\n"))
     if res.errno then
-        log.error("on_sd_log_club_commission insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
+        log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
         return
     end
 
@@ -204,4 +204,3 @@ function on_sd_request_share_param(sid)
 
     return res[1]
 end
-

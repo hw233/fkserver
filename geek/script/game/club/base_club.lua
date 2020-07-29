@@ -492,7 +492,7 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
 end
 
 function base_club:notify_money(money_id)
-    local admins = table.series(club_role[self.id],function(_,guid) return guid end)
+    local admins = table.series(club_role[self.id][nil],function(_,guid) return guid end)
     onlineguid.broadcast(admins,"SYNC_OBJECT",util.format_sync_info(
         "CLUB",{
             id = self.id,

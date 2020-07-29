@@ -231,6 +231,7 @@ function on_sd_create_partner(msg)
     ]],club,guid,club))
     if res.errno then
         log.error("on_sd_create_partner INSERT INTO t_player_commission errno:%d,errstr:%s",res.errno,res.err)
+        return
     end
 
     return true
@@ -246,8 +247,23 @@ function on_sd_join_partner(msg)
     ]],club,guid,partner or "NULL"))
     if res.errno then
         log.error("on_sd_join_partner INSERT INTO t_partner_member errno:%d,errstr:%s",res.errno,res.err)
+        return
     end
 
     return true
 end
 
+function on_sd_dismiss_partner(msg)
+    local club = msg.club
+    local partner = msg.partner
+
+    local res = dbopt.game:query(string.format([[
+        DELETE FROM t_partner_member WHERE club = %s AND partner = %s;
+    ]],club,partner))
+    if res.errno then
+        log.error("on_sd_dismiss_partner DELETE FROM t_partner_member errno:%d,errstr:%s",res.errno,res.err)
+        return
+    end
+
+    return true
+end

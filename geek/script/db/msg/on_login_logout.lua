@@ -2842,6 +2842,57 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	return enum.ERROR_NONE,old_from_money,new_from_money,old_to_money,new_to_money
 end
 
+
+local function transfer_money_player2player(from_guid,to_guid,money_id,amount,why,why_ext)
+	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
+		from_guid,to_guid,money_id,amount,why,why_ext)
+	local sqls = {
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id),
+		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]], -amount,from_guid,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id),
+		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],amount,to_guid,money_id),
+		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id),
+	}
+
+	log.dump(sqls)
+
+	local gamedb = dbopt.game
+
+	local transid,res = gamedb:begin_trans()
+	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
+	if res.errno then
+		gamedb:rollback_trans(transid)
+		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	log.dump(res)
+
+	gamedb:commit_trans(transid)
+
+	local old_from_money = res[1] and res[1][1] and res[1][1].money or nil
+	local new_from_money = res[3] and res[3][1] and res[3][1].money or nil
+	local old_to_money = res[4] and res[4][1] and res[4][1].money or nil
+	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
+
+	local logsqls = {
+		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
+					from_guid,money_id,old_from_money,new_from_money,why,why_ext),
+		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
+					to_guid,money_id,old_to_money,new_to_money,why,why_ext),
+	}
+
+	log.dump(logsqls)
+	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	if res.errno then
+		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	return enum.ERROR_NONE,old_from_money,new_from_money,old_to_money,new_to_money
+end
+
 function on_sd_transfer_money(msg)
 	local from_id = msg.from
 	local to_id = msg.to
@@ -2861,6 +2912,10 @@ function on_sd_transfer_money(msg)
 
 	if trans_type == 3 then
 		return transfer_money_club2club(from_id,to_id,money_id,amount,why,why_ext)
+	end
+
+	if trans_type == 4 then
+		return transfer_money_player2player(from_id,to_id,money_id,amount,why,why_ext)
 	end
 
 	return enum.ERROR_PARAMER_ERROR

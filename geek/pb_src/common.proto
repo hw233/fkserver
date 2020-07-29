@@ -143,15 +143,18 @@ enum PAY_OPTION{
 message CLUB_TEMPLATE_CONF{
     int32   template_id  = 1;
     int32   team_id = 2;
-    float   commission_rate = 3;
-    int32   commission = 4;
+    int32   partner_id = 3;
+    int32   my_commission = 4;
+    float   my_commission_rate = 5;
+    float   team_commission_rate = 6;
 }
 
 message CLUB_TEAM_TEMPLATE_CONF{
     int32   template_id = 1;
     bool    visual = 2; 
-    int32   commission = 3;
-    float   commission_rate = 4;
+    int32   my_commission = 3;
+    float   my_commission_rate = 4;
+    float   team_commission_rate = 5;
 }
 
 enum NOTICE_WHERE {
