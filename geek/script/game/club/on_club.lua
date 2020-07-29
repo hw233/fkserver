@@ -139,7 +139,7 @@ function on_bs_club_create(owner,name)
     base_club:create(id,name or "","",player,enum.CT_UNION)
 
     -- 初始送分 金币
-    base_clubs[id]:incr_money({
+    player:incr_money({
         money_id = club_money_type[id],
         money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
@@ -166,7 +166,7 @@ function on_bs_club_create_with_group(group_id,name)
     local id = rand_union_club_id()
     base_club:create(id,name or "","",player,enum.CT_UNION)
 
-    base_clubs[id]:incr_money({
+    player:incr_money({
         money_id = club_money_type[id],
         money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
@@ -199,7 +199,7 @@ function on_cs_club_create(msg,guid)
     base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
     -- 初始送分 金币
-    base_clubs[id]:incr_money({
+    player:incr_money({
         money_id = club_money_type[id],
         money = math.floor(global_conf.union_init_money),
     },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
