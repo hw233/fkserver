@@ -1256,13 +1256,25 @@ function base_table:on_pre_start(player_count)
 	self.ext_round_id = self.ext_round_id or self:get_ext_game_id()
 end
 
-function base_table:get_money_id()
+function base_table:room_conf()
+	return self.room_.conf
+end
+
+function base_table:room_private_conf()
+	return self.room_.conf.private_conf
+end
+
+function base_table:private_table_conf()
 	if not self.private_id then
-		log.info("base_table:get_money_id,not private table,return -1.")
-		return -1
+		log.info("base_table:private_table_conf,not private table,return nil.")
+		return nil
 	end
 
-	local private_table = base_private_table[self.private_id]
+	return base_private_table[self.private_id]
+end
+
+function base_table:get_money_id()
+	local private_table = self:private_table_conf()
 	if not private_table then
 		log.error("base_table:get_money_id [%d] got nil private conf",self.private_id)
 		return

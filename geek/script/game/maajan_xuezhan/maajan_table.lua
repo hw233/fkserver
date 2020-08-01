@@ -60,6 +60,99 @@ local all_tiles = {
     }
 }
 
+local play_opt_conf = {
+    si_ren_liang_fang = {
+        start_count = 4,
+        tiles = {
+            all = {
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+            },
+        }
+    },
+    san_ren_liang_fang = {
+        start_count = 3,
+        tiles = {
+            count = 13,
+            all = {
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+            },
+        }
+    },
+    er_ren_san_fang = {
+        start_count = 2,
+        tiles = {
+            count = 13,
+            all = {
+                1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                1,2,3,4,5,6,7,8,9, 11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+            },
+        }
+    },
+    er_ren_liang_fang = {
+        start_count = 2,
+        tiles = {
+            count = 13,
+            all = {
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+                11,12,13,14,15,16,17,18,19, 21,22,23,24,25,26,27,28,29,
+            },
+        }
+    },
+    er_ren_yi_fang = {
+        start_count = 2,
+        tiles = {},
+    },
+}
+
+local function get_play_conf(play_opt,tiles_opt)
+    local play_conf = play_opt_conf[play_opt]
+    if not play_conf then return end
+
+    local start_count = play_conf.start_count
+    local tiles_conf = play_conf.tiles
+
+    local function get_all_tiles(opt)
+        if tiles_conf.all then
+            return tiles_conf.all
+        end
+
+        if not opt or opt > 2 or opt < 0 then
+            log.error("get_play_conf got invalid tiles opt.%s",opt)
+            return all_tiles[start_count]
+        end
+
+        local tiles = {}
+        for i = 1,9 do
+            table.insert(tiles,opt * 10 + i)
+            table.insert(tiles,opt * 10 + i)
+            table.insert(tiles,opt * 10 + i)
+            table.insert(tiles,opt * 10 + i)
+        end
+
+        return tiles
+    end
+
+    local function get_game_tile_count(opt)
+        if tiles_conf.count then
+            return tiles_conf.count
+        end
+
+        return opt
+    end
+
+    return start_count,get_all_tiles(tiles_opt.all),get_game_tile_count(tiles_opt.count)
+end
+
 
 local maajan_table = base_table:new()
 
@@ -73,7 +166,24 @@ end
 function maajan_table:on_private_inited()
     self.cur_round = nil
     self.zhuang = nil
-    self.tiles = all_tiles[4]
+    self.game_tile_count = 13
+    local room_private_conf = self:room_private_conf()
+    if not room_private_conf then return end
+
+    if not room_private_conf.play then return end
+
+    local play_opt = room_private_conf.play.option
+    if not play_opt then return end
+
+    local rule_play = self.rule.play
+
+    local start_count,tiles,game_tile_count = get_play_conf(play_opt,{
+        count = rule_play.tile_count,
+        all = rule_play.tile_men,
+    })
+    self.start_count = start_count
+    self.tiles = tiles
+    self.game_tile_count = game_tile_count
 end
 
 function maajan_table:on_private_dismissed()
@@ -164,7 +274,7 @@ function maajan_table:on_started(player_count)
         table_id = self.private_id or nil,
     }
 
-    self.dealer = maajan_tile_dealer:new(all_tiles[player_count])
+    self.dealer = maajan_tile_dealer:new(self.tiles[player_count])
     self.co = skynet.fork(function()
         self:main()
     end)
@@ -1533,8 +1643,8 @@ function maajan_table:prepare_tiles()
         end
 
         local c = table.nums(tiles or {})
-        if c < 13 then
-            tiles = table.union(tiles or {},self.dealer:deal_tiles(13 - c))
+        if c < self.game_tile_count then
+            tiles = table.union(tiles or {},self.dealer:deal_tiles(self.game_tile_count - c))
         end
 
         for _,t in pairs(tiles) do
