@@ -1,17 +1,18 @@
+require "functions"
 
 local maajan_tile_dealer = {}
 
 
 function maajan_tile_dealer:new(all_tiles)
     local o = {
-        tiles = all_tiles,
+        tiles = clone(all_tiles),
     }
     setmetatable(o,{__index = maajan_tile_dealer,})
     return o
 end
 
 function maajan_tile_dealer:load_tiles(tiles)
-    self.tiles = tiles
+    self.tiles = clone(tiles)
 end
 
 function maajan_tile_dealer:shuffle()
