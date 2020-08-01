@@ -181,9 +181,13 @@ function maajan_table:on_private_inited()
         count = rule_play.tile_count,
         all = rule_play.tile_men,
     })
+
     self.start_count = start_count
     self.tiles = tiles
     self.game_tile_count = game_tile_count
+
+    log.dump(tiles)
+    log.dump(game_tile_count)
 end
 
 function maajan_table:on_private_dismissed()
@@ -274,7 +278,7 @@ function maajan_table:on_started(player_count)
         table_id = self.private_id or nil,
     }
 
-    self.dealer = maajan_tile_dealer:new(self.tiles[player_count])
+    self.dealer = maajan_tile_dealer:new(self.tiles or all_tiles[player_count])
     self.co = skynet.fork(function()
         self:main()
     end)
@@ -429,7 +433,6 @@ end
 function maajan_table:xi_pai()
     self:update_state(FSM_S.XI_PAI)
     self:prepare_tiles()
-    log.dump(self.players)
     self:foreach(function(v)
         self:send_data_to_enter_player(v)
         self.game_log.players[v.chair_id].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
@@ -626,7 +629,7 @@ function maajan_table:huan_pai()
 end
 
 function maajan_table:ding_que()
-    if self.start_count == 2 then
+    if #self.tiles < 108 then
         self:gotofunc(function() self:mo_pai() end)
         return
     end
@@ -1828,13 +1831,26 @@ function maajan_table:calculate_hu(hu)
         table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
     end
 
+    local room_private_conf = self:room_private_conf()
+    local play_option = room_private_conf.play.option
     local ts = self:get_hu_items(hu)
     for _,t in pairs(ts) do
         repeat
-            if (t.type == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or
-                (t.type == HU_TYPE.MEN_QING and not self.rule.play.men_qing) then
+            if t.type == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5 then break end
+            if t.type == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao then break end
+
+            if (t.type == HU_TYPE.QI_DUI or t.type == HU_TYPE.QING_QI_DUI or t.type == HU_TYPE.QING_LONG_BEI) and
+                play_option == "er_ren_yi_fang" then
                 break
             end
+
+            if t.type == HU_TYPE.QUAN_YAO_JIU and not not self.rule.play.yao_jiu then break end
+            if t.type == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
+                table.insert(types,{type = HU_TYPE.DA_DUI_ZI,fan = HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan,count = t.count})
+                break
+            end
+
+            if (t.type == HU_TYPE.MEN_QING or t.type == HU_TYPE.DUAN_YAO)and not self.rule.play.men_qing then break end
 
             table.insert(types,{type = t.type,fan = t.fan,count = t.count})
         until true
@@ -2529,7 +2545,7 @@ function maajan_table:reconnect(player)
 end
 
 function maajan_table:begin_clock(timeout,player,total_time)
-    if player then 
+    if player then
         send2client_pb(player,"SC_TimeOutNotify",{
             left_time = math.ceil(timeout),
             total_time = total_time and math.floor(total_time) or nil,
@@ -2544,7 +2560,32 @@ function maajan_table:begin_clock(timeout,player,total_time)
 end
 
 function maajan_table:can_hu(player,in_pai)
-    return mj_util.is_hu(player.pai,in_pai)
+    local room_private_conf = self:room_private_conf()
+    if not room_private_conf.play then
+        return mj_util.is_hu(player.pai,in_pai)
+    end
+
+    local play_opt = room_private_conf.play.option
+    if not play_opt or play_opt == "si_ren_liang_fang" or play_opt == "er_ren_yi_fang" or not self.rule.play.hu_at_least_2 then
+        return mj_util.is_hu(player.pai,in_pai)
+    end
+
+    local hu_types = mj_util.hu(player.pai,in_pai)
+    if table.nums(hu_types) == 0 then
+        return false
+    end
+
+    local hu_type = self:max_hu_score(hu_types)
+    local gang = table.sum(player.pai.ming_pai,function(s)
+        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
+                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG or 
+                s.type == SECTION_TYPE.FREE_AN_GANG) and 1 or 0
+    end)
+
+    local chu_pai_player = self:chu_pai_player()
+    return  def.is_action_gang(chu_pai_player.last_action or 0) or
+            gang > 0 or
+            hu_type.score > 1
 end
 
 function maajan_table:hu_type_score(types)

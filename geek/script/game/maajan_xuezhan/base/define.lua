@@ -204,6 +204,9 @@ local HU_TYPE = {
 	JIANG_QI_DUI				= pb.enum("HU_TYPE","JIANG_QI_DUI"),--将七对
 	QUAN_YAO_JIU				= pb.enum("HU_TYPE","QUAN_YAO_JIU"),--全幺九
 	DAI_GOU						= pb.enum("HU_TYPE","DAI_GOU"),	--带勾
+	KA_WU_XING					= pb.enum("HU_TYPE","KA_WU_XING"), --卡五星
+	ZHONG_ZHANG					= pb.enum("HU_TYPE","ZHONG_ZHANG"), --中张
+	KA_ER_TIAO					= pb.enum("HU_TYPE","KA_ER_TIAO"), --卡二条
 }
 
 define.HU_TYPE = HU_TYPE
@@ -314,6 +317,8 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.JIANG_QI_DUI]			= {name = "JIANG_QI_DUI",fan = 4,score = 0,},	--将七对
 	[HU_TYPE.QUAN_YAO_JIU]			= {name = "QUAN_YAO_JIU",fan = 3,score = 0},	--全幺九
 	[HU_TYPE.DAI_GOU]				= {name = "DAI_GOU",fan = 1,score = 0},	--带根
+	[HU_TYPE.KA_WU_XING]			= {name = "KA_WU_XING",fan = 1,score = 0}, --卡五星
+	[HU_TYPE.KA_ER_TIAO]			= {name = "KA_ER_TIAO",fan = 1,score = 0}, --卡二条
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO

@@ -94,6 +94,7 @@ function base_table:init(room, table_id, chair_count)
 	self.room_ = room
 	self.table_id_ = table_id
 	self.chair_count = chair_count
+	self.start_count = chair_count
 	self.player_count = 0
 	self.def_game_name = def_game_name
 	self.def_game_id = def_game_id
@@ -132,11 +133,11 @@ function base_table:get_chair_count()
 end
 
 function base_table:get_free_chair_id()
-	if table.nums(self.players) >= self.chair_count then
+	if table.nums(self.players) >= self.start_count then
 		return nil
 	end
 
-	for i = 1, self.chair_count do 
+	for i = 1, self.start_count do 
 		if not self.players[i] then return i end
 	end
 

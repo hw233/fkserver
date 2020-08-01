@@ -111,6 +111,8 @@ enum HU_TYPE{
 	DAI_GOU 				= 106;	//带根
 	DI_LONG					= 107;  //地龙
 	QING_DI_LONG 			= 108;  //清地龙
+	KA_ER_TIAO 				= 109; //夹二条
+	KA_WU_XING 				= 110; //夹五星
 }
 
 

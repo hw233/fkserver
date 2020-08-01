@@ -373,7 +373,7 @@ local function unique_hu_types(base_hu_types)
 	return table.merge(types,base_hu_types,function(l,r) return (l or r) and 1 or nil end)
 end
 
-local function get_hu_types(pai,cache,sections)
+local function get_hu_types(pai,cache,sections,in_pai)
 	local base_types = {}
 
 	local shun_zi_list = table.select(sections,function(v)
@@ -387,6 +387,14 @@ local function get_hu_types(pai,cache,sections)
 		else
 			base_types[HU_TYPE.DA_DUI_ZI] = 1
 		end
+	end
+
+	if in_pai == 22 and #shun_zi_list > 0 then
+		base_types[HU_TYPE.KA_ER_TIAO] = 1
+	end
+
+	if in_pai % 10 == 5 and #shun_zi_list > 0 then
+		base_types[HU_TYPE.KA_WU_XING] = 1
 	end
 
 	if table.nums(base_types) == 0 then
@@ -437,8 +445,7 @@ function rule.hu(pai,inPai)
 	end
 
 	local common_types = {}
-	local is_19 = is_1_9(pai,cache)
-	if is_19 then common_types[HU_TYPE.QUAN_YAO_JIU] = 1 end
+	if is_1_9(pai,cache) then common_types[HU_TYPE.QUAN_YAO_JIU] = 1 end
 	if is_duan_yao(pai,cache) then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if is_men_qing(pai,cache) then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
@@ -446,7 +453,7 @@ function rule.hu(pai,inPai)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
-		local types = get_hu_types(pai,cache,sections)
+		local types = get_hu_types(pai,cache,sections,inPai)
 		local sum = table.sum(pai.shou_pai)
 		if (sum == 1 and pai.shou_pai[inPai] == 1) or
 			(sum == 2 and not inPai and table.logic_or(pai.shou_pai,function(c,_) return c == 2 end)) then
