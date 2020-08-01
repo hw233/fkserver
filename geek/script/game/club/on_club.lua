@@ -1991,7 +1991,12 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
 
     local from_role = club_role[club_id][from_guid]
     local to_role = club_role[club_id][to_guid]
-    local why = from_role == enum.CRT_PARTNER and enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY or enum.LOG_MONEY_OPT_TYPE_CASH_MONEY
+    if from_role == enum.CRT_AMDIN then
+        from_role = enum.CRT_BOSS
+        from_guid = club.owner
+    end
+
+    local why = (from_role == enum.CRT_PARTNER or from_role == enum.CRT_BOSS) and enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY or enum.LOG_MONEY_OPT_TYPE_CASH_MONEY
     if from_role == enum.CRT_PARTNER and (not to_role or to_role == enum.CRT_PLAYER) then
         local partner = club_member_partner[club_id][to_guid]
         while partner and partner ~= from_guid do
