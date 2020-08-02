@@ -31,7 +31,7 @@ skynet.start(function()
 	b_register_dispatcher_hide_log = true
 
 	--------------------------------------------------------------------
-
+	register_dispatcher("CG_GameServerCfg",on_cg_game_server_cfg)
 	-- 注册cfg发过来的消息分派函数
 	register_dispatcher("SS_JoinPrivateRoom",on_ss_join_private_room)
 	-- 注册DB发过来的消息分派函数

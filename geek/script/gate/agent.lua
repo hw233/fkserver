@@ -108,34 +108,6 @@ function MSG.CS_GameServerCfg(msg)
 	return true
 end
 
-function MSG.CG_GameServerCfg(msg)
-    if not msg.platform_id then
-        log.warning( "platform_id empty, CG_GameServerCfg, set platform = [0]")
-        msg.platform_id = "0"
-    end
-
-    local pb_cfg = {}
-    for item,_ in pairs(channel.query()) do
-        local type,id = string.match("([^.]+).(%d+)")
-        if type == "game" then
-            local sconf = serviceconf[tonumber(id)]
-            if sconf.conf.private_conf then
-                log.info("GameName[%s] GameID[%d] platform[%s] error.", item.game_name, item.game_id, item.platform_id)
-            end
-        end
-	end
-
-	for _,p in pairs(pb_cfg) do
-		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
-    end
-
-    netmsgopt.send(fd,"S2C_GameServerCfg",{
-        pb_cfg = pb_cfg,
-    })
-
-	return true
-end
-
 function MSG.CL_GetInviterInfo(msg) 
     if not msg.invite_code then
         log.error( "no invite_code, guid=%d", guid)
