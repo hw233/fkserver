@@ -107,16 +107,16 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
 	end
 
-	-- table.mergeto(actions,rule.is_chi(pai,inPai))
+	-- table.mergeto(actions,rule.is_chi(pai,in_pai,mo_pai))
 	return actions
 end
 
-function mj_util.is_hu(pai, inPai)
-	return rule.is_hu(pai,inPai)
+function mj_util.is_hu(pai, in_pai,mo_pai)
+	return rule.is_hu(pai,in_pai,mo_pai)
 end
 
-function mj_util.hu(pai,inPai)
-	return rule.hu(pai,inPai)
+function mj_util.hu(pai,in_pai,mo_pai)
+	return rule.hu(pai,in_pai,mo_pai)
 end
 
 function mj_util.panGangWithOutInPai(pai)

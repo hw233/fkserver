@@ -829,7 +829,6 @@ function maajan_table:action_after_mo_pai(waiting_actions)
         end
 
         if do_action == ACTION.ZI_MO then
-            local ming_pai_count = table.sum(player.pai.ming_pai,function(_) return 1 end)
             -- 点杠花算点炮
             local is_zi_mo = true
             local whoee = nil
@@ -846,13 +845,9 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             player.hu = {
                 time = os.time(),
                 tile = tile,
-                types = mj_util.hu(player.pai),
+                types = self:hu(player,nil,tile),
                 zi_mo = is_zi_mo,
                 whoee = whoee,
-                tian_hu = (player.chair_id == self.zhuang and player.mo_pai_count == 1) and true or nil,
-                di_hu = (player.chair_id ~= self.zhuang and player.mo_pai_count == 1 and ming_pai_count == 0) and true or nil,
-                hai_di = self.dealer.remain_count == 0 and true or nil,
-                gang_hua = player.last_action and def.is_action_gang(player.last_action.action or 0)  or nil,
             }
 
             player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
@@ -1081,19 +1076,16 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
         if action.done.action == ACTION.HU then
             for _,act in ipairs(actions_to_do) do
-                local is_gang_pao = chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) or nil
                 local p = self.players[act.chair_id]
                 p.hu = {
                     time = os.time(),
                     tile = tile,
-                    types = mj_util.hu(p.pai,tile),
+                    types = self:hu(p,tile),
                     zi_mo = false,
-                    hai_di = self.dealer.remain_count == 0 and true or nil,
                     whoee = self.chu_pai_player_index,
-                    gang_pao = is_gang_pao,
                 }
 
-                if is_gang_pao then
+                if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
                     local pai = chu_pai_player.pai
                     for _,s in pairs(pai.ming_pai) do
                         if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
@@ -1137,7 +1129,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
             if self.rule.play.guo_zhuang_hu then
                 local hu_action = waiting_actions[player.chair_id].actions[ACTION.HU]
                 if hu_action then
-                    player.guo_zhuang_hu = self:max_hu(player,hu_action)
+                    player.guo_zhuang_hu = self:max_hu(player.pai,hu_action)
                 end
             end
 
@@ -1207,7 +1199,7 @@ function maajan_table:mo_pai()
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
     table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
-    self:on_mo_pai(mo_pai)
+    self:on_mo_pai(player,mo_pai)
 
     if table.nums(actions) > 0 then
         self:gotofunc(function()
@@ -1656,9 +1648,8 @@ function maajan_table:prepare_tiles()
     end)
 end
 
-function maajan_table:max_hu(p,tiles)
-    local tile_fans = table.map(tiles,function(_,tile) return tile,self:hu_fan(p.pai,tile) end)
-    local fans = table.series(tile_fans,function(v) return v end)
+function maajan_table:max_hu(pai,tiles)
+    local fans = table.series(tiles,function(_,tile) return self:hu_fan(pai,tile) end)
     table.sort(fans,function(l,r) return l > r end)
     if table.nums(fans) > 0 then
         return fans[1]
@@ -1666,11 +1657,13 @@ function maajan_table:max_hu(p,tiles)
 end
 
 function maajan_table:hu_fan(pai,tile)
-    local hu = mj_util.hu(pai,tile)
+    local hu = self:rule_hu(pai,tile)
     local fans = self:calculate_hu({
         types = hu,
         tile = tile,
     })
+
+    log.dump(fans)
 
     return table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
 end
@@ -1678,25 +1671,29 @@ end
 function maajan_table:get_actions(p,mo_pai,in_pai)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
 
-    if not p.que then return actions end
-
-    for act,tiles in pairs(actions) do
-        for tile,_ in pairs(tiles) do
-            if mj_util.tile_men(tile) == p.que then
-                tiles[tile] = nil
+    if p.que then
+        for act,tiles in pairs(actions) do
+            for tile,_ in pairs(tiles) do
+                if mj_util.tile_men(tile) == p.que then
+                    tiles[tile] = nil
+                end
             end
-        end
 
-        if table.nums(tiles) == 0 then
-            actions[act] = nil
+            if table.nums(tiles) == 0 then
+                actions[act] = nil
+            end
         end
     end
 
     if p.guo_zhuang_hu and actions[ACTION.HU] then
-        local max_hu_fan = self:max_hu(p,actions[ACTION.HU])
+        local max_hu_fan = self:max_hu(p.pai,actions[ACTION.HU])
         if max_hu_fan and max_hu_fan <= p.guo_zhuang_hu then
             actions[ACTION.HU] = nil
         end
+    end
+
+    if in_pai and not self:can_hu(p,in_pai) and actions[ACTION.HU] then
+        actions[ACTION.HU] = nil
     end
 
     if p.guo_shou_peng and actions[ACTION.PENG] then
@@ -1774,86 +1771,40 @@ function maajan_table:check_action_before_do(waiting_actions,event)
     return player_actions
 end
 
-function maajan_table:on_mo_pai(mo_pai)
-    for k,p in pairs(self.players) do
-        if p.chair_id == self.chu_pai_player_index then
-            p.mo_pai = mo_pai
-            p.mo_pai_count = p.mo_pai_count + 1
-            send2client_pb(p,"SC_Maajan_Draw",{tile = mo_pai,chair_id = k})
-        else
-            send2client_pb(p,"SC_Maajan_Draw",{tile = 255,chair_id = self.chu_pai_player_index})
-            p.mo_pai = nil
-        end
-    end
-end
-
-function maajan_table:get_hu_items(hu)
-    return self:max_hu_score(hu.types).types
+function maajan_table:on_mo_pai(player,mo_pai)
+    player.mo_pai = mo_pai
+    player.mo_pai_count = (player.mo_pai_count or 0) + 1
+    send2client_pb(player,"SC_Maajan_Draw",{tile = mo_pai,chair_id = player.chair_id})
+    self:foreach_except(player,function(p)
+        send2client_pb(p,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
+        p.mo_pai = nil
+    end)
 end
 
 function maajan_table:calculate_hu(hu)
-    local types = {}
+    local types = table.series(hu.types,function(c,t)
+        local type_info = HU_TYPE_INFO[t]
+        return {type = t,fan = type_info.fan,score = type_info.score,count = c}
+    end)
 
     if hu.qiang_gang then
-        local t = HU_TYPE.QIANG_GANG_HU
-        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-    end
-
-    if hu.gang_hua then
-        local t = HU_TYPE.GANG_SHANG_HUA
-        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-    end
-
-    if self.rule.play.tian_di_hu then
-        if hu.tian_hu then
-            local t = HU_TYPE.TIAN_HU
-            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-        end
-
-        if hu.di_hu then
-            local t = HU_TYPE.DI_HU
-            table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-        end
-    end
-
-    if hu.hai_di then
-        local t = HU_TYPE.HAI_DI_LAO_YUE
-        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-    end
-
-    if hu.zi_mo and self.rule.play.zi_mo_jia_fan then
-        local t = HU_TYPE.ZI_MO
-        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
-    end
-
-    if hu.gang_pao then
-        local t = HU_TYPE.GANG_SHANG_PAO
-        table.insert(types,{type = t,fan = HU_TYPE_INFO[t].fan,count = 1})
+        local type_info = HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU]
+        table.insert(types,{type = HU_TYPE.QIANG_GANG_HU,fan = type_info.fan,score = type_info.score,count = 1})
     end
 
     local room_private_conf = self:room_private_conf()
-    local play_option = room_private_conf.play.option
-    local ts = self:get_hu_items(hu)
-    for _,t in pairs(ts) do
-        repeat
-            if t.type == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5 then break end
-            if t.type == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao then break end
+    if not room_private_conf or not room_private_conf.play then
+        return types
+    end
 
-            if (t.type == HU_TYPE.QI_DUI or t.type == HU_TYPE.QING_QI_DUI or t.type == HU_TYPE.QING_LONG_BEI) and
-                play_option == "er_ren_yi_fang" then
+    local play_opt = room_private_conf.play.option
+    if play_opt == "er_ren_yi_fang" then
+        for _,t in pairs(types) do
+            if t.type == HU_TYPE.QING_YI_SE then
+                t.fan = self.rule.play.qing_yi_se_fan or 0
                 break
             end
-
-            if t.type == HU_TYPE.QUAN_YAO_JIU and not not self.rule.play.yao_jiu then break end
-            if t.type == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
-                table.insert(types,{type = HU_TYPE.DA_DUI_ZI,fan = HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan,count = t.count})
-                break
-            end
-
-            if (t.type == HU_TYPE.MEN_QING or t.type == HU_TYPE.DUAN_YAO)and not self.rule.play.men_qing then break end
-
-            table.insert(types,{type = t.type,fan = t.fan,count = t.count})
-        until true
+        end
     end
 
     return types
@@ -1870,10 +1821,8 @@ function maajan_table:calculate_gang(p)
 
     local ss = table.select(p.pai.ming_pai,function(s) return  s2hu_type[s.type] ~= nil end)
     local gfan= table.group(ss,function(s) return  s2hu_type[s.type] end)
-    local gangfans = table.map(gfan,function(gp,t) 
-        local fan = table.sum(gp,function(s) return HU_TYPE_INFO[t].fan end)
-        local count = table.nums(gp)
-        return t,{fan = fan,count = count}
+    local gangfans = table.map(gfan,function(gp,t)
+        return t,{fan = HU_TYPE_INFO[t].fan,count = table.nums(gp)}
     end)
 
     local scores = table.agg(p.pai.ming_pai,{},function(tb,s)
@@ -1913,7 +1862,7 @@ function maajan_table:calculate_jiao(p)
     local type_fans = {}
     for tile,_ in pairs(jiao_tiles) do
         local hu = {
-            types = mj_util.hu(p.pai,tile),
+            types = self:rule_hu(p.pai,tile),
         }
         local hu_fans = self:calculate_hu(hu)
         local fan = table.sum(hu_fans,function(t) return (t.count or 1) * (t.fan or 0) end)
@@ -1960,6 +1909,8 @@ function maajan_table:game_balance()
         typefans[p.chair_id] = table.union(hu or {},gangfans or {})
         table.mergeto(scores,gangscores or {},function(l,r) return (l or 0) + (r or 0) end)
     end)
+
+    log.dump(typefans)
 
     local max_fan = self:get_max_fan() or 3
 
@@ -2274,6 +2225,7 @@ function maajan_table:is_action_time_out()
 end
 
 function maajan_table:next_player_index(from)
+    self:done_last_action(self.players[self.chu_pai_player_index])
     local chair = from and from.chair_id or self.chu_pai_player_index
     repeat
         chair = (chair % self.chair_count) + 1
@@ -2559,6 +2511,107 @@ function maajan_table:begin_clock(timeout,player,total_time)
     })
 end
 
+function maajan_table:ext_hu(player,in_pai,mo_pai)
+    local types = {}
+
+    local chu_pai_player = self:chu_pai_player()
+    if chu_pai_player == player and chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action or 0) then
+        types[HU_TYPE.GANG_SHANG_HUA] = 1
+    end
+
+    if self.rule.play.tian_di_hu then
+        if player.chair_id == self.zhuang and player.mo_pai_count == 1 then
+            types[HU_TYPE.TIAN_HU] = 1
+        end
+
+        if player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and table.nums(player.pai.ming_pai) == 0 then
+            types[HU_TYPE.DI_HU] = 1
+        end
+    end
+
+    if self.dealer.remain_count == 0 then
+        types[HU_TYPE.HAI_DI_LAO_YUE] = 1
+    end
+
+    local is_zi_mo = mo_pai and true or false
+    if self.rule.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
+        is_zi_mo = nil
+    end
+
+    if is_zi_mo and self.rule.play.zi_mo_jia_fan then
+        types[HU_TYPE.ZI_MO] = 1
+    end
+
+    if chu_pai_player ~= player and chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
+        types[HU_TYPE.GANG_SHANG_PAO] = 1
+    end
+
+    local function is_men_qing(pai)
+        return table.nums(pai.ming_pai) == 0 or
+            table.logic_and(pai.ming_pai,function(s) return s.type == SECTION_TYPE.AN_GANG end)
+    end
+
+    if is_men_qing(player.pai) then
+        types[HU_TYPE.MEN_QING] = 1
+    end
+
+    log.dump(types)
+
+    return types
+end
+
+function maajan_table:rule_hu(pai,in_pai,mo_pai)
+    local private_conf = self:room_private_conf()
+    if not private_conf or not private_conf.play then
+        return mj_util.hu(pai,in_pai,mo_pai)
+    end
+
+    local play_opt = private_conf.play.option
+    local hu_types = mj_util.hu(pai,in_pai,mo_pai)
+    local types = table.series(hu_types,function(ones)
+        local ts = {} 
+        for t,c in pairs(ones) do
+            if  (t == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5) or
+                (t == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao) or
+                (t == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or 
+                ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not self.rule.play.men_qing) or 
+                ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and 
+                    play_opt == "er_ren_yi_fang")
+            then
+                
+            elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
+                ts[HU_TYPE.QING_YI_SE] = 1
+                ts[HU_TYPE.DA_DUI_ZI] = 1
+            elseif t == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
+                ts[HU_TYPE.DA_DUI_ZI] = c
+            else
+                ts[t] = c
+            end
+        end
+
+        return ts
+    end)
+
+    local function get_types_info(ts)
+        return table.sum(ts,function(_,t) return HU_TYPE_INFO[t].score end),
+            table.sum(ts,function(_,t) return HU_TYPE_INFO[t].fan end)
+    end
+
+    table.sort(types,function(l,r)
+        local lscore,lfan = get_types_info(l)
+        local rscore,rfan = get_types_info(r)
+        return lscore + 2 ^ lfan > rscore + 2 ^ rfan
+    end)
+
+    return types[1] or {}
+end
+
+function maajan_table:hu(player,in_pai,mo_pai)
+    local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
+    local ext_hu = self:ext_hu(player,in_pai,mo_pai)
+    return table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
+end
+
 function maajan_table:can_hu(player,in_pai)
     local room_private_conf = self:room_private_conf()
     if not room_private_conf.play then
@@ -2570,51 +2623,26 @@ function maajan_table:can_hu(player,in_pai)
         return mj_util.is_hu(player.pai,in_pai)
     end
 
-    local hu_types = mj_util.hu(player.pai,in_pai)
+    local hu_types = self:hu(player,in_pai)
+    log.dump(hu_types)
     if table.nums(hu_types) == 0 then
         return false
     end
 
-    local hu_type = self:max_hu_score(hu_types)
+    local score = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].score end)
+    local fan = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].fan end)
+    log.dump(score)
+    log.dump(fan)
+
     local gang = table.sum(player.pai.ming_pai,function(s)
         return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
-                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG or 
+                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG or
                 s.type == SECTION_TYPE.FREE_AN_GANG) and 1 or 0
     end)
 
-    local chu_pai_player = self:chu_pai_player()
-    return  def.is_action_gang(chu_pai_player.last_action or 0) or
-            gang > 0 or
-            hu_type.score > 1
-end
+    log.dump(gang)
 
-function maajan_table:hu_type_score(types)
-    local hts = {}
-    for type,count in pairs(types) do
-        table.insert(hts,{
-            fan = HU_TYPE_INFO[type].fan,
-            score = HU_TYPE_INFO[type].score,
-            type = type,
-            count = count,
-        })
-    end
-
-    return hts
-end
-
-function maajan_table:max_hu_score(hu_types)
-    local typescores = {}
-    for _,ht in pairs(hu_types) do
-        local types = self:hu_type_score(ht)
-        table.insert(typescores,{
-            types = types,
-            score = table.sum(types,function(t) return t.score end)
-        })
-    end
-
-    table.sort(typescores,function(l,r) return l.score > r.score end)
-
-    return typescores[1]
+    return  gang > 0 or score > 1 or fan > 0
 end
 
 function maajan_table:global_status_info()
