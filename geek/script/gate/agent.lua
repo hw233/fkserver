@@ -86,27 +86,7 @@ function MSG.C_RequestPublicKey(msg)
     })
 end
 
-function MSG.CS_GameServerCfg(msg)
-    local pb_cfg = {}
-    for item,_ in pairs(channel.query()) do
-        local id = string.match(item,"game.(%d+)")
-        if id then
-            id = tonumber(id)
-            local sconf = serviceconf[id]
-            if sconf.conf.private_conf then
-                local gconf = sconf.conf
-                log.info("GameName[%s] GameID[%d] first_game_type [%d].", gconf.gamename, id,gconf.first_game_type)
-                table.insert(pb_cfg,gconf.first_game_type)
-            end
-        end
-	end
 
-    netmsgopt.send(fd,"SC_GameServerCfg",{
-        game_sever_info  = pb_cfg,
-    })
-
-	return true
-end
 
 function MSG.CL_GetInviterInfo(msg) 
     if not msg.invite_code then
