@@ -13,10 +13,10 @@ local boot = {
             db = {
                 name = "config",
                 database = "config",
-                host = "192.168.2.210",
+                host = "127.0.0.1",
                 port = 3306,
                 user = "root",
-                password = "123456@Geek",
+                password = "123456",
                 pool = 8
             },
         },
