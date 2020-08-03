@@ -1939,6 +1939,7 @@ function maajan_table:on_process_start(player_count)
 end
 
 function maajan_table:on_process_over()
+
     local final_scores = {}
     for chair_id,p in pairs(self.players) do
         table.insert(final_scores,{
@@ -1961,6 +1962,8 @@ function maajan_table:on_process_over()
         p.round_money = nil
         p.total_score = nil
     end
+
+    base_table.on_process_over(self)
 end
 
 function maajan_table:ding_zhuang()

@@ -1791,6 +1791,8 @@ function maajan_table:on_process_over()
         p.round_money = nil
         p.total_score = nil
     end
+
+    base_table.on_process_over(self)
 end
 
 function maajan_table:ding_zhuang()
