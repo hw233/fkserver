@@ -1965,27 +1965,24 @@ function on_cs_request_sms_verify_code(msg,guid)
 	return enum.LOGIN_RESULT_SUCCESS,expire
 end
 
-function on_cg_game_server_cfg(msg,guid)
-    if not msg.platform_id then
-        log.warning( "platform_id empty, CG_GameServerCfg, set platform = [0]")
-        msg.platform_id = "0"
-    end
-
+function on_cs_game_server_cfg(msg,guid)
     local pb_cfg = {}
     for item,_ in pairs(channel.query()) do
-        local type,id = string.match("([^.]+).(%d+)")
-        if type == "game" then
-            local sconf = serviceconf[tonumber(id)]
+        local id = string.match(item,"game.(%d+)")
+        if id then
+            id = tonumber(id)
+            local sconf = serviceconf[id]
             if sconf.conf.private_conf then
-                log.info("GameName[%s] GameID[%d] platform[%s] error.", item.game_name, item.game_id, item.platform_id)
+                local gconf = sconf.conf
+                table.insert(pb_cfg,gconf.first_game_type)
             end
         end
 	end
 
-    log.dump(pb_cfg)
+	log.dump(pb_cfg)
 
-    send2client_pb(guid,"S2C_GameServerCfg",{
-        pb_cfg = pb_cfg,
+    send2client_pb(guid,"SC_GameServerCfg",{
+        game_sever_info  = pb_cfg,
     })
 
 	return true
