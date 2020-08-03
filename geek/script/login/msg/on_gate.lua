@@ -110,6 +110,7 @@ local function reg_account(msg)
         package_name = msg.package_name,
         phone_type = msg.phone_type,
         role = 0,
+        ip = msg.ip,
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
