@@ -2555,8 +2555,6 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
         types[HU_TYPE.MEN_QING] = 1
     end
 
-    log.dump(types)
-
     return types
 end
 
@@ -2624,15 +2622,12 @@ function maajan_table:can_hu(player,in_pai)
     end
 
     local hu_types = self:hu(player,in_pai)
-    log.dump(hu_types)
     if table.nums(hu_types) == 0 then
         return false
     end
 
     local score = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].score end)
     local fan = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].fan end)
-    log.dump(score)
-    log.dump(fan)
 
     local gang = table.sum(player.pai.ming_pai,function(s)
         return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
