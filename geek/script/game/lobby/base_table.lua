@@ -374,6 +374,7 @@ function base_table:do_commission(taxes)
 	for guid,tax in pairs(taxes) do
 		local last_rate = 0
 		local p_guid = guid
+		local s_guid = guid
 		while p_guid and p_guid ~= 0 do
 			local role = club_role[club_id][p_guid]
 			if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
@@ -383,9 +384,17 @@ function base_table:do_commission(taxes)
 
 				commissions[p_guid] = (commissions[p_guid] or 0) + commission
 
+				channel.publish("db.?","msg","SD_LogPlayerCommissionContribute",{
+					parent = p_guid,
+					guid = s_guid,
+					commission = commission,
+					template = template_id,
+				})
+
 				log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)
 			end
 
+			s_guid = p_guid
 			p_guid = club_member_partner[club_id][p_guid]
 		end
 	end

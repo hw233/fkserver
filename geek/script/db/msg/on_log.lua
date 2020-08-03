@@ -185,6 +185,26 @@ function on_sd_log_player_commission(msg)
     return true
 end
 
+function on_sd_log_player_commission_contribute(msg)
+    local parent = msg.parent
+    local guid = msg.guid
+    local commission = msg.commission
+    local template =  msg.template
+    if not parent or parent == 0 then
+        log.error("on_sd_log_player_commission_contribute parent is ilegal.")
+        return
+    end
+
+    local date_timestamp = math.floor(os.time() / 86400) * 86400
+    local res = dbopt.log:query([[INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,date)
+        VALUES(%d,%d,%d,%d,%d)
+        ON DUPLICATE KEY UPDATE commission = commission + %d;]],
+        parent,guid,commission,template,date_timestamp,commission)
+    if res.errno then
+        log.error("on_sd_log_player_commission_contribute INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
+    end
+end
+
 function on_sd_request_share_param(sid)
     if not sid or sid == "" then
         log.error("on_sd_request_share_param got nil sid!")
