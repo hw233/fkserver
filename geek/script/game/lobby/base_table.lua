@@ -393,7 +393,7 @@ function base_table:do_commission(taxes)
 	for guid,commission in pairs(commissions) do
 		commission = math.floor(commission + 0.0001)
 		if commission > 0 then
-			club_partners[club_id][guid]:incr_commission(commission,self.round_id)
+			club_partners[club_id][guid]:incr_commission(commission,self.ext_round_id)
 		end
 	end
 end
