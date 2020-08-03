@@ -23,6 +23,7 @@ function on_sd_create_club(msg)
     local transqls = {
         string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s);]],
                     club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()),
+        string.format([[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],club_info.id,club_info.owner),
         string.format([[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],money_info.id,club_info.id),
         string.format([[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id),
         string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],club_info.id,club_info.owner),
@@ -226,9 +227,14 @@ function on_sd_create_partner(msg)
     local club = msg.club
     local guid = msg.guid
     
-    local res = dbopt.game:query(string.format([[
-        INSERT INTO t_player_commission(club,guid,money_id,commission) SELECT %s,%s,money_id,0 FROM t_club_money_type WHERE club = %s;
-    ]],club,guid,club))
+    local res = dbopt.game:query(table.concat({
+        string.format([[
+            INSERT INTO t_player_commission(club,guid,money_id,commission) SELECT %s,%s,money_id,0 FROM t_club_money_type WHERE club = %s;
+                ]],club,guid,club),
+        string.format([[
+            INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,2) ON DUPLICATE KEY UPDATE role = 2;
+                ]],club,guid),
+    },""))
     if res.errno then
         log.error("on_sd_create_partner INSERT INTO t_player_commission errno:%d,errstr:%s",res.errno,res.err)
         return
@@ -250,6 +256,8 @@ function on_sd_join_partner(msg)
         return
     end
 
+
+
     return true
 end
 
@@ -257,9 +265,10 @@ function on_sd_dismiss_partner(msg)
     local club = msg.club
     local partner = msg.partner
 
-    local res = dbopt.game:query(string.format([[
-        DELETE FROM t_partner_member WHERE club = %s AND partner = %s;
-    ]],club,partner))
+    local res = dbopt.game:query(table.concat({
+        string.format([[DELETE FROM t_partner_member WHERE club = %s AND partner = %s;]],club,partner),
+        string.format([[DELETE FROM t_club_role WHERE club = %s AND guid = %s;]],club,partner)
+    },""))
     if res.errno then
         log.error("on_sd_dismiss_partner DELETE FROM t_partner_member errno:%d,errstr:%s",res.errno,res.err)
         return

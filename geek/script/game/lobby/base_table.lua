@@ -387,7 +387,7 @@ function base_table:do_commission(taxes)
 				channel.publish("db.?","msg","SD_LogPlayerCommissionContribute",{
 					parent = p_guid,
 					guid = s_guid,
-					commission = commission,
+					commission = math.floor(commission + 0.00000001),
 					template = template_id,
 				})
 
@@ -1438,7 +1438,34 @@ function base_table:on_process_start(player_count)
 end
 
 function base_table:on_process_over()
+	if not self.private_id then 
+		return
+	end
 
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.warning("base_table:on_process_over [%d] got nil private table.",self.private_id)
+	end
+
+	local club_id = private_table.club_id
+	if not club_id then
+		log.warning("base_table:on_process_over [%d] got private club.",self.private_id)
+	end
+
+	local template_id = private_table.template
+	if not template_id then
+		log.warning("base_table:on_process_over [%d] got nil template.",self.private_id)
+	end
+
+	self:foreach(function(p)
+		channel.publish("db.?","msg","SD_LogPlayerExtGameRound",{
+			guid = p.guid,
+			club = club_id,
+			template = template_id,
+			game_id = def_first_game_type,
+			ext_round_id = self.ext_round_id,
+		})
+	end)
 end
 
 -- 开始游戏

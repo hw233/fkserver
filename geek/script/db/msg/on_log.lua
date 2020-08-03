@@ -45,6 +45,30 @@ function on_sd_log_game_money( msg)
     dbopt.log:query(sql)
 end
 
+function on_sd_log_player_ext_game_round(msg)
+    log.dump(msg)
+    local club = msg.club
+    local guid = msg.guid
+    local game_id = msg.game_id
+    local template = msg.template
+    local date = math.floor(os.time() / 86400) * 86400
+    while guid do
+        local r = dbopt.log:query([[
+                INSERT INTO t_log_player_statistics_daily(club,guid,game_id,gaming_count,date) VALUES(%s,%s,%s,1,%s)
+                ON DUPLICATE KEY UPDATE gaming_count = gaming_count + 1;
+            ]],club or "NULL",guid,game_id,date)
+        if r.errno then
+            log.error("on_sd_log_player_ext_game_round INSERT INTO t_log_player_statistics_daily error:%s,%s",r.errno,r.err)
+        end
+
+        if not club then break end
+
+        r = dbopt.game:query("SELECT partner FROM t_partner_member WHERE guid = %s AND club = %s;",guid,club)
+        if #r == 0 then break end
+        guid = r[1].partner
+    end
+end
+
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
     local sql = string.format([[
@@ -57,8 +81,10 @@ function on_sl_log_game(msg)
         log.error(ret.err)
     end
 
+    local club = msg.log.club
+
     local log_round_sql = table.concat(table.series(msg.log.players,function(p)
-        return string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,msg.log.club or "NULL")
+        return string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,club or "NULL")
     end),",")
 
     ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid,club) VALUES" .. log_round_sql .. ";")
@@ -160,12 +186,12 @@ function on_sd_log_club_commission_contribution(msg)
     end
 
     local date_timestamp = math.floor(os.time() / 86400) * 86400
-    local res = dbopt.log:query([[INSERT INTO t_log_club_commission_daily_contribute(club_parent,club_son,commission,template,date)
+    local res = dbopt.log:query([[INSERT INTO t_log_club_commission_contribute(club_parent,club_son,commission,template,date)
         VALUES(%d,%d,%d,%d,%d)
         ON DUPLICATE KEY UPDATE commission = commission + %d;]],
         parent,club,commission,template,date_timestamp,commission)
     if res.errno then
-        log.error("on_sd_log_club_commission INSERT INTO t_log_club_commission_daily_contribute errno:%d,errstr:%s.",res.errno,res.err)
+        log.error("on_sd_log_club_commission INSERT INTO t_log_club_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
 end
 
@@ -190,6 +216,7 @@ function on_sd_log_player_commission_contribute(msg)
     local guid = msg.guid
     local commission = msg.commission
     local template =  msg.template
+
     if not parent or parent == 0 then
         log.error("on_sd_log_player_commission_contribute parent is ilegal.")
         return
@@ -197,9 +224,9 @@ function on_sd_log_player_commission_contribute(msg)
 
     local date_timestamp = math.floor(os.time() / 86400) * 86400
     local res = dbopt.log:query([[INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,date)
-        VALUES(%d,%d,%d,%d,%d)
+        VALUES(%s,%s,%s,%s,%s)
         ON DUPLICATE KEY UPDATE commission = commission + %d;]],
-        parent,guid,commission,template,date_timestamp,commission)
+        parent,guid,commission or 0,template or "NULL",date_timestamp,commission or 0)
     if res.errno then
         log.error("on_sd_log_player_commission_contribute INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
