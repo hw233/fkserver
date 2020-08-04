@@ -1804,6 +1804,13 @@ function maajan_table:calculate_hu(hu)
                 break
             end
         end
+    elseif play_opt == "san_ren_liang_fang" then
+        for _,t in pairs(types) do
+            if t.type == HU_TYPE.DA_DUI_ZI and self.rule.play.da_dui_zi_fan_2 then
+                t.fan = 2
+                break
+            end
+        end
     end
 
     return types
