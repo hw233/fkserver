@@ -1663,8 +1663,6 @@ function maajan_table:hu_fan(pai,tile)
         tile = tile,
     })
 
-    log.dump(fans)
-
     return table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
 end
 
