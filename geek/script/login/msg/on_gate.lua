@@ -73,6 +73,15 @@ function on_s_logout(msg)
     return true
 end
 
+local function random_guid()
+    local guid
+    repeat
+        guid = math.random(100000,9999999)
+    until not base_players[guid]
+
+    return guid
+end
+
 local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
@@ -91,8 +100,7 @@ local function reg_account(msg)
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
     end
 
-    guid = reddb:incr("player:global:guid")
-    guid = tonumber(guid)
+    guid = tonumber(random_guid())
     local info = {
         guid = guid,
         account = msg.open_id,
