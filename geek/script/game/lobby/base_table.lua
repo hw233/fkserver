@@ -1434,7 +1434,7 @@ function base_table:balance(moneies,why)
 end
 
 function base_table:on_process_start(player_count)
-
+	self.ext_start_time = os.time()
 end
 
 function base_table:on_process_over()
@@ -1457,15 +1457,18 @@ function base_table:on_process_over()
 		log.warning("base_table:on_process_over [%d] got nil template.",self.private_id)
 	end
 
-	self:foreach(function(p)
-		channel.publish("db.?","msg","SD_LogPlayerExtGameRound",{
-			guid = p.guid,
-			club = club_id,
-			template = template_id,
-			game_id = def_first_game_type,
-			ext_round_id = self.ext_round_id,
-		})
-	end)
+	channel.publish("db.?","msg","SD_LogExtGameRound",{
+		club = club_id,
+		template = template_id,
+		game_id = def_first_game_type,
+		ext_round = self.ext_round_id,
+		start_time = self.ext_start_time,
+		end_time = os.time(),
+		guids = table.series(self.players,function(p) return p.guid end),
+		table_id = self.private_id
+	})
+
+	self.ext_start_time = nil
 end
 
 -- 开始游戏

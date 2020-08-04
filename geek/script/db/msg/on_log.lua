@@ -45,28 +45,29 @@ function on_sd_log_game_money( msg)
     dbopt.log:query(sql)
 end
 
-function on_sd_log_player_ext_game_round(msg)
-    log.dump(msg)
+function on_sd_log_ext_game_round(msg)
+    local guids = msg.guids
+    local round = msg.ext_round
+    local start_time = msg.start_time
+    local end_time = msg.end_time
+    local table_id = msg.table_id
     local club = msg.club
-    local guid = msg.guid
-    local game_id = msg.game_id
     local template = msg.template
-    local date = math.floor(os.time() / 86400) * 86400
-    while guid do
-        local r = dbopt.log:query([[
-                INSERT INTO t_log_player_statistics_daily(club,guid,game_id,gaming_count,date) VALUES(%s,%s,%s,1,%s)
-                ON DUPLICATE KEY UPDATE gaming_count = gaming_count + 1;
-            ]],club or "NULL",guid,game_id,date)
-        if r.errno then
-            log.error("on_sd_log_player_ext_game_round INSERT INTO t_log_player_statistics_daily error:%s,%s",r.errno,r.err)
-        end
+    local game_id = msg.game_id
 
-        if not club then break end
-
-        r = dbopt.game:query("SELECT partner FROM t_partner_member WHERE guid = %s AND club = %s;",guid,club)
-        if #r == 0 then break end
-        guid = r[1].partner
+    local ret = dbopt.log:query([[
+            INSERT INTO t_log_round(round,table_id,club,template,start_time,end_time,create_time) VALUES('%s',%s,%s,%s,%s,%s,unix_timestamp());
+        ]],round,table_id,club or 'NULL',template or "NULL",start_time,end_time)
+    if ret.errno then
+        log.error("INSERT INTO t_log_round error:%s:%s",ret.errno,ret.err)
+        return
     end
+
+    local values_sql = table.concat(
+        table.series(guids,function(guid)
+            return string.format("(%s,'%s',unix_timestamp())",guid,round)
+        end),",")
+    dbopt.log:query("INSERT INTO t_log_player_round(guid,round,create_time) VALUES" .. values_sql .. ";")
 end
 
 function on_sl_log_game(msg)
@@ -77,17 +78,6 @@ function on_sl_log_game(msg)
         ]],
         msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime,os.time())
     local ret = dbopt.log:query(sql)
-    if ret.errno then
-        log.error(ret.err)
-    end
-
-    local club = msg.log.club
-
-    local log_round_sql = table.concat(table.series(msg.log.players,function(p)
-        return string.format("('%s',%d,%d,%s)",msg.round_id,msg.log.table_id,p.guid,club or "NULL")
-    end),",")
-
-    ret = dbopt.log:query("INSERT INTO `t_log_round`(round,table_id,guid,club) VALUES" .. log_round_sql .. ";")
     if ret.errno then
         log.error(ret.err)
     end
