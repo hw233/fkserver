@@ -543,21 +543,7 @@ function on_cs_club_detail_info_req(msg,guid)
         status_in_club = recusive_parent_status(club),
     }
 
-    local role = club_role[club_id][guid]
-    if not role then
-        local my_unions = player_club[guid][enum.CT_UNION]
-        if table.nums(my_unions) > 0 then
-            for union_id,_ in pairs(my_unions) do
-                local union = base_clubs[union_id]
-                if union.owner == guid and union.parent == club_id and club.parent and club.parent ~= 0 then
-                    role = enum.CRT_PARTNER
-                    break
-                end
-            end
-        end
-
-        role = role or enum.CRT_PLAYER
-    end
+    local role = club_role[club_id][guid] or enum.CRT_PLAYER
 
     local templates = get_visiable_club_templates(club,role)
     local money_id = club_money_type[club_id]
