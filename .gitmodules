@@ -13,10 +13,10 @@
 	path = 3rd/luagbk
 	branch = master
 	url = https://gitee.com/thinblog/luagbk.git
-[submodule "3rd/mmdblua"]
-	path = 3rd/mmdblua
-	branch = master
-	url = https://gitee.com/thinblog/mmdblua.git
+# [submodule "3rd/mmdblua"]
+# 	path = 3rd/mmdblua
+# 	branch = master
+# 	url = https://gitee.com/thinblog/mmdblua.git
 [submodule "3rd/lua-maxminddb"]
 	path = 3rd/lua-maxminddb
 	branch = master

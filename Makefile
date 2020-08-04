@@ -2,6 +2,7 @@ include platform.mk
 
 LUA_CLIB_PATH ?= luaclib
 CSERVICE_PATH ?= cservice
+COMMON_CLIB_PATH ?= common/luaclib
 
 SKYNET_BUILD_PATH ?= .
 
@@ -38,7 +39,7 @@ $(JEMALLOC_STATICLIB) : 3rd/jemalloc/Makefile
 	cd 3rd/jemalloc && $(MAKE) CC=$(CC) 
 
 3rd/jemalloc/autogen.sh :
-	git submodule update --init
+	git submodule update --init --recursive
 
 3rd/jemalloc/Makefile : | 3rd/jemalloc/autogen.sh
 	cd 3rd/jemalloc && ./autogen.sh --with-jemalloc-prefix=je_ --enable-prof
@@ -46,7 +47,7 @@ $(JEMALLOC_STATICLIB) : 3rd/jemalloc/Makefile
 jemalloc : $(MALLOC_STATICLIB)
 
 update3rd :
-	rm -rf 3rd/jemalloc && git submodule update --init
+	rm -rf 3rd/jemalloc && git submodule update --init --recursive
 
 # skynet
 
@@ -54,6 +55,11 @@ CSERVICE = snlua logger gate harbor
 LUA_CLIB = skynet \
   client \
   bson md5 sproto lpeg $(TLS_MODULE)
+
+COMMON_CLIB = cjson \
+  pb \
+  gbk \
+  openssl
 
 LUA_CLIB_SKYNET = \
   lua-skynet.c lua-seri.c \
@@ -79,16 +85,21 @@ SKYNET_SRC = skynet_main.c skynet_handle.c skynet_module.c skynet_mq.c \
 all : \
   $(SKYNET_BUILD_PATH)/skynet \
   $(foreach v, $(CSERVICE), $(CSERVICE_PATH)/$(v).so) \
-  $(foreach v, $(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so) 
+  $(foreach v, $(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so) \
+  $(foreach v, $(COMMON_CLIB), $(COMMON_CLIB_PATH)/$(v).so)
 
 $(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
 	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)
+
+$(COMMON_CLIB_PATH) :
+	mkdir -p $(COMMON_CLIB_PATH)
 
 $(LUA_CLIB_PATH) :
 	mkdir $(LUA_CLIB_PATH)
 
 $(CSERVICE_PATH) :
 	mkdir $(CSERVICE_PATH)
+
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -118,9 +129,21 @@ $(LUA_CLIB_PATH)/ltls.so : lualib-src/ltls.c | $(LUA_CLIB_PATH)
 $(LUA_CLIB_PATH)/lpeg.so : 3rd/lpeg/lpcap.c 3rd/lpeg/lpcode.c 3rd/lpeg/lpprint.c 3rd/lpeg/lptree.c 3rd/lpeg/lpvm.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lpeg $^ -o $@ 
 
+$(COMMON_CLIB_PATH)/cjson.so: | $(COMMON_CLIB_PATH) update3rd
+	cd 3rd/lua-cjson && $(MAKE) CC=$(CC) 
+
+$(COMMON_CLIB_PATH)/gbk.so: | $(COMMON_CLIB_PATH) update3rd
+	cd 3rd/luagbk && $(MAKE) CC=$(CC) 
+
+$(COMMON_CLIB_PATH)/openssl.so: | $(COMMON_CLIB_PATH) update3rd
+	cd 3rd/lua-openssl && $(MAKE) CC=$(CC) 
+
+$(COMMON_CLIB_PATH)/pb.so: | $(COMMON_CLIB_PATH) update3rd
+	cd 3rd/lua-protobuf && $(MAKE) CC=$(CC) 
+
 clean :
-	rm -f $(SKYNET_BUILD_PATH)/skynet $(CSERVICE_PATH)/*.so $(LUA_CLIB_PATH)/*.so && \
-  rm -rf $(SKYNET_BUILD_PATH)/*.dSYM $(CSERVICE_PATH)/*.dSYM $(LUA_CLIB_PATH)/*.dSYM
+	rm -rf $(SKYNET_BUILD_PATH)/skynet $(CSERVICE_PATH)/*.so $(LUA_CLIB_PATH)/*.so $(COMMON_CLIB_PATH)/*.so \
+    $(SKYNET_BUILD_PATH)/skynet.dSYM $(COMMON_CLIB_PATH)/*.dSYM $(LUA_CLIB_PATH)/*.dSYM $(CSERVICE_PATH)/*.dSYM
 
 cleanall: clean
 ifneq (,$(wildcard 3rd/jemalloc/Makefile))
