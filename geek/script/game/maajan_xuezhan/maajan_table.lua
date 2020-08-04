@@ -265,7 +265,8 @@ function maajan_table:on_started(player_count)
 
     self:ding_zhuang()
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
-	self.last_chu_pai              = -1 --上次的出牌
+    self.last_chu_pai              = -1 --上次的出牌
+    self.mo_pai_count = nil
     self:update_state(FSM_S.PER_BEGIN)
     self.game_log = {
         start_game_time = os.time(),
@@ -845,7 +846,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             player.hu = {
                 time = os.time(),
                 tile = tile,
-                types = self:hu(player,nil,tile),
+                types = self:hu(player,nil,player.mo_pai),
                 zi_mo = is_zi_mo,
                 whoee = whoee,
             }
@@ -2518,11 +2519,11 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
     end
 
     if self.rule.play.tian_di_hu then
-        if player.chair_id == self.zhuang and player.mo_pai_count == 1 then
+        if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
             types[HU_TYPE.TIAN_HU] = 1
         end
 
-        if player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and table.nums(player.pai.ming_pai) == 0 then
+        if player.chair_id ~= self.zhuang and mo_pai and player.mo_pai_count == 1 and table.nums(player.pai.ming_pai) == 0 then
             types[HU_TYPE.DI_HU] = 1
         end
     end
