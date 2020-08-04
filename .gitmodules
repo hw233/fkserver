@@ -3,19 +3,25 @@
 	url = https://gitee.com/thinblog/jemalloc.git
 [submodule "3rd/lua-openssl"]
 	path = 3rd/lua-openssl
+	branch = master
 	url = https://gitee.com/thinblog/lua-openssl.git
 [submodule "3rd/lua-cjson"]
 	path = 3rd/lua-cjson
+	branch = master
 	url = https://gitee.com/thinblog/lua-cjson.git
 [submodule "3rd/luagbk"]
 	path = 3rd/luagbk
+	branch = master
 	url = https://gitee.com/thinblog/luagbk.git
 [submodule "3rd/mmdblua"]
 	path = 3rd/mmdblua
+	branch = master
 	url = https://gitee.com/thinblog/mmdblua.git
 [submodule "3rd/lua-maxminddb"]
 	path = 3rd/lua-maxminddb
+	branch = master
 	url = https://gitee.com/thinblog/lua-maxminddb.git
 [submodule "3rd/lua-protobuf"]
 	path = 3rd/lua-protobuf
+	branch = master
 	url = https://gitee.com/thinblog/lua-protobuf.git
