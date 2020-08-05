@@ -38,6 +38,10 @@ local club_member_partner = require "game.club.club_member_partner"
 local club_partners = require "game.club.club_partners"
 local club_partner_member = require "game.club.club_partner_member"
 local club_partner_commission = require "game.club.club_partner_commission"
+local club_block_groups = require "game.club.block.groups"
+local club_block_group_players = require "game.club.block.group_players"
+local club_block_player_groups = require "game.club.block.player_groups"
+
 require "functions"
 
 local g_room = g_room
@@ -155,7 +159,7 @@ function on_bs_club_create_with_group(group_id,name)
     end
 
     if group.type ~= enum.CT_DEFAULT then
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     local player = base_players[group.owner]
@@ -228,7 +232,7 @@ function on_cs_club_import_player_from_group(msg,guid)
 
     if from.type ~= enum.CT_DEFAULT or to.type ~= enum.CT_UNION then
         onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -746,7 +750,7 @@ function on_cs_club_query_memeber(msg,guid)
     local owner_role = club_role[club_id][owner]
     if not owner_role or owner_role == enum.CRT_PLAYER then
         onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
             club_id = club_id,
         })
         return
@@ -995,7 +999,7 @@ local function on_cs_club_agree_request(msg,guid)
 
     if not msg.request_id and (not msg.sid or msg.sid == "") then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
             op = msg.op,
         })
         return
@@ -1463,7 +1467,7 @@ local function on_cs_club_block(msg,guid,status)
     local target_club = base_clubs[target_club_id]
     if not target_club then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
             op = op,
         })
         return
@@ -1540,7 +1544,7 @@ local function on_cs_club_close(msg,guid,status)
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
             op = oper,
         })
         return
@@ -1677,7 +1681,7 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
 
     local orgin_money = player_money[source_guid][money_id]
     if orgin_money < money then
-        res.result = enum.ERORR_PARAMETER_ERROR
+        res.result = enum.ERROR_PARAMETER_ERROR
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -1779,7 +1783,7 @@ local function transfer_money_club2club(source_club_id,target_club_id,money,guid
 
     local orgin_money = club_money[source_club_id][money_id]
     if orgin_money < money then
-        res.result = enum.ERORR_PARAMETER_ERROR
+        res.result = enum.ERROR_PARAMETER_ERROR
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -1878,7 +1882,7 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
 
     local orgin_money = club_money[source_club_id][money_id]
     if orgin_money < money then
-        res.result = enum.ERORR_PARAMETER_ERROR
+        res.result = enum.ERROR_PARAMETER_ERROR
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -2031,7 +2035,7 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
 
     local orgin_money = player_money[from_guid][money_id]
     if orgin_money < money then
-        res.result = enum.ERORR_PARAMETER_ERROR
+        res.result = enum.ERROR_PARAMETER_ERROR
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
     end
@@ -2148,7 +2152,7 @@ function on_cs_exchagne_club_commission(msg,guid)
 
     if not count or not club_id then
         onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
         })
         return
     end
@@ -2225,7 +2229,7 @@ function on_cs_config_fast_game_list(msg,guid)
     local template_ids = msg.template_ids
     if not club_id or not template_ids or table.nums(template_ids) == 0 then
         onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
 
         return
@@ -2252,7 +2256,7 @@ function on_cs_config_fast_game_list(msg,guid)
     local is = table.logic_and(template_ids,function(tid) return tid <= 0 or table_template[tid] ~= nil end)
     if not is then
         onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
 
         return
@@ -2311,6 +2315,207 @@ function on_cs_force_dismiss_table(msg,guid)
 
     local succ = g_room:force_dismiss_table(tb.real_table_id)
     onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
-            result = succ
+        result = succ
+    })
+end
+
+function on_cs_pull_block_groups(msg,guid)
+    local club_id = msg.club_id
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_PULL_GROUPS",{
+            result = enum.ERROR_OPERATION_INVALID
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if not role or role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_PULL_GROUPS",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local groups = table.series(club_block_groups[club_id],function(_,gid)
+        return {
+            group_id = gid, 
+            players = table.series(club_block_group_players[club_id][gid],function(_,gpid)
+                local p = base_players[gpid]
+                return {
+                    guid = p.guid,
+                    nickname = p.nickname,
+                    icon = p.icon,
+                    sex = p.sex,
+                }
+            end)
+        }
+    end)
+
+    onlineguid.send(guid,"S2C_CLUB_BLOCK_PULL_GROUPS",{
+        result = enum.ERROR_NONE,
+        groups = groups,
+    })
+end
+
+function on_cs_new_block_group(msg,guid)
+    local club_id = msg.club_id
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_NEW_GROUP",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if not role or role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_NEW_GROUP",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local group_id = tonumber(reddb:incr(string.format("club:block:group:id")))
+    reddb:sadd(string.format("club:block:groups:%s",club_id),group_id)
+    onlineguid.send(guid,"S2C_CLUB_BLOCK_NEW_GROUP",{
+        result = enum.ERROR_NONE,
+        group_id = group_id,
+        club_id = club_id,
+    })
+end
+
+function on_cs_del_block_group(msg,guid)
+    local club_id = msg.club_id
+    local group_id = msg.group_id
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_DEL_GROUP",{
+            result = enum.ERROR_OPERATION_INVALID
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if not role or role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_DEL_GROUP",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local gguids = club_block_group_players[club_id][group_id]
+    for gguid,_ in pairs(gguids) do
+        reddb:srem(string.format("club:block:player:group:%s:%s",club_id,gguid),group_id)
+    end
+    reddb:del(string.format("club:block:group:player:%s:%s",club_id,group_id))
+    reddb:srem(string.format("club:block:groups:%s",club_id),group_id)
+
+    onlineguid.send(guid,"S2C_CLUB_BLOCK_DEL_GROUP",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        group_id = group_id,
+    })
+end
+
+function on_cs_add_player_to_block_group(msg,guid)
+    local club_id = msg.club_id
+    local group_id = msg.group_id
+    local group_guid = msg.guid
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if not role or role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local p = base_players[group_guid]
+    if not p then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+        return
+    end
+
+    if not club_member[club_id][group_guid] then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_NOT_MEMBER
+        })
+        return
+    end
+
+    if not club_block_groups[club_id][group_id] then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    reddb:sadd(string.format("club:block:group:player:%s:%s",club_id,group_id),group_guid)
+    reddb:sadd(string.format("club:block:player:group:%s:%s",club_id,group_guid),group_id)
+    onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        group_id = group_id,
+        guid = group_guid,
+    })
+end
+
+function on_cs_remove_player_from_block_group(msg,guid)
+    local club_id = msg.club_id
+    local group_id = msg.group_id
+    local group_guid = msg.guid
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",{
+            result = enum.ERROR_OPERATION_INVALID
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if not role or role == enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local p = base_players[group_guid]
+    if not p then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
+            result = enum.ERROR_PLAYER_NOT_EXIST
+        })
+        return
+    end
+
+    if not club_block_groups[club_id][group_id] then
+        onlineguid.send(guid,"S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",{
+            result = enum.ERROR_PARAMETER_ERROR
+        })
+        return
+    end
+
+    reddb:srem(string.format("club:block:group:player:%s:%s",club_id,group_id),group_guid)
+    reddb:srem(string.format("club:block:player:group:%s:%s",club_id,group_guid),group_id)
+    onlineguid.send(guid,"S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        group_id = group_id,
+        guid = group_guid,
     })
 end

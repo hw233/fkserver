@@ -351,6 +351,20 @@ function base_club:join_table(player,private_table,chair_count)
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
+    local tb = g_room:find_table(private_table.real_table_id)
+    local is_block_join = table.logic_or(tb.players,function(p)
+        local inters = reddb:sinter(
+            string.format("club:block:player:group:%s:%s",self.id,p.guid),
+            string.format("club:block:player:group:%s:%s",self.id,player.guid)
+        )
+
+        return table.nums(inters) > 0
+    end)
+    
+    if is_block_join then
+        return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+    end
+
     return g_room:join_private_table(player,private_table,chair_count)
 end
 
@@ -384,7 +398,7 @@ end
 function base_club:create_table_template(game_id,desc,rule)
     rule = check_rule(rule)
     if not rule then
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     local id = tonumber(reddb:incr("template:global:id"))
@@ -423,7 +437,7 @@ end
 
 function base_club:remove_table_template(template_id)
     if not template_id then
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     template_id = tonumber(template_id)
@@ -444,25 +458,25 @@ end
 function base_club:modify_table_template(template_id,game_id,desc,rule)
     if not template_id or not rule or not game_id then
         log.error("modify_table_template template_id is nil.")
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     template_id = tonumber(template_id)
     local template = table_template[template_id]
     if not template then
         log.error("modify_table_template template not exists.")
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     if game_id ~= template.game_id then
         log.error("modify_table_template template game_id is modifyed.")
-        return enum.ERORR_PARAMETER_ERROR
+        return enum.ERROR_PARAMETER_ERROR
     end
 
     if rule then
         rule = check_rule(rule)
         if not rule then
-            return enum.ERORR_PARAMETER_ERROR
+            return enum.ERROR_PARAMETER_ERROR
         end
     end
 
@@ -535,7 +549,7 @@ function base_club:exchange_commission(count)
 
     if count == 0 then return enum.ERROR_NONE end
 
-    if count < 0 then  return enum.ERORR_PARAMETER_ERROR end
+    if count < 0 then  return enum.ERROR_PARAMETER_ERROR end
     if count > commission then return enum.ERROR_LESS_MIN_LIMIT  end
 
     reddb:incrby(string.format("club:commission:%d",self.id),-math.floor(count))

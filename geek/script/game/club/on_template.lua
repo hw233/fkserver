@@ -189,7 +189,7 @@ function on_cs_get_club_template_commission(msg,guid)
         local template = table_template[template_id]
         if not template then
             onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
-                result = enum.ERORR_PARAMETER_ERROR
+                result = enum.ERROR_PARAMETER_ERROR
             })
             return
         end
@@ -257,7 +257,7 @@ function on_cs_config_club_template_commission(msg,guid)
 
     if role == enum.CRT_PARTNER and not club_partners[club_id][partner_id] then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PARAMER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -266,7 +266,7 @@ function on_cs_config_club_template_commission(msg,guid)
     if not template or not template.rule or not template.rule.union then
         log.error("on_cs_config_club_template_commission illegal template.")
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -276,7 +276,7 @@ function on_cs_config_club_template_commission(msg,guid)
     if not conf.team_commission_rate or conf.team_commission_rate > 10000 or conf.team_commission_rate < 0 or my_commission_rate < conf.team_commission_rate then
         log.error("on_cs_config_club_template_commission illegal template [%d].",template_id)
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -347,7 +347,7 @@ function on_cs_config_club_team_template(msg,guid)
     if not template then
         log.error("on_cs_config_club_table_template illegal template.")
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEAM_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -357,7 +357,7 @@ function on_cs_config_club_team_template(msg,guid)
     if not conf.team_commission_rate or conf.team_commission_rate > 10000 or conf.team_commission_rate < 0 or my_commission_rate < conf.team_commission_rate then
         log.error("on_cs_config_club_table_template illegal template [%d].",template_id)
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEAM_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -419,7 +419,7 @@ function on_cs_get_club_team_template_conf(msg,guid)
         local template = table_template[template_id]
         if not template then
             onlineguid.send(guid,"S2C_GET_CLUB_TEAM_TEMPLATE_CONFIG",{
-                result = enum.ERORR_PARAMETER_ERROR
+                result = enum.ERROR_PARAMETER_ERROR
             })
             return
         end

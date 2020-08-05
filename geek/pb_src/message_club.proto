@@ -403,4 +403,86 @@ message S2C_CLUB_FORCE_DISMISS_TABLE{
     int32 result = 1;
 }
 
+message C2S_CLUB_EDIT_INFO {
+    enum MsgID {NIL = 0;ID = 14097;}
+    int32 club_id = 1;
+    string name = 2;
+}
 
+message S2C_CLUB_EDIT_INFO {
+    enum MsgID {NIL = 0;ID = 14098;}
+    int32 result = 1;
+    int32 club_id = 2;
+    string name = 3;
+}
+
+message C2S_CLUB_BLOCK_PULL_GROUPS{
+    enum MsgID {NIL = 0;ID = 14100;}
+    int32 club_id = 1;
+}
+
+message BLOCK_GROUP{
+    int32 group_id = 1;
+    repeated PLAYER_BASE_INFO players = 2;
+}
+
+message S2C_CLUB_BLOCK_PULL_GROUPS{
+    enum MsgID {NIL = 0;ID = 14101;}
+    int32 result = 1;
+    repeated BLOCK_GROUP groups = 2;
+}
+
+message C2S_CLUB_BLOCK_NEW_GROUP{
+    enum MsgID {NIL = 0;ID = 14102;}
+    int32 club_id = 1;
+}
+
+message S2C_CLUB_BLOCK_NEW_GROUP{
+    enum MsgID {NIL = 0;ID = 14103;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 group_id = 3;
+}
+
+message C2S_CLUB_BLOCK_DEL_GROUP{
+    enum MsgID {NIL = 0;ID = 14104;}
+    int32 club_id = 1;
+    int32 group_id = 2;
+}
+
+message S2C_CLUB_BLOCK_DEL_GROUP{
+    enum MsgID {NIL = 0;ID = 14105;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 group_id = 3;
+}
+
+message C2S_CLUB_BLOCK_ADD_PLAYER_TO_GROUP{
+    enum MsgID {NIL = 0;ID = 14106;}
+    int32 club_id = 1;
+    int32 group_id = 2;
+    int32 guid = 3;
+}
+
+message S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP{
+    enum MsgID {NIL = 0;ID = 14107;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 group_id = 3;
+    int32 guid = 4;
+}
+
+message C2S_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP{
+    enum MsgID {NIL = 0;ID = 14108;}
+    int32 club_id = 1;
+    int32 group_id = 2;
+    int32 guid = 3;
+}
+
+message S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP{
+    enum MsgID {NIL = 0;ID = 14109;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 group_id = 3;
+    int32 guid = 4;
+}

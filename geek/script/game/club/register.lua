@@ -36,3 +36,9 @@ register_dispatcher("B2S_CLUB_CREATE_WITH_GROUP",on_bs_club_create_with_group)
 register_dispatcher("C2S_IMPORT_PLAYER_FROM_GROUP",on_cs_club_import_player_from_group)
 
 register_dispatcher("C2S_CLUB_FORCE_DISMISS_TABLE",on_cs_force_dismiss_table)
+
+register_dispatcher("C2S_CLUB_BLOCK_PULL_GROUPS",on_cs_pull_block_groups)
+register_dispatcher("C2S_CLUB_BLOCK_NEW_GROUP",on_cs_new_block_group)
+register_dispatcher("C2S_CLUB_BLOCK_DEL_GROUP",on_cs_del_block_group)
+register_dispatcher("C2S_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",on_cs_add_player_to_block_group)
+register_dispatcher("C2S_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",on_cs_remove_player_from_block_group)
