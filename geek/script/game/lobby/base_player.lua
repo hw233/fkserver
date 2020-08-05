@@ -276,10 +276,10 @@ function base_player:notify_sit_down(player,reconnect,private_table)
 	if private_table then
 		local club_id = private_table.club_id
 		local money_id = club_id and club_money_type[club_id] or -1
-		seat.money = {{
+		seat.money = {
 			money_id = money_id,
 			count = player:get_money(money_id),
-		}}
+		}
 	end
 	
 	send2client_pb(self, "SC_NotifySitDown", {
