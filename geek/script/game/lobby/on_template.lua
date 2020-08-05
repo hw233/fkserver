@@ -5,7 +5,6 @@ local table_template = require "game.lobby.table_template"
 local onlineguid = require "netguidopt"
 local club_role = require "game.club.club_role"
 local club_utils = require "game.club.club_utils"
-local redismetadata = require "redismetadata"
 local json = require "cjson"
 local log = require "log"
 
@@ -35,6 +34,9 @@ function on_cs_create_table_template(msg,guid)
     local template  = club_template.template
 
     local ret,info = club:create_table_template(template.game_id,template.description,template.rule)
+    if info then
+        info.rule = json.encode(info.rule)
+    end
     if ret == enum.ERROR_NONE then
         local root = club_utils.root(club)
         root:recusive_broadcast("S2C_NOTIFY_TABLE_TEMPLATE",{
@@ -184,6 +186,10 @@ function on_cs_modify_table_template(msg,guid)
     local template = club_template.template
     local ret,info = club:modify_table_template(template_id,template.game_id,template.description,
             template.rule)
+
+    if info then
+        info.rule = json.encode(info.rule)
+    end
 
     if ret == enum.ERROR_NONE then
         local root = club_utils.root(club)

@@ -13,11 +13,7 @@ local club_partner_member = setmetatable({},{
                     return {}
                 end
 
-                local ids = table.map(partner_ids,function(sguid)
-                    return tonumber(sguid),true
-                end)
-
-                return ids
+                return partner_ids
             end
         })
     end

@@ -1,6 +1,5 @@
 local redisopt = require "redisopt"
 local base_notice = require "game.notice.base_notice"
-local redismetadata = require "redismetadata"
 
 local reddb = redisopt.default
 
@@ -9,8 +8,6 @@ local function load_notice(id)
         if not c or table.nums(c) == 0 then
                 return nil
         end
-
-        c = redismetadata.notice:decode(c)
 
         setmetatable(c,{__index = base_notice})
         return c

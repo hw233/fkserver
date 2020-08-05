@@ -1,24 +1,21 @@
 local log = require "log"
 local redisopt = require "redisopt"
 local channel = require "channel"
-local redismetadata = require "redismetadata"
 
 local reddb = redisopt.default
 
 
 local onlineguid = setmetatable({},{
-    __index = function(t,k)
-        local guid = k
+    __index = function(t,guid)
         local session = reddb:hgetall("player:online:guid:"..tostring(guid))
         if not session then
             return nil
         end
 
-        session = redismetadata.player.online:decode(session)
-
         -- t[k] = session
         return session
-end})
+    end
+})
 
 function onlineguid.send(guids,msgname,msg)
     msg = msg or {}

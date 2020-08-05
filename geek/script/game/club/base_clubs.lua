@@ -1,6 +1,5 @@
 local redisopt = require "redisopt"
 local base_club = require "game.club.base_club"
-local redismetadata = require "redismetadata"
 
 local reddb = redisopt.default
 
@@ -10,8 +9,6 @@ local base_clubs = setmetatable({},{
         if not c or table.nums(c) == 0 then
             return nil
         end
-
-        c = redismetadata.club.info:decode(c)
         
         setmetatable(c,{__index = base_club})
         t[id] = c

@@ -11,8 +11,7 @@ setmetatable(club_role,{
             __index = function(t,guid)
                 if not guid then
                     local rs = reddb:hgetall("club:role:"..tostring(t.club_id))
-                    local roles = table.map(rs,function(srole,sguid) return tonumber(sguid),tonumber(srole) end)
-                    return roles
+                    return rs
                 end
 
                 local role = reddb:hget(string.format("club:role:%s",t.club_id),guid)

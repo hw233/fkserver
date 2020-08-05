@@ -2726,7 +2726,6 @@ function on_cs_club_edit_config(msg,guid)
         return
     end
 
-    tconf = table.map(tconf,function(v,k) return k,tostring(v) end)
     log.dump(tconf)
 
     reddb:hmset(string.format("club:conf:%s",club_id),tconf)

@@ -1,6 +1,5 @@
 local redisopt = require "redisopt"
 local reddb  = redisopt.default
-local redismetadata = require "redismetadata"
 
 local club_template_conf = {}
 
@@ -13,7 +12,6 @@ setmetatable(club_template_conf,{
                     return nil
                 end
 
-                conf = redismetadata.conf:decode(conf)
                 t[template_id] = conf
                 return conf
             end

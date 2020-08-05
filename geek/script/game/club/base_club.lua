@@ -13,7 +13,6 @@ local channel = require "channel"
 local base_mail = require "game.mail.base_mail"
 local club_role = require "game.club.club_role"
 local club_template_conf = require "game.club.club_template_conf"
-local redismetadata = require "redismetadata"
 local base_money = require "game.lobby.base_money"
 local club_money_type = require "game.club.club_money_type"
 local club_money = require "game.club.club_money"
@@ -432,7 +431,7 @@ function base_club:create_table_template(game_id,desc,rule)
         club_id = self.id,
         game_id = game_id,
         description = desc,
-        rule = json.encode(rule),
+        rule = rule,
     }
 
     reddb:hmset(string.format("template:%d",id),info)
@@ -444,7 +443,7 @@ function base_club:create_table_template(game_id,desc,rule)
 
     channel.publish("db.?","msg","SD_CreateClubTemplate",{
         club_id = self.id,
-        rule = json.encode(rule),
+        rule = rule,
         description = desc,
         game_id = game_id,
         id = id,
@@ -511,15 +510,14 @@ function base_club:modify_table_template(template_id,game_id,desc,rule)
         rule = rule or template.rule,
     }
 
-    local rawtemp = redismetadata.privatetable.template:encode(info)
-    reddb:hmset(string.format("template:%d",template_id),rawtemp)
+    reddb:hmset(string.format("template:%d",template_id),info)
 
     table_template[template_id] = nil
     club_template[self.id][template_id] = nil
 
     channel.publish("db.?","msg","SD_EditClubTemplate",{
         club_id = self.id,
-        rule = json.encode(rule),
+        rule = rule,
         description = desc,
         game_id = game_id,
         id = template_id,

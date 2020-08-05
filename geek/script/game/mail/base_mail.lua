@@ -30,7 +30,7 @@ function base_mail.create_mail(sender,receiver,title,content)
 		sender = sender.guid,
 		receiver = receiver.guid,
 		title = title,
-		content = type(content) == "string" and content or json.encode(content),
+		content = content,
 		status = 0,
     }
 

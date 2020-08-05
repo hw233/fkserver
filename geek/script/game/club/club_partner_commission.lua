@@ -9,12 +9,7 @@ setmetatable(club_partner_commission,{
             __index = function(_,partner_id)
                 if not partner_id then
                     local commissions = reddb:hgetall(string.format("club:partner:commission:%s",club_id))
-
-                    local cms = table.map(commissions,function(scm,sp)
-                        return tonumber(sp),tonumber(scm)
-                    end)
-
-                    return cms
+                    return commissions
                 end
 
                 local commission = reddb:hget(string.format("club:partner:commission:%s",club_id),partner_id)

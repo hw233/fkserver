@@ -14,7 +14,8 @@ setmetatable(club_partner_template_default_commission_rate,{
                             if not commissions or table.nums(commissions) == 0 then
                                 return {}
                             end
-                            return table.map(commissions,function(scommission,spid) return tonumber(spid),tonumber(scommission) end)
+
+                            return commissions
                         end
         
                         local commission = reddb:hget(string.format("club:template:commission:default:%s:%s",club_id,template_id),partner_id)

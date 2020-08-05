@@ -379,7 +379,7 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		table_id = global_tid,
 		real_table_id = table_id,
 		owner = player.guid,
-		rule = json.encode(rule),
+		rule = rule,
 		game_type = def_first_game_type,
 		create_time = os.time(),
 	})

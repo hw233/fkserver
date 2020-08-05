@@ -21,7 +21,7 @@ function base_notice.create(type,where,content,club)
                 id = new_notice_id(),
                 expiration = os.time() + mail_expaired_seconds,
                 create_time = os.time(),
-                content = type(content) == "string" and content or json.encode(content),
+                content = content,
                 where = where,
                 club = club,
                 status = 0,

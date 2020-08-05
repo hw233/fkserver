@@ -1,5 +1,4 @@
 
-local redismetadata = require "redismetadata"
 local redisopt = require "redisopt"
 local base_clubs = require "game.club.base_clubs"
 local log = require "log"
@@ -35,8 +34,6 @@ local base_request = setmetatable({},{
         if not req or table.nums(req) == 0 then
             return nil
         end
-
-        req = redismetadata.club.request:decode(req)
     
         setmetatable(req,{__index = request_meta})
 

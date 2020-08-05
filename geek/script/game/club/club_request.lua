@@ -9,10 +9,7 @@ local club_request = {}
 setmetatable(club_request,{
     __index = function(t,club_id)
         local ids = reddb:smembers(string.format("club:request:%s",club_id))
-        local reqs = table.map(ids,function(id) return tonumber(id),true end)
-
-        -- t[club_id] = reqs
-        return reqs
+        return ids
     end,
 })
 

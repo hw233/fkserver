@@ -1,7 +1,6 @@
 local redisopt = require "redisopt"
 
 local base_player = require "game.lobby.base_player"
-local redismetadata = require "redismetadata"
 
 local reddb = redisopt.default
 
@@ -17,8 +16,6 @@ setmetatable(player_manager,{
 		if not p then
 			return nil
 		end
-		
-		p = redismetadata.player.info:decode(p)
 
 		p = table.nums(p) > 0 and p or nil
 		if p then

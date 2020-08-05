@@ -1,6 +1,5 @@
 
 local redisopt = require "redisopt"
-local redismetadata = require "redismetadata"
 
 local reddb = redisopt.default
 
@@ -13,7 +12,6 @@ setmetatable(table_template,{
             return nil
         end
 
-        temp = redismetadata.privatetable.template:decode(temp)
         return temp
     end,
 })

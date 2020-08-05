@@ -203,7 +203,7 @@ function MSG.WMaintainUpdate(msg)
         return {result = 2,}
     end
 
-    local res = dbopt.config:query("select value from t_globle_int_cfg where `key` = '%s' ;", str)
+    local res = dbopt.config:query("select value from t_globle_int_cfg where `d` = '%s' ;", str)
     local queryinfo = {
         maintaintype = id,
         switchopen = res[1],
@@ -420,6 +420,7 @@ local function setup_default_redis_value()
 end
 
 skynet.start(function()
+    
     skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
         if not f then

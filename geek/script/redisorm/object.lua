@@ -1,33 +1,102 @@
-local redisobject = {}
+
 local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
-function redisobject:new(meta,id)
-    local o = {
-        meta = meta,
-        id = id,
-    }
+local node_metatable = {
+    __index = function(t,key)
 
-    setmetatable(o,{
-        __index = function(t,field)
-            local rv = reddb:hset(self.meta:key(self.id),field)
-            return self.meta:decode(rv)
-        end,
-        __newindex = function(t,field,v)
-            reddb:hset(self.meta:key(self.id),field,self.meta:encode(v))
-        end,
-    })
+    end,
+    __newindex = function(t,key)
 
-    return o
+    end,
+}
+
+local hash_metatable = {
+    __index = function(t,key)
+
+    end,
+}
+
+local list_metatable = {
+    __index = function(t,key)
+
+    end,
+}
+
+local set_metatable = {
+    __index = function(t,key)
+
+    end,
+}
+local key_metatable = {
+    __index = function(t,key)
+
+    end,
+}
+
+local node_creator = {
+    key = key_metatable,
+    hash = hash_metatable,
+    list = list_metatable,
+    set = set_metatable,
+}
+
+local function create_node(meta,parent)
+    return setmetatable({
+            __parent = parent,
+            __meta = meta,
+        },
+        node_creator[meta.type]
+    )
 end
 
-function redisobject:set(meta,id,field,v)
+local tree = {
+    root = create_node()
+}
 
-end
+setmetatable(tree,{
+    __index = function(t,key)
+        local next = string.gmatch(key,"[^%:|%.]+")
+        local node = t.root
+        for s in next() do
+            local n = node[s]
+            if not n then return end
+            node = n
+        end
+        return node
+    end,
+    __newindex = function(t,key,type)
+        local next = string.gmatch(key,"[^%:|%.]+")
+        local node = t.root
+        local s = next()
+        local model = s
+        while s do
+            model = s
+            local n = node[model]
+            if not n then break end
+            node = n
+            s = next()
+        end
 
-function redisobject:get(meta,id,field,v)
+        if not node then return end
 
-end
+        node[model] = type
+    end
+})
 
-return redisobject
+local db = setmetatable({},{
+    __index = function(t,name)
+        local o = setmetatable({
+            __name = name
+        },{
+            __index = tree,
+        })
+
+        t[name] = o
+
+        return o
+    end
+})
+
+return db
