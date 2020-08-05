@@ -867,22 +867,22 @@ end
 local function check_rule(rule)
 	local chair_count = get_chair_count(rule.room.player_count_option + 1)
 	if not chair_count then
-		return enum.ERORR_PARAMETER_ERROR
+		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local play_round = get_play_round(rule.round.option + 1)
 	if not play_round then
-		return enum.ERORR_PARAMETER_ERROR
+		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local pay_option = rule.pay.option
 	if not check_pay_option(pay_option) then
-		return enum.ERORR_PARAMETER_ERROR
+		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local money_type = rule.pay.money_type
 	if not check_money_type(money_type) then
-		return enum.ERORR_PARAMETER_ERROR
+		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	return enum.ERROR_NONE,play_round,chair_count,pay_option,money_type
@@ -902,12 +902,12 @@ local function check_create_table_limit(player,rule,club)
 		end
 	elseif payopt == enum.PAY_OPTION_BOSS then
 		if not club then 
-			return enum.ERORR_PARAMETER_ERROR
+			return enum.ERROR_PARAMETER_ERROR
 		end
 		
 		local root = club_utils.root(club)
 		if not root then 
-			return enum.ERORR_PARAMETER_ERROR
+			return enum.ERROR_PARAMETER_ERROR
 		end
 
 		local boss = base_players[root.owner]
@@ -951,7 +951,7 @@ function on_cs_create_private_room(msg,guid)
 
 	if not rule and not template_id then
 		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.ERORR_PARAMETER_ERROR,
+			result = enum.ERROR_PARAMETER_ERROR,
 		})
 		return
 	end
@@ -973,7 +973,7 @@ function on_cs_create_private_room(msg,guid)
 		ok,rule = pcall(json.decode,rule)
 		if not ok or not rule then 
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERORR_PARAMETER_ERROR,
+				result = enum.ERROR_PARAMETER_ERROR,
 			})
 			return
 		end
@@ -1253,7 +1253,7 @@ function on_cs_join_private_room(msg,guid)
 	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		result,tb = g_room:join_private_table(player,private_table,chair_count)
 	else
-		result = enum.ERORR_PARAMETER_ERROR
+		result = enum.ERROR_PARAMETER_ERROR
 	end
 
 	local money_id = club_id and club_money_type[club_id] or -1
@@ -1587,7 +1587,7 @@ function on_cs_set_nickname(msg,guid)
 	local nickname = msg.nickname
 	if not nickname or nickname == "" then
 		send2client_pb(guid,"SC_SetNickname",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end

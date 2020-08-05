@@ -587,7 +587,7 @@ function pdk_table:do_action_discard(player, cards)
 	if player.chair_id ~= self.cur_discard_chair then
 		log.warning("pdk_table:discard guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_turn)
 		send2client_pb(player,"SC_PdkDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -596,7 +596,7 @@ function pdk_table:do_action_discard(player, cards)
 		log.warning("pdk_table:discard guid[%d] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client_pb(player,"SC_PdkDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -606,7 +606,7 @@ function pdk_table:do_action_discard(player, cards)
 	if not cardstype then
 		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client_pb(player,"SC_PdkDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -616,7 +616,7 @@ function pdk_table:do_action_discard(player, cards)
 	   self:check_first_discards_with_3(cards) then
 		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client_pb(player,"SC_PdkDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -627,7 +627,7 @@ function pdk_table:do_action_discard(player, cards)
 			player.guid, table.concat(cards, ','),cardstype, #cards,
 			cardsval,self.last_discard.type,self.last_discard.count,self.last_discard.value)
 		send2client_pb(player,"SC_PdkDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -708,7 +708,7 @@ function pdk_table:do_action_pass(player)
 		if type then
 			log.error("pdk_table:pass_card guid[%d] must discard", player.guid)
 			send2client_pb(player,"SC_PdkDoAction",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end

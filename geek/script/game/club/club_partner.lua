@@ -179,7 +179,7 @@ function club_partner:exchange_commission(money)
 
     if money == 0 then return enum.ERROR_NONE end
 
-    if money < 0 then  return enum.ERORR_PARAMETER_ERROR end
+    if money < 0 then  return enum.ERROR_PARAMETER_ERROR end
 
     if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
 

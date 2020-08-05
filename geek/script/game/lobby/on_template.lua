@@ -13,7 +13,7 @@ function on_cs_create_table_template(msg,guid)
     local club_template = msg.template
     if not club_template or not club_template.club_id then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -60,7 +60,7 @@ function on_cs_remove_table_template(msg,guid)
     local club_template = msg.template
     if not club_template then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -69,7 +69,7 @@ function on_cs_remove_table_template(msg,guid)
     local template_id = template and template.template_id or nil
     if not template or not template_id then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -121,7 +121,7 @@ function on_cs_modify_table_template(msg,guid)
     local club_template = msg.template
     if not club_template then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -129,7 +129,7 @@ function on_cs_modify_table_template(msg,guid)
     local ok,rule = pcall(json.decode,club_template.template.rule or "")
     if not ok then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -138,7 +138,7 @@ function on_cs_modify_table_template(msg,guid)
     local template_id = club_template.template.template_id
     if not template_id then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -153,7 +153,7 @@ function on_cs_modify_table_template(msg,guid)
 
     if club_template.club_id ~= origin_template.club_id then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
         })
         return
     end
@@ -218,7 +218,7 @@ function on_cs_edit_table_template(msg,guid)
     local template = msg.template
     if not template then
         onlineguid.send(guid,"S2C_EDIT_TABLE_TEMPLATE",{
-            result = enum.ERORR_PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end

@@ -237,14 +237,14 @@ function  land_table:do_compete_landlord_score(player,msg)
 		if (self.last_landlord_cometition < 0 and self.last_landlord_cometition ~= -4) or 
 			(action < 0 and action ~= -4) then
 			send2client_pb(player,"SC_DdzCallLandlord",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
 
 		if self.last_landlord_cometition >= action and action ~= -4 then
 			send2client_pb(player,"SC_DdzCallLandlord",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
@@ -257,7 +257,7 @@ function  land_table:do_compete_landlord_score(player,msg)
 
 			if da_sum >= 3 and action ~= 3 then
 				send2client_pb(player,"SC_DdzCallLandlord",{
-					result = enum.ERORR_PARAMETER_ERROR
+					result = enum.ERROR_PARAMETER_ERROR
 				})
 				return
 			end
@@ -323,14 +323,14 @@ function land_table:do_compete_landlord_normal(player,msg)
 	if self.last_landlord_cometition then
 		if self.last_landlord_cometition > 0  or action > 0  then
 			send2client_pb(player,"SC_DdzCallLandlord",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
 
 		if self.last_landlord_cometition == -2 and action ~= -1 and action ~= -3 then
 			send2client_pb(player,"SC_DdzCallLandlord",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
@@ -343,7 +343,7 @@ function land_table:do_compete_landlord_normal(player,msg)
 
 			if da_sum >= 3 and action ~= -2 and not self.begin_competition_normal then
 				send2client_pb(player,"SC_DdzCallLandlord",{
-					result = enum.ERORR_PARAMETER_ERROR
+					result = enum.ERROR_PARAMETER_ERROR
 				})
 				return
 			end
@@ -409,7 +409,7 @@ function land_table:do_compete_landlord(player,msg)
 
 	if not action or action < -4 or action > 3 then
 		send2client_pb(player,"SC_DdzCallLandlord",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -736,7 +736,7 @@ function land_table:do_action_discard(player, cards)
 	if player.chair_id ~= self.cur_discard_chair then
 		log.warning("land_table:discard guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_turn)
 		send2client_pb(player,"SC_DdzDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -745,7 +745,7 @@ function land_table:do_action_discard(player, cards)
 		log.warning("land_table:discard guid[%d] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client_pb(player,"SC_DdzDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -759,7 +759,7 @@ function land_table:do_action_discard(player, cards)
 		(cardstype == CARD_TYPE.THREE_WITH_TWO and not play.san_dai_er)then
 		log.warning("land_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client_pb(player,"SC_DdzDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -770,7 +770,7 @@ function land_table:do_action_discard(player, cards)
 			player.guid, table.concat(cards, ','),cardstype, #cards,
 			cardsval,self.last_discard.type,self.last_discard.count,self.last_discard.value)
 		send2client_pb(player,"SC_DdzDoAction",{
-			result = enum.ERORR_PARAMETER_ERROR
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end

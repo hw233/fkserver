@@ -2918,7 +2918,7 @@ function on_sd_transfer_money(msg)
 		return transfer_money_player2player(from_id,to_id,money_id,amount,why,why_ext)
 	end
 
-	return enum.ERROR_PARAMER_ERROR
+	return enum.ERROR_PARAMETER_ERROR
 end
 
 function on_sd_bind_phone(msg)

@@ -186,7 +186,7 @@ function on_cs_vote_table_req(msg,guid)
 			tb:fast_start_vote_req(player, msg)
 		else
 			send2client_pb("SC_VoteTableReq",{
-				result = enum.ERORR_PARAMETER_ERROR
+				result = enum.ERROR_PARAMETER_ERROR
 			})
 		end
 	end
