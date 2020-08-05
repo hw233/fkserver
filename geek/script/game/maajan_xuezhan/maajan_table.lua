@@ -631,7 +631,10 @@ end
 
 function maajan_table:ding_que()
     if #self.tiles < 108 then
-        self:gotofunc(function() self:mo_pai() end)
+        self:gotofunc(function()
+            self:jump_to_player_index(self.zhuang)
+            self:mo_pai()
+        end)
         return
     end
 
@@ -743,7 +746,10 @@ function maajan_table:ding_que()
         ding_ques = p_ques,
     })
 
-    self:gotofunc(function() self:mo_pai() end)
+    self:gotofunc(function()
+        self:jump_to_player_index(self.zhuang)
+        self:mo_pai()
+    end)
 end
 
 function maajan_table:action_after_mo_pai(waiting_actions)
@@ -1257,9 +1263,11 @@ function maajan_table:ting_full(p)
     return ting_tiles
 end
 
-function maajan_table:chu_pai()
+function maajan_table:broadcast_discard_turn()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+end
 
+function maajan_table:chu_pai()
     local function send_ting_tips(p)
         local hu_tips = self.rule and self.rule.play.hu_tips or nil
         if not hu_tips or p.trustee then return end
@@ -2239,10 +2247,13 @@ function maajan_table:next_player_index(from)
         local p = self.players[chair]
     until p and not p.hu
     self.chu_pai_player_index = chair
+    self:broadcast_discard_turn()
 end
 
 function maajan_table:jump_to_player_index(player)
-    self.chu_pai_player_index = player.chair_id
+    local chair_id = type(player) == "number" and player or player.chair_id
+    self.chu_pai_player_index = chair_id
+    self:broadcast_discard_turn()
 end
 
 function maajan_table:adjust_shou_pai(player, action, tile)
@@ -2551,15 +2562,6 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
 
     if chu_pai_player ~= player and chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
         types[HU_TYPE.GANG_SHANG_PAO] = 1
-    end
-
-    local function is_men_qing(pai)
-        return table.nums(pai.ming_pai) == 0 or
-            table.logic_and(pai.ming_pai,function(s) return s.type == SECTION_TYPE.AN_GANG end)
-    end
-
-    if is_men_qing(player.pai) then
-        types[HU_TYPE.MEN_QING] = 1
     end
 
     return types

@@ -378,6 +378,11 @@ local function is_all_1_9(pai,sections)
 	end))
 end
 
+local function is_men_qing(pai)
+	return table.nums(pai.ming_pai) == 0 or
+		table.logic_and(pai.ming_pai,function(s) return s.type == SECTION_TYPE.AN_GANG end)
+end
+
 local function unique_hu_types(base_hu_types)
 	local types = {}
 	for unique_t,s in pairs(UNIQUE_HU_TYPE) do
@@ -425,6 +430,7 @@ local function get_hu_types(pai,cache,sections,in_pai)
 	return base_types
 end
 
+
 function rule.hu(pai,in_pai,mo_pai)
 	local cache = {}
 	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
@@ -466,6 +472,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	end
 
 	local common_types = {}
+    if is_men_qing(pai) then common_types[HU_TYPE.MEN_QING] = 1 end
 	if is_duan_yao(pai) then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
 	local gou = gou_count(pai,cache)
