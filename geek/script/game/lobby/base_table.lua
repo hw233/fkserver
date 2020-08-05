@@ -389,6 +389,7 @@ function base_table:do_commission(taxes)
 					guid = s_guid,
 					commission = math.floor(commission + 0.00000001),
 					template = template_id,
+					club = club_id,
 				})
 
 				log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)

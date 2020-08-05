@@ -206,6 +206,7 @@ function on_sd_log_player_commission_contribute(msg)
     local guid = msg.guid
     local commission = msg.commission
     local template =  msg.template
+    local club = msg.club
 
     if not parent or parent == 0 then
         log.error("on_sd_log_player_commission_contribute parent is ilegal.")
@@ -213,10 +214,10 @@ function on_sd_log_player_commission_contribute(msg)
     end
 
     local date_timestamp = math.floor(os.time() / 86400) * 86400
-    local res = dbopt.log:query([[INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,date)
-        VALUES(%s,%s,%s,%s,%s)
+    local res = dbopt.log:query([[INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,club,date)
+        VALUES(%s,%s,%s,%s,%s,%s)
         ON DUPLICATE KEY UPDATE commission = commission + %d;]],
-        parent,guid,commission or 0,template or "NULL",date_timestamp,commission or 0)
+        parent,guid,commission or 0,template or "NULL",club,date_timestamp,commission or 0)
     if res.errno then
         log.error("on_sd_log_player_commission_contribute INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
