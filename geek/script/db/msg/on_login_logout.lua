@@ -2926,3 +2926,17 @@ function on_sd_bind_phone(msg)
 	local phone = msg.phone
 	dbopt.game:query("UPDATE t_player SET phone = \"%s\" WHERE guid = %s;",phone,guid)
 end
+
+function on_sd_update_player_info(msg)
+	local guid = msg.guid
+	local r = dbopt.game:query([[
+		UPDATE t_player SET 
+				nickname = '%s',
+				head_url = '%s',
+				phone = '%s'
+			WHERE guid = %s;
+	]],msg.nickname,msg.icon,msg.phone,guid)
+	if r.errno then
+		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
+	end
+end

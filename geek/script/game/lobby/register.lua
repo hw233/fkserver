@@ -126,4 +126,6 @@ skynet.start(function()
 
 	register_dispatcher("CS_RequestBindPhone",on_cs_bind_phone)
 	register_dispatcher("CS_RequestSmsVerifyCode",on_cs_request_sms_verify_code)
+
+	register_dispatcher("CS_RequestBindWx",on_cs_request_bind_wx)
 end)

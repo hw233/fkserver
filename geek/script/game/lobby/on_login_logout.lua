@@ -35,6 +35,7 @@ require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
 local runtime_conf = require "game.runtime_conf"
+local httpc = require "http.httpc"
 
 local reddb = redisopt.default
 
@@ -1986,4 +1987,70 @@ function on_cs_game_server_cfg(msg,guid)
     })
 
 	return true
+end
+
+local function http_get(url)
+    local host,url = string.match(url,"(https?://[^/]+)(.+)")
+    log.info("http.get %s%s",host,url)
+    return httpc.get(host,url)
+end
+
+local function wx_auth(code)
+    log.dump(code)
+    local conf = global_conf.auth.wx
+    local _,authjson = http_get(string.format(conf.auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
+            conf.appid,conf.secret,code))
+    local auth = json.decode(authjson)
+    if auth.errcode then
+        log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
+        return tonumber(auth.errcode),auth.errmsg
+    end
+
+    local _,userinfojson = http_get(string.format(conf.userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
+    local userinfo = json.decode(userinfojson)
+    if userinfo.errcode then
+        log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
+        return tonumber(auth.errcode),auth.errmsg
+    end
+
+    log.dump(userinfo)
+
+    return nil,userinfo
+end
+
+function on_cs_request_bind_wx(msg,guid)
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(guid,"SC_RequestBindWx",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+    local errcode,auth = wx_auth(msg.code)
+	if errcode then
+		onlineguid.send(guid,"SC_RequestBindWx",{
+			result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR
+		})
+        return
+	end
+
+	log.dump(auth)
+	
+	reddb:set(string.format("player:auth_id:%s",auth.unionid),player.open_id)
+
+	player.nickname = auth.nickname
+	player.icon = auth.headimgurl
+	player.sex = auth.sex
+	reddb:hmset(string.format("player:info:%s",guid),{
+		nickname = auth.nickname,
+		icon = auth.headimgurl,
+		sex = auth.sex
+	})
+
+	channel.publish("db.?","msg","SD_UpdatePlayerInfo",player)
+	onlineguid.send(guid,"SC_RequestBindWx",{
+		result = enum.ERROR_NONE,
+		pb_base_info = player,
+	})
 end
