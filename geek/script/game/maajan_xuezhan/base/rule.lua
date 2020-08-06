@@ -342,14 +342,16 @@ local function is_1_9(pai,cache)
 	end)
 end
 
-local function is_duan_yao(pai)
+local function is_duan_yao(pai,in_pai)
 	local is_19 = table.logic_or(pai.shou_pai,function(c,tile)
 		local num = rule.tile_value(tile)
 		return c > 0 and (num == 1 or num == 9)
 	end) or (table.nums(pai.ming_pai) > 0 and table.logic_or(pai.ming_pai,function(s)
 		local num = rule.tile_value(s.tile)
 		return num == 1 or num == 9
-	end))
+	end)) or (in_pai and 
+		(rule.tile_value(in_pai) == 1 or rule.tile_value(in_pai) == 9)
+	)
 
 	return not is_19
 end
@@ -473,7 +475,7 @@ function rule.hu(pai,in_pai,mo_pai)
 
 	local common_types = {}
     if is_men_qing(pai) then common_types[HU_TYPE.MEN_QING] = 1 end
-	if is_duan_yao(pai) then common_types[HU_TYPE.DUAN_YAO] = 1 end
+	if is_duan_yao(pai,in_pai) then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
 	local gou = gou_count(pai,cache)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
@@ -587,22 +589,13 @@ function rule.is_chi(pai,tile)
 	}
 end
 
-
 -- local test_pai = {
--- 	shou_pai = {[2] = 1},
+-- 	shou_pai = {[2] = 1,[3] = 1,[4] = 1,[5] = 1,[6] = 1,[7] = 1,[9] = 2},
 -- 	ming_pai = {
--- 		{
--- 			tile = 5,
--- 			type = SECTION_TYPE.PENG,
--- 		},
--- 		{
--- 			tile = 8,
--- 			type = SECTION_TYPE.PENG
--- 		}
 -- 	}
 -- }
 
--- local test_hu = rule.hu(test_pai,2)
+-- local test_hu = rule.hu(test_pai,9)
 -- log.dump(test_hu)
 
 return rule

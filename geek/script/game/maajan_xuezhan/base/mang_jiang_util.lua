@@ -74,11 +74,6 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 			end
 		end
 
-		if counts[mo_pai] and counts[mo_pai] == 3 then
-			actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
-			actions[ACTION.AN_GANG][mo_pai] = true
-		end
-
 		for t,c in pairs(counts) do
 			if c == 4 then
 				actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
@@ -103,11 +98,10 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		actions[ACTION.HU] = {[in_pai] = true,}
 	end
 
-	if mo_pai and rule.is_hu(pai,mo_pai) then
+	if mo_pai and rule.is_hu(pai) then
 		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
 	end
-
-	-- table.mergeto(actions,rule.is_chi(pai,in_pai,mo_pai))
+	
 	return actions
 end
 

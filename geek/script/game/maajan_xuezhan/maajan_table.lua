@@ -279,7 +279,9 @@ function maajan_table:on_started(player_count)
         table_id = self.private_id or nil,
     }
 
-    self.dealer = maajan_tile_dealer:new(self.tiles or all_tiles[player_count])
+    self.tiles = self.tiles or all_tiles[player_count]
+
+    self.dealer = maajan_tile_dealer:new(self.tiles)
     self.co = skynet.fork(function()
         self:main()
     end)
@@ -438,8 +440,6 @@ function maajan_table:xi_pai()
         self:send_data_to_enter_player(v)
         self.game_log.players[v.chair_id].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
     end)
-
-    self.chu_pai_player_index = self.zhuang
 end
 
 function maajan_table:huan_pai()
@@ -633,7 +633,7 @@ function maajan_table:ding_que()
     if #self.tiles < 108 then
         self:gotofunc(function()
             self:jump_to_player_index(self.zhuang)
-            self:mo_pai()
+            self:action_after_ding_que()
         end)
         return
     end
@@ -748,7 +748,7 @@ function maajan_table:ding_que()
 
     self:gotofunc(function()
         self:jump_to_player_index(self.zhuang)
-        self:mo_pai()
+        self:action_after_ding_que()
     end)
 end
 
@@ -945,6 +945,29 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 break
             end
         end
+    end
+end
+
+function maajan_table:action_after_ding_que()
+    local player = self:chu_pai_player()
+    local mo_pai = player.mo_pai
+
+    log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
+    self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+
+    local actions = self:get_actions(player,mo_pai)
+    log.dump(actions)
+    if table.nums(actions) > 0 then
+        self:gotofunc(function()
+            self:action_after_mo_pai({
+                [self.chu_pai_player_index] = {
+                    actions = actions,
+                    chair_id = self.chu_pai_player_index,
+                }
+            })
+        end)
+    else
+        self:gotofunc(function() self:chu_pai() end)
     end
 end
 
@@ -1168,6 +1191,38 @@ function maajan_table:action_after_chu_pai(waiting_actions)
     do_action(actions_to_do)
 end
 
+function maajan_table:fake_mo_pai()
+    local player = self:chu_pai_player()
+    local shou_pai = player.pai.shou_pai
+
+    local len = self.dealer.remain_count
+    log.info("-------left pai " .. len .. " tile")
+    if len == 0 then
+        self:gotofunc(function() self:do_balance() end)
+        return
+    end
+
+    local mo_pai
+    if table.nums(self.pre_gong_tiles or {}) > 0 then
+        for i,tile in pairs(self.pre_gong_tiles) do
+            mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            self.pre_gong_tiles[i] = nil
+            break
+        end
+    else
+        mo_pai = self.dealer:deal_one()
+    end
+
+    table.incr(shou_pai,mo_pai)
+
+    player.guo_zhuang_hu = nil
+    player.guo_shou_peng = nil
+
+    self.mo_pai_count = (self.mo_pai_count or 0) + 1
+    player.mo_pai = mo_pai
+    player.mo_pai_count = (player.mo_pai_count or 0) + 1
+end
+
 function maajan_table:mo_pai()
     self:update_state(FSM_S.WAIT_MO_PAI)
     local player = self:chu_pai_player()
@@ -1200,14 +1255,15 @@ function maajan_table:mo_pai()
     player.guo_shou_peng = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
-    local actions = self:get_actions(player,mo_pai)
-    log.dump(actions)
+    
     table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
     table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
     self:on_mo_pai(player,mo_pai)
 
+    local actions = self:get_actions(player,mo_pai)
+    log.dump(actions)
     if table.nums(actions) > 0 then
         self:gotofunc(function()
             self:action_after_mo_pai({
@@ -1655,6 +1711,9 @@ function maajan_table:prepare_tiles()
             table.incr(p.pai.shou_pai,t)
         end
     end)
+
+    self.chu_pai_player_index = self.zhuang
+    self:fake_mo_pai()
 end
 
 function maajan_table:max_hu(pai,tiles)
