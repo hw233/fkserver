@@ -7,7 +7,7 @@ function card_dealer:ctor(cards)
 end
 
 function card_dealer:init(cards)
-    self.cards = cards
+    self.cards = clone(cards)
     self.remainder_card_count = #self.cards
 end
 

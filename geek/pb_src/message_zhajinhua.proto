@@ -1,0 +1,229 @@
+﻿syntax = "proto3";
+
+//////////////////////////////////////////////////////////////////////////
+/// 诈金花相关消息
+//////////////////////////////////////////////////////////////////////////
+
+// 出牌类型
+enum ZHAJINHUA_CARD_TYPE {
+	ZHAJINHUA_CARD_TYPE_ERROR				= 0;								//错误类型
+	ZHAJINHUA_CARD_TYPE_235					= 1;								//特殊类型
+	ZHAJINHUA_CARD_TYPE_SINGLE				= 2;								//单牌类型
+	ZHAJINHUA_CARD_TYPE_DOUBLE				= 3;								//对子类型
+	ZHAJINHUA_CARD_TYPE_SHUN_ZI				= 4;								//顺子类型
+	ZHAJINHUA_CARD_TYPE_JIN_HUA				= 5;								//金花类型
+	ZHAJINHUA_CARD_TYPE_SHUN_JIN			= 6;								//顺金类型
+	ZHAJINHUA_CARD_TYPE_BAO_ZI				= 7;								//豹子类型
+}
+
+
+enum ZHAJINHUA_ACTION{
+	ZHAJINHUA_ACTION_NONE = 0;
+	ZHAJINHUA_ACTION_ADD_SCORE = 1;
+	ZHAJINHUA_ACTION_DROP = 2;
+	ZHAJINHUA_ACTION_LOOK_CARDS = 3;
+	ZHAJINHUA_ACTION_ALL_IN = 4;
+	ZHAJINHUA_ACTION_COMPARE = 5;
+	ZHAJINHUA_ACTION_FOLLOW = 6;
+}
+
+enum ZHAJINHUA_PLAYER_STATUS{
+    PS_FREE = 0;           //空闲
+    PS_READY = 1;          //准备
+    PS_WAIT = 2;          //等待下注
+    PS_CONTROL = 3;        //准备操作
+    PS_LOOK = 4;           //看牌
+    PS_COMPARE = 5;        //比牌
+    PS_DROP = 6;           //弃牌
+    PS_LOSE = 7;           //淘汰
+    PS_EXIT = 8;           //离开
+}
+
+enum ZHAJINHUA_TABLE_STATUS {
+	TS_NIL = 0;
+	TS_FREE = 1;
+	TS_PLAY = 2;
+	TS_END = 3;
+}
+
+// 游戏开始
+message SC_ZhaJinHuaStart {
+	enum MsgID {NIL = 0; ID = 25001; }
+	int32 banker = 1;				// 庄家用户
+	repeated int32 all_chairs = 2;			// 椅子
+	repeated int32 all_guids = 3;
+	int32 cur_round = 4;
+	int32 total_round = 5;
+}
+
+//该谁轮次
+message SC_ZhaJinHuaTurn{
+	enum MsgID {NIL = 0; ID = 25002; }
+	int32 chair_id = 1;
+	repeated int32 actions = 2;
+}
+
+// 用户加注
+message CS_ZhaJinHuaAddScore {
+	enum MsgID {NIL = 0; ID = 25004; }
+	int64 score = 1;						// 加注数目
+}
+
+message SC_ZhaJinHuaAddScore {
+	enum MsgID {NIL = 0; ID = 25005; }
+	int32 result = 1;
+	int32 chair_id = 2;			// 加注用户
+	int64 score = 3;			// 加注数目
+	int64 money = 4;			// 花费钱
+}
+
+// 放弃跟注
+message CS_ZhaJinHuaGiveUp {
+	enum MsgID {NIL = 0; ID = 25006; }
+}
+
+message SC_ZhaJinHuaGiveUp {
+	enum MsgID {NIL = 0; ID = 25007; }
+	int32 result = 1;
+	int32 chair_id = 2;			// 放弃用户
+}
+
+// 看牌
+message CS_ZhaJinHuaLookCard {
+	enum MsgID {NIL = 0; ID = 25008; }
+}
+
+message SC_ZhaJinHuaLookCard {
+	enum MsgID {NIL = 0; ID = 25009; }
+	int32 result = 1;
+	int32 chair_id = 2;			// 看牌用户
+	repeated int32 cards = 3;	// 扑克列表
+}
+
+// 比牌
+message CS_ZhaJinHuaCompareCards {
+	enum MsgID {NIL = 0; ID = 25010; }
+	int32 compare_with = 1;			// 比牌用户
+}
+
+message SC_ZhaJinHuaCompareCards {
+	enum MsgID {NIL = 0; ID = 25011; }
+	int32 result = 1;
+	int32 comparer = 2;
+	int32 compare_with = 3;			// 当前玩家
+	int32 winner = 4;			// 赢牌用户
+	int32 loser = 5;			// 输牌用户
+	int32 score = 6;			// 比牌时，比牌玩家需要下注
+}
+
+message CS_ZhaJinHuaFollowBet {
+	enum MsgID {NIL = 0; ID = 25012; }
+}
+
+message SC_ZhaJinHuaFollowBet {
+	enum MsgID {NIL = 0; ID = 25013; }
+	int32 result = 1;
+	int32 chair_id = 2;			// 用户
+	int32 score = 3;
+}
+
+message CS_ZhaJinHuaAllIn{
+	enum MsgID {NIL = 0; ID = 25014; }
+}
+
+message SC_ZhaJinHuaAllIn{
+	enum MsgID {NIL = 0; ID = 25015; }
+	int32 result = 1;
+	int32 chair_id = 2;
+	int32 score = 3;
+	bool  is_win = 4;
+}
+
+// 游戏结束
+message ZhaJinHuaPlayerBalance {
+	int32 chair_id = 1;						// 用户
+	int32 guid = 2;
+	int32 score = 3;						// 得分
+	int32 money = 4;
+	repeated int32 cards = 5;				// 扑克列表
+	int32 bet_money = 6;					//用户下注的钱
+	int32 status = 7;						//玩家是以什么状态结束的
+	int32 total_score = 8;
+	int32 total_money = 9;
+}
+
+message SC_ZhaJinHuaGameOver {
+	enum MsgID {NIL = 0; ID = 25016; }
+	int32 winner = 1;					// 赢牌用户
+	repeated ZhaJinHuaPlayerBalance balances = 2; 	// 玩家结果	
+	int32 tax = 3;								// 税
+	int32 cards_type  = 4;						// 自己牌型，参见ZHAJINHUA_CARD_TYPE
+}
+
+message ZhaJinHuaPlayerGamingInfo{
+	repeated int32 cards = 1;
+	int32  bet_score = 2;
+	repeated int32 bet_chips = 3;
+	int32  total_money = 4;
+	int32  total_score = 5;
+	int32  status = 6;
+	bool   is_look_cards = 7;
+}
+
+message SC_ZhaJinHuaReconnect {
+	enum MsgID {NIL = 0; ID = 25017; }
+	int32 banker = 1;			// 庄家用户
+	map<int32,ZhaJinHuaPlayerGamingInfo> players = 2;
+	int32 desk_score = 5;              // 总金
+	int32 bet_round = 7;              // 当前回合 最大20
+	repeated int32 desk_chips = 9;
+	int32 round = 10;
+	int32 status = 11;
+	int32 base_score = 12;				//基础底分
+	int32 cur_bet_score = 13;			//当前底分
+}
+
+message SC_ZhaJinHuaLostCards{
+	enum MsgID {NIL = 0; ID = 25018; }
+	repeated int32 winer_cards = 1;					// 扑克列表--赢家
+	repeated int32 loster_cards = 2;				// 扑克列表--输家	
+}
+
+message SC_ZhaJinHuaRound{
+	enum MsgID {NIL = 0; ID = 25019; }
+	int32 round = 1;                    //当前轮数
+}
+
+message CS_ZhaJinHuaShowCards {
+	enum MsgID {NIL = 0; ID = 25020; }
+	int32 chair_id = 1;
+}
+
+message SC_ZhaJinHuaShowCardsToAll{
+	enum MsgID {NIL = 0; ID = 25021; }
+	int32 result = 1;
+	int32 chair_id = 2;				//誰亮的牌
+	repeated int32 cards = 3;	    //亮牌功能
+}
+
+message SC_ZhaJinHuaAllComCards {  //全比输
+    enum MsgID {NIL = 0; ID = 25022; }
+    int32 loser = 1;			// 输牌用户
+}
+
+message CS_ZhaJinHuaLastRecord {
+	enum MsgID {NIL = 0; ID = 25023; }					//请求上局结果
+}
+
+message SC_ZhaJinHuaLastRecord {
+	enum MsgID {NIL = 0; ID = 25024; }
+	int32 winner = 1;					// 赢牌用户
+	repeated ZhaJinHuaPlayerBalance balances = 2; 	// 玩家结果	
+	int32 cards_type  = 4;						// 自己牌型，参见ZHAJINHUA_CARD_TYPE
+}
+
+message SC_ZhaJinHuaFinalOver{
+	enum MsgID {NIL = 0; ID = 25025; }
+	repeated ZhaJinHuaPlayerBalance balances = 1;
+}
+
