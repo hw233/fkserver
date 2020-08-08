@@ -491,14 +491,14 @@ function base_player:cost_money(price, why,why_ext)
 end
 
 --通知客户端金钱变化
-function base_player:notify_money(money_id)
+function base_player:notify_money(money_id,money)
 	money_id = money_id or 0
 	onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
 		"PLAYER",{
 			guid = self.guid,
 			money_id = money_id,
 		},{
-			money = player_money[self.guid][money_id] or 0
+			money = money or (player_money[self.guid][money_id] or 0)
 		}
 	))
 end
