@@ -1264,7 +1264,6 @@ end
 
 function base_table:on_pre_start(player_count)
 	self.round_id = self:get_next_game_id()
-	self.ext_round_id = self.ext_round_id or self:get_ext_game_id()
 end
 
 function base_table:room_conf()
@@ -1435,7 +1434,34 @@ function base_table:balance(moneies,why)
 end
 
 function base_table:on_process_start(player_count)
-	self.ext_start_time = os.time()
+	self.ext_round_id = self:get_ext_game_id()
+	if not self.private_id then 
+		return
+	end
+
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.warning("base_table:on_process_start [%d] got nil private table.",self.private_id)
+	end
+
+	local club_id = private_table.club_id
+	if not club_id then
+		log.warning("base_table:on_process_start [%d] got private club.",self.private_id)
+	end
+
+	local template_id = private_table.template
+	if not template_id then
+		log.warning("base_table:on_process_start [%d] got nil template.",self.private_id)
+	end
+
+	channel.publish("db.?","msg","SD_LogExtGameRoundStart",{
+		club = club_id,
+		template = template_id,
+		game_id = def_first_game_type,
+		ext_round = self.ext_round_id,
+		guids = table.series(self.players,function(p) return p.guid end),
+		table_id = self.private_id
+	})
 end
 
 function base_table:on_process_over()
@@ -1458,18 +1484,14 @@ function base_table:on_process_over()
 		log.warning("base_table:on_process_over [%d] got nil template.",self.private_id)
 	end
 
-	channel.publish("db.?","msg","SD_LogExtGameRound",{
+	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",{
 		club = club_id,
 		template = template_id,
 		game_id = def_first_game_type,
 		ext_round = self.ext_round_id,
-		start_time = self.ext_start_time,
-		end_time = os.time(),
 		guids = table.series(self.players,function(p) return p.guid end),
 		table_id = self.private_id
 	})
-
-	self.ext_start_time = nil
 end
 
 -- 开始游戏
