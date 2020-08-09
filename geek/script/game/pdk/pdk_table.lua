@@ -830,6 +830,7 @@ function pdk_table:game_balance(winner)
 
 	table.foreach(self.players,function(p,chair) 
 		local plog = self.game_log.players[chair]
+		plog.chair_id = chair
 		plog.total_money = p.total_money
 		plog.total_score = p.total_score
 		plog.round_money = p.round_money

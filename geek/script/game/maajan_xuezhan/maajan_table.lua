@@ -1520,6 +1520,7 @@ function maajan_table:do_balance()
         local ming_pai = table.values(p.pai.ming_pai)
         local desk_pai = table.values(p.pai.desk_tiles)
         local p_log = self.game_log.players[chair_id]
+        p_log.chair_id = chair_id
         p_log.nickname = p.nickname
         p_log.head_url = p.icon
         p_log.guid = p.guid
