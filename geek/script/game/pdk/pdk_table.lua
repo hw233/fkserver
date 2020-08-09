@@ -188,6 +188,7 @@ function pdk_table:ding_zhuang()
 end
 
 function pdk_table:on_process_start()
+	base_table.on_process_start(self)
 	self:foreach(function(p) 
 		p.statistics = {}
 		p.total_score = 0
