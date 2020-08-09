@@ -806,7 +806,12 @@ function maajan_table:action_after_mo_pai(waiting_actions)
 
                 local actions = self:get_actions(p,nil,tile)
                 if actions[ACTION.HU] then
-                    qiang_gang_hu[p.chair_id] = {[ACTION.HU] = actions[ACTION.HU]}
+                    qiang_gang_hu[p.chair_id] = {
+                        chair_id = p.chair_id,
+                        actions = {
+                            [ACTION.HU] = actions[ACTION.HU]
+                        }
+                    }
                 end
             end)
 
