@@ -256,7 +256,21 @@ function on_sd_join_partner(msg)
         return
     end
 
+    return true
+end
 
+function on_sd_exit_partner(msg)
+    local club = msg.club
+    local guid = msg.guid
+    local partner = msg.partner
+    
+    local r = dbopt.game:query([[
+            DELETE FROM t_partner_member WHERE club = %s AND guid = %s AND partner = %s;
+        ]],club,guid,partner)
+    if r.errno then
+        log.error("on_sd_exit_partner errno:%d,errstr:%s",r.errno,r.err)
+        return
+    end
 
     return true
 end
