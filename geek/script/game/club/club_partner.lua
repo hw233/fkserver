@@ -103,7 +103,9 @@ function club_partner:exit(mem)
 
     reddb:hdel(string.format("club:member:partner:%s",self.club_id),mem)
     reddb:srem(string.format("club:partner:member:%s:%s",self.club_id,self.guid),mem)
-    channel.publish("db.?","msg","SD_ExitPartner",{club = self.id,guid = mem,partner = self.guid})
+    channel.publish("db.?","msg","SD_ExitPartner",{
+        club = self.club_id,guid = mem,partner = self.guid
+    })
     return enum.ERROR_NONE
 end
 
