@@ -23,5 +23,5 @@
 	url = https://gitee.com/thinblog/lua-maxminddb.git
 [submodule "3rd/lua-protobuf"]
 	path = 3rd/lua-protobuf
-	branch = master
+	branch = dev
 	url = https://gitee.com/thinblog/lua-protobuf.git
