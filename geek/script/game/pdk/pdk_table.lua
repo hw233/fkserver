@@ -86,7 +86,7 @@ end
 
 function pdk_table:on_private_inited()
     self.cur_round = nil
-    self.zhuang = nil
+	self.zhuang = nil
 end
 
 function pdk_table:on_private_dismissed()
@@ -209,6 +209,7 @@ function pdk_table:on_started(player_count)
 		players = table.map(self.players,function(p,chair) 
 			return chair,{
 				guid = p.guid,
+				chair_id = chair,
 			} 
 		end),
 		actions = {},
@@ -533,6 +534,10 @@ function pdk_table:get_cards_type(cards)
 	local cardstype, cardsval = cards_util.get_cards_type(cards)
 	if self.rule and self.rule.play.AAA_is_bomb and cardstype == CARD_TYPE.THREE and cardsval  == 14 then
 		cardstype = CARD_TYPE.MISSLE
+	end
+
+	if self.start_count == 3 and cardstype == CARD_TYPE.DOUBLE_LINE and #cards == 4 then
+		return
 	end
 
 	return cardstype,cardsval

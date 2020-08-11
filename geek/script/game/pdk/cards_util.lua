@@ -241,7 +241,7 @@ function cards_util.get_cards_type(cards)
 		end
 
 		local values = max_continuity_cards(3,countgroup[2])
-		if #values >= 3 and #values == countcounts[2]  and #cards == #values * 2 then
+		if #values >= 2 and #values == countcounts[2]  and #cards == #values * 2 then
 			return PDK_CARD_TYPE.DOUBLE_LINE , values[1] -- 连对
 		end
 	end
