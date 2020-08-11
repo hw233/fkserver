@@ -1246,7 +1246,7 @@ function base_table:check_start(part)
 
 	if ready_mode == enum.GAME_READY_MODE_ALL then
 		local n = table.nums(self.ready_list)
-		if n ~= self.chair_count  then
+		if n ~= self.start_count  then
 			return
 		end
 
