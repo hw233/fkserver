@@ -1587,7 +1587,7 @@ end
 function base_table:private_init(private_id,rule,conf)
 	self.private_id = private_id
 	self.rule = rule
-	self.chair_count = conf.chair_count
+	self.start_count = conf.chair_count
 	self.conf = conf
 	self.dismiss_timer = nil
 	self:on_private_inited()
