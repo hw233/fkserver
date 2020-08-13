@@ -6,6 +6,8 @@ local log = require "log"
 local httpc = require "http.httpc"
 local json = require "cjson"
 
+LOG_NAME = "gate"
+
 local sconf 
 local gateid
 local gateconf
@@ -62,6 +64,8 @@ function CMD.start(conf)
     checkgateconf(conf)
     sconf = conf
     gateid = conf.id
+
+    LOG_NAME = "gate." .. gateid
 
     if not sconf or sconf.is_launch == 0 or not sconf.conf then
         log.error("launch a unconfig or unlaunch gate service,service:%d.",gateid)

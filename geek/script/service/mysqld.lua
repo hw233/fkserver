@@ -6,6 +6,8 @@ local log = require "log"
 local skynet = require "skynetproto"
 local mysql = require "skynet.db.mysql"
 
+LOG_NAME = "mysqld"
+
 function new_connection(cfg)
 	local conn = mysql.connect({
 		host=cfg.host or "127.0.0.1",

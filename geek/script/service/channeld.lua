@@ -4,6 +4,8 @@ require "functions"
 local log = require "log"
 local cluster = require "cluster"
 
+LOG_NAME = "channeld"
+
 local delimter = "."
 
 local match = {

@@ -23,7 +23,7 @@ local level_fmts = {
 }
 
 local function log_out(s,level)
-    skynet.send(logd, "lua","do_log",SERVICE_NAME,s)
+    skynet.send(logd, "lua","do_log",LOG_NAME or SERVICE_NAME,s)
 
     local level_fmt = level and level_fmts[level] or nil
     if level_fmt then 

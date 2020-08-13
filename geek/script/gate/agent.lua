@@ -14,6 +14,8 @@ require "table_func"
 require "functions"
 local log = require "log"
 
+LOG_NAME = "gate.agent"
+
 local gate,protocol,inserverid = ...
 gate = tonumber(gate)
 inserverid = tonumber(inserverid)

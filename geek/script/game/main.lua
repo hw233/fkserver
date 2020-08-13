@@ -10,6 +10,8 @@ local enum = require "pb_enums"
 local redisopt = require "redisopt"
 local reddb = redisopt.default
 
+LOG_NAME = "game"
+
 local private_table_elapsed_seconds = 60 * 60 * 5
 
 register_dispatcher = msgopt.register
@@ -87,6 +89,8 @@ function CMD.start(conf)
 	def_first_game_type = gameconf.first_game_type
 	def_second_game_type = gameconf.second_game_type
 	global_conf = channel.call("config.?","msg","global_conf")
+
+	LOG_NAME = def_game_name .. "." .. def_first_game_type
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
 

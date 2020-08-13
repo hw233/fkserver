@@ -11,6 +11,8 @@ local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
+LOG_NAME = "config"
+
 local LOG_MONEY_OPT_TYPE_RECHARGE_MONEY = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_RECHARGE_MONEY")
 
 local globalconf = {}

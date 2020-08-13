@@ -11,6 +11,8 @@ local log = require "log"
 
 require "functions"
 
+LOG_NAME = "gate"
+
 local server = {}
 local onlineguid = {}
 local heartbeat_check_time = 8

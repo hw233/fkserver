@@ -11,6 +11,8 @@ collectgarbage("setstepmul", 5000)
 
 require "hotfix"
 
+LOG_NAME = "db"
+
 local sconf
 local def_db_id
 local serviceid
@@ -29,6 +31,7 @@ function CMD.start(conf)
     sconf = conf
     def_db_id = conf.id
     serviceid = conf.id
+    LOG_NAME = "db_" .. conf.id
 end
 
 skynet.start(function()
@@ -52,5 +55,5 @@ skynet.start(function()
 
     skynet.dispatch("msg",function(_,_,cmd,...)
         skynet.retpack(msgopt.on_msg(cmd,...))
-	end)
+    end)
 end)

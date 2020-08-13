@@ -14,6 +14,7 @@ require "functions"
 local log = require "log"
 local datacenter = require "skynet.datacenter"
 
+LOG_NAME = "gate.logind"
 
 local gateid,protocol = ...
 log.info("gate.logind protocol %s",protocol)

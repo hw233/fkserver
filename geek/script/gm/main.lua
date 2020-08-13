@@ -5,6 +5,8 @@ local log = require "log"
 local msgopt = require "msgopt"
 require "functions"
 
+LOG_NAME = "gm"
+
 local sconf
 local agentcount
 local agents = {}

@@ -4,6 +4,8 @@ local log = require "log"
 local channel = require "channel"
 require "login.msg.runtime"
 
+LOG_NAME = "login"
+
 local MSG = {}
 
 local sconf
@@ -20,6 +22,8 @@ end
 function CMD.start(conf)
     checkloginconf(conf)
     sconf = conf
+    LOG_NAME = "login."..conf.id
+
     global_conf = channel.call("config.?","msg","global_conf")
     log.dump(global_conf)
     default_open_id_icon = global_conf.default_open_id_icon
