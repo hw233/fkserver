@@ -87,7 +87,7 @@ function maajan_table:on_private_inited()
     self.cur_round = nil
     self.zhuang = nil
     self.lian_zhuang = nil
-    self.tiles = chair_count_tiles[self.chair_count or 4]
+    self.tiles = chair_count_tiles[self.start_count or 4]
 end
 
 function maajan_table:on_private_dismissed()
@@ -137,10 +137,10 @@ function maajan_table:on_started(player_count)
     self.timer = {}
 
     if not self.zhuang then 
-        self.zhuang = self.private_id and self.conf.owner.chair_id or math.random(1,self.chair_count)
+        self.zhuang = self.private_id and self.conf.owner.chair_id or math.random(1,self.start_count)
     end
 
-    self.lian_zhuang = self.lian_zhuang or table.fill(nil,0,1,self.chair_count)
+    self.lian_zhuang = self.lian_zhuang or table.fill(nil,0,1,self.start_count)
     self:do_ding_zhuang(self.zhuang)
 
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
@@ -149,7 +149,7 @@ function maajan_table:on_started(player_count)
 	self:update_state(FSM_S.PER_BEGIN)
 	self.do_logic_update = true
     local game_log_players = {}
-    for i = 1,self.chair_count do game_log_players[i] = {} end
+    for i = 1,self.start_count do game_log_players[i] = {} end
     self.game_log = {
         start_game_time = os.time(),
         zhuang = self.zhuang,
@@ -160,13 +160,13 @@ function maajan_table:on_started(player_count)
         table_id = self.private_id or nil,
     }
 
-    local tiles = chair_count_tiles[self.chair_count]
+    local tiles = chair_count_tiles[self.start_count]
     if not tiles then
         log.error("maajan_table:start tiles is nil.check private_table rule.")
     end
 
     local all_tiles = clone(tiles)
-    if self.rule.play.dai_zhong and self.chair_count == 4 then
+    if self.rule.play.dai_zhong and self.start_count == 4 then
         for _ = 1,4 do table.insert(all_tiles,35) end
     end
     
@@ -393,12 +393,14 @@ function maajan_table:prepare_tiles()
         end
     end
 
-    for i = 1,self.chair_count do
+    for i = 1,self.start_count do
         if not pre_tiles[i] then
             local p = self.players[i]
-            local tiles = self.dealer:deal_tiles(13)
-            for _,t in pairs(tiles) do
-                table.incr(p.pai.shou_pai,t)
+            if p then
+                local tiles = self.dealer:deal_tiles(13)
+                for _,t in pairs(tiles) do
+                    table.incr(p.pai.shou_pai,t)
+                end
             end
         end
     end
@@ -1056,7 +1058,7 @@ function maajan_table:calculate_yi_kou_er(p,hu)
             for _,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(typescores[p.chair_id],{
-                        score = yi_kou_er_score ,type = HU_TYPE.ZHUANG,count = (self.chair_count - 1),
+                        score = yi_kou_er_score ,type = HU_TYPE.ZHUANG,count = (self.start_count - 1),
                     })
                 else
                     table.insert(typescores[pj.chair_id],{
@@ -1103,7 +1105,7 @@ function maajan_table:calculate_lian_zhuang(p,hu)
             for _,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(typescores[p.chair_id],{
-                        score = lian_zhuang_score ,type = HU_TYPE.LIAN_ZHUANG,count = (self.chair_count - 1),
+                        score = lian_zhuang_score ,type = HU_TYPE.LIAN_ZHUANG,count = (self.start_count - 1),
                     })
                 else
                     table.insert(typescores[pj.chair_id],{
@@ -1202,7 +1204,7 @@ function maajan_table:calculate_hu(p,hu)
                 if pj ~= p then
                     table.insert(types[chair_id].typescore,{score = - gang_hua_score,type = t,count = 1})
                 else
-                    table.insert(types[chair_id].typescore,{score = gang_hua_score,type = t,count = self.chair_count - 1})
+                    table.insert(types[chair_id].typescore,{score = gang_hua_score,type = t,count = self.start_count - 1})
                 end
             end
         end
@@ -1211,7 +1213,7 @@ function maajan_table:calculate_hu(p,hu)
             for chair_id,pj in pairs(self.players) do
                 if p == pj then
                     table.insert(types[chair_id].typescore,{
-                        score = t.score * hu_fan,type = t.type,tile = hu.tile,count = self.chair_count - 1,
+                        score = t.score * hu_fan,type = t.type,tile = hu.tile,count = self.start_count - 1,
                     })
                 else
                     table.insert(types[chair_id].typescore,{
@@ -1368,7 +1370,7 @@ function maajan_table:calculate_ting(p)
     if p.ting then
         local ptp,pscore = get_ting_info(p.ting)
         if p.hu.zi_mo then
-            table.insert(table.get(typescores,p.chair_id,{}),{type = ptp,score = pscore,count = self.chair_count - 1,})
+            table.insert(table.get(typescores,p.chair_id,{}),{type = ptp,score = pscore,count = self.start_count - 1,})
             self:foreach_except(p.chair_id,function(pi)
                 table.insert(table.get(typescores,pi.chair_id,{}),{type = ptp,score = -pscore,count = 1,})
                 if pi.ting then
@@ -1413,7 +1415,7 @@ function maajan_table:calculate_wei_hu(p)
     local types = {}
     local hu_count = table.sum(self.players,function(pi) return pi.hu and 1 or 0 end)
     local jiao_count = table.sum(self.players,function(pi) return (pi.hu or pi.men or pi.ting or pi.jiao) and 1 or 0 end)
-    if hu_count == 0 and jiao_count < self.chair_count then
+    if hu_count == 0 and jiao_count < self.start_count then
         if p.jiao or p.ting then
             self:foreach_except(p,function(pi)
                 if not (pi.jiao or pi.ting or pi.men or pi.hu) then
@@ -1971,11 +1973,11 @@ function maajan_table:ding_zhuang()
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
     if hu_count == 0 then
         local jiao_count = table.sum(self.players,function(p) return (p.ting or p.jiao) and 1 or 0 end)
-        if jiao_count == 0 or jiao_count == self.chair_count then
+        if jiao_count == 0 or jiao_count == self.start_count then
             return
         end
 
-        if self.chair_count > 2 and jiao_count == self.chair_count - 1 then
+        if self.start_count > 2 and jiao_count == self.start_count - 1 then
             for chair_id,p in pairs(self.players) do
                 if not p.ting then
                     self.zhuang = chair_id
@@ -1989,11 +1991,11 @@ function maajan_table:ding_zhuang()
             return
         end
 
-        self.zhuang = (self.zhuang + 1) % self.chair_count + 1
+        self.zhuang = (self.zhuang + 1) % self.start_count + 1
         return
     end
 
-    if self.chair_count > 2 and hu_count == self.chair_count - 1 then
+    if self.start_count > 2 and hu_count == self.start_count - 1 then
         for chair_id,p in pairs(self.players) do
             if not p.hu then
                 self.zhuang = chair_id
@@ -2191,7 +2193,7 @@ function maajan_table:is_action_time_out()
 end
 
 function maajan_table:next_player_index()
-    self.chu_pai_player_index = (self.chu_pai_player_index % self.chair_count) + 1
+    self.chu_pai_player_index = (self.chu_pai_player_index % self.start_count) + 1
 end
 
 function maajan_table:jump_to_player_index(player)
