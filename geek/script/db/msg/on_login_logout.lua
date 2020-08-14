@@ -1745,7 +1745,7 @@ function on_ld_reg_account(msg)
 			msg.phone_type or "unkown",
 			msg.package_name or "",
 			msg.phone or ""),
-		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone) VALUES(%d,'%s','%s','%s','%s','%s');]],
+		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone,created_time) VALUES(%d,'%s','%s','%s','%s','%s',NOW());]],
 			msg.guid,
 			msg.account,
 			msg.nickname,
@@ -1753,13 +1753,14 @@ function on_ld_reg_account(msg)
 			msg.icon,
 			msg.phone or ""),
 		string.format([[INSERT INTO game.t_player_money(guid,money_id) VALUES(%d,%d),(%d,%d);]],msg.guid,enum.ROOM_CARD_ID,msg.guid,-1),
-		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
-				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
+				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s',’%s‘);]],
 			msg.guid,
 			msg.version,
 			msg.phone_type or "unkown",
 			msg.ip,
-			msg.platform_id or ""),
+			msg.platform_id or "",
+			msg.phone or ""),
 	}
 	local res = dbopt.game:query(table.concat(transqls,"\n"))
 	if res.errno then
