@@ -79,7 +79,7 @@ function on_sd_log_ext_game_round_end(msg)
     local club = msg.club
 
     local ret = dbopt.log:query([[
-        UPDATE t_log_round SET end_time = unix_timestamp() WHERE round = %s;
+        UPDATE t_log_round SET end_time = unix_timestamp() WHERE round = '%s';
     ]],round,table_id)
     if ret.errno then
         log.error("UPDATE t_log_round error:%s:%s",ret.errno,ret.err)
