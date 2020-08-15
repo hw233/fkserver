@@ -984,6 +984,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
     local function reconnect(p)
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+        send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         self:send_ding_que_status(p)
         local action = waiting_actions[p.chair_id]
         if action then
@@ -1328,7 +1329,13 @@ function maajan_table:broadcast_discard_turn()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 end
 
+function maajan_table:broadcast_wait_discard(player)
+    local chair_id = type(player) == "table" and player.chair_id or player
+    self:broadcast2client("SC_MaajanWaitingDiscard",{chair_id = chair_id})
+end
+
 function maajan_table:chu_pai()
+    self:update_state(FSM_S.WAIT_CHU_PAI)
     local function send_ting_tips(p)
         local hu_tips = self.rule and self.rule.play.hu_tips or nil
         if not hu_tips or p.trustee then return end
@@ -1349,6 +1356,8 @@ function maajan_table:chu_pai()
             send2client_pb(p,"SC_TingTips",{
                 ting = discard_tings
             })
+
+            return true
         end
     end
 
@@ -1356,12 +1365,6 @@ function maajan_table:chu_pai()
         send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         self:send_ding_que_status(p)
-        if p.chair_id == self.chu_pai_player_index and self.cur_state_FSM == FSM_S.WAIT_MO_PAI then
-            send2client_pb(p,"SC_Maajan_Draw",{
-                chair_id = p.chair_id,
-                tile = p.mo_pai,
-            })
-        end
         send_ting_tips(p)
     end
 
@@ -2164,10 +2167,11 @@ function maajan_table:ding_zhuang()
     self.zhuang = ps[1].chair_id
 end
 
-function maajan_table:tile_count_2_tiles(counts)
+function maajan_table:tile_count_2_tiles(counts,excludes)
     local tiles = {}
     for t,c in pairs(counts) do
-        for _ = 1,c do
+        local exclude_c = excludes and excludes[t] or 0
+        for _ = 1,c - exclude_c do
             table.insert(tiles,t)
         end
     end
@@ -2447,16 +2451,9 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         if v.pai then
             tplayer.desk_pai = table.values(v.pai.desk_tiles)
             tplayer.pb_ming_pai = table.values(v.pai.ming_pai)
-            tplayer.shou_pai = {}
-            if v.chair_id == player.chair_id then
-                local shou_pai = clone(v.pai.shou_pai)
-                if is_reconnect and self.chu_pai_player_index == player.chair_id and player.mo_pai then 
-                    table.decr(shou_pai,player.mo_pai)
-                end
-                tplayer.shou_pai = self:tile_count_2_tiles(shou_pai)
-            else
-                tplayer.shou_pai = table.fill(nil,255,1,table.sum(v.pai.shou_pai))
-            end
+            tplayer.shou_pai = v.chair_id == player.chair_id and 
+                self:tile_count_2_tiles(v.pai.shou_pai) or
+                table.fill(nil,255,1,table.sum(v.pai.shou_pai))
         end
 
         if self.chu_pai_player_index == chair_id then
@@ -2634,35 +2631,37 @@ end
 
 function maajan_table:rule_hu(pai,in_pai,mo_pai)
     local private_conf = self:room_private_conf()
+    local types = {}
     if not private_conf or not private_conf.play then
-        return mj_util.hu(pai,in_pai,mo_pai)
+        types = mj_util.hu(pai,in_pai,mo_pai)
+    else
+        local play_opt = private_conf.play.option
+        local hu_types = mj_util.hu(pai,in_pai,mo_pai)
+        types = table.series(hu_types,function(ones)
+            local ts = {} 
+            for t,c in pairs(ones) do
+                if  (t == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5) or
+                    (t == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao) or
+                    (t == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or 
+                    ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not self.rule.play.men_qing) or 
+                    ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and 
+                        play_opt == "er_ren_yi_fang")
+                then
+                    
+                elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
+                    ts[HU_TYPE.QING_YI_SE] = 1
+                    ts[HU_TYPE.DA_DUI_ZI] = 1
+                elseif t == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
+                    ts[HU_TYPE.DA_DUI_ZI] = c
+                else
+                    ts[t] = c
+                end
+            end
+
+            return ts
+        end)
     end
 
-    local play_opt = private_conf.play.option
-    local hu_types = mj_util.hu(pai,in_pai,mo_pai)
-    local types = table.series(hu_types,function(ones)
-        local ts = {} 
-        for t,c in pairs(ones) do
-            if  (t == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5) or
-                (t == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao) or
-                (t == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or 
-                ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not self.rule.play.men_qing) or 
-                ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and 
-                    play_opt == "er_ren_yi_fang")
-            then
-                
-            elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
-                ts[HU_TYPE.QING_YI_SE] = 1
-                ts[HU_TYPE.DA_DUI_ZI] = 1
-            elseif t == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
-                ts[HU_TYPE.DA_DUI_ZI] = c
-            else
-                ts[t] = c
-            end
-        end
-
-        return ts
-    end)
 
     local function get_types_info(ts)
         return table.sum(ts,function(_,t) return HU_TYPE_INFO[t].score end),
