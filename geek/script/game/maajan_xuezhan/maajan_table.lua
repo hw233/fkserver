@@ -2456,8 +2456,8 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
                 table.fill(nil,255,1,table.sum(v.pai.shou_pai))
         end
 
-        if self.chu_pai_player_index == chair_id then
-            tplayer.mo_pai = v.mo_pai
+        if player.chair_id == v.chair_id then
+            tplayer.mo_pai =  v.mo_pai
         end
         table.insert(msg.pb_players,tplayer)
     end)

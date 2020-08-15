@@ -1883,10 +1883,11 @@ function maajan_table:FSM_event(evt)
     end
 end
 
-function maajan_table:tile_count_2_tiles(counts)
+function maajan_table:tile_count_2_tiles(counts,excludes)
     local tiles = {}
     for t,c in pairs(counts) do
-        for _ = 1,c do
+        local exclude_c = excludes and excludes[t] or 0
+        for _ = 1,c - exclude_c do
             table.insert(tiles,t)
         end
     end
@@ -2285,19 +2286,15 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
             tplayer.pb_ming_pai = table.values(v.pai.ming_pai)
             tplayer.shou_pai = {}
             if v.chair_id == player.chair_id then
-                local shou_pai = clone(v.pai.shou_pai)
-                if is_reconnect and self.chu_pai_player_index == player.chair_id and player.mo_pai then 
-                    table.decr(shou_pai,player.mo_pai)
-                end
-                tplayer.shou_pai = self:tile_count_2_tiles(shou_pai)
+                tplayer.shou_pai = self:tile_count_2_tiles(v.pai.shou_pai)
             else
                 tplayer.shou_pai = table.fill(nil,255,1,table.sum(v.pai.shou_pai))
             end
         end
 
         tplayer.is_ting = v.ting and true or false
-        if self.chu_pai_player_index == chair_id then
-            tplayer.mo_pai = v.mo_pai
+        if player.chair_id == v.chair_id then
+            tplayer.mo_pai =  v.mo_pai
         end
         table.insert(msg.pb_players,tplayer)
     end
@@ -2322,13 +2319,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
             send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         end
 
-        if self.chu_pai_player_index == player.chair_id then
-            if player.mo_pai then
-                send2client_pb(player,"SC_Maajan_Draw",{
-                    chair_id = player.chair_id,
-                    tile = player.mo_pai,
-                })
-            end
+        if self.chu_pai_player_index then
             send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         end
 

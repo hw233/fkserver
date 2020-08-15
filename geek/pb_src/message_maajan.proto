@@ -210,6 +210,7 @@ message Maajan_Player_Info {
 	int32 total_score 	= 14;
 	int32 round_score 	= 15;
 	repeated int32 men_pai = 16;
+	int32 mo_pai = 17;
 }
 
 message Maajan_Reconnect_Data {
@@ -533,4 +534,9 @@ message MaajanXueZhanFinalOverPlayerInfo{
 message SC_MaajanXueZhanFinalGameOver{
 	enum MsgID { Nil = 0; ID = 23137;}
 	repeated MaajanXueZhanFinalOverPlayerInfo players = 1;
+}
+
+message SC_MaajanWaitingDiscard{
+	enum MsgID { Nil = 0; ID = 23138;}
+	int32 chair_id = 1;
 }
