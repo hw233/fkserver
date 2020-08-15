@@ -4,6 +4,7 @@ local channel = require "channel"
 local base_players  = require "game.lobby.base_players"
 local base_room = require "game.lobby.base_room"
 local base_private_table = require "game.lobby.base_private_table"
+local timer = require "timer"
 require "functions"
 local msgopt = require "msgopt"
 local enum = require "pb_enums"
@@ -12,7 +13,7 @@ local reddb = redisopt.default
 
 LOG_NAME = "game"
 
-local private_table_elapsed_seconds = 60 * 60 * 5
+local private_table_elapsed_seconds = 60 * 60 * 2
 
 register_dispatcher = msgopt.register
 
@@ -61,20 +62,23 @@ function get_private_room_bank()
 end
 
 local function clean_private_table()
+	log.info("try to clean up private table ...")
 	local table_keys = reddb:keys("table:info:*")
-	for _,tk in pairs(table_keys) do
-		local tid = string.match(tk,"table:info:(%d+)")
+	for _,table_key in pairs(table_keys) do
+		local tid = string.match(table_key,"table:info:(%d+)")
 		tid = tonumber(tid)
-		local ptconf = base_private_table[tid]
-		if ptconf.create_time + private_table_elapsed_seconds >= os.time() then
-			local tb = base_room:find_table(ptconf.reald_table_id)
+		local info = base_private_table[tid]
+		if info.game_type == def_first_game_type and info.create_time + private_table_elapsed_seconds >= os.time() then
+			log.warning("dismiss elapsed table: %s ...",tid)
+			log.dump(info)
+			local tb = base_room:find_table(info.reald_table_id)
 			if tb then
-				log.warning("private table %s,%s timeout,clean.",ptconf.table_id,ptconf.reald_table_id)
+				log.warning("private table %s,%s timeout,dismiss.",info.table_id,info.reald_table_id)
 				tb:dismiss()
 			end
 		end
 	end
-	skynet.timeout(60 * 100,clean_private_table)
+	timer.timeout(60 * 5,clean_private_table)
 end
 
 
@@ -121,7 +125,7 @@ function CMD.start(conf)
 	
 	on_tick()
 
-	clean_private_table()
+	timer.timeout(60 * 5,clean_private_table)
 end
 
 function CMD.afk(guid,offline)
