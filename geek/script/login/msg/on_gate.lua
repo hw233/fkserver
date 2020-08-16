@@ -14,6 +14,7 @@ local httpc = require "http.httpc"
 local player_money = require "game.lobby.player_money"
 require "functions"
 require "login.msg.runtime"
+local runtime_conf = require "game.runtime_conf"
 
 local reddb = redisopt.default
 
@@ -394,6 +395,10 @@ local function account_login(msg,gate)
 end
 
 local function h5_login(msg,gate)
+    if not runtime_conf.global.h5_login then
+        return enum.LOGIN_RESULT_ACCOUNT_DISABLED
+    end
+
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if not guid then
         return reg_account({

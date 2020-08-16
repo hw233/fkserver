@@ -223,14 +223,16 @@ end
 
 function gmd.agency_create(data)
     local guid = tonumber(data.uid)
-    if not guid then
+    local role = tonumber(data.role)
+    if not guid or not role then
         return {
             errcode = error.DATA_ERROR,
             errstr = string.format("uid [%s] illegal.",data.uid),
         }
     end
 
-    guid = math.floor(guid)
+    guid = math.floor(guid + 0.0000001)
+    role = math.floor(role + 0.0000001)
 
     local player = base_players[guid]
     if  not player then
@@ -240,7 +242,7 @@ function gmd.agency_create(data)
         }
     end
 
-    reddb:hset(string.format("player:info:%d",guid),"role",1)
+    reddb:hset(string.format("player:info:%d",guid),"role",role)
     return {
         errcode = error.SUCCESS
     }
@@ -462,11 +464,13 @@ end
 function gmd.runtime_conf()
     local roomcard_switch = reddb:get("runtime_conf:private_fee:0")
     local diamond_switch = reddb:get("runtime_conf:private_fee:-1")
+    local h5_login_switch = reddb:get("runtime_conf:globa:h5_login")
     return {
         errcode = error.SUCCESS,
         data = {
             roomcard = roomcard_switch,
             diamond = diamond_switch,
+            h5_login = h5_login_switch,
         }
     }
 end
@@ -477,6 +481,10 @@ end
 
 function gmd.turn_roomcard_switch(data)
     reddb:set("runtime_conf:private_fee:0",(data and data.open and data.open ~= 0) and 1 or 0)
+end
+
+function gmd.turn_h5_login_switch(data)
+    reddb:set("runtime_conf:global:h5_login",(data and data.open and data.open ~= 0) and 1 or 0)
 end
 
 gmd["club/create"] = gmd.create_club
