@@ -2054,3 +2054,11 @@ function on_cs_request_bind_wx(msg,guid)
 		pb_base_info = player,
 	})
 end
+
+function on_cs_personal_id_bind(msg,guid)
+	reddb:hmset(string.format("player:binding:id:%s",guid),msg)
+	reddb:hset(string.format("player:info:%d",guid),"is_bind_personal_id",true)
+	onlineguid.send(guid,"SC_PERSONAL_ID_BIND",{
+		result = enum.ERROR_NONE,
+	})
+end

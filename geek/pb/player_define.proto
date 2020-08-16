@@ -1,5 +1,5 @@
 
-…!
+¯!
 player_define.protocommon.proto"¯
 GameClientRoomListCfg
 game_id (RgameId(
@@ -17,7 +17,7 @@ cell_money (R	cellMoney
 platform_id
  (	R
 platformId
-title (	Rtitle"¶
+title (	Rtitle"’
 PlayerBaseInfo
 bank (Rbank&
 login_award_day (RloginAwardDay5
@@ -37,7 +37,8 @@ headerIcon'
 sex (Rsex
 type (Rtype
 nickname (	Rnickname
-role (Rrole"ê
+role (Rrole-
+is_bind_personal_id (RisBindPersonalId"ê
 PlayerVisualInfo
 chair_id (RchairId
 guid (Rguid

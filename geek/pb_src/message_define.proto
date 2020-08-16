@@ -1658,7 +1658,38 @@ message CS_NOTICE_REQ{
 }
 
 message SC_NOTICE_RES{
-	enum MsgID { Nil = 0; ID = 1220; }
+	enum MsgID { Nil = 0; ID = 1221; }
 	int32 result = 1;
 	repeated NOTICE notices = 2;
+}
+
+message CS_EDIT_NOTICE{
+	enum MsgID { Nil = 0; ID = 1222; }
+	NOTICE notice = 1;
+}
+
+message SC_EDIT_NOTICE{
+	enum MsgID { Nil = 0; ID = 1223; }
+	int32 result = 1;
+}
+
+message CS_DEL_NOTICE{
+	enum MsgID { Nil = 0; ID = 1224; }
+	string id = 1;
+}
+
+message SC_DEL_NOTICE{
+	enum MsgID { Nil = 0; ID = 1225; }
+	int32 result = 1;
+}
+
+message CS_PERSONAL_ID_BIND{
+	enum MsgID { Nil = 0; ID = 1226; }
+	string name = 1;
+	string id = 2;
+}
+
+message SC_PERSONAL_ID_BIND{
+	enum MsgID { Nil = 0; ID = 1227; }
+	int32 result = 1;
 }

@@ -37,6 +37,7 @@ message PlayerBaseInfo {
 	int32  type = 15;
 	string 	nickname = 16; 	// 昵称
 	int32  role = 17; //角色 0玩家 1代理
+	bool   is_bind_personal_id = 18; //是否实名绑定
 }
 
 // 其他玩家可见信息

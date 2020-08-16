@@ -128,4 +128,6 @@ skynet.start(function()
 	register_dispatcher("CS_RequestSmsVerifyCode",on_cs_request_sms_verify_code)
 
 	register_dispatcher("CS_RequestBindWx",on_cs_request_bind_wx)
+
+	register_dispatcher("CS_PERSONAL_ID_BIND",on_cs_personal_id_bind)
 end)
