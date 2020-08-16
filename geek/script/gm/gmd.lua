@@ -464,13 +464,17 @@ end
 function gmd.runtime_conf()
     local roomcard_switch = reddb:get("runtime_conf:private_fee:0")
     local diamond_switch = reddb:get("runtime_conf:private_fee:-1")
-    local h5_login_switch = reddb:get("runtime_conf:globa:h5_login")
+    local h5_login_switch = reddb:get("runtime_conf:global:h5_login")
     return {
         errcode = error.SUCCESS,
         data = {
-            roomcard = roomcard_switch,
-            diamond = diamond_switch,
-            h5_login = h5_login_switch,
+            private_fee = {
+                roomcard = roomcard_switch and tonumber(roomcard_switch) or 1,
+                diamond = diamond_switch and tonumber(diamond_switch) or 1,
+            },
+            global = {
+                h5_login = h5_login_switch and tonumber(h5_login_switch) or 0,
+            }
         }
     }
 end
