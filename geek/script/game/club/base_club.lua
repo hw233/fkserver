@@ -350,7 +350,7 @@ end
 function base_club:join_table(player,private_table,chair_count)
     local rule = private_table.rule
     if rule and not self:can_sit_down(rule,player) then
-        return enum.ERROR_LESS_MIN_LIMIT
+        return enum.ERROR_LESS_GOLD
     end
 
     local tb = g_room:find_table(private_table.real_table_id)
