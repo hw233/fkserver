@@ -290,3 +290,34 @@ function on_sd_dismiss_partner(msg)
 
     return true
 end
+
+function on_sd_edit_club_info(msg)
+    local club = msg.club
+    local name = msg.name
+    local icon = msg.icon
+
+    if not name and not icon then
+        return
+    end
+
+    local fields = {}
+
+    if name then
+        fields.name = "'" .. name .. "'"
+    end
+
+    if icon then
+        fields.icon = "'" .. icon .. "'"
+    end
+
+    local r = dbopt.game:query(
+            "UPDATE t_club SET %s WHERE id = %s;",
+            table.concat(table.series(fields,function(v,k) return k .. "=" .. v end)),
+            club)
+    if r.errno then
+        log.error("on_sd_edit_club_info UPDATE t_club errno:%d,errstr:%s",r.errno,r.err)
+        return
+    end
+
+    return true
+end

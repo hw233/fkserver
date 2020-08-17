@@ -2519,3 +2519,55 @@ function on_cs_remove_player_from_block_group(msg,guid)
         guid = group_guid,
     })
 end
+
+function on_cs_club_edit_info(msg,guid)
+    local club_id = msg.club_id
+    local name = msg.name
+
+    local operator = base_players[guid]
+    if not operator then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_INFO",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            club_id = club_id,
+            name = name,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_INFO",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            club_id = club_id,
+            name = name,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_INFO",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            club_id = club_id,
+            name = name,
+        })
+        return
+    end
+
+    reddb:hmset(string.format("club:info:%s",club_id),{
+        name = name
+    })
+
+    channel.publish("db.?","msg","SD_EditClubInfo",{
+        club = club_id,
+        name = name,
+    })
+
+    base_clubs[club_id] = nil
+
+    onlineguid.send(guid,"S2C_CLUB_EDIT_INFO",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        name = name,
+    })
+end
