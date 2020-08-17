@@ -96,6 +96,7 @@ local function reg_account(msg)
             login_time = os.time(),
             package_name = msg.package_name,
             phone_type = msg.phone_type,
+            promoter = msg.promoter,
         })
         
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
@@ -120,6 +121,7 @@ local function reg_account(msg)
         phone_type = msg.phone_type,
         role = 0,
         ip = msg.ip,
+        promoter = msg.promoter,
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
@@ -249,6 +251,7 @@ end
 
 
 local function sms_login(msg,_,session_id)
+    log.dump(msg)
     if not session_id then
         return enum.LOGIN_RESULT_SMS_FAILED
     end
@@ -284,6 +287,7 @@ local function sms_login(msg,_,session_id)
             phone = msg.phone,
             phone_type = msg.phone_type,
             version = msg.version,
+            promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
         })
         if ret ~= enum.ERROR_NONE then
             return ret
@@ -408,6 +412,7 @@ local function h5_login(msg,gate)
             package_name = msg.package_name,
             ip = msg.ip,
             sex = msg.sex or false,
+            promoter = msg.promoter,
         })
     end
 

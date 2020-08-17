@@ -1732,7 +1732,8 @@ function on_ld_reg_account(msg)
 
 	local transqls = {
 		string.format([[INSERT INTO account.t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-			register_time,ip,version,phone_type,package_name,phone) VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s');]],
+						register_time,ip,version,phone_type,package_name,phone) 
+						VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s');]],
 			msg.guid,
 			msg.account,
 			msg.nickname,
@@ -1745,16 +1746,17 @@ function on_ld_reg_account(msg)
 			msg.phone_type or "unkown",
 			msg.package_name or "",
 			msg.phone or ""),
-		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone,created_time) VALUES(%d,'%s','%s','%s','%s','%s',NOW());]],
+		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone,promoter,created_time) VALUES(%d,'%s','%s','%s','%s','%s',%s,NOW());]],
 			msg.guid,
 			msg.account,
 			msg.nickname,
 			msg.level,
 			msg.icon,
-			msg.phone or ""),
+			msg.phone or "",
+			msg.promoter or "NULL"),
 		string.format([[INSERT INTO game.t_player_money(guid,money_id) VALUES(%d,%d),(%d,%d);]],msg.guid,enum.ROOM_CARD_ID,msg.guid,-1),
 		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
-				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s',’%s‘);]],
+				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');]],
 			msg.guid,
 			msg.version,
 			msg.phone_type or "unkown",
@@ -1762,6 +1764,7 @@ function on_ld_reg_account(msg)
 			msg.platform_id or "",
 			msg.phone or ""),
 	}
+
 	local res = dbopt.game:query(table.concat(transqls,"\n"))
 	if res.errno then
 		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
