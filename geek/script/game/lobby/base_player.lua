@@ -416,9 +416,9 @@ function base_player:decrby(field,value)
 	return tonumber(v)
 end
 
-function base_player:incr_redis_money(money_id,money)
+function base_player:incr_redis_money(money_id,money,club_id)
 	local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
-	self:notify_money(money_id)
+	self:notify_money(money_id,newmoney,club_id)
 	return newmoney
 end
 
@@ -491,12 +491,13 @@ function base_player:cost_money(price, why,why_ext)
 end
 
 --通知客户端金钱变化
-function base_player:notify_money(money_id,money)
+function base_player:notify_money(money_id,money,club_id)
 	money_id = money_id or 0
 	onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
 		"PLAYER",{
 			guid = self.guid,
 			money_id = money_id,
+			club_id = club_id,
 		},{
 			money = money or (player_money[self.guid][money_id] or 0)
 		}

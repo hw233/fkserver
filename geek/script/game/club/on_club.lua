@@ -2067,33 +2067,15 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         return
     end
 
-    local new_from_money = from:incr_redis_money(money_id,-money)
+    local new_from_money = from:incr_redis_money(money_id,-money,club_id)
     if new_from_money ~= new_db_from_money then
         log.warning("transfer_money_player2player from player %s db money ~= redis money,%s,%s",from_guid,new_db_from_money,new_from_money)
     end
 
-    local new_to_money = to:incr_redis_money(money_id,money)
+    local new_to_money = to:incr_redis_money(money_id,money,club_id)
     if new_to_money ~= new_db_to_money then
         log.warning("transfer_money_player2player to player %s db money ~= redis money,%s,%s",from_guid,new_db_to_money,new_to_money)
     end
-
-    onlineguid.send(from_guid,"SYNC_OBJECT",util.format_sync_info(
-        "PLAYER",{
-            guid = from_guid,
-            club_id = club_id,
-            money_id = money_id,
-        },{
-            money = player_money[from_guid][money_id],
-        }))
-
-    onlineguid.send(to_guid,"SYNC_OBJECT",util.format_sync_info(
-        "PLAYER",{
-            guid = to_guid,
-            club_id = club_id,
-            money_id = money_id,
-        },{
-            money = player_money[to_guid][money_id],
-        }))
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
