@@ -41,6 +41,7 @@ local club_partner_commission = require "game.club.club_partner_commission"
 local club_block_groups = require "game.club.block.groups"
 local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
+local club_conf = require "game.club.club_conf"
 
 require "functions"
 
@@ -2569,5 +2570,97 @@ function on_cs_club_edit_info(msg,guid)
         result = enum.ERROR_NONE,
         club_id = club_id,
         name = name,
+    })
+end
+
+function on_cs_club_get_config(msg,guid)
+    local club_id = msg.club_id
+    local conf = msg.conf
+
+    local operator = base_players[guid]
+    if not operator then
+        onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local tconf = club_conf[club_id] or {}
+    onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        conf = json.encode(tconf),
+    })
+end
+
+function on_cs_club_edit_config(msg,guid)
+    local club_id = msg.club_id
+    local conf = msg.conf
+
+    local operator = base_players[guid]
+    if not operator then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            club_id = club_id,
+        })
+        return
+    end
+
+    local ok,tconf = pcall(json.decode,conf)
+    if not ok then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
+            result = enum.ERROR_PARAMETER_ERROR,
+            club_id = club_id,
+            conf = conf,
+        })
+        return
+    end
+
+    tconf = table.map(tconf,function(v,k) return k,tostring(v) end)
+    log.dump(tconf)
+
+    reddb:hmset(string.format("club:conf:%s",club_id),tconf)
+    club_conf[club_id] = nil
+    onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
+        result = enum.ERROR_NONE,
+        club_id = club_id,
+        conf = conf,
     })
 end

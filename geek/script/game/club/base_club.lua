@@ -24,6 +24,8 @@ local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_team = require "game.club.club_team"
 local club_partners = require "game.club.club_partners"
 local util = require "util"
+local club_conf = require "game.club.club_conf"
+local club_member_partner = require "game.club.club_member_partner"
 
 local reddb = redisopt.default
 
@@ -360,8 +362,15 @@ function base_club:join_table(player,private_table,chair_count)
 
         return table.nums(inters) > 0
     end)
-    
-    if is_block_join then
+
+    local is_block_partner_player
+    if club_conf[self.id].block_partner_player then
+        is_block_partner_player = table.logic_or(tb.players,function(p)
+            return club_member_partner[self.id][p.guid] == club_member_partner[self.id][player.guid]
+        end)
+    end
+
+    if is_block_join or is_block_partner_player then
         return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
     end
 

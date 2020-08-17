@@ -66,6 +66,12 @@ redismetadata.club.info = redismeta:create({
     }
 })
 
+redismetadata.club.conf = redismeta:create({
+    fields = {
+        block_partner_player = "boolean",
+    }
+})
+
 redismetadata.conf = redismeta:create({
     fields = {
         commission = "number",

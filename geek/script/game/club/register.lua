@@ -44,3 +44,6 @@ register_dispatcher("C2S_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",on_cs_add_player_to_blo
 register_dispatcher("C2S_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP",on_cs_remove_player_from_block_group)
 
 register_dispatcher("C2S_CLUB_EDIT_INFO",on_cs_club_edit_info)
+
+register_dispatcher("C2S_CLUB_GET_CONFIG",on_cs_club_get_config)
+register_dispatcher("C2S_CLUB_EDIT_CONFIG",on_cs_club_edit_config)

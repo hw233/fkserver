@@ -486,3 +486,28 @@ message S2C_CLUB_BLOCK_REMOVE_PLAYER_FROM_GROUP{
     int32 group_id = 3;
     int32 guid = 4;
 }
+
+message C2S_CLUB_GET_CONFIG{
+    enum MsgID {NIL = 0;ID = 14110;}
+    int32 club_id = 1;
+}
+
+message S2C_CLUB_GET_CONFIG{
+    enum MsgID {NIL = 0;ID = 14111;}
+    int32 result = 1;
+    int32 club_id = 2;
+    string conf = 3;
+}
+
+message C2S_CLUB_EDIT_CONFIG {
+    enum MsgID {NIL = 0;ID = 14112;}
+    int32 club_id = 1;
+    string conf = 2;
+}
+
+message S2C_CLUB_EDIT_CONFIG {
+    enum MsgID {NIL = 0;ID = 14113;}
+    int32 result = 1;
+    int32 club_id = 2;
+    string conf = 3;
+}
