@@ -68,7 +68,7 @@ local function clean_private_table()
 		local tid = string.match(table_key,"table:info:(%d+)")
 		tid = tonumber(tid)
 		local info = base_private_table[tid]
-		if info.game_type == def_first_game_type and info.create_time + private_table_elapsed_seconds >= os.time() then
+		if info.game_type == def_first_game_type and (os.time() - info.create_time) >= private_table_elapsed_seconds then
 			log.warning("dismiss elapsed table: %s ...",tid)
 			log.dump(info)
 			g_room:force_dismiss_table(info.real_table_id)
