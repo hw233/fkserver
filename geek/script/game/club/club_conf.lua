@@ -13,7 +13,7 @@ setmetatable(club_conf,{
 
         conf = redismetadata.club.conf:decode(conf)
 
-        t[club_id] = conf
+        -- t[club_id] = conf
         return conf
     end,
 })
