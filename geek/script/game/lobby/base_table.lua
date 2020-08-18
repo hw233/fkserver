@@ -1083,6 +1083,8 @@ function base_table:player_stand_up(player, reason)
 		player.table_id = nil
 		player.chair_id = nil
 
+		self.players[chairid] = nil
+
 		if self.private_id then
 			local priv_tb = base_private_table[self.private_id]
 			if priv_tb then 
@@ -1108,8 +1110,6 @@ function base_table:player_stand_up(player, reason)
 				self:dismiss()
 			end
 		end
-
-		self.players[chairid] = nil
 
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"table")
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"chair")
