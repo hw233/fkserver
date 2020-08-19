@@ -80,7 +80,7 @@ local function recharge_player(guid,coin_type,count)
     end
 
     player:incr_money({
-        money_id = 0,
+        money_id = coin_type,
         money = count,
     },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
 
