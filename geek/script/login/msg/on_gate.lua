@@ -155,6 +155,8 @@ local function open_id_login(msg,gate)
         return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
     end
 
+    reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
+
     local info = base_players[guid]
     if ip then
         reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
@@ -295,6 +297,7 @@ local function sms_login(msg,_,session_id)
     else
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
+        reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
         info = base_players[guid]
     end
 
@@ -416,6 +419,7 @@ local function h5_login(msg,gate)
         })
     end
 
+    reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
     local info = base_players[tonumber(guid)]
     log.dump(info)
     if info.status == 0 then
