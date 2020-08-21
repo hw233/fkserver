@@ -536,10 +536,6 @@ function pdk_table:get_cards_type(cards)
 		cardstype = CARD_TYPE.MISSLE
 	end
 
-	if self.start_count == 3 and cardstype == CARD_TYPE.DOUBLE_LINE and #cards == 4 then
-		return
-	end
-
 	return cardstype,cardsval
 end
 
