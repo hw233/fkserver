@@ -207,6 +207,7 @@ function land_table:begin_compete_landlord()
 		end
 	end
 
+	self.landlord_swap = nil
 	self:allow_compete_landlord()
 end
 
@@ -272,8 +273,10 @@ function  land_table:do_compete_landlord_score(player,msg)
 	self.landlord_competitions = self.landlord_competitions or {}
 	self.landlord_competitions[player.chair_id] = action
 	self.last_landlord_cometition = action
-	self.base_score = action
-	if action == 3 then
+	if action > 0 then
+		self.base_score = action
+	end
+	if self.base_score == 3 then
 		self:broadcast2client("SC_DdzCallLandlord",{
 			result = enum.ERROR_NONE,
 			chair_id = self.cur_competer,
@@ -361,12 +364,12 @@ function land_table:do_compete_landlord_normal(player,msg)
 
 	if action == -1 then
 		self.multi = (self.multi or 0)  + 1
-		self.landlord = player.chair_id
+		self.landlord_swap = player.chair_id
 	end
 
 	if action == -2 then
 		self.begin_competition_normal = player.chair_id
-		self.landlord = player.chair_id
+		self.landlord_swap = player.chair_id
 	end
 
 	self:broadcast2client("SC_DdzCallLandlord",{
@@ -390,6 +393,8 @@ function land_table:do_compete_landlord_normal(player,msg)
 		end)
 
 		if self.begin_competition_normal == player.chair_id or all_call == 1 then
+			self.landlord = self.landlord_swap
+			self.landlord_swap = nil
 			self:on_compete_landlord_over()
 			return
 		end
