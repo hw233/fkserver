@@ -2152,7 +2152,7 @@ function maajan_table:ding_zhuang()
         return
     end
 
-    local multi_paos = table.series(table.select(self.players,function(p) return p.multi_pao end))
+    local multi_paos = table.values(table.select(self.players,function(p) return p.multi_pao end))
     if table.nums(multi_paos) > 0 then
         local multi_pao_player = multi_paos[1]
         self.zhuang = multi_pao_player.chair_id
@@ -2163,9 +2163,11 @@ function maajan_table:ding_zhuang()
     table.sort(ps,function(l,r)
         if l.hu and not r.hu then return true end
         if not l.hu and r.hu then return false end
-        if l.hu and r.hu then return l.hu.time > r.hu.time end
+        if l.hu and r.hu then return l.hu.time < r.hu.time end
         return false
     end)
+
+    log.dump(ps)
 
     self.zhuang = ps[1].chair_id
 end
