@@ -259,6 +259,7 @@ function maajan_table:on_started(player_count)
         v.mo_pai = nil
         v.chu_pai = nil
         v.que = nil
+        v.multi_pao = nil
 
         v.statistics = v.statistics or {}
     end
@@ -823,11 +824,7 @@ function maajan_table:action_after_mo_pai(waiting_actions)
                 player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
                 player.guo_zhuang_hu = nil
             else
-                self:action_after_chu_pai(qiang_gang_hu)
-                for chair,_ in pairs(qiang_gang_hu) do
-                    local p = self.players[chair]
-                    if p.hu then p.hu.qiang_gang = true end
-                end
+                self:action_after_chu_pai(qiang_gang_hu,player)
             end
         end
 
@@ -976,7 +973,7 @@ function maajan_table:action_after_ding_que()
     end
 end
 
-function maajan_table:action_after_chu_pai(waiting_actions)
+function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
     self:update_state(FSM_S.WAIT_ACTION_AFTER_CHU_PAI)
     for _,action in pairs(waiting_actions) do
         self:send_action_waiting(action)
@@ -1075,15 +1072,14 @@ function maajan_table:action_after_chu_pai(waiting_actions)
     end
 
     table.sort(all_actions,function(l,r)
-        local l_priority = ACTION_PRIORITY[l.done.action]
-        local r_priority = ACTION_PRIORITY[r.done.action]
-        return l_priority < r_priority
+        return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
 
     local function do_action(actions_to_do)
         local action = actions_to_do[1]
 
         local chu_pai_player = self:chu_pai_player()
+        
 
         local player = self.players[action.chair_id]
         if not player then
@@ -1118,7 +1114,8 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                     tile = tile,
                     types = self:hu(p,tile),
                     zi_mo = false,
-                    whoee = self.chu_pai_player_index,
+                    whoee = ba_gang_player and ba_gang_player.chair_id or self.chu_pai_player_index,
+                    qiang_gang = ba_gang_player and true or false,
                 }
 
                 if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
@@ -1136,7 +1133,15 @@ function maajan_table:action_after_chu_pai(waiting_actions)
                 chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
             end
 
-            table.pop_back(chu_pai_player.pai.desk_tiles)
+            if table.nums(actions_to_do) > 1 then
+                chu_pai_player.multi_pao = true
+            end
+
+            if ba_gang_player then
+                table.decr(ba_gang_player.pai.shou_pai,tile)
+            else
+                table.pop_back(chu_pai_player.pai.desk_tiles)
+            end
 
             local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
             if self.start_count - hu_count == 1 then
@@ -1193,7 +1198,7 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
         table.insert(actions_to_do,action)
     end
-
+    
     do_action(actions_to_do)
 end
 
@@ -2147,12 +2152,10 @@ function maajan_table:ding_zhuang()
         return
     end
 
-    local hu_ps = table.select(self.players,function(p) return p.hu ~= nil end)
-    local g = table.group(hu_ps,function(p) return  self.players[p.hu.zi_mo and p.chair_id or p.hu.whoee].chair_id end)
-    local pao_counts = table.map(g,function(paos,chair) return chair,table.nums(paos) end)
-    local max_chair,max_c = table.max(pao_counts)
-    if max_c and max_c > 1 then
-        self.zhuang = max_chair
+    local multi_paos = table.series(table.select(self.players,function(p) return p.multi_pao end))
+    if table.nums(multi_paos) > 0 then
+        local multi_pao_player = multi_paos[1]
+        self.zhuang = multi_pao_player.chair_id
         return
     end
 
