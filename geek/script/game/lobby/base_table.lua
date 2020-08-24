@@ -1279,8 +1279,8 @@ end
 function base_table:on_pre_start(player_count)
 	self.round_id = self:get_next_game_id()
 	local money_id = self:get_money_id()
-	self.old_moneies = table.map(self.players,function(p,i)
-		return i,player_money[p.guid][money_id]
+	self.old_moneies = table.map(self.players,function(p)
+		return p.guid,player_money[p.guid][money_id]
 	end)
 end
 
