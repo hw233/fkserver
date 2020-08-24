@@ -558,7 +558,7 @@ function base_table:on_final_game_overed()
 end
 
 function base_table:on_game_overed()
-	self.old_monies = nil
+	self.old_moneies = nil
 	
 	if self.private_id then
 		local is_bankruptcy = false
@@ -1278,6 +1278,10 @@ end
 
 function base_table:on_pre_start(player_count)
 	self.round_id = self:get_next_game_id()
+	local money_id = self:get_money_id()
+	self.old_moneies = table.map(self.players,function(p,i)
+		return i,player_money[p.guid][money_id]
+	end)
 end
 
 function base_table:room_conf()
@@ -1400,11 +1404,6 @@ function base_table:on_started(player_count)
 				sync_table_id = self.private_id,
 				sync_type = enum.SYNC_UPDATE,
 			})
-
-			local money_id = club_money_type[club.id]
-			self.old_moneies = table.map(self.players,function(p,chair) 
-				return p.guid,player_money[p.guid][money_id] 
-			end)
 		end
 	end
 
@@ -1425,7 +1424,7 @@ function base_table:balance(moneies,why)
 		local minrate = 1
 		for pid,money in pairs(moneies) do
 			local p = self.players[pid] or base_players[pid]
-			local p_money = self.old_monies and self.old_moneies[pid] or player_money[p.guid][money_id]
+			local p_money = self.old_moneies and self.old_moneies[pid] or player_money[p.guid][money_id]
 			if p_money + money < 0 then
 				local r = math.abs(p_money) / math.abs(money)
 				if minrate > r then minrate = r end
