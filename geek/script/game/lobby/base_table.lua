@@ -615,9 +615,19 @@ function base_table:get_player_count()
 end
 
 -- 遍历桌子
-function base_table:foreach(func)
-	for i, p in pairs(self.players) do
-		func(p,i)
+function base_table:foreach(func,except)
+	for i,p in pairs(self.players) do
+		repeat
+			if type(except) == "function" and except(p,i) then
+				break
+			end
+
+			if i == except or p == except then
+				break
+			end
+
+			func(p,i)
+ 		until true
 	end
 end
 
