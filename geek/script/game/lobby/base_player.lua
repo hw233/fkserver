@@ -492,7 +492,7 @@ end
 
 --通知客户端金钱变化
 function base_player:notify_money(money_id,money,club_id)
-	money_id = money_id or 0
+	money_id = money_id or (club_id and club_money_type[club_id] or 0)
 	onlineguid.send(self.guid,"SYNC_OBJECT",util.format_sync_info(
 		"PLAYER",{
 			guid = self.guid,
