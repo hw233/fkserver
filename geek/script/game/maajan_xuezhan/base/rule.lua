@@ -453,10 +453,13 @@ function rule.hu(pai,in_pai,mo_pai)
 	end
 
 	local qing_yi_se = is_qing_yi_se(pai,cache)
-
+	local men_qing =  is_men_qing(pai)
+	local duan_yao = is_duan_yao(pai,in_pai)
+	local gou = gou_count(pai,cache)
+	
 	if qi_dui then
 		local base_types = {}
-		if table.logic_or(cache,function(c) return c == 4 end) then
+		if gou > 0 then
 			if is_2_5_8(pai,cache) then
 				base_types[HU_TYPE.JIANG_QI_DUI] = 1
 			else
@@ -466,18 +469,18 @@ function rule.hu(pai,in_pai,mo_pai)
 			base_types[HU_TYPE.QI_DUI] = 1
 		end
 
-		if qing_yi_se then
-			base_types[HU_TYPE.QING_YI_SE] = 1
-		end
+		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
+		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
+		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
 
 		table.insert(alltypes,base_types)
 	end
 
 	local common_types = {}
-    if is_men_qing(pai) then common_types[HU_TYPE.MEN_QING] = 1 end
-	if is_duan_yao(pai,in_pai) then common_types[HU_TYPE.DUAN_YAO] = 1 end
+	
+	if duan_yao then common_types[HU_TYPE.DUAN_YAO] = 1 end
+	if men_qing then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
-	local gou = gou_count(pai,cache)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
