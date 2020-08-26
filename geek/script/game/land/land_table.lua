@@ -605,6 +605,15 @@ function land_table:on_game_overed()
             self:set_trusteeship(p)
         end
 	end)
+
+	self.landlord = nil
+	self.last_discard = nil
+	self.base_score = nil
+	self.last_landlord_cometition = nil
+	self.landlord_cards  = nil
+	self.landlord_competitions = nil
+	self.begin_competition_normal = nil
+	self.compete_landlord_2_round = nil
 	
 	self:update_status(TABLE_STATUS.FREE)
 
