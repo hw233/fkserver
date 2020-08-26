@@ -1693,3 +1693,15 @@ message SC_PERSONAL_ID_BIND{
 	enum MsgID { Nil = 0; ID = 1227; }
 	int32 result = 1;
 }
+
+message CS_SearchPlayer{
+	enum MsgID { Nil = 0; ID = 1228; }
+	int32 guid = 1;
+	int32 club_id = 2; // club_id 为0表示全局搜索
+}
+
+message SC_SearchPlayer{
+	enum MsgID { Nil = 0; ID = 1229; }
+	int32 result = 1;
+	PLAYER_BASE_INFO base_info = 2;
+}

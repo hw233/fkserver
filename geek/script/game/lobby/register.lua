@@ -130,4 +130,6 @@ skynet.start(function()
 	register_dispatcher("CS_RequestBindWx",on_cs_request_bind_wx)
 
 	register_dispatcher("CS_PERSONAL_ID_BIND",on_cs_personal_id_bind)
+
+	register_dispatcher("CS_SearchPlayer",on_cs_search_player)
 end)
