@@ -2556,7 +2556,7 @@ end
 function maajan_table:reconnect(player)
     log.info("player reconnect : ".. player.chair_id)
     
-    player.deposit = nil
+    self:set_trusteeship(player)
     self:send_data_to_enter_player(player,true)
 
     if not self:is_play(player) then
@@ -2575,8 +2575,6 @@ function maajan_table:reconnect(player)
     end
 
     self:send_hu_status(player)
-
-    self:set_trusteeship(player)
 
     base_table.reconnect(self,player)
 end
