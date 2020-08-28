@@ -817,14 +817,18 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             end)
 
             self:log_game_action(player,do_action,tile)
-            if table.nums(qiang_gang_hu) == 0 then
+            local is_qiang_gang_pass = true
+            local is_qiang_gang = table.nums(qiang_gang_hu) > 0
+            if is_qiang_gang then
+                is_qiang_gang_pass = self:action_after_chu_pai(qiang_gang_hu,player)
+            end
+
+            if not is_qiang_gang or is_qiang_gang_pass then
                 self:adjust_shou_pai(player,do_action,tile)
                 self:jump_to_player_index(player)
                 self:gotofunc(function() self:mo_pai() end)
                 player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
                 player.guo_zhuang_hu = nil
-            else
-                self:action_after_chu_pai(qiang_gang_hu,player)
             end
         end
 
@@ -1187,6 +1191,8 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
         end
 
         self:done_last_action(player,{action = action.done.action,tile = tile})
+
+        return action.done.action == ACTION.PASS
     end
 
     local top_action
@@ -1199,7 +1205,8 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
         table.insert(actions_to_do,action)
     end
     
-    do_action(actions_to_do)
+    local is_pass = do_action(actions_to_do)
+    return is_pass
 end
 
 function maajan_table:fake_mo_pai()
@@ -1898,8 +1905,6 @@ function maajan_table:calculate_hu(hu)
 end
 
 function maajan_table:calculate_gang(p)
-    if not p.hu and not p.jiao then return end
-
     local s2hu_type = {
         [SECTION_TYPE.MING_GANG] = HU_TYPE.MING_GANG,
         [SECTION_TYPE.AN_GANG] = HU_TYPE.AN_GANG,
@@ -1926,7 +1931,7 @@ function maajan_table:calculate_gang(p)
             self:foreach_except(who,function(pi)
                 if pi.hu and pi.hu.time < s.time then return end
 
-                tb[p.chair_id] = (tb[p.chair_id] or 0) + hu_type_info.score
+                tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
                 tb[pi.chair_id] = (tb[pi.chair_id] or 0) - hu_type_info.score
             end)
         end
@@ -1977,6 +1982,10 @@ function maajan_table:game_balance()
         end
     end)
 
+    local wei_hu_count = table.sum(self.players,function(p) return (not p.hu) and 1 or 0 end)
+
+    log.dump(wei_hu_count)
+
     local typefans,scores = {},{}
     self:foreach(function(p)
         local hu
@@ -1989,7 +1998,7 @@ function maajan_table:game_balance()
         end
         
         local gangfans,gangscores
-        if p.jiao or p.hu then
+        if p.jiao or p.hu or wei_hu_count == 1 then
             gangfans,gangscores = self:calculate_gang(p)
         end
 
