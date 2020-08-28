@@ -1137,7 +1137,9 @@ function on_cs_reconnect(guid)
 			money = {
 				money_id = money_id,
 				count = p:get_money(money_id),
-			}
+			},
+			longitude = p.gps_longitude,
+			latitude = p.gps_latitude,
 		})
 	end)
 
