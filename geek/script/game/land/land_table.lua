@@ -989,6 +989,7 @@ function land_table:game_balance(winner)
 				round_money = p.round_money,
 				total_score = p.total_score,
 				total_money = p.total_money,
+				hand_cards = table.keys(p.hand_cards),
 			}
 		end),
 		chun_tian = is_fanchun and 2 or (is_chuntian and 1 or 0),

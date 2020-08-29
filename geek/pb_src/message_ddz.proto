@@ -92,6 +92,7 @@ message DdzBlanacePlayer{
 	int32 round_score 		= 5;
 	int32 round_money 		= 6;
 	int32 total_money  		= 7;
+	repeated int32 hand_cards     = 8; // 剩余手牌数量
 }
 
 //结算
