@@ -905,7 +905,7 @@ function base_table:player_sit_down_finished(player)
 end
 
 function base_table:on_private_pre_dismiss()
-	if self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+	if self.cur_round and self.cur_round > 0 and self.cur_round <= self.conf.round then
         self:on_final_game_overed()
     end
 end
