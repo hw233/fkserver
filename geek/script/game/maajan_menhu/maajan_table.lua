@@ -1975,6 +1975,8 @@ function maajan_table:on_process_over()
         p.total_score = nil
     end
 
+    self.cur_state_FSM = nil
+
     base_table.on_process_over(self)
 end
 
@@ -2100,7 +2102,7 @@ function maajan_table:can_stand_up(player, reason)
         return true
     end
 
-    if reason == enum.STANDUP_REASON_OFFLINE then
+    if reason == enum.STANDUP_REASON_OFFLINE and self.cur_state_FSM ~= nil then
         return false
     end
 
@@ -2701,7 +2703,19 @@ function maajan_table:on_reconnect_qiang_gang_hu(player)
 end
 
 function maajan_table:on_reconnect_pre_begin(player)
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        self_chair_id = player.chair_id,
+        is_reconnect = true,
+    }
 
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
 end
 
 function maajan_table:reconnect(player)

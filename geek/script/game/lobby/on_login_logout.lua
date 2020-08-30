@@ -377,11 +377,31 @@ function on_cs_request_player_info(msg,guid)
 
 	local info = {}
 	info.guid = guid
-	info.pb_base_info = clone(player)
-	info.pb_base_info.money = {{
-		money_id = 0,
-		count = player_money[guid][0] or 0,
-	}}
+	info.pb_base_info = {
+		account       = player.account,
+		gps_latitude  = player.gps_latitude,
+		gps_longitude = player.gps_longitude,
+		guid          = player.guid,
+		icon          = player.icon,
+		invite_code   = player.invite_code,
+		inviter_guid  = player.inviter_guid,
+		last_login_ip = player.last_login_ip,
+		login_ip      = player.login_ip,
+		login_time    = player.login_time,
+		logout_time   = player.logout_time,
+		nickname      = player.nickname,
+		open_id       = player.open_id,
+		package_name  = player.package_name,
+		phone         = player.phone,
+		phone_type    = player.phone_type,
+		role          = player.role,
+		sex           = player.sex,
+		version       = player.version,
+		money = {{
+			money_id = 0,
+			count = player_money[guid][0] or 0,
+		}}
+	}
 
 	onlineguid.send(guid,"SC_ReplyPlayerInfo",info)
 
@@ -1090,6 +1110,9 @@ function on_cs_create_private_room(msg,guid)
 				count = player:get_money(money_id),
 			}
 		}},
+		round_info = tb and {
+			round_id = tb:hold_ext_game_id()
+		} or nil,
 	})
 end
 
@@ -1153,6 +1176,9 @@ function on_cs_reconnect(guid)
 			owner = private_table.owner,
 		},
 		seat_list = seats,
+		round_info = tb and {
+			round_id = tb:hold_ext_game_id()
+		} or nil,
 	})
 
 	g_room:reconnect(player,table_id,chair_id)
@@ -1294,6 +1320,9 @@ function on_cs_join_private_room(msg,guid)
 			owner = private_table.owner,
 		},
 		seat_list = seats,
+		round_info = tb and {
+			round_id = tb:hold_ext_game_id(),
+		} or nil,
 	})
 end
 
@@ -2109,6 +2138,40 @@ function on_cs_search_player(msg,guid)
 			nickname = player.nickname,
 			icon = player.icon,
 			sex = player.sex,
+		}
+	})
+end
+
+function on_cs_play_once_again(msg,guid)
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(guid,"SC_PlayOnceAgain",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	if not player.table_id or not player.chair_id then
+		onlineguid.send(guid,"SC_PlayOnceAgain",{
+			result = enum.ERROR_PLAYER_NOT_IN_GAME
+		})
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if not tb then
+		onlineguid.send(guid,"SC_PlayOnceAgain",{
+			result = enum.ERROR_TABLE_NOT_EXISTS
+		})
+		return
+	end
+
+	tb:play_once_again(player)
+
+	onlineguid.send(guid,"SC_PlayOnceAgain",{
+		result = enum.ERROR_NONE,
+		round_info = {
+			round_id = tb:hold_ext_game_id(),
 		}
 	})
 end

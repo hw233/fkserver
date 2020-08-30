@@ -621,7 +621,6 @@ function land_table:on_game_overed()
 end
 
 function land_table:on_process_over()
-    self.start_count = self.chair_count
 	self.cur_competer = nil
     self:broadcast2client("SC_DdzFinalGameOver",{
 	players = table.series(self.players,function(p,chair)
@@ -672,7 +671,7 @@ function land_table:can_stand_up(player, reason)
         return true
 	end
 	
-	if reason == enum.STANDUP_REASON_OFFLINE then
+	if reason == enum.STANDUP_REASON_OFFLINE and self.status ~= nil then
         return false
     end
 

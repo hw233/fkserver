@@ -65,6 +65,15 @@ function maajan_table:init(room, table_id, chair_count)
         [FSM_S.WAIT_QIANG_GANG_HU] = self.on_qiang_gang_hu,
         [FSM_S.GAME_CLOSE] = self.game_over,
     }
+
+    self.state_reconnect = {
+        [FSM_S.PER_BEGIN] = self.on_reconnect_pre_begin,
+        [FSM_S.WAIT_CHU_PAI] = self.on_reconnect_wait_chu_pai,
+        [FSM_S.CHECK_TING] = self.on_reconnect_check_ting,
+        [FSM_S.WAIT_ACTION_AFTER_CHU_PAI] = self.on_reconnect_action_after_chu_pai,
+        [FSM_S.WAIT_ACTION_AFTER_MO_PAI] = self.on_reconnect_action_after_mo_pai,
+        [FSM_S.WAIT_QIANG_GANG_HU] = self.on_reconnect_qiang_gang_hu,
+    }
 end
 
 function maajan_table:do_ding_zhuang(next_zhuang)
@@ -1793,6 +1802,8 @@ function maajan_table:on_process_over()
         p.total_score = nil
     end
 
+    self.cur_state_FSM = nil
+
     base_table.on_process_over(self)
 end
 
@@ -1918,7 +1929,7 @@ function maajan_table:can_stand_up(player, reason)
         return true
     end
 
-    if reason == enum.STANDUP_REASON_OFFLINE then
+    if reason == enum.STANDUP_REASON_OFFLINE and self.cur_state_FSM ~= nil then
         return false
     end
 
@@ -2332,11 +2343,247 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     end
 end
 
+
+function maajan_table:on_reconnect_wait_chu_pai(player)
+    if not self.cur_round or self.cur_round == 0 then return end
+    log.dump("................")
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        zhuang = self.zhuang,
+        self_chair_id = player.chair_id,
+        act_time_limit = def.ACTION_TIME_OUT,
+        decision_time_limit = def.ACTION_TIME_OUT,
+        is_reconnect = true,
+        pb_players = table.series(self.players,function(v)
+            local data =  {
+                chair_id = v.chair_id,
+                is_ting = v.ting and true or false,
+                men_pai = table.series(v.men,function(men) return men.zi_mo and 255 or men.tile  end),
+                mo_pai = v.mo_pai,
+            }
+
+            if v.pai then
+                data.desk_pai = table.values(v.pai.desk_tiles)
+                data.pb_ming_pai = table.values(v.pai.ming_pai)
+                if v.chair_id == player.chair_id then
+                    data.shou_pai = self:tile_count_2_tiles(v.pai.shou_pai)
+                else
+                    data.shou_pai = table.fill(nil,255,1,table.sum(v.pai.shou_pai))
+                end
+            end
+
+            if player.chair_id == v.chair_id then
+                data.mo_pai =  v.mo_pai
+            end
+
+            return data
+        end)
+    }
+    
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
+        last_chu_pai = last_tile,
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+
+    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+
+    if self.waiting_player_actions then
+        local player_actions = self.waiting_player_actions[player.chair_id]
+        if player_actions  then
+            self:send_action_waiting(player_actions)
+        end
+    end
+end
+
+maajan_table.on_reconnect_check_ting = maajan_table.on_reconnect_wait_chu_pai
+
+function maajan_table:on_reconnect_action_after_chu_pai(player)
+    if not self.cur_round or self.cur_round == 0 then return end
+
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        zhuang = self.zhuang,
+        self_chair_id = player.chair_id,
+        act_time_limit = def.ACTION_TIME_OUT,
+        decision_time_limit = def.ACTION_TIME_OUT,
+        is_reconnect = true,
+        pb_players = table.series(self.players,function(v)
+            local data = {
+                chair_id = v.chair_id,
+                is_ting = v.ting and true or false,
+                men_pai = table.series(v.men,function(men) return men.zi_mo and 255 or men.tile  end),
+                mo_pai = v.mo_pai,
+                
+            }
+
+            if v.pai then
+                data.desk_pai = table.values(v.pai.desk_tiles)
+                data.pb_ming_pai = table.values(v.pai.ming_pai)
+                data.shou_pai = (v.chair_id == player.chair_id) and 
+                    self:tile_count_2_tiles(v.pai.shou_pai) or
+                    table.fill(nil,255,1,table.sum(v.pai.shou_pai))
+            end
+
+            return data
+        end)
+    }
+    
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
+        last_chu_pai = last_tile,
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+
+    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+
+    if self.waiting_player_actions then
+        local player_actions = self.waiting_player_actions[player.chair_id]
+        if player_actions  then
+            self:send_action_waiting(player_actions)
+        end
+    end
+end
+
+function maajan_table:on_reconnect_action_after_mo_pai(player)
+    if not self.cur_round or self.cur_round == 0 then return end
+
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        zhuang = self.zhuang,
+        self_chair_id = player.chair_id,
+        act_time_limit = def.ACTION_TIME_OUT,
+        decision_time_limit = def.ACTION_TIME_OUT,
+        is_reconnect = true,
+        pb_players = table.series(self.players,function(v)
+            local data =  {
+                chair_id = v.chair_id,
+                is_ting = v.ting and true or false,
+                men_pai = table.series(v.men,function(men) return men.zi_mo and 255 or men.tile  end),
+                mo_pai = v.mo_pai,
+            }
+
+            if v.pai then
+                data.desk_pai = table.values(v.pai.desk_tiles)
+                data.pb_ming_pai = table.values(v.pai.ming_pai)
+                data.shou_pai = (v.chair_id == player.chair_id) and 
+                    self:tile_count_2_tiles(v.pai.shou_pai) or
+                    table.fill(nil,255,1,table.sum(v.pai.shou_pai))
+            end
+
+            return data
+        end)
+    }
+    
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
+        last_chu_pai = last_tile,
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+
+    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+
+    if self.waiting_player_actions then
+        local player_actions = self.waiting_player_actions[player.chair_id]
+        if player_actions  then
+            self:send_action_waiting(player_actions)
+        end
+    end
+end
+
+function maajan_table:on_reconnect_qiang_gang_hu(player)
+    if not self.cur_round or self.cur_round == 0 then return end
+
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        zhuang = self.zhuang,
+        self_chair_id = player.chair_id,
+        act_time_limit = def.ACTION_TIME_OUT,
+        decision_time_limit = def.ACTION_TIME_OUT,
+        is_reconnect = true,
+        pb_players = table.series(self.players,function(v)
+            local data =  {
+                chair_id = v.chair_id,
+                is_ting = v.ting and true or false,
+                men_pai = table.series(v.men,function(men) return men.zi_mo and 255 or men.tile  end),
+                mo_pai = v.mo_pai,
+            }
+
+            if v.pai then
+                data.desk_pai = table.values(v.pai.desk_tiles)
+                data.pb_ming_pai = table.values(v.pai.ming_pai)
+                data.shou_pai = (v.chair_id == player.chair_id) and 
+                    self:tile_count_2_tiles(v.pai.shou_pai) or
+                    table.fill(nil,255,1,table.sum(v.pai.shou_pai))
+            end
+
+            return data
+        end)
+    }
+    
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
+        last_chu_pai = last_tile,
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+
+    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+
+    if self.waiting_player_actions then
+        local player_actions = self.waiting_player_actions[player.chair_id]
+        if player_actions  then
+            self:send_action_waiting(player_actions)
+        end
+    end
+end
+
+function maajan_table:on_reconnect_pre_begin(player)
+    local msg = {
+        state = self.cur_state_FSM,
+        round = self.cur_round,
+        self_chair_id = player.chair_id,
+        is_reconnect = true,
+    }
+
+    local last_chu_pai_player,last_tile = self:get_last_chu_pai()
+    msg.pb_rec_data = {
+        total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+    }
+
+    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+end
+
 function maajan_table:reconnect(player)
 	log.info("player reconnect : ".. player.chair_id)
     
-    player.deposit = nil
-    self:send_data_to_enter_player(player,true)
+    player.deposit = nil    
+    if self.cur_state_FSM then
+        self.state_reconnect[self.cur_state_FSM](self,player)
+    end
 
     base_table.reconnect(self,player)
 end

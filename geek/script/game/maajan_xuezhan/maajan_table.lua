@@ -185,6 +185,7 @@ function maajan_table:on_private_inited()
     self.start_count = start_count
     self.tiles = tiles
     self.game_tile_count = game_tile_count
+    self.cur_state_FSM = nil
 
     log.dump(tiles)
     log.dump(game_tile_count)
@@ -2102,8 +2103,6 @@ function maajan_table:on_process_start(player_count)
 end
 
 function maajan_table:on_process_over()
-    self.start_count = self.chair_count
-
     self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
         players = table.series(self.players,function(p,chair)
             return {
@@ -2211,7 +2210,7 @@ function maajan_table:can_stand_up(player, reason)
         return true
     end
 
-    if reason == enum.STANDUP_REASON_OFFLINE then
+    if reason == enum.STANDUP_REASON_OFFLINE and self.cur_state_FSM ~= nil then
         return false
     end
 

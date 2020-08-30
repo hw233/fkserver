@@ -35,6 +35,14 @@ local reddb = redisopt.default
 
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 10 * 60
+local auto_kickout_timer = 5 * 60
+
+local EXT_ROUND_STATUS = {
+	NONE = 0,
+	FREE = 1,
+	GAMING = 2,
+	END = 3,
+}
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
 -- 奖池
@@ -62,6 +70,16 @@ function base_table:get_ext_game_id()
 	local sext_round_id = string.format("%03d-%03d-%04d-%s-%06d",def_game_id,self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),math.random(1,100000))
 	log.info(sext_round_id)
 	return sext_round_id
+end
+
+function base_table:hold_game_id()
+	self.round_id = self.round_id or self:get_ext_game_id()
+	return self.round_id
+end
+
+function base_table:hold_ext_game_id()
+	self.ext_round_id = self.ext_round_id or self:get_ext_game_id()
+	return self.ext_round_id
 end
 
 function base_table:start_save_info()
@@ -116,6 +134,8 @@ function base_table:init(room, table_id, chair_count)
 	else
 		self.notify_msg.flag = 4
 	end
+
+	self.ext_round_status = nil
 end
 
 function base_table:is_play( ... )
@@ -555,11 +575,12 @@ function base_table:on_final_game_overed()
 	self.round_id = nil
 	self.ext_round_id = nil
 	self.cur_round = nil
+	self.ext_round_status = nil
 end
 
 function base_table:on_game_overed()
 	self.old_moneies = nil
-	
+	self:clear_ready()
 	if self.private_id then
 		local is_bankruptcy = false
 		local private_table = base_private_table[self.private_id]
@@ -581,14 +602,10 @@ function base_table:on_game_overed()
 
 		if (self.cur_round and self.cur_round >= self.conf.round) or is_bankruptcy then
 			self:on_final_game_overed()
-			for _,p in pairs(self.players) do
-				p:forced_exit()
-			end
-			self:dismiss()
+
+			self:delay_dismiss()
 		end
 	end
-
-	
 end
 
 -- 得到玩家
@@ -971,6 +988,7 @@ function base_table:dismiss()
 	self.private_id = nil
 	self.conf = nil
 	self.cur_round = nil
+	self.start_count = self.chair_count
 
 	return enum.GAME_SERVER_RESULT_SUCCESS
 end
@@ -1037,7 +1055,11 @@ end
 
 function base_table:delay_dismiss(player)
 	self.dismiss_timer = timer_manager:new_timer(auto_dismiss_timeout,function()
-		self.room_:exit_server(player)
+		self:foreach(function(p) 
+			p:forced_exit()
+		end)
+
+		self:dismiss()
 		self.elapsed_dismiss = nil
 	end)
 end
@@ -1050,6 +1072,24 @@ function base_table:cancel_delay_dismiss()
 	local timer = self.dismiss_timer
 	timer:kill()
 	self.dismiss_timer = nil
+end
+
+function base_table:delay_kickout(player)
+	log.info("delay_kickout %s",player.guid)
+	player.kickout_timer = timer_manager:new_timer(auto_kickout_timer,function()
+		player:forced_exit()
+		player.kickout_timer = nil
+	end)
+end
+
+function base_table:cancel_delay_kickout(player)
+	log.info("cancel_delay_kickout %s",player.guid)
+	if not player.kickout_timer then
+		return
+	end
+	
+	player.kickout_timer:kill()
+	player.kickout_timer = nil
 end
 
 -- 玩家站起
@@ -1068,9 +1108,9 @@ function base_table:player_stand_up(player, reason)
 
 	if self:can_stand_up(player, reason) then
 		local player_count = table.nums(self.players)
-		-- 最后一个玩家掉线不直接解散,针对邀请玩家进入房间情况
-		if self.private_id and player_count == 1  and reason == enum.STANDUP_REASON_OFFLINE then
-			self:delay_dismiss(player)
+		-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
+		if self.private_id and self.ext_round_status == EXT_ROUND_STATUS.FREE and reason == enum.STANDUP_REASON_OFFLINE then
+			self:delay_kickout(player)
 			return
 		end
 		log.info("base_table:player_stand_up success")
@@ -1190,6 +1230,8 @@ function base_table:ready(player)
 	log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
 	self.ready_list[player.chair_id] = player
 
+	self:cancel_delay_dismiss()
+
 	-- 机器人准备
 	self:foreach(function(p)
 		if p:is_android() and (not self.ready_list[p.chair_id]) then
@@ -1221,6 +1263,7 @@ function base_table:reconnect(player)
 	player.online = true
 	log.info("set player[%d] in_game true" ,player.guid)
 	self:on_reconnect(player)
+	self:cancel_delay_kickout(player)
 end
 
 -- 检查是否可准备
@@ -1389,6 +1432,8 @@ end
 function base_table:on_started(player_count)
 	if not self.private_id then return end
 
+	self.ext_round_status = EXT_ROUND_STATUS.GAMING
+
 	self.player_count = player_count
 	self.cur_round = (self.cur_round or 0) + 1
 
@@ -1452,7 +1497,7 @@ function base_table:balance(moneies,why)
 end
 
 function base_table:on_process_start(player_count)
-	self.ext_round_id = self:get_ext_game_id()
+	self.ext_round_id = self:hold_ext_game_id()
 	if not self.private_id then 
 		return
 	end
@@ -1608,6 +1653,7 @@ function base_table:private_init(private_id,rule,conf)
 	self.start_count = conf.chair_count
 	self.conf = conf
 	self.dismiss_timer = nil
+	self.ext_round_status = EXT_ROUND_STATUS.FREE
 	self:on_private_inited()
 end
 
@@ -1733,6 +1779,10 @@ end
 
 function base_table:log_msg(str)
 	self:log(str, 1 ,3)
+end
+
+function base_table:play_once_again(player)
+	self:ready(player)
 end
 
 function base_table:global_status_info()

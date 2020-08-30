@@ -176,3 +176,7 @@ message NOTICE{
 	string content = 3;
 	int32 club_id = 4;
 }
+
+message ROUND_INFO{
+    string round_id = 1;
+}

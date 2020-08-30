@@ -1467,6 +1467,7 @@ message SC_CreateRoom
     int32   result = 1;
     TABLE_INFO info = 2;
     repeated SEAT_INFO seat_list = 3;
+	ROUND_INFO round_info = 4;
 }
 
 //加入房间请求
@@ -1484,6 +1485,7 @@ message SC_JoinRoom
     int32 result = 1;
     TABLE_INFO info = 2;
     repeated SEAT_INFO seat_list = 3;
+	ROUND_INFO round_info = 4;
 }
 
 message S2C_WARN_CODE_RES
@@ -1704,4 +1706,14 @@ message SC_SearchPlayer{
 	enum MsgID { Nil = 0; ID = 1229; }
 	int32 result = 1;
 	PLAYER_BASE_INFO base_info = 2;
+}
+
+message CS_PlayOnceAgain{
+	enum MsgID { Nil = 0; ID = 1230; }
+}
+
+message SC_PlayOnceAgain{
+	enum MsgID { Nil = 0; ID = 1231; }
+	int32 result = 1;
+	ROUND_INFO round_info = 2;
 }

@@ -294,9 +294,9 @@ function base_player:on_stand_up(table_id_, chair_id_, result_)
 	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 		print("=========base_player:on_stand_up true")
 		send2client_pb(self, "SC_StandUp", {
-			table_id = table_id_,
-			chair_id = chair_id_,
-			result = result_,
+				table_id = table_id_,
+				chair_id = chair_id_,
+				result = result_,
 			})
 	else
 		print("=========base_player:on_stand_up false")
@@ -803,6 +803,30 @@ function base_player:get_ip_net(player)
 	local ipdata = string.split(str,"%d+")
 	str = string.format("%s.%s",ipdata[1],ipdata[2])
 	return str
+end
+
+function base_player:force_stand_up(reason)
+	reason = reason or enum.STANDUP_REASON_FORCE
+	if not self.table_id or not self.chair_id then
+		return true
+	end
+
+	local tb = g_room:find_table_by_player(self)
+	if not tb then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
+		return
+	end
+
+	if not tb:player_stand_up(self,reason) then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,reason)
+		return
+	end
+
+	return true
+end
+
+function base_player:force_exit_room(reason)
+	g_room:player_exit_room(self)
 end
 
 

@@ -417,12 +417,11 @@ function pdk_table:on_game_overed()
         end
     end)
 
+	self.status = TABLE_STATUS.END
     base_table.on_game_overed(self)
 end
 
 function pdk_table:on_process_over()
-    self.start_count = self.chair_count
-
     self:broadcast2client("SC_PdkFinalGameOver",{
 	players = table.series(self.players,function(p,chair)
 		local statistics = table.series(p.statistics or {},function(c,t) 
@@ -472,7 +471,7 @@ function pdk_table:can_stand_up(player, reason)
         return true
 	end
 	
-	if reason == enum.STANDUP_REASON_OFFLINE then
+	if reason == enum.STANDUP_REASON_OFFLINE and self.status then
         return false
     end
 

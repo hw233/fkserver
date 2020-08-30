@@ -171,6 +171,7 @@ enum FSM_STATE {
 	HUAN_PAI				= 17;	//换牌
 	DING_QUE				= 18;	//定缺
 	FAST_START_VOTE			= 19;
+	FINAL_END 				= 20;
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 
