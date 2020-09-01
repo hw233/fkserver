@@ -2096,6 +2096,14 @@ function maajan_table:on_game_overed()
 
     base_table.on_game_overed(self)
     self:clear_event_pump()
+
+    self:foreach(function(p)
+        if not p.trustee or  not self.cur_round or self.cur_round >= self.conf.round then return end
+
+        timer_manager:calllater(2,function()
+            self:ready(p)
+        end)
+    end)
 end
 
 function maajan_table:on_process_start(player_count)
@@ -2197,8 +2205,6 @@ function maajan_table:load_lua_cfg()
 end
 
 function maajan_table:on_offline(player)
-    self:set_trusteeship(player,true)
-    
     base_table.on_offline(self,player)
 end
 
