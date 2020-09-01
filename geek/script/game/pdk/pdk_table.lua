@@ -417,7 +417,7 @@ function pdk_table:on_game_overed()
         end
     end)
 
-	self.status = TABLE_STATUS.END
+	self.status = TABLE_STATUS.FREE
     base_table.on_game_overed(self)
 end
 

@@ -679,7 +679,7 @@ function land_table:can_stand_up(player, reason)
 end
 
 function land_table:on_offline(player)
-	
+	base_table.on_offline(self,player)
 end
 
 function land_table:load_lua_cfg()
