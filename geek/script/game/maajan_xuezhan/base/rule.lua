@@ -413,12 +413,22 @@ local function get_hu_types(pai,cache,sections,in_pai)
 		end
 	end
 
-	if in_pai == 22 and #shun_zi_list > 0 and cache[21] > 0 and cache[23] > 0 then
-		base_types[HU_TYPE.KA_ER_TIAO] = 1
-	end
+	for _,s in pairs(shun_zi_list) do
+		if in_pai == 22 then
+			if (s.type == SECTION_TYPE.LEFT_CHI and s.tile + 1 == 22) or
+				(s.type == SECTION_TYPE.RIGHT_CHI and s.tile - 1 == 22) or 
+				(s.type == SECTION_TYPE.MID_CHI and s.tile == 22) then
+				base_types[HU_TYPE.KA_ER_TIAO] = 1
+			end
+		end
 
-	if in_pai % 10 == 5 and #shun_zi_list > 0 and cache[in_pai - 1] > 0 and cache[in_pai + 1] > 0 then
-		base_types[HU_TYPE.KA_WU_XING] = 1
+		if in_pai % 10 == 5 then
+			if (s.type == SECTION_TYPE.LEFT_CHI and (s.tile + 1) % 10 == 5) or
+				(s.type == SECTION_TYPE.RIGHT_CHI and (s.tile - 1) % 10 == 5) or 
+				(s.type == SECTION_TYPE.MID_CHI and s.tile % 10 == 5) then
+				base_types[HU_TYPE.KA_WU_XING] = 1
+			end
+		end
 	end
 
 	if is_all_1_9(pai,sections) then
