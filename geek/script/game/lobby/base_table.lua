@@ -1344,25 +1344,25 @@ function base_table:private_table_conf()
 end
 
 function base_table:get_money_id()
+	local club = self:get_club()
+	return club and club_money_type[club.id] or -1
+end
+
+function base_table:get_club()
 	local private_table = self:private_table_conf()
 	if not private_table then
-		log.error("base_table:get_money_id [%d] got nil private conf",self.private_id)
+		log.error("base_table:get_club [%d] got nil private conf",self.private_id)
 		return
 	end
 
 	local club_id = private_table.club_id
 	if not club_id or club_id == 0 then
-		log.warning("base_table:get_money_id [%d] got nil private club.",self.private_id)
-		return -1
-	end
-
-	local club = base_clubs[club_id]
-	if not club then
-		log.error("base_table:get_money_id [%d] got nil private club [%d].",self.private_id,club_id)
+		log.warning("base_table:get_club [%d] got nil private club.",self.private_id)
 		return
 	end
 
-	return club_money_type[club_id]
+	local club = base_clubs[club_id]
+	return club
 end
 
 function base_table:cost_private_fee()
