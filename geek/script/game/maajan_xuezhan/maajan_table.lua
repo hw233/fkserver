@@ -1791,8 +1791,9 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
-    if not self:is_que(p) and actions[ACTION.HU] then
+    if not self:is_que(p) and (actions[ACTION.HU] or actions[ACTION.ZI_MO]) then
         actions[ACTION.HU] = nil
+        actions[ACTION.ZI_MO] = nil
     end
 
     return actions
