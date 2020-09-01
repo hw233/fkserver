@@ -1100,7 +1100,6 @@ function base_table:player_stand_up(player, reason)
 	log.info("guid %s,reason %s,offline:%s",player.guid,reason,reason == enum.STANDUP_REASON_OFFLINE)
 	if reason == enum.STANDUP_REASON_OFFLINE then
 		self:on_offline(player)
-		player.is_offline = true -- 掉线了
 		self:foreach_except(player.chair_id,function(p)
 			p:notify_stand_up(player,true)
 		end)
@@ -1182,7 +1181,7 @@ function base_table:on_player_stand_up(player,reason)
 end
 
 function base_table:on_offline(player)
-	player.is_offline = true
+	player.inactive = true
 end
 
 function base_table:set_trusteeship(player,trustee)
@@ -1260,7 +1259,7 @@ function base_table:reconnect(player)
 	log.info("---------base_table:reconnect,%s-----------",player.guid)
 	log.info("set Dropped is false")
 	log.info("set online is true")
-	player.online = true
+	player.inactive = nil
 	log.info("set player[%d] in_game true" ,player.guid)
 	self:on_reconnect(player)
 	self:cancel_delay_kickout(player)
@@ -1531,6 +1530,11 @@ function base_table:on_process_over()
 	if not self.private_id then 
 		return
 	end
+
+	self:foreach(function(p) 
+		if not p.inactive then return end
+		p:forced_exit()
+	end)
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
