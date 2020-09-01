@@ -479,7 +479,7 @@ function pdk_table:can_stand_up(player, reason)
 end
 
 function pdk_table:on_offline(player)
-	
+	base_table.on_offline(self,player)
 end
 
 function pdk_table:load_lua_cfg()
