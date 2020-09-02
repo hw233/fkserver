@@ -43,117 +43,732 @@ function cards_util.check_cards(cards)
 	return table.logic_and(cards,function(c) return cards_util.check(c) end)
 end
 
-function cards_util.seek_great_than(kcards,ctype,cvalue,ccount)
+local function full_combination(number)
+	if number == 1 then return {{number}} end
+	local numbers = full_combination(number - 1)
+	local combos = {{number}}
+	for _,nums in pairs(numbers) do
+		table.insert(nums,1)
+		table.insert(combos,nums)
+	end
+	return combos
+end
+
+local function seek_continuity_cards_count(valuecounts,begin,value_count,len)
+	local sections = {}
+	local function next_section(b,e)
+		local n = 0
+		for i = b,e do
+			if not valuecounts[i] or valuecounts[i]< value_count or valuecounts[i] == 4 then
+				return n
+			end
+			n = n + 1
+			if len and n == len then return n end
+		end
+
+		return n
+	end
+	local i = begin
+	while i <= 14 do
+		local len = next_section(i,14)
+		if len > 0 then
+			table.insert(sections,{b = i,len = len})
+		end
+		i = i + len + 1
+	end
+	table.sort(sections,function(l,r) 
+		if l.len > r.len then return true end
+		if l.len == r.len then return l.b < r.b end
+		return false
+	end)
+	if #sections > 0 then
+		local top = sections[1]
+		return top.len,top.b
+	end
+
+	return 0
+end
+
+
+local function pick_exactly(valuecards,count,val,excludes,try_includes)
+	assert(count > 0 and valuecards[val] and #valuecards[val] >= count)
+
+	local cards = {}
+	local vcards = valuecards[val]
+	log.dump(try_includes)
+	if try_includes then
+		for _,card in pairs(vcards) do
+			if try_includes[card] and (not excludes or not excludes[card]) then
+				table.insert(cards,card)
+				if #cards == count then break  end
+			end
+		end
+	end
+
+	if #cards < count then  
+		for _,card in pairs(vcards) do
+			if (not try_includes or not try_includes[card]) and (not excludes or not excludes[card]) then
+				table.insert(cards,card)
+				if #cards == count then break  end
+			end
+		end
+	end
+
+	log.dump(cards)
+
+	assert(cards and #cards == count)
+
+	return cards
+end
+
+
+local function find_min_value_with_exactly_count(valuecards,count,excludes,try_includes)
+	for i = 3,15 do
+		if valuecards[i] and #valuecards[i] == count then
+			repeat
+				if excludes and table.nums(excludes) > 0 and 
+					table.logic_or(valuecards[i],function(card) return excludes[card] end) then
+					break
+				end
+
+				if try_includes and table.nums(try_includes) > 0 and 
+					table.logic_and(valuecards[i],function(card) return not try_includes[card] end) then
+					break
+				end
+
+				return i
+			until true 
+		end
+	end
+end
+
+local function pick_min_combination_with_exactly_count(valuecards,combs,excludes,try_includes)
+	local cards_combination = {}
+	local comb_exlucdes = clone(excludes)
+	for _,c in pairs(combs) do
+		local val = find_min_value_with_exactly_count(valuecards,c,comb_exlucdes,try_includes)
+		if not val then return end
+
+		local cards = pick_exactly(valuecards,c,val,comb_exlucdes,try_includes)
+		assert(#cards == c)
+		table.mergeto(comb_exlucdes,
+			table.map(cards,function(c) return c,true end),
+			function(l,r) return l or r end
+		)
+		table.insert(cards_combination,cards)
+	end
+
+	local cards = table.union_tables(cards_combination)
+	return cards
+end
+
+local function search_min_combination(valuecards,count,excludes,try_includes)
+	local count_combinations = full_combination(count)
+	table.sort(count_combinations,function(l,r) return #l > #r end)
+	for _,comb in pairs(count_combinations) do
+		local cards = pick_min_combination_with_exactly_count(valuecards,comb,excludes,try_includes)
+		if cards then
+			assert(#cards == count)
+			return cards
+		end
+	end
+
+	return nil
+end
+
+
+local function check_cards_repeat(cards)
+	local cardsgroup = table.group(cards,function(c) return c end)
+	local cardcounts = table.map(cardsgroup,function(cs,c) return c,table.nums(cs) end)
+	return table.logic_or(cardcounts,function(n) return n > 1 end)
+end
+
+function cards_util.seek_great_than(kcards,ctype,cvalue,ccount,rule)
+	local total_count = table.nums(kcards)
 	local valuegroup = table.group(kcards,function(_,c) return cards_util.value(c) end)
-	local valuecards =  table.map(valuegroup,function(cs,v)  return v,table.values(cs) end)
+	local valuecards =  table.map(valuegroup,function(cs,v)  return v,table.keys(cs) end)
 	local valuecounts = table.map(valuegroup,function(cs,v) return v,table.nums(cs) end)
 	local countgroup =  table.group(valuecounts,function(c)  return c end)
+	local has_missle = rule and rule.play and rule.play.AAA_is_bomb
+	local pick_func = {
+		[PDK_CARD_TYPE.SINGLE] = function(val) return pick_exactly(valuecards,1,val) end,
+		[PDK_CARD_TYPE.DOUBLE] = function(val) return pick_exactly(valuecards,2,val) end,
+		[PDK_CARD_TYPE.THREE] = function(val) return pick_exactly(valuecards,3,val) end,
+		[PDK_CARD_TYPE.THREE_WITH_ONE] = function(val)
+			local three = pick_exactly(valuecards,3,val)
+			local one = search_min_combination(valuecards,1,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(three,one)
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_TWO] = function(val)
+			local three = pick_exactly(valuecards,3,val)
+			local two = search_min_combination(valuecards,2,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(three,two)
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_DOUBLE] = function(val)
+			local four = pick_exactly(valuecards,4,val)
+			local two = search_min_combination(valuecards,2,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(four,two)
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_THREE] = function(val)
+			local four = pick_exactly(valuecards,4,val)
+			local three = search_min_combination(valuecards,3,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(four,three)
+		end,
+		[PDK_CARD_TYPE.PLANE] = function(val,len)
+			local tbcards = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,3,i))
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_ONE] = function(val,len)
+			local tbcards = {}
+			local excludes = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,3,i))
+				table.mergeto(excludes,
+					table.map(valuecards[i],function(c) return c,true end),
+					function(l,r) return l or r end
+				)
+				local combine_cards = search_min_combination(valuecards,1,excludes)
+				table.mergeto(excludes,
+					table.map(combine_cards,function(c) return c,true end),
+					function(l,r) return l or r end
+				)
+				table.insert(tbcards,combine_cards)
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_TWO] = function(val,len)
+			local tbcards = {}
+			local excludes = {}
+			for i = val,len + val - 1 do
+				local cards = pick_exactly(valuecards,3,i)
+				table.insert(tbcards,cards)
+				table.mergeto(excludes,table.map(cards,
+					function(c) return c,true end),
+					function(l,r) return l or r end)
+				local combine_cards = search_min_combination(valuecards,2,excludes)
+				table.mergeto(excludes,table.map(combine_cards,
+					function(c) return c,true end),
+					function(l,r) return l or r end)
+				table.insert(tbcards,combine_cards)
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.SINGLE_LINE] = function(val,len)
+			local tbcards = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,1,i))
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.DOUBLE_LINE] = function(val,len)
+			local tbcards = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,2,i))
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.BOMB] = function(val)
+			return pick_exactly(valuecards,4,val)
+		end,
+		[PDK_CARD_TYPE.MISSLE] = function(val)
+			return pick_exactly(valuecards,3,14)
+		end,
+	}
+
+	local seek_func = {
+		[PDK_CARD_TYPE.SINGLE] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] then return pick_func[PDK_CARD_TYPE.SINGLE](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.DOUBLE] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] >= 2 and valuecounts[i] < 4 then  
+					return pick_func[PDK_CARD_TYPE.DOUBLE](i) 
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE] = function() 
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 3 and (not has_missle or i ~= 14) then  
+					return pick_func[PDK_CARD_TYPE.THREE](i) 
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_ONE] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 3 and total_count >= 4 and (not has_missle or i ~= 14) then 
+					return pick_func[PDK_CARD_TYPE.THREE_WITH_ONE](i) 
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_TWO] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 3 and total_count >= 5 and (not has_missle or i ~= 14) then 
+					return pick_func[PDK_CARD_TYPE.THREE_WITH_TWO](i) 
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_DOUBLE] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 4 and total_count >= 6  then 
+					return pick_func[PDK_CARD_TYPE.FOUR_WITH_DOUBLE](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_THREE] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 4  and total_count >= 7 then 
+					return pick_func[PDK_CARD_TYPE.FOUR_WITH_THREE](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,3,ccount / 3)
+			if lian_count >= ccount / 3 then
+				return pick_func[PDK_CARD_TYPE.PLANE](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_ONE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,3,ccount  /  4)
+			if lian_count >= ccount  /  4 then
+				return pick_func[PDK_CARD_TYPE.PLANE_WITH_ONE](first_value,ccount  /  4)
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_TWO] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,3,ccount / 5)
+			if lian_count >= ccount / 5 then
+				return pick_func[PDK_CARD_TYPE.PLANE_WITH_TWO](first_value,ccount / 5)
+			end
+		end,
+		[PDK_CARD_TYPE.SINGLE_LINE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,1,ccount)
+			if lian_count >= ccount then
+				return pick_func[PDK_CARD_TYPE.SINGLE_LINE](first_value,ccount)
+			end
+		end,
+		[PDK_CARD_TYPE.DOUBLE_LINE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,2,ccount / 2)
+			if lian_count >= ccount / 2 then
+				return pick_func[PDK_CARD_TYPE.DOUBLE_LINE](first_value,ccount / 2)
+			end
+		end,
+		[PDK_CARD_TYPE.BOMB] = function()
+			for i = cvalue + 1,15 do
+				if valuecounts[i] and valuecounts[i] == 4  then 
+					return pick_func[PDK_CARD_TYPE.BOMB](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.MISSLE] = function()
+			if valuecounts[14] and valuecounts[14] >= 3 then
+				return pick_exactly(valuecards,3,14)
+			end
+		end,
+	}
+
+	local function seek_any_bomb()
+		for i = 3,14 do
+			if valuecounts[i] and valuecounts[i] == 4  then 
+				return pick_func[PDK_CARD_TYPE.BOMB](i)
+			end
+		end
+	end
 
 	if ctype == PDK_CARD_TYPE.MISSLE then
 		return
 	end
 
-	if ctype == PDK_CARD_TYPE.SINGLE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] then return PDK_CARD_TYPE.SINGLE,i end
-		end
+	local seekfns = {seek_func[ctype],seek_any_bomb}
+	if has_missle then
+		table.insert(seekfns,seek_func[PDK_CARD_TYPE.MISSLE]) 
 	end
 
-	if ctype == PDK_CARD_TYPE.DOUBLE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] >= 2 then  return PDK_CARD_TYPE.DOUBLE,i end
-		end
+	local cards
+	for _,fn in pairs(seekfns) do
+		cards = fn()
+		if cards then break end
 	end
 
-	if ctype == PDK_CARD_TYPE.THREE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] >= 3 then  return PDK_CARD_TYPE.THREE,i end
-		end
-	end
+	log.dump(cards)
 
-	if ctype == PDK_CARD_TYPE.THREE_WITH_ONE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] >= 3    then return PDK_CARD_TYPE.THREE_WITH_ONE,i end
-		end
-	end
+	assert((not cards or #cards > 0) and not check_cards_repeat(cards))
 
-	if ctype == PDK_CARD_TYPE.THREE_WITH_TWO then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] >= 3  then return PDK_CARD_TYPE.THREE_WITH_TWO,i end
-		end
-	end
+	return cards
+end
 
-	if ctype == PDK_CARD_TYPE.BOMB then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] == 4  then return  PDK_CARD_TYPE.BOMB,i end
-		end
-	end
 
-	if ctype == PDK_CARD_TYPE.FOUR_WITH_DOUBLE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] == 4 and table.sum(valuecards,function(cs,j) return j == i and 0 or #cs end) >= 2  then 
-				return PDK_CARD_TYPE.FOUR_WITH_DOUBLE,i 
+function cards_util.seek_greatest(kcards,rule,first_discard)
+	local total_count = table.nums(kcards)
+	local valuegroup = table.group(kcards,function(_,c) return cards_util.value(c) end)
+	local valuecards =  table.map(valuegroup,function(cs,v)  return v,table.keys(cs) end)
+	local valuecounts = table.map(valuegroup,function(cs,v) return v,table.nums(cs) end)
+	local countgroup =  table.group(valuecounts,function(c)  return c end)
+
+	local with_3_firstly = (first_discard and rule and rule.play and rule.play.first_discard and rule.play.first_discard.with_3) and true or false
+	local try_includes = with_3_firstly and {[3] = true} or nil
+	local has_three_with_one = rule and rule.play and rule.play.san_dai_yi
+	local has_missle = rule and rule.play and rule.play.AAA_is_bomb
+
+	local pick_func = {
+		[PDK_CARD_TYPE.SINGLE] = function(val) return pick_exactly(valuecards,1,val,nil,try_includes) end,
+		[PDK_CARD_TYPE.DOUBLE] = function(val) return pick_exactly(valuecards,2,val,nil,try_includes) end,
+		[PDK_CARD_TYPE.THREE] = function(val) return pick_exactly(valuecards,3,val,nil,try_includes) end,
+		[PDK_CARD_TYPE.THREE_WITH_ONE] = function(val)
+			local three = pick_exactly(valuecards,3,val,nil,try_includes)
+			local one = search_min_combination(valuecards,1,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(three,one)
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_TWO] = function(val)
+			local three = pick_exactly(valuecards,3,val,nil,try_includes)
+			local two = search_min_combination(valuecards,2,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(three,two)
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_DOUBLE] = function(val)
+			local four = pick_exactly(valuecards,4,val,nil,try_includes)
+			local two = search_min_combination(valuecards,2,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(four,two)
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_THREE] = function(val)
+			local four = pick_exactly(valuecards,4,val,nil,try_includes)
+			local three = search_min_combination(valuecards,3,table.map(valuecards[val],function(c) return c,true end))
+			return table.union(four,three)
+		end,
+		[PDK_CARD_TYPE.PLANE] = function(val,len)
+			local tbcards = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,3,i,nil,try_includes))
 			end
-		end
-	end
-
-	if ctype == PDK_CARD_TYPE.FOUR_WITH_THREE then
-		for i = cvalue + 1,15 do
-			if valuecards[i] and #valuecards[i] == 4  and table.sum(valuecards,function(cs,j) return j == i and 0 or #cs end) >= 3 then 
-				return PDK_CARD_TYPE.FOUR_WITH_THREE ,i 
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_ONE] = function(val,len)
+			local tbcards = {}
+			local excludes = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,3,i,nil,try_includes))
+				table.mergeto(excludes,
+					table.map(valuecards[i],function(c) return c,true end),
+					function(l,r) return l or r end
+				)
+				local combine_cards = search_min_combination(valuecards,1,excludes)
+				table.mergeto(excludes,
+					table.map(combine_cards,function(c) return c,true end),
+					function(l,r) return l or r end
+				)
+				table.insert(tbcards,combine_cards)
 			end
-		end
-	end
-
-	local function continuity_cards_count(begin,value_count)
-		local first_value
-		local lian_count = 0
-		for i = begin,14 do
-			if countgroup[value_count] and countgroup[value_count][i] then
-				lian_count = first_value and lian_count + 1 or 1
-				first_value = first_value or i
-			else
-				if first_value then break end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_TWO] = function(val,len)
+			local tbcards = {}
+			local excludes = {}
+			for i = val,len + val - 1 do
+				local cards = pick_exactly(valuecards,3,i,nil,try_includes)
+				table.insert(tbcards,cards)
+				table.mergeto(excludes,
+					table.map(cards,function(c) return c,true end),
+					function(l,r) return l or r end)
+				log.dump(excludes)
+				local combine_cards = search_min_combination(valuecards,2,excludes)
+				table.mergeto(excludes,
+					table.map(combine_cards,function(c) return c,true end),
+					function(l,r) return l or r end)
+				log.dump(excludes)
+				table.insert(tbcards,combine_cards)
 			end
-		end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.SINGLE_LINE] = function(val,len)
+			local cards = {}
+			for i = val,len + val - 1 do
+				table.insert(cards,pick_exactly(valuecards,1,i,nil,try_includes))
+			end
+			return table.union_tables(cards)
+		end,
+		[PDK_CARD_TYPE.DOUBLE_LINE] = function(val,len)
+			local tbcards = {}
+			for i = val,len + val - 1 do
+				table.insert(tbcards,pick_exactly(valuecards,2,i,nil,try_includes))
+			end
+			return table.union_tables(tbcards)
+		end,
+		[PDK_CARD_TYPE.BOMB] = function(val)
+			if #valuecards[val] == 4 then
+				return pick_exactly(valuecards,4,val,nil,try_includes)
+			end
+		end,
+		[PDK_CARD_TYPE.MISSLE] = function(val)
+			if #valuecards[14] >= 3 then
+				return pick_exactly(valuecards,3,14,nil,try_includes)
+			end
+		end,
+	}
 
-		return lian_count,first_value
+	local seek_func = {
+		[PDK_CARD_TYPE.SINGLE] = function()
+			local b,e,s = 15,3,-1
+			if with_3_firstly then b,e,s = 3,15,1 end
+			for i = b,e,s do
+				if valuecounts[i] and valuecounts[i] == 1 then return pick_func[PDK_CARD_TYPE.SINGLE](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.DOUBLE] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 2 then return pick_func[PDK_CARD_TYPE.DOUBLE](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE] = function() 
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 3 then return pick_func[PDK_CARD_TYPE.THREE](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_ONE] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 3 and total_count >= 4 then return pick_func[PDK_CARD_TYPE.THREE_WITH_ONE](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.THREE_WITH_TWO] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 3 and total_count >= 5 then return pick_func[PDK_CARD_TYPE.THREE_WITH_TWO](i) end
+			end
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_DOUBLE] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 4 and total_count >= 6  then 
+					return pick_func[PDK_CARD_TYPE.FOUR_WITH_DOUBLE](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.FOUR_WITH_THREE] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 4  and total_count >= 7 then 
+					return pick_func[PDK_CARD_TYPE.FOUR_WITH_THREE](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE] = function(val,len)
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,3,3)
+			if lian_count >= 2 then
+				return pick_func[PDK_CARD_TYPE.PLANE](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_ONE] = function(val,len)
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,3,3)
+			if lian_count >= 2 then
+				return pick_func[PDK_CARD_TYPE.PLANE_WITH_ONE](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.PLANE_WITH_TWO] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,3,3)
+			if lian_count >= 2 then
+				return pick_func[PDK_CARD_TYPE.PLANE_WITH_TWO](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.SINGLE_LINE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,3,1)
+			if lian_count >= 5 then
+				return pick_func[PDK_CARD_TYPE.SINGLE_LINE](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.DOUBLE_LINE] = function()
+			local lian_count,first_value = seek_continuity_cards_count(valuecounts,3,2)
+			if lian_count >= 2 then
+				return pick_func[PDK_CARD_TYPE.DOUBLE_LINE](first_value,lian_count)
+			end
+		end,
+		[PDK_CARD_TYPE.BOMB] = function()
+			for i = 3,15 do
+				if valuecounts[i] and valuecounts[i] == 4  then 
+					return pick_func[PDK_CARD_TYPE.BOMB](i)
+				end
+			end
+		end,
+		[PDK_CARD_TYPE.MISSLE] = function()
+			if valuecounts[14] and valuecounts[14] == 3 then
+				return pick_func[PDK_CARD_TYPE.MISSLE]()
+			end
+		end,
+	}
+
+	local seekorder = {
+		PDK_CARD_TYPE.PLANE_WITH_TWO,
+		PDK_CARD_TYPE.PLANE,
+		PDK_CARD_TYPE.DOUBLE_LINE,
+		PDK_CARD_TYPE.SINGLE_LINE,
+		PDK_CARD_TYPE.THREE_WITH_TWO,
+		PDK_CARD_TYPE.THREE,
+		PDK_CARD_TYPE.DOUBLE,
+		PDK_CARD_TYPE.SINGLE,
+		PDK_CARD_TYPE.BOMB,
+	}
+
+	if has_missle then
+		table.insert(seekorder,PDK_CARD_TYPE.MISSLE)
 	end
 
-	if ctype == PDK_CARD_TYPE.SINGLE_LINE then
-		local lian_count,first_value = continuity_cards_count(cvalue + 1,1)
-		if lian_count >= ccount then
-			return PDK_CARD_TYPE.SINGLE_LINE,first_value
+	if has_three_with_one then
+		table.insert(seekorder,PDK_CARD_TYPE.THREE_WITH_ONE)
+	end
+
+	local typecards = table.series(seekorder,function(t) 
+		return {type = t,cards = seek_func[t]()}
+	end)
+
+	log.dump(typecards)
+
+	typecards = table.values(table.select(typecards,function(v) 
+		if not v.cards or #v.cards == 0 then return false end
+		if has_three_with_one and v.type == PDK_CARD_TYPE.THREE_WITH_ONE and total_count > 4 then return false end
+		if with_3_firstly then return table.logic_or(v.cards,function(c) return c == 3 end) end
+		return true
+	end))
+
+	log.dump(typecards)
+
+	table.sort(typecards,function(l,r) 
+		if l.type == PDK_CARD_TYPE.MISSLE then return false end
+		if r.type == PDK_CARD_TYPE.MISSLE then return true end
+		if l.type == PDK_CARD_TYPE.BOMB then return false end
+		if r.type == PDK_CARD_TYPE.BOMB then return true end
+		return #l.cards > #r.cards
+	end)
+
+	local cards = #typecards > 0 and typecards[1].cards or nil
+	assert(cards and #cards > 0 and not check_cards_repeat(cards))
+	return cards
+end
+
+local SplitStage = {
+	Normal = 0,
+	Combine = 1,
+	Sequance = 2,
+}
+
+local function init_split_state(kcards)
+	local valuegroup = table.group(kcards,function(_,c) return cards_util.value(c) end)
+	local valuecards =  table.map(valuegroup,function(cs,v)  return v,table.keys(cs) end)
+	local valuecounts = table.map(valuegroup,function(cs,v) return v,table.nums(cs) end)
+	local countgroup =  table.group(valuecounts,function(c)  return c end)
+	local state = {
+		kcards = kcards,
+		valuegroup = valuegroup,
+		valuecards = valuecards,
+		valuecounts = valuecounts,
+		countgroup = countgroup,
+		stack = {},
+		types = {},
+		stage = SplitStage.Normal,
+		runtime = {},
+	}
+
+	return state
+end
+
+local function split_cards(state)
+	local kcards = state.kcards
+	local total_count = table.nums(kcards)
+	if total_count == 0 then
+		table.insert(state.types,clone(stack))
+		return
+	end
+
+	local valuegroup = state.valuegroup
+	local valuecards =  state.valuecards
+	local valuecounts = state.valuecounts
+	local countgroup =  state.countgroup
+
+	local function decr_value(kcs,val,count)
+		for j = 1,count do	kcs[valuecards[i][j]] = nil end
+	end
+
+	local function incr_value(kcs,val,count)
+		for j = 1,count do	kcs[valuecards[i][j]] = 1 end
+	end
+
+	local function pick_cards(val,count)
+		local cards = {}
+		for i = 1,count do table.insert(cards,valuecards[val][i]) end
+		return cards
+	end
+
+	local split_sequance_greedly
+	local combine_split
+
+	combine_split = function(...)
+		local cursor = state.cursor
+		local numbers = {...}
+		if #numbers == 0 then
+			if state.stage == SplitStage.Normal then
+				split_cards(state)
+			elseif state.stage == SplitStage.Sequance then
+				split_sequance_greedly()
+			end
+			return true
+		end
+
+		cursor.combos = cursor.combos or {}
+		local c = numbers[1]
+		for v,_ in pairs(countgroup[c]) do
+			table.insert(cursor,pick_cards(v,c))
+			decr_value(v,c)
+			combine_split(select(2,...))
+			table.remove(cursor)
+			incr_value(v,c)
 		end
 	end
 
-	if ctype == PDK_CARD_TYPE.DOUBLE_LINE then
-		local lian_count,first_value = continuity_cards_count(cvalue + 1,2)
-		if lian_count >= ccount / 2 then
-			return PDK_CARD_TYPE.SINGLE_LINE,first_value
-		end
-	end
+	split_sequance_greedly = function()
+		local runtime = state.runtime
+		local begin_val = runtime.begin_val
+		local section_count = runtime.section_count
+		local greed_index = runtime.greed_index
+		local min_greed = runtime.min_greed
+		local combine_count = runtime.combine_count
+		if min_greed == 0 then
 
-	if ctype == PDK_CARD_TYPE.PLANE then
-		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
-		if lian_count >= ccount / 3 then
-			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
-	end
+		state.stage = SplitStage.Sequance
+		state.cursor = state.cursor or {}
+		local stack = state.stack
+		table.insert(stack,{})
+		local i = begin_val
+		if valuecounts[i] >= section_count then
+			local cards = pick_cards(i,section_count)
+			table.insert(state.cursor,{
+				cards = cards,
+				combos = nil,
+			})
+			decr_value(i,section_count)
+			if combine_count and combine_count > 0 then
+				local random_combine_number = {}
+				random_count_combine(random_combine_number,random_count)
+				for _,numbers in pairs(random_combine_number) do
+					local combines = {}
+					stage.stage = SplitStage.Combine
+					combine_split(combines,{},i,section_count,table.unpack(numbers))
+					if #combines == 0 then 
+						incr_value(i,section_count)
+						return
+					end
+					state.cursor.combs = combines
+				end
+			end
+			incr_value(i,section_count)
+		else
 
-	if ctype == PDK_CARD_TYPE.PLANE_WITH_ONE then
-		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
-		if lian_count >= ccount  /  4 then
-			return PDK_CARD_TYPE.SINGLE_LINE,first_value
 		end
+		table.remove(stack)
+		state.cursor = stack[#stack]
 	end
+end
 
-	if ctype == PDK_CARD_TYPE.PLANE_WITH_TWO then
-		local lian_count,first_value = continuity_cards_count(cvalue + 1,3)
-		if lian_count >= ccount / 5 then
-			return PDK_CARD_TYPE.SINGLE_LINE,first_value
-		end
-	end
+function cards_util.split_cards(kcards)
+	local state = {
+		kcards = kcards,
+	}
 end
 
 -- 得到牌类型

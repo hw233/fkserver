@@ -90,13 +90,14 @@ function pdk_table:on_private_inited()
 end
 
 function pdk_table:on_private_dismissed()
+	self:cancel_discard_timer()
     log.info("pdk_table:on_private_dismissed")
     self.cur_round = nil
     self.zhuang = nil
     self.status = nil
     for _,p in pairs(self.players) do
         p.total_money = nil
-    end
+	end
 end
 
 function pdk_table:on_private_pre_dismiss()
@@ -143,7 +144,7 @@ function pdk_table:ding_zhuang()
 		return self.conf.owner.chair_id
 	end
 
-	local function trun_round_zhuang()
+	local function turn_round_zhuang()
 		if not self.zhuang or not self.cur_round or self.cur_round == 1 then
 			log.error("pdk_table:ding_zhuang turn round, but first round.")
 			return
@@ -169,7 +170,7 @@ function pdk_table:ding_zhuang()
 
 	local ding_zhuang_fn = {
 		[0] = winner_zhuang,
-		[1] = trun_round_zhuang,
+		[1] = turn_round_zhuang,
 		[2] = with_3_zhuang,
 		[3] = room_owner_zhuang,
 		[4] = random_zhuang,
@@ -201,6 +202,8 @@ function pdk_table:on_started(player_count)
 
 	self.start_count = player_count
 	base_table.on_started(self,player_count)
+
+	self:cancel_clock_timer()
 
 	self:update_status(TABLE_STATUS.PLAY)
 
@@ -284,11 +287,10 @@ end
 
 function pdk_table:get_trustee_conf()
 	local trustee = self.rule and self.rule.trustee or nil
-	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-	    local trstee_conf = self.room_.conf.private_conf.trustee
+	if trustee and trustee.second_opt ~= nil then
+	    local trstee_conf = self:room_private_conf().trustee
 	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
-	    return type,seconds
+	    return seconds
 	end
     
 	return nil
@@ -296,7 +298,7 @@ end
 
 function pdk_table:set_trusteeship(player,trustee)
 	player.trustee = trustee
-	base_table.set_trusteeship(player,trustee)
+	base_table.set_trusteeship(self,player,trustee)
 end
 
 function pdk_table:begin_discard()
@@ -306,27 +308,72 @@ function pdk_table:begin_discard()
 
 	local function auto_discard(player)
 		if not self.last_discard then
-
+			local cards = cards_util.seek_greatest(player.hand_cards,self.rule,self.first_discard)
+			assert(cards and #cards > 0)
+			self:do_action_discard(player,cards)
 		else
-			local type,value = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count)
+			local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
+			if not cards then
+				self:do_action_pass(player)
+			else
+				assert(cards and #cards > 0)
+				self:do_action_discard(player,cards)
+			end
 		end
 	end
 
-	local trustee_type,trustee_seconds = self:get_trustee_conf()
-	if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
-		-- local player = self:cur_player()
-		-- if not player.trustee then
-		-- 	timer_manager:calllater(math.random(1,3),function()
-		-- 		auto_discard(player)
-		-- 	end)
-		-- else
-		-- 	timer_manager:calllater(trustee_seconds,function()
-		-- 		auto_discard(player)
-		-- 		self:set_trusteeship(player,true)
-		-- 	end)
-		-- end
+	local trustee_seconds = self:get_trustee_conf()
+	if trustee_seconds then
+		local player = self:cur_player()
+		self:begin_clock_timer(trustee_seconds,function()
+			auto_discard(player)
+			self:set_trusteeship(player,true)
+		end)
 
-		-- self:begin_clock(trustee_seconds)
+		if player.trustee then
+			self:begin_discard_timer(math.random(1,2),function()
+				auto_discard(player)
+			end)
+		end		
+	end
+end
+
+function pdk_table:begin_clock_timer(timeout,fn)
+	if self.clock_timer then 
+        log.warning("pdk_table:begin_clock_timer timer not nil")
+        self.clock_timer:kill()
+    end
+
+    self.clock_timer = self:new_timer(timeout,fn)
+    self:begin_clock(timeout)
+
+    log.info("pdk_table:begin_clock_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.clock_timer.id,timeout)
+end
+
+function pdk_table:cancel_clock_timer()
+	log.info("pdk_table:cancel_clock_timer table_id:%s,timer:%s",self.table_id_,self.clock_timer and self.clock_timer.id or nil)
+    if self.clock_timer then
+        self.clock_timer:kill()
+        self.clock_timer = nil
+    end
+end
+
+function pdk_table:begin_discard_timer(timeout,fn)
+	if self.auto_discard_timer then 
+        log.warning("pdk_table:begin_discard_timer timer not nil")
+        self.auto_discard_timer:kill()
+    end
+
+    self.auto_discard_timer = self:new_timer(timeout,fn)
+
+    log.info("pdk_table:begin_discard_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_discard_timer.id,timeout)
+end
+
+function pdk_table:cancel_discard_timer()
+	log.info("pdk_table:cancel_discard_timer table_id:%s,timer:%s",self.table_id_,self.auto_discard_timer and self.auto_discard_timer.id or nil)
+	if self.auto_discard_timer then
+		self.auto_discard_timer:kill()
+		self.auto_discard_timer = nil
 	end
 end
 
@@ -382,7 +429,7 @@ end
 
 
 function pdk_table:set_trusteeship(player,trustee)
-    if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
+    if not self.rule or not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
         return 
     end
 
@@ -400,50 +447,56 @@ function pdk_table:on_game_overed()
     self:clear_ready()
 
     self:foreach(function(p)
-	p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
-        if not self.private_id then
-            if p.deposit then
-                p:forced_exit()
-            elseif p:is_android() then
-                self:ready(p)
-            end
-        end
-    end)
-
-    local trustee_type,_ = self:get_trustee_conf()
-    self:foreach(function(p)
-        if trustee_type and trustee_type == 3 then
-            self:set_trusteeship(p)
-        end
+		p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
     end)
 
 	self.status = TABLE_STATUS.FREE
-    base_table.on_game_overed(self)
+	base_table.on_game_overed(self)
+	
+	local ready_seconds = self:get_trustee_conf()
+	if ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+		self:foreach(function(p)
+			if p.trustee then 
+				self:calllater(math.random(2,3),function()
+					if not self.ready_list[p.chair_id] then
+						self:ready(p)
+					end
+				end)
+			end
+		end)
+        self:begin_clock_timer(ready_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_discard_timer()
+            self:foreach(function(p)
+                if not self.ready_list[p.chair_id] then
+                    self:ready(p)
+                    if not p.trustee then
+                        self:set_trusteeship(p,true)
+                    end
+                end
+            end)
+        end)
+    end
 end
 
 function pdk_table:on_process_over()
+	self:cancel_discard_timer()
+	self:cancel_clock_timer()
+	
     self:broadcast2client("SC_PdkFinalGameOver",{
-	players = table.series(self.players,function(p,chair)
-		local statistics = table.series(p.statistics or {},function(c,t) 
-			return {type = t == "win" and 1 or (t == "max_score" and 2 or (t == "bomb" and 3 or 0)),count = c}
-		end)
-		log.dump(statistics,tostring(chair))
-		return {
-			chair_id = chair,
-			guid = p.guid,
-			score = p.total_score or 0,
-			statistics = statistics,
-		}
-	end),
+		players = table.series(self.players,function(p,chair)
+			local statistics = table.series(p.statistics or {},function(c,t) 
+				return {type = t == "win" and 1 or (t == "max_score" and 2 or (t == "bomb" and 3 or 0)),count = c}
+			end)
+			log.dump(statistics,tostring(chair))
+			return {
+				chair_id = chair,
+				guid = p.guid,
+				score = p.total_score or 0,
+				statistics = statistics,
+			}
+		end),
     })
-
-    local trustee_type,_ = self:get_trustee_conf()
-    self:foreach(function(p)
-        p.statistics = nil
-        if trustee_type then
-            self:set_trusteeship(p)
-        end
-    end)
 
     local total_winlose = {}
     for _,p in pairs(self.players) do
@@ -511,6 +564,8 @@ function pdk_table:do_action(player,act)
 
 	log.dump(act)
 
+	
+
 	local do_actions = {
 		[ACTION.DISCARD] = function(act)
 			self:do_action_discard(player,act.cards)
@@ -556,7 +611,7 @@ function pdk_table:check_discard_cards_type(ctype,cvalue)
 	local play = self.rule and self.rule.play
 	if not play then return end
 
-	if ( 	(ctype == CARD_TYPE.FOUR_WITH_TWO or ctype == CARD_TYPE.FOUR_WITH_ONE)  and not play.si_dai_er ) or --四带二
+	if ( (ctype == CARD_TYPE.FOUR_WITH_TWO or ctype == CARD_TYPE.FOUR_WITH_ONE)  and not play.si_dai_er ) or --四带二
 		(ctype == CARD_TYPE.FOUR_WITH_THREE and not play.si_dai_san) or --四带三
 		(ctype == CARD_TYPE.THREE_WITH_ONE and (not play.san_dai_yi or table.nums(self:cur_player().hand_cards) ~= 4))  --三带一
 	then
@@ -586,7 +641,7 @@ function pdk_table:do_action_discard(player, cards)
 	end
 
 	if player.chair_id ~= self.cur_discard_chair then
-		log.warning("pdk_table:discard guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_turn)
+		log.warning("pdk_table:discard guid[%s] chair[%s] error", player.guid, player.chair_id)
 		send2client_pb(player,"SC_PdkDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
@@ -621,7 +676,7 @@ function pdk_table:do_action_discard(player, cards)
 		})
 		return
 	end
-	
+
 	local cmp = cards_util.compare_cards({type = cardstype, count = #cards, value = cardsval}, self.last_discard)
 	if self.last_discard and (not cmp or cmp <= 0) then
 		log.warning("pdk_table:discard guid[%d] compare_cards error, cards[%s], cur_discards[%d,%d,%d], last_discard[%d,%d,%d]", 
@@ -632,6 +687,9 @@ function pdk_table:do_action_discard(player, cards)
 		})
 		return
 	end
+
+	self:cancel_discard_timer()
+	self:cancel_clock_timer()
 
 	self.first_discard = nil
 
@@ -663,7 +721,8 @@ function pdk_table:do_action_discard(player, cards)
 		time = os.time(),
 	})
 
-	if  table.sum(player.hand_cards) == 0 then
+	local cardsum = table.sum(player.hand_cards)
+	if  cardsum == 0 then
 		player.win = true
 		player.statistics.win = (player.statistics.win or 0) + 1
 		if cardstype == CARD_TYPE.BOMB or cardstype == CARD_TYPE.MISSLE then
@@ -703,10 +762,8 @@ function pdk_table:do_action_pass(player)
 	end
 
 	if self.rule and self.rule.play.must_discard then
-		local type,value = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count)
-		dump(type)
-		dump(value)
-		if type then
+		local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
+		if cards then
 			log.error("pdk_table:pass_card guid[%d] must discard", player.guid)
 			send2client_pb(player,"SC_PdkDoAction",{
 				result = enum.ERROR_PARAMETER_ERROR
@@ -714,6 +771,9 @@ function pdk_table:do_action_pass(player)
 			return
 		end
 	end
+
+	self:cancel_discard_timer()
+	self:cancel_clock_timer()
 
 	-- 记录日志
 	table.insert(self.game_log.actions,{
@@ -752,6 +812,10 @@ function  pdk_table:reconnect(player)
 		send2client_pb(player,"SC_PdkDiscardRound",{
 			chair_id = self.cur_discard_chair
 		})
+	end
+
+	if self.clock_timer then
+		self:begin_clock(self.clock_timer.remainder,player)
 	end
 	base_table.reconnect(self,player)
 end
