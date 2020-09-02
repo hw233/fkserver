@@ -511,3 +511,20 @@ message S2C_CLUB_EDIT_CONFIG {
     int32 club_id = 2;
     string conf = 3;
 }
+
+message C2S_CLUB_INVITE_JOIN_ROOM {
+    enum MsgID {NIL = 0;ID = 14114;}
+    int32 club_id = 1;
+}
+
+message S2C_CLUB_INVITE_JOIN_ROOM{
+    enum MsgID {NIL = 0;ID = 14115;}
+    int32 result = 1;
+	int32 timeout = 2;
+}
+
+message S2C_NOTIFY_INVITE_JOIN_ROOM{
+    enum MsgID {NIL = 0;ID = 14116;}
+	PLAYER_BASE_INFO inviter = 1;
+    TABLE_INFO table = 2;
+}

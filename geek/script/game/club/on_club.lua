@@ -45,6 +45,8 @@ local club_conf = require "game.club.club_conf"
 
 require "functions"
 
+local invite_join_room_cd = 10
+
 local g_room = g_room
 
 local reddb = redisopt.default
@@ -2645,4 +2647,74 @@ function on_cs_club_edit_config(msg,guid)
         club_id = club_id,
         conf = conf,
     })
+end
+
+
+function on_cs_club_invite_join_room(msg,guid)
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
+            result = enum.ERROR_INVALID_OPERATION,
+        })
+        return
+    end
+
+    local club_id = msg.club_id
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local k = string.format("club:join_room_invite_cd:%s:%s",club_id,guid)
+    if tonumber(reddb:exists(k)) == 1 then
+        timeout = tonumber(reddb:ttl(k))
+        onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
+            result = enum.ERROR_REQUEST_REPEATED,
+            timeout = timeout
+        })
+        return
+    end
+
+    local tb = g_room:find_table_by_player(player)
+    if not tb then
+        onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
+            result = enum.ERROR_PLAYER_NOT_IN_GAME,
+        })
+        return
+    end
+
+    reddb:set(k,1)
+    reddb:expire(k,invite_join_room_cd)
+
+    onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
+        result = enum.ERROR_NONE,
+        timeout = invite_join_room_cd,
+    })
+
+    local tbconf = tb:private_table_conf()
+    local notify = {
+        inviter = {
+            guid = player.guid,
+            nickname = player.nickname,
+            icon = player.icon,
+            sex = player.sex,
+        },
+        table = {
+            game_type = tbconf.game_type,
+            owner = tbconf.owner,
+            club_id = tbconf.club_id,
+            table_id = tbconf.table_id,
+            rule = json.encode(tbconf.rule),
+        },
+    }
+
+    local mems = club_member[club_id]
+    table.filter(mems,function(_,mid)
+        local os = onlineguid[mid]
+        return table.nums(os) > 0 and not (os.table or os.chair)
+    end)
+    onlineguid.broadcast(table.keys(mems),"S2C_NOTIFY_INVITE_JOIN_ROOM",notify)
 end

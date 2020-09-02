@@ -16,7 +16,7 @@ local onlineguid = setmetatable({},{
 
         session = redismetadata.player.online:decode(session)
 
-        t[k] = session
+        -- t[k] = session
         return session
 end})
 
