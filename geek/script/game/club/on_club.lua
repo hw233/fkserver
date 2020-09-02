@@ -2669,8 +2669,8 @@ function on_cs_club_invite_join_room(msg,guid)
     end
 
     local k = string.format("club:join_room_invite_cd:%s:%s",club_id,guid)
-    if tonumber(reddb:exists(k)) == 1 then
-        timeout = tonumber(reddb:ttl(k))
+    local timeout = tonumber(reddb:ttl(k))
+    if timeout >= 0 then
         onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
             result = enum.ERROR_REQUEST_REPEATED,
             timeout = timeout
