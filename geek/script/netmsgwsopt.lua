@@ -3,8 +3,11 @@ local log = require "log"
 local skynet = require "skynetproto"
 require "functions"
 local ws = require "websocket"
+local queue = require "skynet.queue"
 
 local socketdriver = require "skynet.socketdriver"
+
+local lock = queue()
 
 local msgidmap = {}
 for k in pb.types() do
@@ -85,7 +88,7 @@ function NETMSG.dispatch(msgid,msg,...)
     local f = dispatcher[msgid]
 	assert(f, string.format("on_net_msg func:%s", tostring(dispatcher[msgid])))
 
-    return f(msg,...)
+    return lock(f,msg,...)
 end
 
 function NETMSG.on_msg(msgstr,...)
@@ -102,7 +105,7 @@ function NETMSG.on_msg(msgstr,...)
     log.info("netmsg.on_msg %s,%d,%d",msgname,msgid,#buf)
 	assert(f, string.format("on_net_msg func:%s", msgname))
 
-    return f(msg,...)
+    return lock(f,msg,...)
 end
 
 function NETMSG.register_handle(conf)
