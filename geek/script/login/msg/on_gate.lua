@@ -722,7 +722,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
         return enum.LOGIN_RESULT_SMS_REPEATED,ttl
     end
 
-    log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
+    log.info( "RequestSms =================tel[%s] platform_id[%s]",  phone_num, msg.platform_id)
     local phone_num_len = string.len(phone_num)
     if phone_num_len < 7 or phone_num_len > 18 then
         return enum.LOGIN_RESULT_TEL_LEN_ERR
