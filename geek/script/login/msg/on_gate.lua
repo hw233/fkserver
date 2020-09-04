@@ -321,7 +321,7 @@ local function sms_login(msg,_,session_id)
         guid = tonumber(guid)
         reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
         local player = base_players[guid]
-        local info = {
+        info = {
             guid = player.guid,
             account = player.open_id,
             nickname = player.nickname or ("guest_"..tostring(guid)),
