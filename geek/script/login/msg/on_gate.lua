@@ -157,7 +157,29 @@ local function open_id_login(msg,gate)
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
 
-    local info = base_players[guid]
+    local player = base_players[guid]
+
+    local info = {
+        guid = player.guid,
+        account = player.open_id,
+        nickname = player.nickname or ("guest_"..tostring(guid)),
+        open_id = player.open_id,
+        sex = player.sex or 1,
+        icon = player.icon or default_open_id_icon,
+        version = player.version,
+        login_ip = player.ip,
+        phone = player.phone or "",
+        level = player.level,
+        imei = player.imei or "",
+        is_guest = true,
+        login_time = os.time(),
+        package_name = player.package_name,
+        phone_type = player.phone_type,
+        role = player.role,
+        ip = player.ip,
+        promoter = player.promoter,
+    }
+
     if ip then
         reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
     end
@@ -298,7 +320,27 @@ local function sms_login(msg,_,session_id)
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
         reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-        info = base_players[guid]
+        local player = base_players[guid]
+        local info = {
+            guid = player.guid,
+            account = player.open_id,
+            nickname = player.nickname or ("guest_"..tostring(guid)),
+            open_id = player.open_id,
+            sex = player.sex or 1,
+            icon = player.icon or default_open_id_icon,
+            version = player.version,
+            login_ip = player.ip,
+            phone = player.phone or "",
+            level = player.level,
+            imei = player.imei or "",
+            is_guest = true,
+            login_time = os.time(),
+            package_name = player.package_name,
+            phone_type = player.phone_type,
+            role = player.role,
+            ip = player.ip,
+            promoter = player.promoter,
+        }
     end
 
 	return enum.LOGIN_RESULT_SUCCESS,info
@@ -420,9 +462,30 @@ local function h5_login(msg,gate)
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-    local info = base_players[tonumber(guid)]
-    log.dump(info)
-    if info.status == 0 then
+    local player = base_players[tonumber(guid)]
+    local info = {
+        guid = player.guid,
+        account = player.open_id,
+        nickname = player.nickname or ("guest_"..tostring(guid)),
+        open_id = player.open_id,
+        sex = player.sex or 1,
+        icon = player.icon or default_open_id_icon,
+        version = player.version,
+        login_ip = player.ip,
+        phone = player.phone or "",
+        level = player.level,
+        imei = player.imei or "",
+        is_guest = true,
+        login_time = os.time(),
+        package_name = player.package_name,
+        phone_type = player.phone_type,
+        role = player.role,
+        ip = player.ip,
+        promoter = player.promoter,
+    }
+
+    log.dump(player)
+    if player.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED,info
     end
 
