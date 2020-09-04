@@ -32,6 +32,7 @@ local club_partner_template_commission = require "game.club.club_partner_templat
 local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
 local club_partners = require "game.club.club_partners"
 local reddb = redisopt.default
+local queue = require "skynet.queue"
 
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 10 * 60
@@ -136,6 +137,7 @@ function base_table:init(room, table_id, chair_count)
 	end
 
 	self.ext_round_status = nil
+	self.lock = queue()
 end
 
 function base_table:is_play( ... )
@@ -1221,37 +1223,36 @@ function base_table:ready(player)
 		return
 	end
 
-	if self.ready_list[player.chair_id] then
-		log.warning("chair_id[%d] ready error,guid[%d]", player.chair_id,player.guid)
-		return
-	end
-
-	log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
-	self.ready_list[player.chair_id] = player
-
-	self:cancel_delay_dismiss()
-
-	-- 机器人准备
-	self:foreach(function(p)
-		if p:is_android() and (not self.ready_list[p.chair_id]) then
-			self.ready_list[p.chair_id] = p
-
-			local notify = {
-				ready_chair_id = p.chair_id,
-				is_ready = true,
-				}
-			self:broadcast2client("SC_Ready", notify)
+	self.lock(function()
+		if self.ready_list[player.chair_id] then
+			log.warning("chair_id[%d] ready error,guid[%d]", player.chair_id,player.guid)
+			return true
 		end
+
+		log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
+		self.ready_list[player.chair_id] = player
+
+		self:cancel_delay_dismiss()
+
+		-- 机器人准备
+		self:foreach(function(p)
+			if p:is_android() and (not self.ready_list[p.chair_id]) then
+				self.ready_list[p.chair_id] = p
+				self:broadcast2client("SC_Ready", {
+					ready_chair_id = p.chair_id,
+					is_ready = true,
+				})
+			end
+		end)
+
+		-- 通知自己准备
+		self:broadcast2client("SC_Ready", {
+			ready_chair_id = player.chair_id,
+			is_ready = true,
+		})
+
+		self:check_start(false)
 	end)
-
-	-- 通知自己准备
-	local notify = {
-		ready_chair_id = player.chair_id,
-		is_ready = true,
-		}
-	self:broadcast2client("SC_Ready", notify)
-
-	self:check_start(false)
 end
 
 function base_table:reconnect(player)
@@ -1531,24 +1532,19 @@ function base_table:on_process_over()
 		return
 	end
 
-	self:foreach(function(p) 
-		if not p.inactive then return end
-		p:forced_exit()
-	end)
-
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
-		log.warning("base_table:on_process_over [%d] got nil private table.",self.private_id)
+		log.warning("base_table:on_process_over [%s] got nil private table.",self.private_id)
 	end
 
 	local club_id = private_table.club_id
 	if not club_id then
-		log.warning("base_table:on_process_over [%d] got private club.",self.private_id)
+		log.warning("base_table:on_process_over [%s] got private club.",self.private_id)
 	end
 
 	local template_id = private_table.template
 	if not template_id then
-		log.warning("base_table:on_process_over [%d] got nil template.",self.private_id)
+		log.warning("base_table:on_process_over [%s] got nil template.",self.private_id)
 	end
 
 	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",{
@@ -1559,6 +1555,19 @@ function base_table:on_process_over()
 		guids = table.series(self.players,function(p) return p.guid end),
 		table_id = self.private_id
 	})
+
+	self:foreach(function(p)
+		if p.inactive then 
+			p:forced_exit() 
+			return
+		end
+
+		if p.trustee then
+			self:set_trusteeship(p)
+			p:forced_exit()
+			return
+		end
+	end)
 end
 
 -- 开始游戏
