@@ -2151,6 +2151,13 @@ function on_cs_play_once_again(msg,guid)
 		return
 	end
 
+	if player.trustee then
+		onlineguid.send(guid,"SC_PlayOnceAgain",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+
 	if not player.table_id or not player.chair_id then
 		onlineguid.send(guid,"SC_PlayOnceAgain",{
 			result = enum.ERROR_PLAYER_NOT_IN_GAME
