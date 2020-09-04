@@ -1,9 +1,6 @@
 local skynet = require "skynetproto"
 local log = require "log"
 require "functions"
-local queue = require "skynet.queue"
-
-local lock = queue()
 
 local MSG = {}
 
@@ -16,7 +13,7 @@ function MSG.on_msg(msgid,...)
         return
     end
 
-    return lock(f,...)
+    return f(...)
 end
 
 function MSG.register(msgid,func)
