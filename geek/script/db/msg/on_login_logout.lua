@@ -12,6 +12,9 @@ local json = require "cjson"
 local channel = require "channel"
 local reddb = redisopt.default
 local enum = require "pb_enums"
+local queue = require "skynet.queue"
+
+local money_lock = queue()
 
 require "table_func"
 local server_start_time =  os.time()
@@ -2907,19 +2910,19 @@ function on_sd_transfer_money(msg)
 	local why_ext = msg.why_ext
 
 	if trans_type == 1 then
-		return transfer_money_club2player(from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_club2player,from_id,to_id,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 2 then
-		return transfer_money_player2club(from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_player2club,from_id,to_id,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 3 then
-		return transfer_money_club2club(from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_club2club,from_id,to_id,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 4 then
-		return transfer_money_player2player(from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_player2player,from_id,to_id,money_id,amount,why,why_ext)
 	end
 
 	return enum.ERROR_PARAMETER_ERROR

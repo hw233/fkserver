@@ -16,12 +16,14 @@ local channel = require "channel"
 local item_details_table = item_details_table
 local base_active_android = base_active_android
 local club_partner_commission = require "game.club.club_partner_commission"
+local queue = require "skynet.queue"
 
 require "game.net_func"
 require "table_func"
 local send2client_pb = send2client_pb
 local redisopt = require "redisopt"
 local reddb = redisopt.default
+
 
 -- enum ITEM_PRICE_TYPE 
 local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
@@ -417,9 +419,12 @@ function base_player:decrby(field,value)
 end
 
 function base_player:incr_redis_money(money_id,money,club_id)
-	local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
-	self:notify_money(money_id,newmoney,club_id)
-	return newmoney
+	self.lock = self.lock or queue()
+	return self.lock(function()
+		local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
+		self:notify_money(money_id,newmoney,club_id)
+		return newmoney
+	end)
 end
 
 function base_player:incr_money(item,why,why_ext)
@@ -429,39 +434,44 @@ function base_player:incr_money(item,why,why_ext)
 	end
 
 	log.dump(item)
-	local where = item.where or 0
-	local oldmoney = player_money[self.guid][item.money_id]
-	log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
-	log.info("base_player:incr_money money[%d] + p[%d]" , oldmoney,item.money)
+	self.lock = self.lock or queue()
+	local oldmoney,newmoney = self.lock(function()
+		local where = item.where or 0
+		local oldmoney = player_money[self.guid][item.money_id]
+		log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
+		log.info("base_player:incr_money money[%d] + p[%d]" , oldmoney,item.money)
 
-	local changes = channel.call("db.?","msg","SD_ChangePlayerMoney",{{
-		guid = self.guid,
-		money = math.floor(item.money),
-		money_id = item.money_id,
-		where = where,
-	}},why)
+		local changes = channel.call("db.?","msg","SD_ChangePlayerMoney",{{
+			guid = self.guid,
+			money = math.floor(item.money),
+			money_id = item.money_id,
+			where = where,
+		}},why)
 
-	if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
-		log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
-		-- return
-	end
-	
-	local dboldmoney = changes[1].oldmoney
-	local dbnewmoney = changes[1].newmoney
-	
-	if dboldmoney ~= oldmoney then
-		log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
-		-- return
-	end
-
-	local newmoney
-	if not self:is_android() then
-		newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
-		if dbnewmoney ~= newmoney then
-			log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
+		if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
+			log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
 			-- return
 		end
-	end
+		
+		local dboldmoney = changes[1].oldmoney
+		local dbnewmoney = changes[1].newmoney
+		
+		if dboldmoney ~= oldmoney then
+			log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
+			-- return
+		end
+
+		local newmoney
+		if not self:is_android() then
+			newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
+			if dbnewmoney ~= newmoney then
+				log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
+				-- return
+			end
+		end
+
+		return oldmoney,newmoney
+	end)
 	
 	log.info("base_player:incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
 	self:notify_money(item.money_id)
@@ -486,7 +496,6 @@ function base_player:cost_money(price, why,why_ext)
 			return
 		end
 	end
-
 	return true
 end
 
