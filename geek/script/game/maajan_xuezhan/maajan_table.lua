@@ -372,8 +372,6 @@ function maajan_table:fast_start_vote(player)
     })
 
     self:begin_clock_timer(timeout,function()
-        self:cancel_clock_timer()
-        self:cancel_all_auto_action_timer()
         self:foreach(function(p)
             if vote_result[p.chair_id] == nil then
                 self:fast_start_vote_commit(p,{agree = false})
@@ -514,8 +512,6 @@ function maajan_table:qiang_gang_hu(player,actions,tile)
 
         log.dump(self.waiting_actions)
         self:begin_clock_timer(trustee_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
 
@@ -530,7 +526,6 @@ function maajan_table:qiang_gang_hu(player,actions,tile)
             if not p.trustee then return end
 
             self:begin_auto_action_timer(p,math.random(1,2),function() 
-                self:cancel_auto_action_timer(p)
                 auto_action(p)
             end)
         end)
@@ -582,6 +577,10 @@ function maajan_table:on_huan_pai(player,msg)
         end
     end
 
+    player.mo_pai = nil
+
+    self:cancel_auto_action_timer(player)
+
     player.pai.huan = {old = tiles,}
 
     send2client_pb(player,"SC_HuanPai",{
@@ -596,8 +595,6 @@ function maajan_table:on_huan_pai(player,msg)
         chair_id = player.chair_id,
         done = true,
     })
-
-    self:cancel_auto_action_timer(player)
 
     if not table.logic_and(self.players,function(p) return p.pai.huan ~= nil end) then
         return
@@ -630,22 +627,13 @@ function maajan_table:huan_pai()
 
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
-        local function random_choice(tilecounts,count)
-            local counts = tilecounts
+        local function random_choice(alltiles,count)
+            local ats = clone(alltiles)
             local tiles = {}
             for _ = 1,count do
-                local c = 0
-                local tile
-                repeat
-                    tile,c = table.choice(counts)
-                until c > 0
-
-                table.decr(counts,tile)
+                local i,tile = table.choice(ats)
                 table.insert(tiles,tile)
-            end
-
-            for _,tile in pairs(tiles) do
-                table.incr(counts,tile)
+                table.remove(ats,i)
             end
 
             return tiles
@@ -653,11 +641,11 @@ function maajan_table:huan_pai()
 
         local function auto_huan_pai(p,huan_type,huan_count)
             if huan_type ~= 1 then
-                local huan_pai = random_choice(p.pai.shou_pai,huan_count)
+                local huan_tiles = random_choice(self:tile_count_2_tiles(p.pai.shou_pai),huan_count)
                 log.dump(huan_pai)
                 self.lock(function()
                     self:on_huan_pai(p,{
-                        tiles = huan_pai
+                        tiles = huan_tiles
                     })
                 end)
                 return
@@ -666,14 +654,13 @@ function maajan_table:huan_pai()
             local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
 
             local c = 0
-            local tiles
+            local tilecounts
             repeat
-                _,tiles = table.choice(men_tiles)
-                c = table.sum(tiles)
+                _,tilecounts = table.choice(men_tiles)
+                c = table.sum(tilecounts)
             until c > huan_count
 
-
-            local huan_tiles = random_choice(tiles,huan_count)
+            local huan_tiles = random_choice(self:tile_count_2_tiles(tilecounts),huan_count)
             self.lock(function()
                 self:on_huan_pai(p,{tiles = huan_tiles})
             end)
@@ -684,8 +671,6 @@ function maajan_table:huan_pai()
         local huan_type = self:get_huan_type()
         log.info("%s,%s",huan_type,huan_count)
         self:begin_clock_timer(trustee_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             self:foreach(function(p)
                 if p.pai.huan then return end
 
@@ -698,7 +683,6 @@ function maajan_table:huan_pai()
             if not p.trustee then return end
             
             self:begin_auto_action_timer(p,math.random(1,2),function()
-                self:cancel_auto_action_timer(p)
                 auto_huan_pai(p,huan_type,huan_count)
             end)
         end)
@@ -824,8 +808,6 @@ function maajan_table:ding_que()
             })
         end
         self:begin_clock_timer(trustee_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             self:foreach(function(p)
                 if p.que then return end
 
@@ -839,7 +821,6 @@ function maajan_table:ding_que()
             log.info("%s,%s",p.guid,p.trustee)
             if not p.trustee then return end
             self:begin_auto_action_timer(p,math.random(1,2),function() 
-                self:cancel_auto_action_timer(p)
                 auto_ding_que(p)
             end)
         end)
@@ -1004,8 +985,6 @@ function maajan_table:action_after_mo_pai(waiting_actions)
 
         self:begin_clock_timer(trustee_seconds,function()
             log.dump(self.waiting_actions)
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
 
@@ -1022,7 +1001,6 @@ function maajan_table:action_after_mo_pai(waiting_actions)
 
             self:begin_auto_action_timer(p,math.random(1,2),function() 
                 auto_action(p,action)
-                self:cancel_auto_action_timer(p)
             end)
         end)
     end
@@ -1237,8 +1215,6 @@ function maajan_table:action_after_chu_pai(waiting_actions)
         end
 
         self:begin_clock_timer(trustee_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             table.foreach(self.waiting_actions,function(action,_)
                 local p = self.players[action.chair_id]
                 self:set_trusteeship(p,true)
@@ -1252,7 +1228,6 @@ function maajan_table:action_after_chu_pai(waiting_actions)
 
             self:begin_auto_action_timer(p,math.random(1,2),function()
                 auto_action(p,action)
-                self:cancel_auto_action_timer(p)
             end)
         end)
     end
@@ -1492,8 +1467,11 @@ function maajan_table:chu_pai()
                 end
             end
 
-            if not chu_tile then
-                chu_tile,_ = table.choice(p.pai.shou_pai)
+            if not chu_tile or not p.pai.shou_pai[chu_tile] or p.pai.shou_pai[chu_tile] <= 0 then
+                local c
+                repeat
+                    chu_tile,c = table.choice(p.pai.shou_pai)
+                until c > 0
             end
 
             log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_tile)
@@ -1507,8 +1485,6 @@ function maajan_table:chu_pai()
         log.info("begin chu_pai clock %s",player.chair_id)
         self:begin_clock_timer(trustee_seconds,function()
             log.info("chu_pai clock timeout %s",player.chair_id)
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
             self:set_trusteeship(player,true)
             auto_chu_pai(player)
         end)
@@ -1517,7 +1493,6 @@ function maajan_table:chu_pai()
             log.info("begin auto_chu_pai timer %s",player.chair_id)
             self:begin_auto_action_timer(player,math.random(1,2),function()
                 log.info("auto_chu_pai timeout %s",player.chair_id)
-                self:cancel_auto_action_timer(player)
                 auto_chu_pai(player)
             end)
         end
@@ -1664,6 +1639,7 @@ function maajan_table:do_huan_pai()
     end
 
     self:foreach(function(p)
+        log.dump(p.pai.shou_pai)
         pop_shou_pai(p,p.pai.huan.old)
     end)
 
@@ -1698,6 +1674,10 @@ function maajan_table:do_huan_pai()
         swap(p1,p3)
         swap(p2,p4)
     end
+
+    self:foreach(function(p)
+        log.dump(p.pai.shou_pai)
+    end)
 
     return huan_order
 end
