@@ -722,6 +722,7 @@ function maajan_table:begin_auto_action_timer(p_or_chair,timeout,fn)
 end
 
 function maajan_table:cancel_auto_action_timer(p_or_chair)
+    self.action_timers = self.action_timers or {} 
     local chair_id = type(p_or_chair) == "table" and p_or_chair.chair_id or p_or_chair
     if self.action_timers[chair_id] then
         self.action_timers[chair_id]:kill()
