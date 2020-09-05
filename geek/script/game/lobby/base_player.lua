@@ -274,6 +274,8 @@ function base_player:notify_sit_down(player,reconnect,private_table)
 		},
 		longitude = player.gps_longitude,
 		latitude = player.gps_latitude,
+		online = true,
+		ready = false,
 	}
 	if private_table then
 		local club_id = private_table.club_id

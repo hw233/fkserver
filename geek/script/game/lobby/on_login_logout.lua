@@ -1105,6 +1105,7 @@ function on_cs_create_private_room(msg,guid)
 			longitude = player.gps_longitude,
 			latitude = player.gps_latitude,
 			ready = tb.ready_list[player.chair_id] and true or false,
+			online = true,
 			money = {
 				money_id = money_id,
 				count = player:get_money(money_id),
@@ -1157,6 +1158,7 @@ function on_cs_reconnect(guid)
 				sex = p.sex,
 			},
 			ready = tb.ready_list[p.chair_id] and true or false,
+			online = not p.inactive and true or false,
 			money = {
 				money_id = money_id,
 				count = p:get_money(money_id),
@@ -1243,6 +1245,8 @@ function on_cs_join_private_room(msg,guid)
 		return
 	end
 
+	player.inactive = nil
+
 	if reconnect and reconnect ~= 0 then
 		on_cs_reconnect(guid)
 		return
@@ -1300,6 +1304,7 @@ function on_cs_join_private_room(msg,guid)
 				longitude = p.gps_longitude,
 				latitude = p.gps_latitude,
 				ready = tb.ready_list[p.chair_id] and true or false,
+				online = not p.inactive and true or false, 
 				money = {
 					money_id = money_id,
 					count = p:get_money(money_id),

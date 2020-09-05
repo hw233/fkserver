@@ -80,6 +80,7 @@ message SEAT_INFO {
     MONEY_INFO money = 4;
     float longitude = 5;
     float latitude = 6;
+    bool  online = 7; //是否掉线
 }
 
 message TABLE_INFO {
