@@ -61,7 +61,7 @@ function timer_manager:new_timer(time,func,name,is_repeat,init_pause)
 	end
 
     local id = self:generate_id()
-    local timer = timer.new(id,time,func,name,is_repeat,init_pause)
+	local timer = timer.new(id,time,func,name,is_repeat,init_pause)
     self.pool_timers[id] = timer
 	if name and type(name) == "string" then
 		self.named_timers[name] = timer
@@ -71,10 +71,8 @@ function timer_manager:new_timer(time,func,name,is_repeat,init_pause)
 end
 
 function timer_manager:generate_id()
-	self.current_id = self.current_id or 0
 	repeat 
-		self.current_id = self.current_id + 1
-		if self.current_id > 100000000 then self.current_id = 1 end
+		self.current_id = (self.current_id or 0) % 100000000 + 1
 	until not self.timers[self.current_id]  and not self.pool_timers[self.current_id]
 	return self.current_id
 end
