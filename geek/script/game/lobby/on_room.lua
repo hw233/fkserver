@@ -128,7 +128,7 @@ function on_cs_ready(msg,guid)
 		return
 	end
 
-	tb:ready(player)
+	tb:lockcall(function() return tb:ready(player) end)
 
 	log.info("test .................. on_cs_ready")
 end

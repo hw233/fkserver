@@ -140,6 +140,10 @@ function base_table:init(room, table_id, chair_count)
 	self.lock = queue()
 end
 
+function base_table:lockcall(fn,...)
+	return self.lock(fn,...)
+end
+
 function base_table:is_play( ... )
 	log.info("base_table:is_play")
 	return false
@@ -208,7 +212,7 @@ function base_table:on_reconnect(player)
 end
 
 function base_table:request_dismiss(player)
-	local timer = timer_manager:new_timer(dismiss_timeout,function()
+	local timer = self:new_timer(dismiss_timeout,function()
 		self:foreach(function(p)
 			if not self.dismiss_request then
 				return
@@ -868,8 +872,6 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 		return can
 	end
 
-	self:cancel_delay_dismiss()
-
 	player.table_id = self.table_id_
 	player.chair_id = chair_id
 	self.players[chair_id] = player
@@ -954,6 +956,8 @@ function base_table:dismiss()
 	if not self:can_dismiss() then
 		return enum.ERROR_OPERATION_INVALID
 	end
+
+	self:cancel_delay_dismiss()
 
 	self:on_private_pre_dismiss()
 
@@ -1056,29 +1060,30 @@ function base_table:is_private()
 end
 
 function base_table:delay_dismiss(player)
-	self.dismiss_timer = timer_manager:new_timer(auto_dismiss_timeout,function()
+	self.dismiss_timer = self:new_timer(auto_dismiss_timeout,function()
+		log.info("base_table:delay_dismiss timeout %s",self.table_id_)
 		self:foreach(function(p) 
 			p:forced_exit()
 		end)
 
 		self:dismiss()
-		self.elapsed_dismiss = nil
 	end)
+	log.info("base_table:delay_dismiss %s",self.dismiss_timer.id)
 end
 
 function base_table:cancel_delay_dismiss()
+	log.info("base_table:cancel_delay_dismiss %s",self.dismiss_timer and self.dismiss_timer.id or nil)
 	if not self.dismiss_timer then
 		return
 	end
 
-	local timer = self.dismiss_timer
-	timer:kill()
+	self.dismiss_timer:kill()
 	self.dismiss_timer = nil
 end
 
 function base_table:delay_kickout(player)
 	log.info("delay_kickout %s",player.guid)
-	player.kickout_timer = timer_manager:new_timer(auto_kickout_timer,function()
+	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
 		player:forced_exit()
 		player.kickout_timer = nil
 	end)
@@ -1231,8 +1236,6 @@ function base_table:ready(player)
 
 		log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
 		self.ready_list[player.chair_id] = player
-
-		self:cancel_delay_dismiss()
 
 		-- 机器人准备
 		self:foreach(function(p)
@@ -1431,7 +1434,6 @@ end
 
 function base_table:on_started(player_count)
 	if not self.private_id then return end
-
 	self.ext_round_status = EXT_ROUND_STATUS.GAMING
 
 	self.player_count = player_count
@@ -1557,14 +1559,8 @@ function base_table:on_process_over()
 	})
 
 	self:foreach(function(p)
-		if p.inactive then 
+		if p.inactive or p.trustee then 
 			p:forced_exit() 
-			return
-		end
-
-		if p.trustee then
-			self:set_trusteeship(p)
-			p:forced_exit()
 			return
 		end
 	end)
@@ -1573,6 +1569,7 @@ end
 -- 开始游戏
 function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
+	self:cancel_delay_dismiss()
 	local result_ = self:check_single_game_is_maintain()
 	if result_ == true then
 		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
@@ -1665,7 +1662,7 @@ function base_table:private_init(private_id,rule,conf)
 	self.rule = rule
 	self.start_count = conf.chair_count
 	self.conf = conf
-	self.dismiss_timer = nil
+	self:cancel_delay_dismiss()
 	self.ext_round_status = EXT_ROUND_STATUS.FREE
 	self:on_private_inited()
 end
@@ -1796,6 +1793,29 @@ end
 
 function base_table:play_once_again(player)
 	self:ready(player)
+end
+
+function base_table:new_timer(timeout,fn,...)
+	local timer
+	timer = timer_manager:new_timer(timeout,function()
+		log.info("base_table:new_timer timer timeout,timer:%s",timer.id)
+		self:lockcall(fn)
+	end,...)
+	log.info("base_table:new_timer timer:%s",timer.id)
+	return timer
+end
+
+function base_table:calllater(timeout,fn)
+	local timer
+	timer = timer_manager:calllater(timeout,function()
+		self:lockcall(fn) 
+	end)
+	return timer
+end
+
+function base_table:kill_timer(timer)
+	local id = type(timer) == "table" and timer.id or timer
+	timer_manager:kill_timer(id)
 end
 
 function base_table:global_status_info()

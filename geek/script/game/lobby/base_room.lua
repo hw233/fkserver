@@ -12,6 +12,7 @@ local onlineguid = require "netguidopt"
 local channel = require "channel"
 local serviceconf = require "serviceconf"
 local nameservice = require "nameservice"
+local queue = require "skynet.queue"
 
 
 require "game.net_func"
@@ -98,6 +99,12 @@ function base_room:init(conf,chair_count,ready_mode)
 			return true
 		end,
 	})
+
+	self.lock = queue()
+end
+
+function base_room:lockcall(fn,...)
+	return self.lock(fn,...)
 end
 
 -- gm重新更新配置, room_lua_cfg
@@ -255,7 +262,7 @@ function base_room:stand_up_and_exit_room(player,reason)
 
 	local tableid = player.table_id
 	local chairid = player.chair_id
-	tb:player_stand_up(player, reason)
+	tb:lockcall(function() return tb:player_stand_up(player, reason) end)
 
 	local roomid = player.room_id
 	self:player_exit_room(player)
@@ -283,7 +290,7 @@ function base_room:force_dismiss_table(table_id)
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	local result = tb:dismiss()
+	local result = tb:lockcall(function() return tb:dismiss() end)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		return result
 	end
@@ -301,7 +308,7 @@ function base_room:request_dismiss_private_table(requester)
 		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
-	return tb:request_dismiss(requester)
+	return tb:lockcall(function() return tb:request_dismiss(requester) end)
 end
 
 function base_room:commit_dismiss_private_table(player,agree)
@@ -310,7 +317,7 @@ function base_room:commit_dismiss_private_table(player,agree)
 		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
-	return tb:commit_dismiss(player,agree)
+	return tb:lockcall(function() return tb:commit_dismiss(player,agree) end)
 end
 
 function base_room:dismiss_private_table(global_table_id)
@@ -385,7 +392,7 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 
 	self:player_enter_room(player)
 	
-	local result = tb:player_sit_down(player, chair_id)
+	local result = tb:lockcall(function() return tb:player_sit_down(player, chair_id) end)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		tb:private_clear()
 		reddb:del("table:info:"..tostring(global_tid))
@@ -441,7 +448,7 @@ function base_room:join_private_table(player,private_table,chair_count)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
 	end
 
-	local result = tb:player_sit_down(player, chair_id)
+	local result = tb:lockcall(function() return tb:player_sit_down(player, chair_id) end)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		return result
 	end
@@ -517,8 +524,8 @@ function base_room:change_chair(player)
 	end
 
 	-- 旧桌子站起
-	tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL)
-	tb:check_start(true)
+	tb:lockcall(function() tb:player_stand_up(player, enum.STANDUP_REASON_NORMAL) end)
+	tb:lockcall(function() tb:check_start(true) end)
 
 	-- 通知消息
 	local notify = {
@@ -660,7 +667,7 @@ function base_room:exit_server(player,offline)
 		return true,enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	local can_exit = tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or nil)
+	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or nil) end)
 	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s]",player.guid,player.table_id,can_exit)
 	if not can_exit then
 		return true,enum.GAME_SERVER_RESULT_SUCCESS

@@ -141,7 +141,8 @@ function base_character:forced_exit(reason)
 	local table_id = self.table_id
 	local chair_id = self.chair_id
 
-	if not tb:player_stand_up(self,reason) then
+	local stand_up = tb:lockcall(function() return tb:player_stand_up(self,reason) end)
+	if not stand_up then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,reason)
 		return
 	end

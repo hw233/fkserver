@@ -2173,7 +2173,9 @@ function on_cs_play_once_again(msg,guid)
 		return
 	end
 
-	tb:play_once_again(player)
+	tb:lockcall(function() 
+		return tb:play_once_again(player)
+	end)
 
 	onlineguid.send(guid,"SC_PlayOnceAgain",{
 		result = enum.ERROR_NONE,
