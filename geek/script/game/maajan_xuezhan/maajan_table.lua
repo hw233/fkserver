@@ -9,7 +9,6 @@ local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
 local profile = require "skynet.profile"
 local skynet = require "skynetproto"
-local timer_manager = require "game.timer_manager"
 local club_utils = require "game.club.club_utils"
 
 local yield = profile.yield
@@ -200,12 +199,8 @@ function maajan_table:on_private_dismissed()
     for _,p in pairs(self.players) do
         p.total_money = nil
     end
-    self:safe_event({type = ACTION.CLOSE})
-end
-
-function maajan_table:clear_event_pump()
-    self:gotofunc(nil)
-    self.co = nil
+    self:cancel_all_auto_action_timer()
+    self:cancel_clock_timer()
 end
 
 function maajan_table:get_trustee_conf()
@@ -284,9 +279,10 @@ function maajan_table:on_started(player_count)
     self.tiles = self.tiles or all_tiles[player_count]
 
     self.dealer = maajan_tile_dealer:new(self.tiles)
-    self.co = skynet.fork(function()
-        self:main()
-    end)
+    self:cancel_clock_timer()
+    self:cancel_all_auto_action_timer()
+    self:pre_begin()
+    self:huan_pai()
 end
 
 function maajan_table:fast_start_vote_req(player)
@@ -298,52 +294,12 @@ function maajan_table:fast_start_vote_req(player)
         return
     end
 
-    if self.co then
-        send2client_pb(player,"SC_VoteTableReq",{
-            result = enum.ERROR_OPERATION_REPEATED
-        })
-        return
-    end
-
-    self.co = skynet.fork(function()
-        self:fast_start_vote(player)
-    end)
+    self.lock(function() self:fast_start_vote(player) end)
 end
 
-function maajan_table:fast_start_vote_commit(player,msg)
-    self:safe_event({player = player,type = ACTION.VOTE,agree = msg.agree})
-end
-
-function maajan_table:fast_start_vote(player)
-    self:update_state(FSM_S.FAST_START_VOTE)
-    
-    local timeout = 60
-    self:broadcast2client("SC_VoteTableReq",{
-        vote_type = "FAST_START",
-        request_guid = player.guid,
-        request_chair_id = player.chair_id,
-        timeout = timeout,
-    })
-
-    local vote_result = {}
-
-    vote_result[player.chair_id] = true
-    self:broadcast2client("SC_VoteTableCommit",{
-        result = enum.ERROR_NONE,
-        chair_id = player.chair_id,
-        guid = player.guid,
-        agree = true,
-    })
-
-    local timer = timer_manager:new_timer(timeout,function()
-        self:foreach(function(p)
-            if vote_result[p.chair_id] == nil then
-                self:safe_event({player = p,type = ACTION.VOTE,agree = false})
-            end
-        end)
-    end)
-
-    local function do_fast_start_vote(p,agree)
+function maajan_table:fast_start_vote_commit(p,msg)
+    self.lock(function()
+        local agree = msg.agree
         agree = agree and true or false
         if not vote_result[p.chair_id] then
             vote_result[p.chair_id] = agree
@@ -371,50 +327,59 @@ function maajan_table:fast_start_vote(player)
         end
 
         self:start(table.nums(self.players))
+    end)
+end
 
-        return true
-    end
-
-    local function reconnect(p)
-        local status = {}
-        for chair,r in pairs(vote_result) do
-            local pi = self.players[chair]
-            table.insert(status,{
-                chair_id = pi.chair_id,
-                guid = pi.guid,
-                agree = r,
-            })
-        end
-
-        send2client_pb(p,"SC_VoteTableRequestInfo",{
-            vote_type = "FAST_START",
-            request_guid = player.guid,
-            request_chair_id = player.chair_id,
-            timeout= math.ceil(timer and timer.remainder or timeout),
-            status = status
+function maajan_table:on_reconnect_when_fast_start_vote()
+    local status = {}
+    for chair,r in pairs(vote_result) do
+        local pi = self.players[chair]
+        table.insert(status,{
+            chair_id = pi.chair_id,
+            guid = pi.guid,
+            agree = r,
         })
     end
 
-    while true do
-        local evt = yield()
-        log.dump(evt)
-        if evt.type == ACTION.CLOSE then
-            self.co = nil
-            if timer then timer:kill() end
-            return
-        end
+    send2client_pb(p,"SC_VoteTableRequestInfo",{
+        vote_type = "FAST_START",
+        request_guid = player.guid,
+        request_chair_id = player.chair_id,
+        timeout= math.ceil(timer and timer.remainder or timeout),
+        status = status
+    })
+end
 
-        if evt.type == ACTION.RECONNECT then
-            reconnect(evt.player)
-        elseif evt.type == ACTION.VOTE then
-            local p = evt.player
-            local complete = do_fast_start_vote(p,evt.agree)
-            if complete then
-                timer:kill()
-                return 
+function maajan_table:fast_start_vote(player)
+    self:update_state(FSM_S.FAST_START_VOTE)
+    
+    local timeout = 60
+    self:broadcast2client("SC_VoteTableReq",{
+        vote_type = "FAST_START",
+        request_guid = player.guid,
+        request_chair_id = player.chair_id,
+        timeout = timeout,
+    })
+
+    local vote_result = {}
+
+    vote_result[player.chair_id] = true
+    self:broadcast2client("SC_VoteTableCommit",{
+        result = enum.ERROR_NONE,
+        chair_id = player.chair_id,
+        guid = player.guid,
+        agree = true,
+    })
+
+    self:begin_clock_timer(timeout,function()
+        self:cancel_clock_timer()
+        self:cancel_all_auto_action_timer()
+        self:foreach(function(p)
+            if vote_result[p.chair_id] == nil then
+                self:fast_start_vote_commit(p,{agree = false})
             end
-        end
-    end
+        end)
+    end)
 end
 
 function maajan_table:set_trusteeship(player,trustee)
@@ -428,7 +393,9 @@ function maajan_table:set_trusteeship(player,trustee)
 
     base_table.set_trusteeship(self,player,trustee)
     player.trustee = trustee
-    self:safe_event({player = player,type = ACTION.TRUSTEE,trustee = trustee})
+    if not trustee then
+        self:cancel_auto_action_timer(player)
+    end
 end
 
 function maajan_table:clean_trusteeship()
@@ -444,70 +411,223 @@ function maajan_table:xi_pai()
     end)
 end
 
+function maajan_table:on_reconnect_when_action_qiang_gang_hu(p)
+    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    self:send_ding_que_status(p)
+    self:send_ting_tips(p)
+
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,p)
+    end
+
+    for chair,actions in pairs(self.waiting_actions) do
+        self:send_action_waiting(actions)
+    end
+end
+
+function maajan_table:on_action_qiang_gang_hu(p,msg)
+    local action = self:check_action_before_do(self.waiting_actions,p,msg)
+    if not action then return end
+
+    local act = msg.action
+    local tile = msg.value_tile
+
+    self:cancel_auto_action_timer(p)
+    action.done = { action = act }
+    local all_done = table.logic_and(self.waiting_actions,function(action) return action.done ~= nil end)
+    if all_done then
+        self:cancel_clock_timer()
+    end
+
+    local chu_pai_player = self:chu_pai_player()
+    if act == ACTION.HU then
+        p.hu = {
+            time = os.time(),
+            tile = self.qiang_gang_tile,
+            types = self:hu(p,self.qiang_gang_tile),
+            zi_mo = false,
+            whoee = self.chu_pai_player_index,
+            qiang_gang = true,
+        }
+
+        self:log_game_action(p,act,tile)
+        self:broadcast_player_hu(p,act)
+        p.statistics.hu = (p.statistics.hu or 0) + 1
+        chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
+
+        if table.nums(actions_to_do) > 1 then
+            chu_pai_player.multi_pao = true
+        end
+
+        table.decr(chu_pai_player.pai.shou_pai,tile)
+
+        local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+        if self.start_count - hu_count == 1 then
+            self:do_balance()
+            return
+        end
+
+        local last_hu_player = nil
+        self:foreach(function(p) if p.hu then last_hu_player = p end end)
+        self:next_player_index(last_hu_player)
+        self:mo_pai()
+        self:done_last_action(p,{action = ACTION.BA_GANG,tile = self.qiang_gang_tile})
+    end
+
+    if all_done then
+        local all_pass = table.logic_and(self.waiting_actions,function(action) return action.done.action == ACTION.PASS end)
+        self.waiting_actions = {}
+        if not all_pass then
+            self.qiang_gang_tile = nil
+            return
+        end
+
+        self:adjust_shou_pai(chu_pai_player,ACTION.BA_GANG,self.qiang_gang_tile)
+        chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
+        chu_pai_player.guo_zhuang_hu = nil
+        self:done_last_action(chu_pai_player,{action = ACTION.BA_GANG,tile = self.qiang_gang_tile})
+        self:mo_pai()
+        self.qiang_gang_tile = nil
+    end
+end
+
+function maajan_table:qiang_gang_hu(player,actions,tile)
+    self:update_state(FSM_S.WAIT_QIANG_GANG_HU)
+    self.waiting_actions = actions
+    for chair,action in pairs(actions) do
+        self:send_action_waiting(action)
+    end
+
+    self.qiang_gang_tile = tile
+
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_action(p)
+            self.lock(function()
+                self:on_action_qiang_gang_hu(p,{
+                    action = ACTION.HU,
+                    value_tile = tile,
+                })
+            end)
+        end
+
+        log.dump(self.waiting_actions)
+        self:begin_clock_timer(trustee_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            table.foreach(self.waiting_actions,function(action,_)
+                if action.done then return end
+
+                local p = self.players[action.chair_id]
+                self:set_trusteeship(p,true)
+                auto_action(p)
+            end)
+        end)
+
+        table.foreach(self.waiting_actions,function(action,_) 
+            local p = self.players[action.chair_id]
+            if not p.trustee then return end
+
+            self:begin_auto_action_timer(p,math.random(1,2),function() 
+                self:cancel_auto_action_timer(p)
+                auto_action(p)
+            end)
+        end)
+    end
+end
+
+function maajan_table:on_reconnect_when_huan_pai(player)
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_huan_pai_status(player)
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,player)
+    end
+end
+
+function maajan_table:on_huan_pai(player,msg)
+    local tiles = msg.tiles
+    for _,tile in pairs(tiles) do
+        local c = player.pai.shou_pai[tile]
+        if not c or c == 0 then
+            send2client_pb(player.guid,"SC_HuanPai",{
+                result = enum.PARAMETER_ERROR,
+            })
+            log.error("maajan_table:huan_pai tiles %s",table.concat(tiles,","))
+            return
+        end
+    end
+    
+    local tile_count = table.nums(tiles)
+    local huan_count = self:get_huan_count()
+    if tile_count ~= huan_count then
+        send2client_pb(player.guid,"SC_HuanPai",{
+            result = enum.PARAMETER_ERROR,
+        })
+        log.error("maajan_table:huan_pai huan_count == %d,but tiles count = %d",huan_count,tile_count)
+        return
+    end
+
+    local huan_type = self:get_huan_type()
+    if huan_type == 1 then
+        local g = table.group(tiles,function(t) return math.floor(t / 10) end)
+        local mens = table.map(g,function(gp,men) return men,table.nums(gp) end)
+        local men_count = table.nums(mens)
+        if men_count ~= 1 then
+            send2client_pb(player.guid,"SC_HuanPai",{
+                result = enum.PARAMETER_ERROR,
+            })
+            log.error("maajan_table:huan_pai huan_type == %d,but men count = %d",huan_type,men_count)
+            return
+        end
+    end
+
+    player.pai.huan = {old = tiles,}
+
+    send2client_pb(player,"SC_HuanPai",{
+        result = enum.ERROR_NONE,
+        chair_id = player.chair_id,
+        done = true,
+        self_choice = tiles,
+    })
+
+    self:broadcast2client_except(player,"SC_HuanPai",{
+        result = enum.ERROR_NONE,
+        chair_id = player.chair_id,
+        done = true,
+    })
+
+    self:cancel_auto_action_timer(player)
+
+    if not table.logic_and(self.players,function(p) return p.pai.huan ~= nil end) then
+        return
+    end
+
+    self:cancel_clock_timer()
+    
+    local order = self:do_huan_pai()
+    self.game_log.huan_order = order
+    local log_players = self.game_log.players
+    self:foreach(function(p)
+        log_players[p.chair_id].huan = p.pai.huan
+        send2client_pb(p,"SC_HuanPaiCommit",{
+            new_shou_pai = p.pai.huan.new,
+            huan_order = order,
+        })
+    end)
+
+    self:ding_que()
+end
+
 function maajan_table:huan_pai()
     if not self.rule.huan or table.nums(self.rule.huan) == 0 then
-        self:gotofunc(function() self:ding_que() end)
+        self:ding_que()
         return
     end
 
     self:update_state(FSM_S.HUAN_PAI)
     self:broadcast2client("SC_AllowHuanPai",{})
 
-    local function on_huan_pai(player,msg)
-        local tiles = msg.tiles
-        for _,tile in pairs(tiles) do
-            local c = player.pai.shou_pai[tile]
-            if not c or c == 0 then
-                send2client_pb(player.guid,"SC_HuanPai",{
-                    result = enum.PARAMETER_ERROR,
-                })
-                log.error("maajan_table:huan_pai tiles %s",table.concat(tiles,","))
-                return
-            end
-        end
-        
-        local tile_count = table.nums(tiles)
-        local huan_count = self:get_huan_count()
-        if tile_count ~= huan_count then
-            send2client_pb(player.guid,"SC_HuanPai",{
-                result = enum.PARAMETER_ERROR,
-            })
-            log.error("maajan_table:huan_pai huan_count == %d,but tiles count = %d",huan_count,tile_count)
-            return
-        end
-    
-        local huan_type = self:get_huan_type()
-        if huan_type == 1 then
-            local g = table.group(tiles,function(t) return math.floor(t / 10) end)
-            local mens = table.map(g,function(gp,men) return men,table.nums(gp) end)
-            local men_count = table.nums(mens)
-            if men_count ~= 1 then
-                send2client_pb(player.guid,"SC_HuanPai",{
-                    result = enum.PARAMETER_ERROR,
-                })
-                log.error("maajan_table:huan_pai huan_type == %d,but men count = %d",huan_type,men_count)
-                return
-            end
-        end
-
-        player.pai.huan = {old = tiles,}
-
-        send2client_pb(player,"SC_HuanPai",{
-            result = enum.ERROR_NONE,
-            chair_id = player.chair_id,
-            done = true,
-            self_choice = tiles,
-        })
-
-        self:broadcast2client_except(player,"SC_HuanPai",{
-            result = enum.ERROR_NONE,
-            chair_id = player.chair_id,
-            done = true,
-        })
-    end
-
-    local timer
-    local action_timers = {}
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
         local function random_choice(tilecounts,count)
@@ -535,30 +655,37 @@ function maajan_table:huan_pai()
             if huan_type ~= 1 then
                 local huan_pai = random_choice(p.pai.shou_pai,huan_count)
                 log.dump(huan_pai)
-                self:safe_event({player = p,type = ACTION.HUAN_PAI,msg = {tiles = huan_pai}})
+                self.lock(function()
+                    self:on_huan_pai(p,{
+                        tiles = huan_pai
+                    })
+                end)
                 return
             end
 
-            local g = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
-            local men_tiles = table.map(g,function(gp,men) return men,table.merge_tables(gp,function(l,r) return (l or 0) + (r or 0) end) end)
+            local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
 
             local c = 0
             local tiles
             repeat
-                local men,_ = table.choice(men_tiles)
-                tiles = men_tiles[men]
+                _,tiles = table.choice(men_tiles)
                 c = table.sum(tiles)
             until c > huan_count
 
+
             local huan_tiles = random_choice(tiles,huan_count)
-            self:safe_event({player = p,type = ACTION.HUAN_PAI,msg = {tiles = huan_tiles}})
+            self.lock(function()
+                self:on_huan_pai(p,{tiles = huan_tiles})
+            end)
             return
         end
 
         local huan_count = self:get_huan_count()
         local huan_type = self:get_huan_type()
         log.info("%s,%s",huan_type,huan_count)
-        timer = timer_manager:new_timer(trustee_seconds,function()
+        self:begin_clock_timer(trustee_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
             self:foreach(function(p)
                 if p.pai.huan then return end
 
@@ -567,173 +694,95 @@ function maajan_table:huan_pai()
             end)
         end)
 
-        self:begin_clock(trustee_seconds)
-
         self:foreach(function(p)
             if not p.trustee then return end
             
-            local act_timer = timer_manager:calllater(math.random(1,2),function()
+            self:begin_auto_action_timer(p,math.random(1,2),function()
+                self:cancel_auto_action_timer(p)
                 auto_huan_pai(p,huan_type,huan_count)
             end)
-
-            action_timers[p.chair_id] = act_timer
         end)
     end
-
-    repeat
-        local evt = yield()
-        if evt.type == ACTION.CLOSE then
-            if timer then timer:kill() end
-            for _,t in pairs(action_timers) do
-                t:kill()
-            end
-            self:clear_event_pump()
-            return
-        end
-
-        if evt.type == ACTION.RECONNECT then
-            local player = evt.player
-            send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-            self:send_huan_pai_status(player)
-            if timer then
-                self:begin_clock(timer.remainder,player)
-            end
-        elseif evt.type == ACTION.TRUSTEE then
-            if not evt.trustee then
-                local chair = evt.player.chair_id
-                if action_timers[chair] then
-                    action_timers[chair]:kill()
-                end
-            end
-        else
-            local player = evt.player
-            local chair = player.chair_id
-            on_huan_pai(player,evt.msg)
-            if action_timers[chair] then
-                action_timers[chair]:kill()
-            end
-        end
-    until table.logic_and(self.players,function(p) return p.pai.huan ~= nil end)
-
-    if timer then timer:kill() end
-
-    local order = self:do_huan_pai()
-    self.game_log.huan_order = order
-    local log_players = self.game_log.players
-    self:foreach(function(p)
-        log_players[p.chair_id].huan = p.pai.huan
-        send2client_pb(p,"SC_HuanPaiCommit",{
-            new_shou_pai = p.pai.huan.new,
-            huan_order = order,
-        })
-    end)
-
-    self:gotofunc(function() self:ding_que() end)
 end
 
-function maajan_table:ding_que()
-    if #self.tiles < 108 then
-        self:gotofunc(function()
-            self:jump_to_player_index(self.zhuang)
-            self:action_after_ding_que()
-        end)
+function maajan_table:on_reconnect_when_ding_que(player)
+    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_ding_que_status(player)
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,player)
+    end
+end
+
+function maajan_table:begin_auto_action_timer(p_or_chair,timeout,fn)
+    local chair_id = type(p_or_chair) == "table" and p_or_chair.chair_id or p_or_chair
+    if self.action_timers[chair_id] then
+        log.warning("maajan_table:begin_auto_action_timer timer not nil")
+    end
+    self.action_timers[chair_id] = self:calllater(timeout,fn)
+end
+
+function maajan_table:cancel_auto_action_timer(p_or_chair)
+    local chair_id = type(p_or_chair) == "table" and p_or_chair.chair_id or p_or_chair
+    if self.action_timers[chair_id] then
+        self.action_timers[chair_id]:kill()
+        self.action_timers[chair_id] = nil
+    end
+end
+
+function maajan_table:cancel_all_auto_action_timer()
+    for _,timer in pairs(self.action_timers or {}) do
+        timer:kill()
+    end
+
+    self.action_timers = {}
+end
+
+function maajan_table:begin_clock_timer(timeout,fn)
+    if self.clock_timer then 
+        log.warning("maajan_table:begin_clock_timer timer not nil")
+        self.clock_timer:kill()
+    end
+
+    self.clock_timer = self:new_timer(timeout,fn)
+    self:begin_clock(timeout)
+
+    log.info("maajan_table:begin_clock_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.clock_timer.id,timeout)
+end
+
+function maajan_table:cancel_clock_timer()
+    log.info("maajan_table:cancel_clock_timer table_id:%s,timer:%s",self.table_id_,self.clock_timer and self.clock_timer.id or nil)
+    if self.clock_timer then
+        self.clock_timer:kill()
+        self.clock_timer = nil
+    end
+end
+
+function maajan_table:on_ding_que(player,msg)
+    local men = msg.men
+    if not men or men < 0 or men > 3 then
+        send2client_pb(player,"SC_DingQue",{
+            result = enum.PARAMETER_ERROR
+        })
         return
     end
 
-    self:update_state(FSM_S.DING_QUE)
-    self:broadcast2client("SC_AllowDingQue",{})
+    player.que = msg.men
+    self:broadcast2client("SC_DingQue",{
+        result = enum.ERROR_NONE,
+        status = {
+            chair_id = player.chair_id,
+            done = true,
+        }
+    })
 
-    local function on_ding_que(player,msg)
-        local men = msg.men
-        if not men or men < 0 or men > 3 then
-            send2client_pb(player,"SC_DingQue",{
-                result = enum.PARAMETER_ERROR
-            })
-            return
-        end
+    self:cancel_auto_action_timer(player)
 
-        player.que = msg.men
-        self:broadcast2client("SC_DingQue",{
-            result = enum.ERROR_NONE,
-            status = {
-                chair_id = player.chair_id,
-                done = true,
-            }
-        })
+    if not table.logic_and(self.players,function(p) return p.que ~= nil end) then
+        return
     end
 
-    local timer
-    local action_timers = {}
-    local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
-        local function auto_ding_que(p)
-            local g = table.group(p.pai.shou_pai,function(c,tile) return mj_util.tile_men(tile) end)
-            local men_count = table.map(g,function(gp,men) return men,table.sum(gp)  end)
-            local min_men,c = table.min(men_count)
-            log.info("%s,%s",min_men,c)
-            self:safe_event({player = p,type = ACTION.DING_QUE,msg = {men = min_men}})
-        end
-        timer = timer_manager:new_timer(trustee_seconds,function()
-            self:foreach(function(p)
-                if p.que then return end
-
-                self:set_trusteeship(p,true)
-                auto_ding_que(p)
-            end)
-        end)
-
-        self:begin_clock(trustee_seconds)
-
-        self:foreach(function(p)
-            if not p.trustee then return end
-            local act_timer = timer_manager:calllater(math.random(1,2),function() 
-                auto_ding_que(p)
-            end)
-
-            action_timers[p.chair_id] = act_timer
-        end)
-    end
-
-    repeat
-        local evt = yield()
-        repeat
-            if evt.type == ACTION.CLOSE then
-                if timer then timer:kill() end
-                for _,t in pairs(action_timers) do
-                    t:kill()
-                end
-                self:clear_event_pump()
-                return
-            end
-
-            if evt.type == ACTION.RECONNECT then
-                local player = evt.player
-                send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-                self:send_ding_que_status(player)
-                if timer then
-                    self:begin_clock(timer.remainder,player)
-                end
-                break
-            end
-
-            if evt.type == ACTION.TRUSTEE then
-                local chair = evt.player.chair_id
-                if not evt.trustee and action_timers[chair] then
-                    action_timers[chair]:kill()
-                end
-                break
-            end
-
-            local chair = evt.player.chair_id
-            on_ding_que(evt.player,evt.msg)
-            if action_timers[chair] then
-                action_timers[chair]:kill()
-            end
-        until true
-    until table.logic_and(self.players,function(p) return p.que ~= nil end)
-
-    if timer then timer:kill() end
-
+    self:cancel_clock_timer()
+    
     local log_players = self.game_log.players
     local p_ques = {}
     self:foreach(function(p)
@@ -748,156 +797,215 @@ function maajan_table:ding_que()
         ding_ques = p_ques,
     })
 
-    self:gotofunc(function()
+    self:jump_to_player_index(self.zhuang)
+    self:action_after_ding_que()
+end
+
+function maajan_table:ding_que()
+    if #self.tiles < 108 then
         self:jump_to_player_index(self.zhuang)
         self:action_after_ding_que()
-    end)
+        return
+    end
+
+    self:update_state(FSM_S.DING_QUE)
+    self:broadcast2client("SC_AllowDingQue",{})
+
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
+        local function auto_ding_que(p)
+            local g = table.group(p.pai.shou_pai,function(c,tile) return mj_util.tile_men(tile) end)
+            local men_count = table.map(g,function(gp,men) return men,table.sum(gp)  end)
+            local min_men,c = table.min(men_count)
+            log.info("%s,%s",min_men,c)
+            self:on_ding_que(p,{
+                men = min_men
+            })
+        end
+        self:begin_clock_timer(trustee_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            self:foreach(function(p)
+                if p.que then return end
+
+                self:set_trusteeship(p,true)
+                auto_ding_que(p)
+            end)
+        end)
+
+        log.dump(table.series(self.players,function(p) return p.guid end))
+        self:foreach(function(p)
+            log.info("%s,%s",p.guid,p.trustee)
+            if not p.trustee then return end
+            self:begin_auto_action_timer(p,math.random(1,2),function() 
+                self:cancel_auto_action_timer(p)
+                auto_ding_que(p)
+            end)
+        end)
+    end
+end
+
+function maajan_table:on_action_after_mo_pai(player,msg)
+    local action = self:check_action_before_do(self.waiting_actions,player,msg)
+    if not action then return end
+
+    self:cancel_clock_timer()
+    self:cancel_all_auto_action_timer()
+
+    local do_action = msg.action
+    local chair_id = player.chair_id
+    local tile = msg.value_tile
+
+    if chair_id ~= self.chu_pai_player_index then
+        log.error("do action:%s but chair_id:%s is not current chair_id:%s after mo_pai",
+            do_action,chair_id,self.chu_pai_player_index)
+        return
+    end
+
+    log.dump(self.waiting_actions)
+    local player = self:chu_pai_player()
+    if not player then
+        log.error("do action %s,but wrong player in chair %s",do_action,player.chair_id)
+        return
+    end
+
+    local player_actions = self.waiting_actions[player.chair_id].actions
+    if not player_actions[do_action] and do_action ~= ACTION.PASS and do_action ~= ACTION.CHU_PAI then
+        log.error("do action %s,but action is illigle,%s",do_action)
+        return
+    end
+
+    self.waiting_actions = {}
+
+    if do_action == ACTION.BA_GANG then
+        local qiang_gang_hu = {}
+        self:foreach_except(player,function(p)
+            if p.hu then return end
+
+            local actions = self:get_actions(p,nil,tile)
+            if actions[ACTION.HU] then
+                qiang_gang_hu[p.chair_id] = {
+                    chair_id = p.chair_id,
+                    actions = {
+                        [ACTION.HU] = actions[ACTION.HU]
+                    }
+                }
+            end
+        end)
+
+        self:log_game_action(player,do_action,tile)
+        local is_qiang_gang = table.nums(qiang_gang_hu) > 0
+        if is_qiang_gang then
+            self:qiang_gang_hu(player,qiang_gang_hu,tile)
+            return
+        end
+
+        self:adjust_shou_pai(player,do_action,tile)
+        self:jump_to_player_index(player)
+        player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
+        player.guo_zhuang_hu = nil
+        self:mo_pai()
+    end
+
+    if do_action == ACTION.AN_GANG then
+        self:adjust_shou_pai(player,do_action,tile)
+        self:log_game_action(player,do_action,tile)
+        self:jump_to_player_index(player)
+        player.statistics.an_gang = (player.statistics.an_gang or 0) + 1
+        player.guo_zhuang_hu = nil
+        self:mo_pai()
+    end
+
+    if do_action == ACTION.ZI_MO then
+        -- 点杠花算点炮
+        local is_zi_mo = true
+        local whoee = nil
+        if self.rule.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
+            is_zi_mo = nil
+            for _,s in pairs(player.pai.ming_pai) do
+                if s.tile == player.last_action.tile and s.type == SECTION_TYPE.MING_GANG then
+                    whoee = s.whoee
+                    break
+                end
+            end
+        end
+
+        player.hu = {
+            time = os.time(),
+            tile = tile,
+            types = self:hu(player,nil,player.mo_pai),
+            zi_mo = is_zi_mo,
+            whoee = whoee,
+        }
+
+        player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
+
+        self:log_game_action(player,do_action,tile)
+        self:broadcast_player_hu(player,do_action)
+        local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+        if self.start_count - hu_count  == 1 then
+            self:do_balance()
+        else
+            self:next_player_index()
+            self:mo_pai()
+        end
+    end
+
+    if do_action == ACTION.PASS then
+        self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action})
+        self:chu_pai()
+    end
+
+    self:done_last_action(player,{action = do_action,tile = tile,})
+end
+
+function maajan_table:on_reconnect_when_action_after_mo_pai(p)
+    self:send_ding_que_status(p)
+    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    if self.chu_pai_player_index == p.chair_id then
+        send2client_pb(p,"SC_Maajan_Draw",{
+            chair_id = p.chair_id,
+            tile = p.mo_pai,
+        })
+    end
+
+    local action = self.waiting_actions[p.chair_id]
+    if action then
+        self:send_action_waiting(action)
+    end
+
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,p)
+    end
 end
 
 function maajan_table:action_after_mo_pai(waiting_actions)
     self:update_state(FSM_S.WAIT_ACTION_AFTER_MO_PAI)
-    for _,action in pairs(waiting_actions) do
+    self.waiting_actions = waiting_actions
+    for _,action in pairs(self.waiting_actions) do
         self:send_action_waiting(action)
     end
 
-    local function reconnect(p)
-        self:send_ding_que_status(p)
-        send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-        send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
-        if self.chu_pai_player_index == p.chair_id then
-            send2client_pb(p,"SC_Maajan_Draw",{
-                chair_id = p.chair_id,
-                tile = p.mo_pai,
-            })
-        end
-
-        local action = waiting_actions[p.chair_id]
-        if action then
-            self:send_action_waiting(action)
-        end
-    end
-
-    local function on_action(evt)
-        local do_action = evt.type
-        local chair_id = evt.chair_id
-        local tile = evt.tile
-
-        if chair_id ~= self.chu_pai_player_index then
-            log.error("do action:%s but chair_id:%s is not current chair_id:%s after mo_pai",
-                do_action,chair_id,self.chu_pai_player_index)
-            return
-        end
-
-        log.dump(waiting_actions)
-        local player = self:chu_pai_player()
-        if not player then
-            log.error("do action %s,but wrong player in chair %s",do_action,player.chair_id)
-            return
-        end
-
-        local player_actions = waiting_actions[player.chair_id].actions
-        if not player_actions[do_action] and do_action ~= ACTION.PASS and do_action ~= ACTION.CHU_PAI then
-            log.error("do action %s,but action is illigle,%s",do_action)
-            return
-        end
-
-        if do_action == ACTION.BA_GANG then
-            local qiang_gang_hu = {}
-            self:foreach_except(player,function(p)
-                if p.hu then return end
-
-                local actions = self:get_actions(p,nil,tile)
-                if actions[ACTION.HU] then
-                    qiang_gang_hu[p.chair_id] = {
-                        chair_id = p.chair_id,
-                        actions = {
-                            [ACTION.HU] = actions[ACTION.HU]
-                        }
-                    }
-                end
-            end)
-
-            self:log_game_action(player,do_action,tile)
-            local is_qiang_gang_pass = true
-            local is_qiang_gang = table.nums(qiang_gang_hu) > 0
-            if is_qiang_gang then
-                is_qiang_gang_pass = self:action_after_chu_pai(qiang_gang_hu,player)
-            end
-
-            if not is_qiang_gang or is_qiang_gang_pass then
-                self:adjust_shou_pai(player,do_action,tile)
-                self:jump_to_player_index(player)
-                self:gotofunc(function() self:mo_pai() end)
-                player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
-                player.guo_zhuang_hu = nil
-            end
-        end
-
-        if do_action == ACTION.AN_GANG then
-            self:adjust_shou_pai(player,do_action,tile)
-            self:log_game_action(player,do_action,tile)
-            self:jump_to_player_index(player)
-            self:gotofunc(function() self:mo_pai() end)
-            player.statistics.an_gang = (player.statistics.an_gang or 0) + 1
-            player.guo_zhuang_hu = nil
-        end
-
-        if do_action == ACTION.ZI_MO then
-            -- 点杠花算点炮
-            local is_zi_mo = true
-            local whoee = nil
-            if self.rule.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
-                is_zi_mo = nil
-                for _,s in pairs(player.pai.ming_pai) do
-                    if s.tile == player.last_action.tile and s.type == SECTION_TYPE.MING_GANG then
-                        whoee = s.whoee
-                        break
-                    end
-                end
-            end
-
-            player.hu = {
-                time = os.time(),
-                tile = tile,
-                types = self:hu(player,nil,player.mo_pai),
-                zi_mo = is_zi_mo,
-                whoee = whoee,
-            }
-
-            player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
-
-            self:log_game_action(player,do_action,tile)
-            self:broadcast_player_hu(player,do_action)
-            local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.start_count - hu_count  == 1 then
-                self:gotofunc(function() self:do_balance() end)
-            else
-                self:next_player_index()
-                self:gotofunc(function() self:mo_pai() end)
-            end
-        end
-
-        if do_action == ACTION.PASS then
-            self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action})
-            self:gotofunc(function() self:chu_pai() end)
-        end
-
-        self:done_last_action(player,{action = do_action,tile = tile,})
-    end
-
-    local timer
-    local action_timers = {}
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_action(p,action)
             local act = action.actions[ACTION.ZI_MO] and ACTION.ZI_MO or ACTION.PASS
             local tile = p.mo_pai
-            self:safe_event({chair_id = p.chair_id,type = act,tile = tile})
+            self.lock(function()
+                self:on_action_after_mo_pai(p,{
+                    action = act,
+                    value_tile = tile,
+                    chair_id = p.chair_id,
+                })
+            end)
         end
 
-        timer = timer_manager:new_timer(trustee_seconds,function()
-            log.dump(waiting_actions)
-            table.foreach(waiting_actions,function(action,_)
+        self:begin_clock_timer(trustee_seconds,function()
+            log.dump(self.waiting_actions)
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
 
                 local p = self.players[action.chair_id]
@@ -906,52 +1014,16 @@ function maajan_table:action_after_mo_pai(waiting_actions)
             end)
         end)
 
-        self:begin_clock(trustee_seconds)
-
-        table.foreach(waiting_actions,function(action,_) 
-            log.dump(waiting_actions)
+        table.foreach(self.waiting_actions,function(action,_) 
+            log.dump(self.waiting_actions)
             local p = self.players[action.chair_id]
             if not p.trustee then return end
 
-            local act_timer = timer_manager:calllater(math.random(1,2),function() 
+            self:begin_auto_action_timer(p,math.random(1,2),function() 
                 auto_action(p,action)
+                self:cancel_auto_action_timer(p)
             end)
-
-            action_timers[action.chair_id] = act_timer
         end)
-    end
-
-    while true do
-        local evt = yield()
-        if evt.type == ACTION.CLOSE then
-            if timer then timer:kill() end
-            self:clear_event_pump()
-            return
-        end
-
-        if evt.type == ACTION.RECONNECT then
-            reconnect(evt.player)
-            if timer then
-                self:begin_clock(timer.remainder,player)
-            end
-        elseif evt.type == ACTION.TRUSTEE then
-            local chair = evt.player.chair_id
-            if not evt.trustee and action_timers[chair] then
-                action_timers[chair]:kill()
-            end
-        else
-            local action = self:check_action_before_do(waiting_actions,evt)
-            if action then
-                if timer then timer:kill() end
-                local chair = evt.chair_id
-                if action_timers[chair] then
-                    action_timers[chair]:kill()
-                end
-                on_action(evt)
-
-                break
-            end
-        end
     end
 end
 
@@ -965,114 +1037,51 @@ function maajan_table:action_after_ding_que()
     local actions = self:get_actions(player,mo_pai)
     log.dump(actions)
     if table.nums(actions) > 0 then
-        self:gotofunc(function()
-            self:action_after_mo_pai({
-                [self.chu_pai_player_index] = {
-                    actions = actions,
-                    chair_id = self.chu_pai_player_index,
-                }
-            })
-        end)
+        self:action_after_mo_pai({
+            [self.chu_pai_player_index] = {
+                actions = actions,
+                chair_id = self.chu_pai_player_index,
+            }
+        })
     else
-        self:gotofunc(function() self:chu_pai() end)
+        self:chu_pai()
     end
 end
 
-function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
-    self:update_state(FSM_S.WAIT_ACTION_AFTER_CHU_PAI)
-    for _,action in pairs(waiting_actions) do
+function maajan_table:on_reconnect_when_action_after_chu_pai(p)
+    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    self:send_ding_que_status(p)
+    local action = self.waiting_actions[p.chair_id]
+    if action then
         self:send_action_waiting(action)
     end
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,p)
+    end
+end
 
-    local function reconnect(p)
-        send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-        send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
-        self:send_ding_que_status(p)
-        local action = waiting_actions[p.chair_id]
-        if action then
-            self:send_action_waiting(action)
-        end
+function maajan_table:on_action_after_chu_pai(player,msg)
+    local action = self:check_action_before_do(self.waiting_actions,player,msg)
+    if action then
+        action.done = {
+            action = msg.action,
+            tile = msg.value_tile,
+        }
+        local chair = action.chair_id
+        self:cancel_auto_action_timer(self.players[chair])
     end
 
-    local timer
-    local action_timers = {}
-    local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type then
-        local function auto_action(p,action)
-            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
-            local tile = self:chu_pai_player().chu_pai
-            self:safe_event({chair_id = p.chair_id,type = act,tile = tile})
-        end
-
-        timer = timer_manager:new_timer(trustee_seconds,function()
-            table.foreach(waiting_actions,function(action,_)
-                local p = self.players[action.chair_id]
-                self:set_trusteeship(p,true)
-                auto_action(p,action)
-            end)
-        end)
-
-        self:begin_clock(trustee_seconds)
-
-        table.foreach(waiting_actions,function(action,_)
-            local p = self.players[action.chair_id]
-            if not p.trustee then return end
-
-            local act_timer = timer_manager:calllater(math.random(1,2),function()
-                auto_action(p,action)
-            end)
-        
-            action_timers[p.chair_id] = act_timer
-        end)
+    if not table.logic_and(self.waiting_actions,function(action) return action.done ~= nil end) then
+        return 
     end
 
-    local function close()
-        if timer then timer:kill() end
-        for _,t in pairs(action_timers) do
-            t:kill()
-        end
-        self:clear_event_pump()
-    end
+    self:cancel_clock_timer()
 
-    repeat
-        local evt = yield()
-        if evt.type == ACTION.CLOSE then
-            close()
-            return
-        elseif evt.type == ACTION.RECONNECT then
-            reconnect(evt.player)
-            if timer then
-                self:begin_clock(timer.remainder,evt.player)
-            end
-        elseif evt.type == ACTION.TRUSTEE then
-            local chair = evt.player.chair_id
-            if not evt.trustee and action_timers[chair] then
-                action_timers[chair]:kill()
-            end
-        else
-            local action = self:check_action_before_do(waiting_actions,evt)
-            if action then
-                action.done = {
-                    action = evt.type,
-                    tile = evt.tile,
-                }
-                local chair = action.chair_id
-                if action_timers[chair] then
-                    action_timers[chair]:kill()
-                end
-            end
-        end
-    until table.logic_and(waiting_actions,function(action) return action.done ~= nil end)
-
-    if timer then timer:kill() end
-    for _,t in pairs(action_timers) do
-        t:kill()
-    end
-
-    local all_actions = table.values(waiting_actions)
+    local all_actions = table.values(self.waiting_actions)
     if table.nums(all_actions) == 0 then
         self:next_player_index()
-        self:gotofunc(function() self:mo_pai()  end)
+        self:mo_pai()
         return
     end
 
@@ -1098,7 +1107,7 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
             self:adjust_shou_pai(player,action.done.action,tile)
             self:log_game_action(player,action.done.action,tile)
             self:jump_to_player_index(player)
-            self:gotofunc(function() self:chu_pai() end)
+            self:chu_pai()
         end
 
         if def.is_action_gang(action.done.action) then
@@ -1106,7 +1115,7 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
             self:adjust_shou_pai(player,action.done.action,tile)
             self:log_game_action(player,action.done.action,tile)
             self:jump_to_player_index(player)
-            self:gotofunc(function() self:mo_pai() end)
+            self:mo_pai()
             player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
             player.guo_zhuang_hu = nil
         end
@@ -1119,8 +1128,7 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
                     tile = tile,
                     types = self:hu(p,tile),
                     zi_mo = false,
-                    whoee = ba_gang_player and ba_gang_player.chair_id or self.chu_pai_player_index,
-                    qiang_gang = ba_gang_player and true or false,
+                    whoee = self.chu_pai_player_index,
                 }
 
                 if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
@@ -1142,20 +1150,16 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
                 chu_pai_player.multi_pao = true
             end
 
-            if ba_gang_player then
-                table.decr(ba_gang_player.pai.shou_pai,tile)
-            else
-                table.pop_back(chu_pai_player.pai.desk_tiles)
-            end
+            table.pop_back(chu_pai_player.pai.desk_tiles)
 
             local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
             if self.start_count - hu_count == 1 then
-                self:gotofunc(function() self:do_balance() end)
+                self:do_balance()
             else
                 local last_hu_player = nil
                 self:foreach(function(p) if p.hu then last_hu_player = p end end)
                 self:next_player_index(last_hu_player)
-                self:gotofunc(function() self:mo_pai() end)
+                self:mo_pai()
             end
         end
 
@@ -1168,19 +1172,19 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
             self:adjust_shou_pai(player,action.done.action,tile)
             self:log_game_action(player,action.done.action,tile)
             self:jump_to_player_index(player)
-            self:gotofunc(function() self:chu_pai() end)
+            self:chu_pai()
         end
 
         if action.done.action == ACTION.PASS then
             if self.rule.play.guo_zhuang_hu then
-                local hu_action = waiting_actions[player.chair_id].actions[ACTION.HU]
+                local hu_action = self.waiting_actions[player.chair_id].actions[ACTION.HU]
                 if hu_action then
                     player.guo_zhuang_hu = self:max_hu(player.pai,hu_action)
                 end
             end
 
             if self.rule.play.guo_shou_peng then
-                local peng_action = waiting_actions[player.chair_id].actions[ACTION.PENG]
+                local peng_action = self.waiting_actions[player.chair_id].actions[ACTION.PENG]
                 if peng_action then
                     player.guo_shou_peng = peng_action.tile
                 end
@@ -1188,7 +1192,7 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
 
             self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = ACTION.PASS})
             self:next_player_index()
-            self:gotofunc(function() self:mo_pai() end)
+            self:mo_pai()
         end
 
         self:done_last_action(player,{action = action.done.action,tile = tile})
@@ -1205,9 +1209,52 @@ function maajan_table:action_after_chu_pai(waiting_actions,ba_gang_player)
         end
         table.insert(actions_to_do,action)
     end
+
+    self.waiting_actions = {}
     
-    local is_pass = do_action(actions_to_do)
-    return is_pass
+    do_action(actions_to_do)
+end
+
+function maajan_table:action_after_chu_pai(waiting_actions)
+    self:update_state(FSM_S.WAIT_ACTION_AFTER_CHU_PAI)
+    self.waiting_actions = waiting_actions
+    for _,action in pairs(self.waiting_actions) do
+        self:send_action_waiting(action)
+    end
+
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_action(p,action)
+            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
+            local tile = self:chu_pai_player().chu_pai
+            self.lock(function()
+                self:on_action_after_chu_pai(p,{
+                    action = act,
+                    value_tile = tile
+                })
+            end)
+        end
+
+        self:begin_clock_timer(trustee_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            table.foreach(self.waiting_actions,function(action,_)
+                local p = self.players[action.chair_id]
+                self:set_trusteeship(p,true)
+                auto_action(p,action)
+            end)
+        end)
+
+        table.foreach(self.waiting_actions,function(action,_)
+            local p = self.players[action.chair_id]
+            if not p.trustee then return end
+
+            self:begin_auto_action_timer(p,math.random(1,2),function()
+                auto_action(p,action)
+                self:cancel_auto_action_timer(p)
+            end)
+        end)
+    end
 end
 
 function maajan_table:fake_mo_pai()
@@ -1217,7 +1264,7 @@ function maajan_table:fake_mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 0 then
-        self:gotofunc(function() self:do_balance() end)
+        self:do_balance()
         return
     end
 
@@ -1250,7 +1297,7 @@ function maajan_table:mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 0 then
-        self:gotofunc(function() self:do_balance() end)
+        self:do_balance()
         return
     end
 
@@ -1266,7 +1313,7 @@ function maajan_table:mo_pai()
     end
 
     if not mo_pai then
-        self:gotofunc(function() self:do_balance() end)
+        self:do_balance()
         return
     end
 
@@ -1284,22 +1331,15 @@ function maajan_table:mo_pai()
     local actions = self:get_actions(player,mo_pai)
     log.dump(actions)
     if table.nums(actions) > 0 then
-        self:gotofunc(function()
-            self:action_after_mo_pai({
-                [self.chu_pai_player_index] = {
-                    actions = actions,
-                    chair_id = self.chu_pai_player_index,
-                }
-            })
-        end)
+        self:action_after_mo_pai({
+            [self.chu_pai_player_index] = {
+                actions = actions,
+                chair_id = self.chu_pai_player_index,
+            }
+        })
     else
-        self:gotofunc(function() self:chu_pai() end)
+        self:chu_pai()
     end
-end
-
-function maajan_table:close()
-    self:gotofunc(nil)
-    self.co = nil
 end
 
 function maajan_table:ting(p)
@@ -1347,121 +1387,11 @@ function maajan_table:broadcast_wait_discard(player)
     self:broadcast2client("SC_MaajanWaitingDiscard",{chair_id = chair_id})
 end
 
-function maajan_table:chu_pai()
-    self:update_state(FSM_S.WAIT_CHU_PAI)
-    local function send_ting_tips(p)
-        local hu_tips = self.rule and self.rule.play.hu_tips or nil
-        if not hu_tips or p.trustee then return end
-
-        local ting_tiles = self:ting_full(p)
-        log.dump(ting_tiles)
-        if table.nums(ting_tiles) > 0 then
-            local pai = clone(p.pai)
-            local discard_tings = table.series(ting_tiles,function(tiles,discard)
-                table.decr(pai.shou_pai,discard)
-                local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(pai,tile)} end)
-                table.incr(pai.shou_pai,discard)
-                return { discard = discard, tiles_info = tings, }
-            end)
-
-            log.dump(discard_tings)
-
-            send2client_pb(p,"SC_TingTips",{
-                ting = discard_tings
-            })
-
-            return true
-        end
-    end
-
-    local function reconnect(p)
-        send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-        send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
-        self:send_ding_que_status(p)
-        send_ting_tips(p)
-    end
-
-    local player = self:chu_pai_player()
-    local timer
-    local chu_pai_timer
-    local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type then
-        local function auto_chu_pai(p)
-            local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
-
-            log.dump(men_tiles)
-
-            local chu_pai = p.mo_pai
-            if p.que then
-                if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
-                    local c
-                    repeat
-                        chu_pai,c = table.choice(men_tiles[p.que])
-                        log.info("%d,%d",chu_pai,c)
-                    until c and c > 0
-                end
-            end
-
-            log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_pai)
-            self:safe_event({chair_id = p.chair_id,type = ACTION.CHU_PAI,tile = chu_pai})
-        end
-
-        timer = timer_manager:new_timer(trustee_seconds,function()
-            self:set_trusteeship(player,true)
-            auto_chu_pai(player)
-        end)
-
-        self:begin_clock(trustee_seconds)
-
-        if player.trustee then
-            chu_pai_timer = timer_manager:calllater(math.random(1,2),function()
-                auto_chu_pai(player)
-            end)
-        end
-    end
-
-    local function close()
-        if timer then timer:kill() end
-        if chu_pai_timer then chu_pai_timer:kill() end
-        self:clear_event_pump()
-    end
-
-    send_ting_tips(player)
-
-    local evt
-    while true do
-        evt = yield()
-        if evt.type == ACTION.CLOSE then
-            close()
-            return
-        end
-
-        if evt.type == ACTION.RECONNECT then
-            reconnect(evt.player)
-            if timer then
-                self:begin_clock(timer.remainder,evt.player)
-            end
-        elseif evt.type == ACTION.TRUSTEE then
-            if not evt.trustee and evt.player.chair_id == self.chu_pai_player_index then
-                if chu_pai_timer then
-                    chu_pai_timer:kill()
-                end
-            end
-        elseif evt.type ~= ACTION.CHU_PAI then
-            close()
-            return
-        else
-            break
-        end
-    end
-
-    if timer then timer:kill() end
-    if chu_pai_timer then chu_pai_timer:kill() end
-
-    local chu_pai_val = evt.tile
+function maajan_table:on_action_chu_pai(player,msg)
+    local chu_pai_val = msg.tile
 
     if not mj_util.check_tile(chu_pai_val) then
-        log.error("player %d chu_pai,tile invalid error",self.chu_pai_player_index)
+        log.error("player %s chu_pai,tile invalid error:%s",self.chu_pai_player_index,chu_pai_val)
         return
     end
 
@@ -1470,6 +1400,9 @@ function maajan_table:chu_pai()
         log.error("tile isn't exist when chu guid:%s,tile:%s",player.guid,chu_pai_val)
         return
     end
+
+    self:cancel_clock_timer()
+    self:cancel_all_auto_action_timer()
 
     log.info("---------chu pai guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
     shou_pai[chu_pai_val] = shou_pai[chu_pai_val] - 1
@@ -1495,10 +1428,101 @@ function maajan_table:chu_pai()
     log.dump(waiting_actions)
     if table.nums(waiting_actions) == 0 then
         self:next_player_index()
-        self:gotofunc(function() self:mo_pai() end)
+        self:mo_pai()
     else
-        self:gotofunc(function() self:action_after_chu_pai(waiting_actions) end)
+        self:action_after_chu_pai(waiting_actions)
     end
+end
+
+function maajan_table:send_ting_tips(p)
+    local hu_tips = self.rule and self.rule.play.hu_tips or nil
+    if not hu_tips or p.trustee then return end
+
+    local ting_tiles = self:ting_full(p)
+    log.dump(ting_tiles)
+    if table.nums(ting_tiles) > 0 then
+        local pai = clone(p.pai)
+        local discard_tings = table.series(ting_tiles,function(tiles,discard)
+            table.decr(pai.shou_pai,discard)
+            local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(pai,tile)} end)
+            table.incr(pai.shou_pai,discard)
+            return { discard = discard, tiles_info = tings, }
+        end)
+
+        log.dump(discard_tings)
+
+        send2client_pb(p,"SC_TingTips",{
+            ting = discard_tings
+        })
+
+        return true
+    end
+end
+
+function maajan_table:on_reconnect_when_chu_pai(p)
+    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    self:send_ding_que_status(p)
+    self:send_ting_tips(p)
+
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,p)
+    end
+end
+
+function maajan_table:chu_pai()
+    self:update_state(FSM_S.WAIT_CHU_PAI)
+    
+    local player = self:chu_pai_player()
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type then
+        local function auto_chu_pai(p)
+            local chu_tile = p.mo_pai
+            if p.que then
+                local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
+
+                log.dump(men_tiles)
+                if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
+                    local c
+                    repeat
+                        chu_tile,c = table.choice(men_tiles[p.que])
+                        log.info("%d,%d",chu_tile,c)
+                    until c and c > 0
+                end
+            end
+
+            if not chu_tile then
+                chu_tile,_ = table.choice(p.pai.shou_pai)
+            end
+
+            log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_tile)
+            self.lock(function()
+                self:on_action_chu_pai(p,{
+                    tile = chu_tile,
+                })
+            end)
+        end
+
+        log.info("begin chu_pai clock %s",player.chair_id)
+        self:begin_clock_timer(trustee_seconds,function()
+            log.info("chu_pai clock timeout %s",player.chair_id)
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            self:set_trusteeship(player,true)
+            auto_chu_pai(player)
+        end)
+
+        if player.trustee then
+            log.info("begin auto_chu_pai timer %s",player.chair_id)
+            self:begin_auto_action_timer(player,math.random(1,2),function()
+                log.info("auto_chu_pai timeout %s",player.chair_id)
+                self:cancel_auto_action_timer(player)
+                auto_chu_pai(player)
+            end)
+        end
+    end
+
+    self:send_ting_tips(player)
 end
 
 function maajan_table:get_max_fan()
@@ -1606,19 +1630,6 @@ end
 
 function maajan_table:pre_begin()
     self:xi_pai()
-end
-
-function maajan_table:gotofunc(f)
-    self.f = f
-end
-
-function maajan_table:main()
-    self:pre_begin()
-    self:huan_pai()
-
-    while self.f do
-        self.f()
-    end
 end
 
 function maajan_table:get_huan_type()
@@ -1830,10 +1841,10 @@ function maajan_table:done_last_action(player,action)
     self:foreach_except(player,function(p) p.last_action = nil end)
 end
 
-function maajan_table:check_action_before_do(waiting_actions,event)
-    local action = event.type
-    local chair_id = event.chair_id
-    local tile = event.tile
+function maajan_table:check_action_before_do(waiting_actions,player,msg)
+    local action = msg.action
+    local chair_id = player.chair_id
+    local tile = msg.value_tile
     local player_actions = waiting_actions[chair_id]
     if not player_actions then
         log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
@@ -2061,6 +2072,9 @@ function maajan_table:game_balance()
 end
 
 function maajan_table:on_game_overed()
+    self:cancel_all_auto_action_timer()
+    self:cancel_clock_timer()
+    
     self.game_log = {}
     self:ding_zhuang()
 
@@ -2078,32 +2092,30 @@ function maajan_table:on_game_overed()
         }
 
         v.que = nil
-
-        if not self.private_id then
-            if v.deposit then
-                v:forced_exit()
-            elseif v:is_android() then
-                self:ready(v)
-            end
-        end
     end)
 
-    local trustee_type,_ = self:get_trustee_conf()
+    base_table.on_game_overed(self)
+
+    local trustee_type,ready_seconds = self:get_trustee_conf()
+    if trustee_type and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+        self:begin_clock_timer(ready_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_all_auto_action_timer()
+            self:foreach(function(p)
+                if not self.ready_list[p.chair_id] then
+                    self:ready(p)
+                    if not p.trustee then
+                        self:set_trusteeship(p,true)
+                    end
+                end
+            end)
+        end)
+    end
+    
     self:foreach(function(p)
         if trustee_type and trustee_type == 3 then
             self:set_trusteeship(p)
         end
-    end)
-
-    base_table.on_game_overed(self)
-    self:clear_event_pump()
-
-    self:foreach(function(p)
-        if not p.trustee or  not self.cur_round or self.cur_round >= self.conf.round then return end
-
-        timer_manager:calllater(2,function()
-            self:ready(p)
-        end)
     end)
 end
 
@@ -2124,14 +2136,6 @@ function maajan_table:on_process_over()
         end),
     })
 
-    local trustee_type,_ = self:get_trustee_conf()
-    self:foreach(function(p)
-        p.statistics = nil
-        if trustee_type then
-            self:set_trusteeship(p)
-        end
-    end)
-
     local total_winlose = table.map(self.players,function(p) return p.guid,p.total_money or 0 end)
 
     self:cost_tax(total_winlose)
@@ -2144,7 +2148,12 @@ function maajan_table:on_process_over()
 
     self.zhuang = nil
     self.cur_state_FSM = nil
+
     base_table.on_process_over(self)
+
+    self:foreach(function(p)
+        p.statistics = nil
+    end)
 end
 
 function maajan_table:ding_zhuang()
@@ -2246,21 +2255,60 @@ end
 
 function maajan_table:on_cs_do_action(player,msg)
     self:clear_deposit_and_time_out(player)
-    self:safe_event({chair_id = player.chair_id,type = msg.action,tile = msg.value_tile})
+    
+    local state_actions = {
+        [FSM_S.PER_BEGIN] = {
+
+        },
+        [FSM_S.XI_PAI] = {
+
+        },
+        [FSM_S.WAIT_MO_PAI] = {
+
+        },
+        [FSM_S.WAIT_CHU_PAI] = {
+            [ACTION.CHU_PAI] = self.on_action_chu_pai
+        },
+        [FSM_S.WAIT_ACTION_AFTER_CHU_PAI] = {
+            [ACTION.PENG] = self.on_action_after_chu_pai,
+            [ACTION.MING_GANG] = self.on_action_after_chu_pai,
+            [ACTION.HU] = self.on_action_after_chu_pai,
+            [ACTION.PASS] = self.on_action_after_chu_pai,
+        },
+        [FSM_S.WAIT_ACTION_AFTER_MO_PAI] = {
+            [ACTION.AN_GANG] = self.on_action_after_mo_pai,
+            [ACTION.BA_GANG] = self.on_action_after_mo_pai,
+            [ACTION.PASS] = self.on_action_after_mo_pai,
+            [ACTION.ZI_MO] = self.on_action_after_mo_pai,
+        },
+        [FSM_S.WAIT_QIANG_GANG_HU] = {
+            [ACTION.HU] = self.on_action_qiang_gang_hu,
+            [ACTION.PASS] = self.on_action_qiang_gang_hu,
+        },
+        [FSM_S.FINAL_END] = {
+
+        },
+    }
+
+    local fn = state_actions[self.cur_state_FSM] and state_actions[self.cur_state_FSM][msg.action] or nil
+    if fn then
+        self.lock(fn,self,player,msg)
+    else
+        log.error("unkown state but got action %s",msg.action)
+    end
 end
 
 --打牌
 function maajan_table:on_cs_act_discard(player, msg)
     if msg and msg.tile and mj_util.check_tile(msg.tile) then
         self:clear_deposit_and_time_out(player)
-        self:safe_event({chair_id = player.chair_id,type = ACTION.CHU_PAI,tile = msg.tile})
     end
+    self.lock(function() self:on_action_chu_pai(player,msg) end)
 end
 
 --过
 function maajan_table:on_cs_act_pass(player, msg)
     self:clear_deposit_and_time_out(player)
-    self:safe_event({chair_id = player.chair_id,type = ACTION.PASS})
 end
 
 --托管
@@ -2269,42 +2317,11 @@ function maajan_table:on_cs_act_trustee(player, msg)
 end
 
 function maajan_table:on_cs_huan_pai(player,msg)
-    self:safe_event({chair_id = player.chair_id,player = player,type = ACTION.HUAN_PAI,msg = msg})
+    self.lock(function() self:on_huan_pai(player,msg) end)
 end
 
 function maajan_table:on_cs_ding_que(player,msg)
-    self:safe_event({chair_id = player.chair_id,player = player,type = ACTION.DING_QUE,msg = msg})
-end
-
-function maajan_table:safe_event(evt)
-    -- if self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE then
-    --     if self.last_act ~= self.cur_state_FSM then
-    --         for _,p in pairs(self.players) do
-    --             if p and p.pai then 
-    --                 log.info(mj_util.getPaiStr(self:tile_count_2_tiles(p.pai.shou_pai))) 
-    --             end
-    --         end
-    --         self.last_act = self.cur_state_FSM
-    --     end
-    -- end
-
-    log.dump(evt)
-    
-    if not self.co then
-        log.warning("maajan_table:safe_event safe_event got nil co")
-        return
-    end
-
-    local status = coroutine.status(self.co)
-    if status ~= "suspended" then
-        log.warning("maajan_table:safe_event safe_event non suspend")
-        return
-    end
-
-    local ret,msg = resume(self.co,evt)
-    if not ret then
-        error(debug.traceback(self.co,msg))
-    end
+    self.lock(function() self:on_ding_que(player,msg) end)
 end
 
 function maajan_table:chu_pai_player()
@@ -2493,8 +2510,6 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         }
     end
 
-    log.dump(msg.pb_rec_data)
-
     if self.cur_round and self.cur_round > 0 then
         send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
     end
@@ -2579,14 +2594,25 @@ function maajan_table:reconnect(player)
         return
     end
 
+
     if self.cur_state_FSM == FSM_S.FAST_START_VOTE then
-        self:safe_event({type = ACTION.RECONNECT,player = player,})
+        self:on_reconnect_when_fast_start_vote(player)
         base_table.reconnect(self,player)
         return
     end
 
-    if self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.PER_BEGIN then
-        self:safe_event({type = ACTION.RECONNECT,player = player,})
+    if self.cur_state_FSM == FSM_S.HUAN_PAI then
+        self:on_reconnect_when_huan_pai(player)
+    elseif self.cur_state_FSM == FSM_S.DING_QUE then
+        self:on_reconnect_when_ding_que(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_CHU_PAI then
+        self:on_reconnect_when_chu_pai(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_ACTION_AFTER_CHU_PAI then
+        self:on_reconnect_when_action_after_chu_pai(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_ACTION_AFTER_MO_PAI then
+        self:on_reconnect_when_action_after_mo_pai(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_QIANG_GANG_HU then
+        self:on_reconnect_when_action_qiang_gang_hu(player)
     end
 
     self:send_hu_status(player)
