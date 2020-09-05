@@ -2079,6 +2079,16 @@ function maajan_table:on_game_overed()
 
     local trustee_type,ready_seconds = self:get_trustee_conf()
     if trustee_type and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+        self:foreach(function(p)
+			if p.trustee then 
+				self:calllater(math.random(2,3),function()
+					if not self.ready_list[p.chair_id] then
+						self:ready(p)
+					end
+				end)
+			end
+        end)
+        
         self:begin_clock_timer(ready_seconds,function()
             self:cancel_clock_timer()
             self:cancel_all_auto_action_timer()
