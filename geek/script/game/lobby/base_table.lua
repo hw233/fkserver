@@ -508,7 +508,7 @@ function base_table:cost_tax(winlose)
 		return
 	end
 
-	if taxconf.big_win and winlose then
+	if taxconf.big_win and winlose and table.nums(winlose) > 0 then
 		log.dump(winlose)
 		log.dump(taxconf)
 		local bigwin = taxconf.big_win
