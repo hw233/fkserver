@@ -1073,7 +1073,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
 
         local chu_pai_player = self:chu_pai_player()
         
-
         local player = self.players[action.chair_id]
         if not player then
             log.error("do action %s,nil player in chair %s",action.done.action,action.chair_id)
@@ -1156,14 +1155,14 @@ function maajan_table:on_action_after_chu_pai(player,msg)
 
         if action.done.action == ACTION.PASS then
             if self.rule.play.guo_zhuang_hu then
-                local hu_action = self.waiting_actions[player.chair_id].actions[ACTION.HU]
+                local hu_action = action.actions[ACTION.HU]
                 if hu_action then
                     player.guo_zhuang_hu = self:max_hu(player.pai,hu_action)
                 end
             end
 
             if self.rule.play.guo_shou_peng then
-                local peng_action = self.waiting_actions[player.chair_id].actions[ACTION.PENG]
+                local peng_action = action.actions[ACTION.PENG]
                 if peng_action then
                     player.guo_shou_peng = peng_action.tile
                 end
@@ -1175,8 +1174,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         end
 
         self:done_last_action(player,{action = action.done.action,tile = tile})
-
-        return action.done.action == ACTION.PASS
     end
 
     local top_action
@@ -1188,8 +1185,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         end
         table.insert(actions_to_do,action)
     end
-
-    self.waiting_actions = {}
     
     do_action(actions_to_do)
 end
