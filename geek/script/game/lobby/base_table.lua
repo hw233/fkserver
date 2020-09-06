@@ -958,7 +958,7 @@ function base_table:dismiss()
 	end
 
 	self:cancel_delay_dismiss()
-
+	self:cancel_all_dealy_kickout()
 	self:on_private_pre_dismiss()
 
 	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
@@ -1084,8 +1084,10 @@ end
 function base_table:delay_kickout(player)
 	log.info("delay_kickout %s",player.guid)
 	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
-		player:forced_exit()
-		player.kickout_timer = nil
+		if not self.ext_round_status or self.ext_round_status == EXT_ROUND_STATUS.FREE then
+			player:forced_exit()
+		end
+		self:cancel_delay_kickout(player)
 	end)
 end
 
@@ -1097,6 +1099,12 @@ function base_table:cancel_delay_kickout(player)
 	
 	player.kickout_timer:kill()
 	player.kickout_timer = nil
+end
+
+function base_table:cancel_all_dealy_kickout()
+	self:foreach(function(p)
+		self:cancel_delay_kickout(p)
+	end)
 end
 
 -- 玩家站起
@@ -1564,12 +1572,15 @@ function base_table:on_process_over()
 			return
 		end
 	end)
+
+	self.ext_round_status = EXT_ROUND_STATUS.FREE
 end
 
 -- 开始游戏
 function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
 	self:cancel_delay_dismiss()
+	self:cancel_all_dealy_kickout()
 	local result_ = self:check_single_game_is_maintain()
 	if result_ == true then
 		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
@@ -1663,6 +1674,7 @@ function base_table:private_init(private_id,rule,conf)
 	self.start_count = conf.chair_count
 	self.conf = conf
 	self:cancel_delay_dismiss()
+	self:cancel_all_dealy_kickout()
 	self.ext_round_status = EXT_ROUND_STATUS.FREE
 	self:on_private_inited()
 end
