@@ -287,10 +287,11 @@ end
 
 function pdk_table:get_trustee_conf()
 	local trustee = self.rule and self.rule.trustee or nil
-	if trustee and trustee.second_opt ~= nil then
-	    local trstee_conf = self:room_private_conf().trustee
+	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
+	    local trstee_conf = self.room_.conf.private_conf.trustee
 	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    return seconds
+	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
+	    return type,seconds
 	end
     
 	return nil
@@ -322,8 +323,8 @@ function pdk_table:begin_discard()
 		end
 	end
 
-	local trustee_seconds = self:get_trustee_conf()
-	if trustee_seconds then
+	local trustee_type,trustee_seconds = self:get_trustee_conf()
+	if trustee_type and trustee_seconds then
 		local player = self:cur_player()
 		self:begin_clock_timer(trustee_seconds,function()
 			auto_discard(player)
@@ -453,8 +454,8 @@ function pdk_table:on_game_overed()
 	self.status = TABLE_STATUS.FREE
 	base_table.on_game_overed(self)
 	
-	local ready_seconds = self:get_trustee_conf()
-	if ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+	local trustee_type,ready_seconds = self:get_trustee_conf()
+	if trustee_type and ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
 		self:foreach(function(p)
 			if p.trustee then 
 				self:calllater(math.random(2,3),function()
