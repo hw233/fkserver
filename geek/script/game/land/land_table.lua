@@ -117,6 +117,8 @@ end
 
 function land_table:on_started(player_count)
 	log.info("land_table:on_started %s.",player_count)
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
 
 	self.start_count = player_count
 	base_table.on_started(self,player_count)
@@ -207,6 +209,8 @@ function land_table:begin_compete_landlord()
 		end
 	end
 
+
+
 	self.landlord_swap = nil
 	self:allow_compete_landlord()
 end
@@ -215,6 +219,76 @@ function land_table:allow_compete_landlord()
 	self:broadcast2client("SC_DdzCallLandlordRound",{
 		chair_id = self.cur_competer
 	})
+
+	local function auto_compete_landlord(player)
+		local play = self.rule.play
+		local auto_call_action = {
+			[true] = {
+				[-4] = -4,
+				[-3] = -3,
+				[-2] = -3,
+				[-1] = -3,
+			},
+			[false] = {
+				[-4] = -4,
+				[1] = 3,
+				[2] = 3,
+				[3] = -4,
+			}
+		}
+
+		-- -4:不叫 -3:不抢  -2:叫地主  -1:抢地主  1:1分 2:2分 3:3分  
+		local is_call_landlord = play.call_landlord and true or false
+		if play.san_da_must_call then
+			local auto_must_call_action = {
+				[true] = {
+					[-4] = -2,
+					[-3] = -3,
+					[-2] = -3,
+					[-1] = -3,
+				},
+				[false] = {
+					[-4] = 3,
+					[-3] = 3,
+					[-2] = 3,
+					[-1] = 3,
+				}
+			}
+
+			local da_sum = table.sum(player.hand_cards,function(_,c)
+				return  (c == 96 or c == 97 or c %  20 == 15) and 1 or 0
+			end)
+
+			if da_sum >= 3 then
+				action = auto_must_call_action[is_call_landlord][self.last_landlord_cometition  or -4]
+			else
+				action = auto_call_action[is_call_landlord][self.last_landlord_cometition  or -4]
+			end
+		else
+			action = auto_call_action[is_call_landlord][self.last_landlord_cometition  or -4]
+		end
+
+		log.dump(action)
+
+		self:do_compete_landlord(player,{
+			action = action,
+		})
+	end
+
+	local trustee_type,seconds = self:get_trustee_conf()
+	if trustee_type and seconds then
+		local player = self.players[self.cur_competer]
+		self:begin_clock_timer(seconds,function()
+			auto_compete_landlord(player)
+			self:set_trusteeship(player,true)
+		end)
+
+		if player.trustee then
+			self:begin_action_timer(math.random(1,2),function()
+				auto_compete_landlord(player) 
+			end)
+		end
+	end
 end
 
 function land_table:next_landlord_competer()
@@ -264,6 +338,9 @@ function  land_table:do_compete_landlord_score(player,msg)
 			end
 		end
 	end
+
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
 
 	table.insert(self.game_log.landlord_compete,{
 		chair_id = player.chair_id,
@@ -352,6 +429,8 @@ function land_table:do_compete_landlord_normal(player,msg)
 			end
 		end
 	end
+
+	self:cancel_clock_timer()
 
 	table.insert(self.game_log.landlord_compete,{
 		chair_id = player.chair_id,
@@ -481,6 +560,46 @@ function land_table:get_max_times()
 	return 16
 end
 
+
+function land_table:begin_clock_timer(timeout,fn)
+	if self.clock_timer then 
+        log.warning("land_table:begin_clock_timer timer not nil")
+        self.clock_timer:kill()
+    end
+
+    self.clock_timer = self:new_timer(timeout,fn)
+    self:begin_clock(timeout)
+
+    log.info("land_table:begin_clock_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.clock_timer.id,timeout)
+end
+
+function land_table:cancel_clock_timer()
+	log.info("land_table:cancel_clock_timer table_id:%s,timer:%s",self.table_id_,self.clock_timer and self.clock_timer.id or nil)
+    if self.clock_timer then
+        self.clock_timer:kill()
+        self.clock_timer = nil
+    end
+end
+
+function land_table:begin_action_timer(timeout,fn)
+	if self.auto_discard_timer then 
+        log.warning("land_table:begin_action_timer timer not nil")
+        self.auto_discard_timer:kill()
+    end
+
+    self.auto_discard_timer = self:new_timer(timeout,fn)
+
+    log.info("land_table:begin_action_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_discard_timer.id,timeout)
+end
+
+function land_table:cancel_discard_timer()
+	log.info("land_table:cancel_discard_timer table_id:%s,timer:%s",self.table_id_,self.auto_discard_timer and self.auto_discard_timer.id or nil)
+	if self.auto_discard_timer then
+		self.auto_discard_timer:kill()
+		self.auto_discard_timer = nil
+	end
+end
+
 function land_table:begin_discard()
 	self:broadcast2client("SC_DdzDiscardRound",{
 		chair_id = self.cur_discard_chair
@@ -488,27 +607,33 @@ function land_table:begin_discard()
 
 	local function auto_discard(player)
 		if not self.last_discard then
-
+			local cards = cards_util.seek_greatest(player.hand_cards,self.rule)
+			assert(cards and #cards > 0)
+			self:do_action_discard(player,cards)
 		else
-			local type,value = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count)
+			local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
+			if cards then
+				assert(#cards > 0)
+				self:do_action_discard(player,cards)
+			else
+				self:do_action_pass(player)
+			end
 		end
 	end
 
-	local trustee_type,trustee_seconds = self:get_trustee_conf()
-	if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
-		-- local player = self:cur_player()
-		-- if not player.trustee then
-		-- 	timer_manager:calllater(math.random(1,3),function()
-		-- 		auto_discard(player)
-		-- 	end)
-		-- else
-		-- 	timer_manager:calllater(trustee_seconds,function()
-		-- 		auto_discard(player)
-		-- 		self:set_trusteeship(player,true)
-		-- 	end)
-		-- end
+	local trustee_type,seconds = self:get_trustee_conf()
+	if trustee_type and seconds then
+		local player = self:cur_player()
+		self:begin_clock_timer(seconds,function()
+			auto_discard(player)
+			self:set_trusteeship(player,true)
+		end)
 
-		-- self:begin_clock(trustee_seconds)
+		if player.trustee then
+			self:begin_action_timer(math.random(1,2),function()
+				auto_discard(player) 
+			end)
+		end
 	end
 end
 
@@ -586,6 +711,8 @@ end
 function land_table:on_game_overed()
     self.game_log = {}
 
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
     self:clear_ready()
 
     self:foreach(function(p)
@@ -599,13 +726,6 @@ function land_table:on_game_overed()
         end
     end)
 
-    local trustee_type,_ = self:get_trustee_conf()
-    self:foreach(function(p)
-        if trustee_type and trustee_type == 3 then
-            self:set_trusteeship(p)
-        end
-	end)
-
 	self.landlord = nil
 	self.last_discard = nil
 	self.base_score = nil
@@ -617,11 +737,41 @@ function land_table:on_game_overed()
 	
 	self:update_status(TABLE_STATUS.FREE)
 
-    base_table.on_game_overed(self)
+	base_table.on_game_overed(self)
+	
+	local trustee,ready_seconds = self:get_trustee_conf()
+	if trustee and ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
+		self:foreach(function(p)
+			if p.trustee then 
+				self:calllater(math.random(2,3),function()
+					if not self.ready_list[p.chair_id] then
+						self:ready(p)
+					end
+				end)
+			end
+		end)
+        self:begin_clock_timer(ready_seconds,function()
+            self:cancel_clock_timer()
+            self:cancel_discard_timer()
+            self:foreach(function(p)
+                if not self.ready_list[p.chair_id] then
+                    self:ready(p)
+                    if not p.trustee then
+                        self:set_trusteeship(p,true)
+                    end
+                end
+            end)
+        end)
+	end
+	
 end
 
 function land_table:on_process_over()
 	self.cur_competer = nil
+
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
+
     self:broadcast2client("SC_DdzFinalGameOver",{
 	players = table.series(self.players,function(p,chair)
 		local statistics = table.series(p.statistics or {},function(c,t) 
@@ -636,14 +786,6 @@ function land_table:on_process_over()
 		}
 	end),
     })
-
-    local trustee_type,_ = self:get_trustee_conf()
-    self:foreach(function(p)
-        p.statistics = nil
-        if trustee_type then
-            self:set_trusteeship(p)
-        end
-    end)
 
     local total_winlose = {}
     for _,p in pairs(self.players) do
@@ -788,6 +930,9 @@ function land_table:do_action_discard(player, cards)
 		return
 	end
 
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
+
 	self.last_discard = {
 		cards = cards,
 		chair = player.chair_id,
@@ -859,6 +1004,9 @@ function land_table:do_action_pass(player)
 		})
 		return
 	end
+
+	self:cancel_clock_timer()
+	self:cancel_discard_timer()
 
 	-- 记录日志
 	table.insert(self.game_log.actions,{
