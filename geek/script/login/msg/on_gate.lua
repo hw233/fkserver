@@ -792,9 +792,9 @@ function on_cs_request_sms_verify_code(msg,session_id)
     end
 
     local prefix = string.sub(phone_num,1, 3)
-    if prefix == "170" or prefix == "171" then
-        return enum.LOGIN_RESULT_TEL_ERR
-    end
+    -- if prefix == "170" or prefix == "171" then
+    --     return enum.LOGIN_RESULT_TEL_ERR
+    -- end
 
     if prefix == "999" then
         local expire = math.floor(global_conf.sms_expire_time or 60)
