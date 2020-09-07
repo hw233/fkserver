@@ -1053,6 +1053,14 @@ function  land_table:reconnect(player)
 		})
 	end
 
+	if self.status and self.status ~= TABLE_STATUS.FREE and self.clock_timer then
+		self:begin_clock(self.clock_timer.remainder,player)
+	end
+
+	if player.trustee then
+		self.set_trusteeship(player)
+	end
+
 	base_table.reconnect(self,player)
 end
 
