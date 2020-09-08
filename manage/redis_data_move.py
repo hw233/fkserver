@@ -11,7 +11,20 @@ for k in club_mem_keys:
     print(cid)
     mems = c.smembers(k)
     print(mems)
-    c.zadd("club:zmember:"+str(cid),
-        dict(zip(mems,[i for i in range(0,len(mems))]))
+    roles = [c.hget("club:role:"+str(cid),m) or b'1' for m in mems]
+    c.zadd("club:zmember:{}".format(cid),
+        dict(zip(mems,roles))
         )
     
+partner_mem_keys = c.keys("club:partner:member:[0-9]*:[0-9]*")
+for k in partner_mem_keys:
+    ks = str(k).strip("'").split(":")
+    cid = int(ks[3])
+    pid = int(ks[4])
+    print(cid,pid)
+    mems = c.smembers(k)
+    print(mems)
+    roles = [c.hget("club:role:"+str(cid),m) or b'1' for m in mems]
+    c.zadd("club:partner:zmember:{}:{}".format(cid,pid),
+        dict(zip(mems,roles))
+        )
