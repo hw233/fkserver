@@ -2736,3 +2736,81 @@ function on_cs_club_invite_join_room(msg,guid)
     end)
     onlineguid.broadcast(table.keys(mems),"S2C_NOTIFY_INVITE_JOIN_ROOM",notify)
 end
+
+function on_cs_search_club_player(msg,guid)
+    local club_id = msg.club_id
+    local partner_id = msg.partner
+    local pattern = msg.guid_pattern
+
+    if not base_clubs[club_id] then
+        onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local self_role = club_role[club_id][guid]
+
+    local key
+    if partner_id and partner_id ~= 0 then
+        if not self_role or self_role == enum.CRT_PLAYER then
+            onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
+                result = enum.ERROR_PLAYER_NO_RIGHT
+            })
+            return
+        end
+        
+        local role = club_role[club_id][partner_id]
+        if not role or role == enum.CRT_PLAYER then
+            onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
+                result = enum.ERROR_PARAMETER_ERROR
+            })
+            return
+        end
+        key = string.format("club:partner:member:%s:%s",club_id,partner_id)
+    else
+        if not self_role or (self_role ~= enum.CRT_ADMIN and self_role ~= enum.CRT_BOSS) then
+            onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
+                result = enum.ERROR_PLAYER_NO_RIGHT
+            })
+            return
+        end
+
+        key = string.format("club:member:%s",club_id)
+    end
+
+    local mems = {}
+    local cursor = "0"
+    repeat
+        local scanner = reddb:sscan(key,cursor,"MATCH","*"..pattern.."*","COUNT",500)
+        if not scanner or #scanner < 2 then break end
+        cursor = scanner[1]
+        table.unionto(mems,scanner[2])
+    until cursor == "0"
+
+    local money_id = club_money_type[club_id]
+    local infos = table.series(mems,function(m)
+        local p = base_players[tonumber(m)]
+        if not p then return end
+
+        local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+        return {
+            info = {
+                guid = p.guid,
+                icon = p.icon,
+                nickname = p.nickname,
+                sex = p.sex,
+            },
+            role = role,
+            money = {
+                money_id = money_id,
+                count = player_money[p.guid][money_id] or 0,
+            }
+        }
+    end)
+
+    onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
+        result = enum.ERROR_NONE,
+        players = infos,
+    })
+end

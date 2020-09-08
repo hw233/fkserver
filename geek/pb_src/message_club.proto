@@ -532,3 +532,16 @@ message S2C_NOTIFY_INVITE_JOIN_ROOM{
 	PLAYER_BASE_INFO inviter = 1;
     TABLE_INFO table = 2;
 }
+
+message CS_SEARCH_CLUB_PLAYER{
+	enum MsgID { Nil = 0; ID = 14117; }
+	string guid_pattern = 1;
+	int32  club_id = 2;
+	int32  partner = 3;
+}
+
+message SC_SEARCH_CLUB_PLAYER{
+	enum MsgID { Nil = 0; ID = 14118; }
+	int32 result = 1;
+	repeated CLUB_MEMBER players = 2;
+}

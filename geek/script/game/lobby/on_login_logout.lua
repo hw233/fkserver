@@ -2101,31 +2101,11 @@ end
 
 function on_cs_search_player(msg,guid)
 	local player_guid = msg.guid
-	local club_id = msg.club_id
-
 	if not player_guid or player_guid == 0 then
 		onlineguid.send(guid,"SC_SearchPlayer",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
-	end
-
-	local club
-	if not club_id and club_id ~= 0 then
-		club = base_clubs[club_id]
-		if not club then
-			onlineguid.send(guid,"SC_SearchPlayer",{
-				result = enum.ERROR_CLUB_NOT_FOUND
-			})
-			return
-		end
-
-		if not club_members[club_id][player_guid] then
-			onlineguid.send(guid,"SC_SearchPlayer",{
-				result = enum.ERROR_NOT_MEMBER
-			})
-			return
-		end
 	end
 
 	local player = base_players[player_guid]

@@ -49,3 +49,5 @@ register_dispatcher("C2S_CLUB_GET_CONFIG",on_cs_club_get_config)
 register_dispatcher("C2S_CLUB_EDIT_CONFIG",on_cs_club_edit_config)
 
 register_dispatcher("C2S_CLUB_INVITE_JOIN_ROOM",on_cs_club_invite_join_room)
+
+register_dispatcher("CS_SEARCH_CLUB_PLAYER",on_cs_search_club_player)
