@@ -2135,7 +2135,9 @@ function maajan_table:on_process_over()
     self.zhuang = nil
     self.cur_state_FSM = nil
 
-    base_table.on_process_over(self)
+	base_table.on_process_over(self,{
+        balance = total_winlose,
+    })
 
     self:foreach(function(p)
         p.statistics = nil

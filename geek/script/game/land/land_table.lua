@@ -113,6 +113,8 @@ function land_table:on_process_start()
 		p.total_score = 0
 		p.total_money = 0
 	end)
+
+	base_table.on_process_start(self)
 end
 
 function land_table:on_started(player_count)
@@ -802,7 +804,9 @@ function land_table:on_process_over()
     end
 
     self.landlord = nil
-    base_table.on_process_over(self)
+	base_table.on_process_over(self,{
+        balance = total_winlose,
+    })
 end
 
 -- 检查是否可取消准备

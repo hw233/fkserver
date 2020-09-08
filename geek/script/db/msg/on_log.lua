@@ -52,10 +52,12 @@ function on_sd_log_ext_game_round_start(msg)
     local club = msg.club
     local template = msg.template
     local game_id = msg.game_id
+    local game_name = msg.game_name
 
     local ret = dbopt.log:query([[
-            INSERT INTO t_log_round(round,table_id,club,template,start_time,end_time,create_time) VALUES('%s',%s,%s,%s,unix_timestamp(),unix_timestamp(),unix_timestamp());
-        ]],round,table_id,club or 'NULL',template or "NULL")
+            INSERT INTO t_log_round(round,table_id,club,template,game_id,game_name,log,start_time,end_time,create_time) 
+            VALUES('%s',%s,%s,%s,%s,'%s','',unix_timestamp(),unix_timestamp(),unix_timestamp());
+        ]],round,table_id,club or 'NULL',template or "NULL",game_id or 'NULL',game_name or "")
     if ret.errno then
         log.error("INSERT INTO t_log_round error:%s:%s",ret.errno,ret.err)
         return
@@ -77,10 +79,12 @@ function on_sd_log_ext_game_round_end(msg)
     local round = msg.ext_round
     local table_id = msg.table_id
     local club = msg.club
+    local log = msg.log
 
+    json.encode_sparse_array(true)  
     local ret = dbopt.log:query([[
-        UPDATE t_log_round SET end_time = unix_timestamp() WHERE round = '%s';
-    ]],round,table_id)
+        UPDATE t_log_round SET end_time = unix_timestamp(),log = '%s' WHERE round = '%s';
+    ]],log and json.encode(log) or "",round)
     if ret.errno then
         log.error("UPDATE t_log_round error:%s:%s",ret.errno,ret.err)
         return
@@ -103,6 +107,7 @@ end
 
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
+    json.encode_sparse_array(true)  
     local sql = string.format([[
         INSERT INTO `log`.`t_log_game` (`round_id`, `game_id`,`game_name`, `log`, `ext_round_id`, `start_time`,`end_time`,`created_time`)
         VALUES ('%s',%d, '%s', '%s','%s', %d, %d, %d);

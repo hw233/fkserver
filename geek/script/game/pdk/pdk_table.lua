@@ -513,8 +513,10 @@ function pdk_table:on_process_over()
         p.total_score = nil
     end
 
-    self.zhuang = nil
-    base_table.on_process_over(self)
+	self.zhuang = nil
+	base_table.on_process_over(self,{
+        balance = total_winlose,
+    })
 end
 
 -- 检查是否可取消准备

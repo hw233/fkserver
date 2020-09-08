@@ -1977,7 +1977,9 @@ function maajan_table:on_process_over()
 
     self.cur_state_FSM = nil
 
-    base_table.on_process_over(self)
+    base_table.on_process_over(self,{
+        balance = total_winlose,
+    })
 end
 
 function maajan_table:ding_zhuang()

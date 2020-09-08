@@ -1531,39 +1531,43 @@ function base_table:on_process_start(player_count)
 		club = club_id,
 		template = template_id,
 		game_id = def_first_game_type,
+		game_name = def_game_name,
 		ext_round = self.ext_round_id,
 		guids = table.series(self.players,function(p) return p.guid end),
 		table_id = self.private_id
 	})
 end
 
-function base_table:on_process_over()
+function base_table:on_process_over(l)
 	if not self.private_id then 
+		log.warning("base_table:on_process_over [%s] got nil private id.",self.private_id)
 		return
 	end
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
-		log.warning("base_table:on_process_over [%s] got nil private table.",self.private_id)
+		log.info("base_table:on_process_over [%s] got nil private table.",self.private_id)
 	end
 
 	local club_id = private_table.club_id
 	if not club_id then
-		log.warning("base_table:on_process_over [%s] got private club.",self.private_id)
+		log.info("base_table:on_process_over [%s] got private club.",self.private_id)
 	end
 
 	local template_id = private_table.template
 	if not template_id then
-		log.warning("base_table:on_process_over [%s] got nil template.",self.private_id)
+		log.info("base_table:on_process_over [%s] got nil template.",self.private_id)
 	end
 
 	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",{
 		club = club_id,
 		template = template_id,
 		game_id = def_first_game_type,
+		game_name = def_game_name,
 		ext_round = self.ext_round_id,
 		guids = table.series(self.players,function(p) return p.guid end),
-		table_id = self.private_id
+		table_id = self.private_id,
+		log = l,
 	})
 
 	self:foreach(function(p)
