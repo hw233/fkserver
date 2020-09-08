@@ -431,7 +431,8 @@ function table.series(tb,fn)
     local s = {}
     for k,v in pairs(tb or {}) do
         if fn then
-            table.insert(s,fn(v,k))
+            local tmp = fn(v,k)
+            if tmp ~= nil then table.insert(s,tmp) end
         else
             table.insert(s,v)
         end
