@@ -110,6 +110,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
     })
     reddb:hmset("club:info:"..tostring(id),c)
     reddb:sadd("club:member:"..tostring(id),owner_guid)
+    reddb:zadd("club:zmember:"..tostring(id),enum.CRT_BOSS,owner_guid)
     reddb:hset(string.format("player:money:%d",owner_guid),money_info.id,0)
     reddb:sadd(string.format("player:club:%d:%d",owner_guid,tp),id)
     reddb:sadd(string.format("club:team:%d",parent or 0),id)
@@ -261,6 +262,7 @@ function base_club:join(guid,inviter)
     channel.publish("db.?","msg","SD_JoinClub",{club_id = self.id,guid = guid})
 
     reddb:sadd(string.format("club:member:%s",self.id),guid)
+    reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
     reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
     player_club[guid][self.type] = nil
 end
@@ -268,6 +270,7 @@ end
 function base_club:batch_join(guids)
     for _,guid in pairs(guids) do
         reddb:sadd(string.format("club:member:%s",self.id),guid)
+        reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
         reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
         player_club[guid][self.type] = nil
     end
@@ -277,7 +280,8 @@ end
 
 function base_club:exit(guid)
     local money_id = club_money_type[self.id]
-	reddb:srem(string.format("club:member:%s",self.id),guid)
+    reddb:srem(string.format("club:member:%s",self.id),guid)
+	reddb:zrem(string.format("club:zmember:%s",self.id),guid)
     reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
     reddb:hdel(string.format("player:money:%d",guid),money_id)
     reddb:hdel(string.format("club:role:%d",self.id),guid)

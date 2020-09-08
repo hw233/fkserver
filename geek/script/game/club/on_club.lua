@@ -731,6 +731,8 @@ function on_cs_club_query_memeber(msg,guid)
     local partner = msg.partner
     local owner = partner or guid
     local req_role = msg.role
+    local page_num = msg.page_num
+    local page_size = msg.page_size
 
     local club = base_clubs[club_id]
     if not club then
@@ -760,36 +762,52 @@ function on_cs_club_query_memeber(msg,guid)
     end
 
     local money_id = club_money_type[club_id]
-    local mems = (partner and partner ~= 0) and club_partner_member[club_id][partner] or club_member[club_id]
+    
+    local key = (partner and partner ~= 0) and 
+        string.format("club:partner:zmember:%s:%s",club_id,partner) or 
+        string.format("club:zmember:%s",club_id)
 
-    local ms = {}
-    for mem,_ in pairs(mems or {}) do
-        local p = base_players[mem]
-        if p then
-            local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
-            if not req_role or req_role == 0 or req_role == role then
-                table.insert(ms,{
-                    info = {
-                        guid = p.guid,
-                        icon = p.icon,
-                        nickname = p.nickname,
-                        sex = p.sex,
-                    },
-                    role = role,
-                    money = {
-                        money_id = money_id,
-                        count = player_money[p.guid][money_id] or 0,
-                    }
-                })
-            end
+    local page_index = page_num and page_num - 1 or 0
+    page_size = page_size or 30
+    page_size = page_size > 100 and 100 or page_size
+
+    local score_min = (req_role and req_role ~= 0) and req_role or enum.CRT_PLAYER
+    local score_max = (req_role and req_role ~= 0) and req_role or enum.CRT_BOSS
+
+    local total_size = reddb:zcount(key,score_min,score_max)
+    local mems = page_size > 0 and 
+        reddb:zrevrangebyscore(key,score_max,score_min,"limit",page_index * page_size,page_size) or
+        reddb:zrevrangebyscore(key,score_max,score_min)
+
+    local ms = table.series(mems,function(m)
+        local p = base_players[tonumber(m)]
+        if not p then return end
+
+        local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+        if not req_role or req_role == 0 or req_role == role then
+            return {
+                info = {
+                    guid = p.guid,
+                    icon = p.icon,
+                    nickname = p.nickname,
+                    sex = p.sex,
+                },
+                role = role,
+                money = {
+                    money_id = money_id,
+                    count = player_money[p.guid][money_id] or 0,
+                }
+            }
         end
-    end
+    end)
 
     onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
         result = enum.ERROR_NONE,
         club_id = club_id,
         player_list = ms,
         role = req_role,
+        total_page = page_size > 0 and math.ceil(total_size / page_size) or 1,
+        page_num = page_num, 
     })
 end
 

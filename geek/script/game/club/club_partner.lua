@@ -72,6 +72,8 @@ function club_partner:create(club_id,guid,parent)
 
     reddb:hset(string.format("club:member:partner:%s",club_id),guid,parent)
     reddb:hset(string.format("club:role:%s",club_id),guid,enum.CRT_PARTNER)
+    reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
+    reddb:zincrby(string.format("club:partner:zmember:%s:%s",club_id,parent),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
 
     setmetatable(cp,{__index = club_partner})
 
@@ -92,6 +94,7 @@ function club_partner:join(guid)
 
     reddb:hset(string.format("club:member:partner:%s",self.club_id),guid,self.guid)
     reddb:sadd(string.format("club:partner:member:%s:%s",self.club_id,self.guid),guid)
+    reddb:zadd(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),enum.CRT_PLAYER,guid)
     return enum.ERROR_NONE
 end
 
@@ -103,6 +106,7 @@ function club_partner:exit(mem)
 
     reddb:hdel(string.format("club:member:partner:%s",self.club_id),mem)
     reddb:srem(string.format("club:partner:member:%s:%s",self.club_id,self.guid),mem)
+    reddb:zrem(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),mem)
     channel.publish("db.?","msg","SD_ExitPartner",{
         club = self.club_id,guid = mem,partner = self.guid
     })
@@ -126,7 +130,10 @@ function club_partner:dismiss()
         reddb:hdel(string.format("club:member:partner:%s",self.club_id),guid)
     end
 
+    reddb:zincrby(string.format("club:zmember:%s",self.club_id),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
+    reddb:zincrby(string.format("club:partner:zmember:%s:%s",self.club_id,self.parent),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
     reddb:del(string.format("club:partner:member:%s:%s",self.club_id,self.guid))
+    reddb:del(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid))
     reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
     return enum.ERROR_NONE
 end

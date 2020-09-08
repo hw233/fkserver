@@ -71,6 +71,8 @@ message C2S_CLUB_PLAYER_LIST_REQ{
     int32 club_id = 1;      //俱乐部ID
     int32 partner = 2;    //玩家ID，SEARCH_LIST时需要传递此参数
     int32 role = 3;    //下属类型
+    int32 page_num = 4;
+    int32 page_size = 5;
 }
 
 //俱乐部成员列表数据
@@ -81,6 +83,8 @@ message S2C_CLUB_PLAYER_LIST_RES{
     int32 club_id = 2;
     repeated CLUB_MEMBER player_list = 3; //玩家列表
     int32 role = 4;
+    int32 total_page = 5;
+    int32 page_num =6;
 }
 
 //俱乐部成员管理，基础操作
