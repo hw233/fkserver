@@ -180,6 +180,8 @@ local function open_id_login(msg,gate)
         promoter = player.promoter,
     }
 
+    base_players[guid] = nil
+
     if ip then
         reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
     end
@@ -342,6 +344,8 @@ local function sms_login(msg,_,session_id)
             ip = player.ip,
             promoter = player.promoter,
         }
+
+        base_players[guid] = nil
     end
 
 	return enum.LOGIN_RESULT_SUCCESS,info
@@ -462,8 +466,10 @@ local function h5_login(msg,gate)
         })
     end
 
+    guid = tonumber(guid)
+
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-    local player = base_players[tonumber(guid)]
+    local player = base_players[guid]
     local info = {
         guid = player.guid,
         account = player.open_id,
@@ -484,6 +490,8 @@ local function h5_login(msg,gate)
         ip = player.ip,
         promoter = player.promoter,
     }
+
+    base_players[guid] = nil
 
     log.dump(player)
     if player.status == 0 then
