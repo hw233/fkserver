@@ -1912,7 +1912,7 @@ function on_cs_bind_phone(msg,guid)
 
 	if player.phone and player.phone ~= "" then
 		onlineguid.send(guid,"SC_RequestBindPhone",{
-			result = enum.ERROR_OPERATION_REPEATED
+			result = enum.ERROR_BIND_ALREADY
 		})
 		return
 	end
@@ -1969,16 +1969,16 @@ function on_cs_request_sms_verify_code(msg,guid)
 		return enum.LOGIN_RESULT_TEL_ERR
 	end
     
-	log.info( "RequestSms =================tel[%s] platform_id[%s]",  msg.tel, msg.platform_id)
+	log.info( "RequestSms =================tel[%s] platform_id[%s]",  phone_num, msg.platform_id)
 	local phone_num_len = string.len(phone_num)
 	if phone_num_len < 7 or phone_num_len > 18 then
 		return enum.LOGIN_RESULT_TEL_LEN_ERR
 	end
     
-	local prefix = string.sub(phone_num,0, 3)
-	if prefix == "170" or prefix == "171" then
-		return enum.LOGIN_RESULT_TEL_ERR
-	end
+	-- local prefix = string.sub(phone_num,0, 3)
+	-- if prefix == "170" or prefix == "171" then
+	-- 	return enum.LOGIN_RESULT_TEL_ERR
+	-- end
     
 	if prefix == "999" then
 	    local expire = math.floor(global_conf.sms_expire_time or 60)
@@ -1998,8 +1998,12 @@ function on_cs_request_sms_verify_code(msg,guid)
 	local rkey = string.format("sms:verify_code:guid:%s",guid)
 	reddb:set(rkey,code)
 	reddb:expire(rkey,expire)
-	channel.send("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
-	return enum.LOGIN_RESULT_SUCCESS,expire
+	local reqid = channel.call("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+	onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
+		result = not reqid and enum.ERROR_REQUEST_SMS_FAILED or enum.ERROR_NONE,
+		timeout = expire,
+		phone_number = phone_num,
+	})
 end
 
 function on_cs_game_server_cfg(msg,guid)
