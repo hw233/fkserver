@@ -299,23 +299,24 @@ local function sms_login(msg,_,session_id)
     local ret,info
     local uuid = reddb:get(string.format("player:phone_uuid:%s",msg.phone))
     if not uuid or uuid == "" then
-        uuid = gen_uuid(phone)
-        reddb:set(string.format("player:phone_uuid:%s",phone),uuid)
-        ret,info =  reg_account({
-            ip = msg.ip,
-            open_id = uuid,
-            nickname = "guest_"..tostring(math.random(20003,999999)),
-            icon = math.random(1,1000),
-            sex = math.random(1,2),
-            package_name = msg.package_name,
-            phone = msg.phone,
-            phone_type = msg.phone_type,
-            version = msg.version,
-            promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
-        })
-        if ret ~= enum.ERROR_NONE then
-            return ret
-        end
+        return enum.ERROR_LOGIN_NO_BINDING
+        -- uuid = gen_uuid(phone)
+        -- reddb:set(string.format("player:phone_uuid:%s",phone),uuid)
+        -- ret,info =  reg_account({
+        --     ip = msg.ip,
+        --     open_id = uuid,
+        --     nickname = "guest_"..tostring(math.random(20003,999999)),
+        --     icon = math.random(1,1000),
+        --     sex = math.random(1,2),
+        --     package_name = msg.package_name,
+        --     phone = msg.phone,
+        --     phone_type = msg.phone_type,
+        --     version = msg.version,
+        --     promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
+        -- })
+        -- if ret ~= enum.ERROR_NONE then
+        --     return ret
+        -- end
     else
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
@@ -791,7 +792,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
         return enum.LOGIN_RESULT_TEL_LEN_ERR
     end
 
-    local prefix = string.sub(phone_num,1, 3)
+    -- local prefix = string.sub(phone_num,1, 3)
     -- if prefix == "170" or prefix == "171" then
     --     return enum.LOGIN_RESULT_TEL_ERR
     -- end
@@ -815,7 +816,10 @@ function on_cs_request_sms_verify_code(msg,session_id)
     local rkey = string.format("sms:verify_code:phone:%s",phone_num)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
-    channel.publish("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+    local reqid = channel.call("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+    if not reqid then
+        return enum.ERROR_REQUEST_SMS_FAILED
+    end
     return enum.ERROR_NONE,expire
 end
 
