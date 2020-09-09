@@ -829,7 +829,10 @@ end
 
 function maajan_table:on_action_after_mo_pai(player,msg)
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
-    if not action then return end
+    if not action then 
+        log.warning("on_action_after_mo_pai invalid action guid:%s,action:%s",player.guid,msg.action)
+        return 
+    end
 
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
@@ -1353,6 +1356,10 @@ function maajan_table:broadcast_wait_discard(player)
 end
 
 function maajan_table:on_action_chu_pai(player,msg)
+    if self.cur_state_FSM == FSM_S.WAIT_CHU_PAI then
+        return
+    end
+
     local chu_pai_val = msg.tile
 
     if not mj_util.check_tile(chu_pai_val) then
