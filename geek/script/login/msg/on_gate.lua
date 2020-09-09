@@ -92,7 +92,6 @@ local function reg_account(msg)
             icon = msg.icon or default_open_id_icon,
             version = msg.version,
             login_ip = msg.ip,
-            phone = msg.phone or "",
             login_time = os.time(),
             package_name = msg.package_name,
             phone_type = msg.phone_type,
