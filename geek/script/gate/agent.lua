@@ -453,8 +453,6 @@ skynet.start(function()
     end)
 
     skynet.dispatch("forward",function (_,_,msgname,msg)
-        log.info("agent toclient msgname:%s,%s",guid,msgname)
-        log.dump(msg)
         netmsgopt.send(fd,msgname,msg)
     end)
 end)
