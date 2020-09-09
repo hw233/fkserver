@@ -134,6 +134,10 @@ function NETMSG.send(fd,msgname,msg)
     local msgstr = NETMSG.encode(msgname,msg)
     local msgid = pb.enum(msgname..".MsgID","ID")
     local packstr = NETMSG.pack(msgid,msgstr)
+    if msgname ~= "SC_HeartBeat" then
+        log.info("netmsg toclient fd:%s,msg:%s,id:%s,buff:%s",fd,msgname,msgid,#msgstr)
+        log.dump(msg)
+    end
     socketdriver.send(fd,packstr,#packstr)
 end
 
