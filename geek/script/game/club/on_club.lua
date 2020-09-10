@@ -2748,7 +2748,10 @@ function on_cs_search_club_player(msg,guid)
     local partner_id = msg.partner
     local pattern = msg.guid_pattern
 
-    if not base_clubs[club_id] then
+    log.dump(guid)
+
+    local club = base_clubs[club_id]
+    if not club then
         onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
             result = enum.ERROR_CLUB_NOT_FOUND
         })
@@ -2773,6 +2776,11 @@ function on_cs_search_club_player(msg,guid)
             })
             return
         end
+
+        if self_role == enum.CRT_ADMIN and partner_id == guid then
+            partner_id = club.owner
+        end
+
         key = string.format("club:partner:member:%s:%s",club_id,partner_id)
     else
         if not self_role or (self_role ~= enum.CRT_ADMIN and self_role ~= enum.CRT_BOSS) then
