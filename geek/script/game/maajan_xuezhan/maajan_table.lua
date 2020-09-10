@@ -1356,7 +1356,7 @@ function maajan_table:broadcast_wait_discard(player)
 end
 
 function maajan_table:on_action_chu_pai(player,msg)
-    if self.cur_state_FSM == FSM_S.WAIT_CHU_PAI then
+    if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
         return
     end
 
