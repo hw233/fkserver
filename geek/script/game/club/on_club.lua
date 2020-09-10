@@ -761,6 +761,10 @@ function on_cs_club_query_memeber(msg,guid)
         return
     end
 
+    if self_role == enum.CRT_ADMIN then
+        partner = club.owner
+    end
+
     local money_id = club_money_type[club_id]
     
     local key = (partner and partner ~= 0) and 
