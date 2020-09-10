@@ -83,7 +83,7 @@ end
 
 function NETMSG.dispatch(msgid,msg,...)
     local f = dispatcher[msgid]
-	assert(f, string.format("on_net_msg func:%s", tostring(dispatcher[msgid])))
+	assert(f, string.format("on_net_msg msgid:%s", msgid))
 
     return f(msg,...)
 end
