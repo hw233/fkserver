@@ -2678,7 +2678,7 @@ function on_cs_club_invite_join_room(msg,guid)
     local player = base_players[guid]
     if not player then
         onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
-            result = enum.ERROR_INVALID_OPERATION,
+            result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
