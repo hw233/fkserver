@@ -294,10 +294,6 @@ function base_room:force_dismiss_table(table_id)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		return result
 	end
-
-	tb:foreach(function(p)
-		p:forced_exit(enum.STANDUP_REASON_DISMISS)
-	end)
 	
 	return enum.ERROR_NONE
 end

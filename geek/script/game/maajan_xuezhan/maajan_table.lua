@@ -201,6 +201,8 @@ function maajan_table:on_private_dismissed()
     end
     self:cancel_all_auto_action_timer()
     self:cancel_clock_timer()
+
+    base_table.on_private_dismissed(self)
 end
 
 function maajan_table:get_trustee_conf()

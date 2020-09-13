@@ -83,7 +83,9 @@ function land_table:on_private_dismissed()
     self.status = nil
     for _,p in pairs(self.players) do
         p.total_money = nil
-    end
+	end
+	
+	base_table.on_private_dismissed(self)
 end
 
 function land_table:on_private_pre_dismiss()

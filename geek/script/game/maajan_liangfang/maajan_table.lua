@@ -102,6 +102,8 @@ function maajan_table:on_private_dismissed()
     for _,p in pairs(self.players) do
         p.total_money = nil
     end
+
+    base_table.on_private_dismissed(self)
 end
 
 function maajan_table:on_started(player_count)

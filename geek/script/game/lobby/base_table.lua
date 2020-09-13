@@ -261,8 +261,11 @@ end
 function base_table:clear_dismiss_request()
 	if not self.dismiss_request then return end
 
-	self.dismiss_request.timer:kill()
-	self.dismiss_request.timer = nil
+	if self.dismiss_request.timer then
+		self.dismiss_request.timer:kill()
+		self.dismiss_request.timer = nil
+	end
+
 	self.dismiss_request = nil
 end
 
@@ -289,9 +292,7 @@ function base_table:commit_dismiss(player,agree)
 			success = false,
 		})
 
-		self.dismiss_request.timer:kill()
-		self.dismiss_request.timer = nil
-		self.dismiss_request = nil
+		self:clear_dismiss_request()
 		return
 	end
 
@@ -299,18 +300,9 @@ function base_table:commit_dismiss(player,agree)
 		return
 	end
 
-	self.dismiss_request.timer:kill()
-	self.dismiss_request.timer = nil
-	self.dismiss_request = nil
-	
-	local result = self:dismiss()
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		return
-	end
+	self:clear_dismiss_request()
 
-	self:foreach(function(p)
-		p:forced_exit(enum.STANDUP_REASON_DISMISS)
-	end)
+	self:dismiss()
 end
 
 local function get_real_club_template_conf(club,template_id)
@@ -900,21 +892,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 		p:notify_sit_down(player,reconnect,privatetb)
 	end)
 
-	if self.private_id then
-		if privatetb and privatetb.club_id then
-			local club = base_clubs[privatetb.club_id]
-			if club then
-				local root = club_utils.root(club)
-				root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-					root_club = root.id,
-					club_id = club.id,
-					room_info = self:global_status_info(),
-					sync_table_id = self.private_id,
-					sync_type = enum.SYNC_UPDATE,
-				})
-			end
-		end
-	end
+	self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
 
 	onlineguid[player.guid] = nil
 
@@ -932,7 +910,9 @@ function base_table:on_private_pre_dismiss()
 end
 
 function base_table:on_private_dismissed()
-
+	self:foreach(function(p)
+		p:forced_exit(enum.STANDUP_REASON_DISMISS)
+	end)
 end
 
 function base_table:can_dismiss()
@@ -948,6 +928,7 @@ function base_table:check_dismiss_commit(agrees)
 end
 
 function base_table:dismiss()
+	log.info("base_table:dismiss %s",self.private_id)
 	if not self.conf or not self.private_id then
 		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
@@ -968,21 +949,11 @@ function base_table:dismiss()
 	local private_table_owner = private_table_conf.owner
 	reddb:del("table:info:"..private_table_id)
 	reddb:del("player:table:"..private_table_owner)
+	self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
+	
 	if club_id then
 		reddb:srem("club:table:"..club_id,private_table_id)
 		club_table[club_id][private_table_id] = nil
-		local club = base_clubs[club_id]
-		if club then
-			local root = club_utils.root(club)
-			root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-				root_club = root.id,
-				club_id = club.id,
-				sync_type = enum.SYNC_DEL,
-				sync_table_id = private_table_id,
-			})
-		else
-			log.warning("dismiss table %s,club %s not exists.",private_table_id,club_id)
-		end
 	end
 
 	base_private_table[self.private_id] = nil
@@ -1000,7 +971,7 @@ function base_table:dismiss()
 end
 
 function base_table:transfer_owner()
-	log.info("transfer owner:%s,%s",self.conf.private_id,self.conf.owner)
+	log.info("transfer owner:%s,%s",self.conf.private_id,self.conf.owner.guid)
 	if not self.conf or not self.private_id then
 		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
@@ -1062,10 +1033,6 @@ end
 function base_table:delay_dismiss(player)
 	self.dismiss_timer = self:new_timer(auto_dismiss_timeout,function()
 		log.info("base_table:delay_dismiss timeout %s",self.table_id_)
-		self:foreach(function(p) 
-			p:forced_exit()
-		end)
-
 		self:dismiss()
 	end)
 	log.info("base_table:delay_dismiss %s",self.dismiss_timer.id)
@@ -1105,6 +1072,36 @@ function base_table:cancel_all_dealy_kickout()
 	self:foreach(function(p)
 		self:cancel_delay_kickout(p)
 	end)
+end
+
+function base_table:broadcast_sync_table_info_2_club(type,roominfo)
+	if not self.private_id then
+		return
+	end
+
+	local priv_tb = base_private_table[self.private_id]
+	if not priv_tb then
+		return 
+	end
+
+	if not priv_tb.club_id then
+		return
+	end
+
+
+	local club = base_clubs[priv_tb.club_id]
+	if not club then
+		return
+	end
+
+	local root = club_utils.root(club)
+	root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+		root_club = root.id,
+		club_id = club.id,
+		room_info = roominfo,
+		sync_table_id = self.private_id,
+		sync_type = type or enum.SYNC_UPDATE,
+	})
 end
 
 -- 玩家站起
@@ -1153,32 +1150,13 @@ function base_table:player_stand_up(player, reason)
 
 		self.players[chairid] = nil
 
-		if self.private_id then
-			local priv_tb = base_private_table[self.private_id]
-			if priv_tb then 
-				reddb:hdel("player:online:guid:"..tostring(player.guid),"global_table")
-				if priv_tb.club_id then
-					local club = base_clubs[priv_tb.club_id]
-					if club then
-						local root = club_utils.root(club)
-						root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-							root_club = root.id,
-							club_id = club.id,
-							room_info = self:global_status_info(),
-							sync_table_id = self.private_id,
-							sync_type = enum.SYNC_UPDATE,
-						})
-					end
-				end
-			end
+		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
+
+		if player_count == 1 and reason ~= enum.STANDUP_REASON_OFFLINE then
+			self:dismiss()
 		end
 
-		if self.private_id and player_count == 1 then
-			if reason ~= enum.STANDUP_REASON_OFFLINE then
-				self:dismiss()
-			end
-		end
-
+		reddb:hdel("player:online:guid:"..tostring(player.guid),"global_table")
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"table")
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"chair")
 		onlineguid[player.guid] = nil
