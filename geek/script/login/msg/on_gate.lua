@@ -95,7 +95,6 @@ local function reg_account(msg)
             login_time = os.time(),
             package_name = msg.package_name,
             phone_type = msg.phone_type,
-            promoter = msg.promoter,
         })
         
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
@@ -120,7 +119,7 @@ local function reg_account(msg)
         phone_type = msg.phone_type,
         role = 0,
         ip = msg.ip,
-        promoter = msg.promoter,
+        promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
     }
 
     reddb:hmset("player:info:"..tostring(guid),info)
@@ -242,6 +241,7 @@ function on_cl_auth(msg)
         package_name = msg.package_name,
         phone_type = msg.phone_type,
         version = msg.version,
+        prmoter = msg.promoter,
     })
 end
 

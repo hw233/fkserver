@@ -23,6 +23,8 @@ message CL_Auth{
 	string phone_type = 3;
 	string package_name = 4;
 	string version = 5;
+	int64  promoter = 6;
+	string channel_id = 7;
 }
 
 message LC_Auth{
