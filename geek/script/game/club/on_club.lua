@@ -43,6 +43,10 @@ local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
 local club_conf = require "game.club.club_conf"
 
+local queue = require "skynet.queue"
+
+local money_locks = {}
+
 require "functions"
 
 local invite_join_room_cd = 10
@@ -1979,14 +1983,6 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         ext_data = club_id,
     }
 
-    local from = base_players[from_guid]
-    local to = base_players[to_guid]
-    if not from or not to then
-        res.result = enum.ERROR_PLAYER_NOT_EXIST
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
-    end
-
     local club = base_clubs[club_id]
     if not club then
         res.result = enum.ERROR_CLUB_NOT_FOUND
@@ -2007,50 +2003,79 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         return
     end
 
-    local from_role = club_role[club_id][from_guid]
-    local to_role = club_role[club_id][to_guid]
-    if from_role == enum.CRT_AMDIN then
+    local from_role = club_role[club_id][from_guid] or enum.CRT_PLAYER
+    local to_role = club_role[club_id][to_guid] or enum.CRT_PLAYER
+    if from_role == enum.CRT_ADMIN then
         from_role = enum.CRT_BOSS
         from_guid = club.owner
     end
 
-    local why = (from_role == enum.CRT_PARTNER or from_role == enum.CRT_BOSS) and enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY or enum.LOG_MONEY_OPT_TYPE_CASH_MONEY
-    if from_role == enum.CRT_PARTNER and (not to_role or to_role == enum.CRT_PLAYER) then
-        local partner = club_member_partner[club_id][to_guid]
-        while partner and partner ~= from_guid do
+    if to_role == enum.CRT_ADMIN then
+        to_role = enum.CRT_BOSS
+        to_guid = club.owner
+    end
+
+    local from = base_players[from_guid]
+    local to = base_players[to_guid]
+    if not from or not to then
+        res.result = enum.ERROR_PLAYER_NOT_EXIST
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
+
+    local whies = {
+        [enum.CRT_BOSS] = {
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_BOSS] = nil,
+        },
+        [enum.CRT_PARTNER] = {
+            [enum.CRT_PARTNER] = nil,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+        },
+        [enum.CRT_PLAYER] = {
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_PLAYER] = nil,
+            [enum.CRT_ADMIN] = nil,
+        },
+        [enum.CRT_ADMIN] = {
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_PLAYER] = nil,
+            [enum.CRT_ADMIN] = nil,
+        }
+    }
+
+    local function recursive_search_partner(cid,pguid,guid)
+        local partner = club_member_partner[club_id][guid]
+        while partner and partner ~= pguid do
             partner = club_member_partner[club_id][partner]
         end
 
-        if not partner then
+        return partner
+    end
+
+    local why = whies[from_role][to_role]
+    if from_role == enum.CRT_PARTNER and to_role == enum.CRT_PLAYER then
+        if not recursive_search_partner(club_id,from_guid,to_guid) then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
-    elseif to_role == enum.CRT_PARTNER and (not from_role or from_role == enum.CRT_PLAYER) then
-        local partner = club_member_partner[club_id][from_guid]
-        while partner and partner ~= to_guid do
-            partner = club_member_partner[club_id][partner]
-        end
-
-        if not partner then
+    elseif to_role == enum.CRT_PARTNER and from_role == enum.CRT_PLAYER then
+        if not recursive_search_partner(club_id,to_guid,from_guid) then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
     elseif from_role == enum.CRT_PARTNER and to_role == enum.CRT_PARTNER then
-        local partner_from = club_member_partner[club_id][from_guid]
-        while partner_from and partner_from ~= to_guid do
-            partner_from = club_member_partner[club_id][partner_from]
-        end
-
-        local partner_to = club_member_partner[club_id][to_guid]
-        while partner_to and partner_to ~= from_guid do
-            partner_to = club_member_partner[club_id][partner_to]
-        end
-
-        if partner_from then
+        if recursive_search_partner(club_id,from_guid,to_guid) then
             why = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY
-        elseif partner_to then
+        elseif recursive_search_partner(club_id,to_guid,from_guid) then
             why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY
         else
             res.result = enum.ERROR_PLAYER_NO_RIGHT
@@ -2068,41 +2093,44 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         return
     end
 
-    local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
-        source_id = from_guid,
-        target_id = to_guid,
-        type = 4,
-        operator = guid,
-    })
+    money_locks[money_id] = money_locks[money_id] or queue()
+    local lock = money_locks[money_id]
 
-    
-
-    local errno,_,new_db_from_money,_,new_db_to_money  = 
-        channel.call("db.?","msg","SD_TransferMoney",{
-            from = from_guid,
-            to = to_guid,
+    lock(function()
+        local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+            source_id = from_guid,
+            target_id = to_guid,
             type = 4,
-            amount = money,
-            money_id = money_id,
-            why = why,
-            why_ext = recharge_id,
+            operator = guid,
         })
 
-    if errno ~= enum.ERROR_NONE then
-        res.result = errno
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
-    end
+        local errno,_,new_db_from_money,_,new_db_to_money  = 
+            channel.call("db.?","msg","SD_TransferMoney",{
+                from = from_guid,
+                to = to_guid,
+                type = 4,
+                amount = money,
+                money_id = money_id,
+                why = why,
+                why_ext = recharge_id,
+            })
 
-    local new_from_money = from:incr_redis_money(money_id,-money,club_id)
-    if new_from_money ~= new_db_from_money then
-        log.warning("transfer_money_player2player from player %s db money ~= redis money,%s,%s",from_guid,new_db_from_money,new_from_money)
-    end
+        if errno ~= enum.ERROR_NONE then
+            res.result = errno
+            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+            return
+        end
 
-    local new_to_money = to:incr_redis_money(money_id,money,club_id)
-    if new_to_money ~= new_db_to_money then
-        log.warning("transfer_money_player2player to player %s db money ~= redis money,%s,%s",from_guid,new_db_to_money,new_to_money)
-    end
+        local new_from_money = from:incr_redis_money(money_id,-money,club_id)
+        if new_from_money ~= new_db_from_money then
+            log.warning("transfer_money_player2player from player %s db money ~= redis money,%s,%s",from_guid,new_db_from_money,new_from_money)
+        end
+
+        local new_to_money = to:incr_redis_money(money_id,money,club_id)
+        if new_to_money ~= new_db_to_money then
+            log.warning("transfer_money_player2player to player %s db money ~= redis money,%s,%s",from_guid,new_db_to_money,new_to_money)
+        end
+    end)
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
@@ -2301,14 +2329,13 @@ function on_cs_force_dismiss_table(msg,guid)
         return
     end
 
-
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
             result = enum.ERROR_PLAYER_NO_RIGHT
         })
         return
-    end 
+    end
 
     local tb = base_private_table[table_id]
     if not tb then
