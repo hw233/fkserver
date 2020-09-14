@@ -1918,7 +1918,7 @@ function on_cs_bind_phone(msg,guid)
 	end
 
 	local phone = msg.phone_number
-	local phonelen = string.len(phone)
+	local phonelen = string.len(phone or "")
 	if 	not phone or
 		not string.match(phone,"^%d+$") or 
 		phonelen < 7 or 
