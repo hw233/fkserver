@@ -1917,6 +1917,18 @@ function on_cs_bind_phone(msg,guid)
 		return
 	end
 
+	local phone = msg.phone_number
+	local phonelen = string.len(phone)
+	if 	not phone or
+		not string.match(phone,"^%d+$") or 
+		phonelen < 7 or 
+		phonelen > 18 then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.LOGIN_RESULT_TEL_ERR
+		})
+		return
+	end
+
 	local sms_verify_code = msg.sms_verify_no
 	local code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
 	reddb:del(string.format("sms:verify_code:guid:%s",guid))
@@ -1934,7 +1946,7 @@ function on_cs_bind_phone(msg,guid)
 		return
 	end
 
-	local phone = msg.phone_number
+	
 	reddb:hset(string.format("player:info:%s",guid),"phone",phone)
 	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
 	player.phone = phone
