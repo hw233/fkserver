@@ -87,7 +87,7 @@ local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
         log.warning("reg_account repeated.open_id:%s,guid:%s",msg.open_id,guid)
-        reddb:hmset("player:info:"..tostring(guid),{
+        local reginfo = {
             nickname = msg.nickname or ("guest_"..tostring(guid)),
             icon = msg.icon or default_open_id_icon,
             version = msg.version,
@@ -95,7 +95,9 @@ local function reg_account(msg)
             login_time = os.time(),
             package_name = msg.package_name,
             phone_type = msg.phone_type,
-        })
+        }
+        
+        reddb:hmset("player:info:"..tostring(guid),reginfo)
         
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
     end
@@ -110,7 +112,6 @@ local function reg_account(msg)
         icon = msg.icon or default_open_id_icon,
         version = msg.version,
         login_ip = msg.ip,
-        phone = msg.phone or "",
         level = 0,
         imei = "",
         is_guest = true,
@@ -121,6 +122,15 @@ local function reg_account(msg)
         ip = msg.ip,
         promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
     }
+
+    local phone = msg.phone
+    local phonelen = string.len(phone or "")
+    if 	not phone or
+        not string.match(phone,"^%d+$") or 
+        phonelen < 7 or 
+        phonelen > 18 then
+        info.phone = phone
+    end
 
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
