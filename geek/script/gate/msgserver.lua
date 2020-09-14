@@ -16,9 +16,9 @@ function server.logout(guid)
 	local u = user_online[guid]
 	if u and u.fd then
 		connection[u.fd] = nil
+		gateserver.closeclient(u.fd)
 	end
 	user_online[guid] = nil
-	gateserver.closeclient(u.fd)
 end
 
 function server.login(fd,guid,conf)
