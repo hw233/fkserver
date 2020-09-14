@@ -1004,7 +1004,8 @@ local function on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
-    club:join(guid)
+    local inviter = param.guid
+    club:invite_join(guid,inviter,nil,"invite_join")
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
