@@ -67,6 +67,8 @@ function server.disconnect_handler(c)
 	local u = onlineguid[c.guid]
 	if u then
         pcall(skynet.call,u.agent, "lua", "afk")
+    else
+        pcall(skynet.call,loginservice,"lua","logout",c.fd)
 	end
 end
 

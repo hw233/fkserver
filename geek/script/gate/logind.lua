@@ -36,6 +36,8 @@ end
 local CMD = {}
 
 function CMD.logout(fd)
+    if not fd then return end
+    
     logining[fd] = nil
 end
 
