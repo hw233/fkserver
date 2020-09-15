@@ -2018,25 +2018,53 @@ function on_cs_request_sms_verify_code(msg,guid)
 	})
 end
 
+local function all_game_ids()
+	return table.series(channel.query(),function(_,item)
+		local id = string.match(item,"game.(%d+)")
+		if not id then return end
+		id = tonumber(id)
+		local sconf = serviceconf[id]
+		if not sconf.conf or not sconf.conf.private_conf then return end
+		return sconf.conf.first_game_type
+	end)
+end
+
 function on_cs_game_server_cfg(msg,guid)
-    local pb_cfg = {}
-    for item,_ in pairs(channel.query()) do
-        local id = string.match(item,"game.(%d+)")
-        if id then
-            id = tonumber(id)
-            local sconf = serviceconf[id]
-            if sconf.conf.private_conf then
-                local gconf = sconf.conf
-                table.insert(pb_cfg,gconf.first_game_type)
-            end
-        end
+	local player = base_players[guid]
+	if player then
+		local channel_id = player.channel_id
+		channel_id = channel_id and channel_id ~= "" and channel_id or "default"
+
+		local promoter = player.promoter
+		promoter = promoter and promoter ~= 0 and promoter or nil
+
+		local conf_games = runtime_conf.get_game_conf(channel_id,promoter)
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			send2client_pb(guid,"SC_GameServerCfg",{
+				game_sever_info  = conf_games,
+			})
+			return true
+		end
+
+		conf_games = runtime_conf.get_game_conf("default")
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			send2client_pb(guid,"SC_GameServerCfg",{
+				game_sever_info  = conf_games,
+			})
+			return true
+		end
+
+		conf_games = all_game_ids()
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			send2client_pb(guid,"SC_GameServerCfg",{
+				game_sever_info  = conf_games,
+			})
+			return true
+		end
 	end
-
-	log.dump(pb_cfg)
-
-    send2client_pb(guid,"SC_GameServerCfg",{
-        game_sever_info  = pb_cfg,
-    })
 
 	return true
 end

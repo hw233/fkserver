@@ -42,6 +42,7 @@ local club_block_groups = require "game.club.block.groups"
 local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
 local club_conf = require "game.club.club_conf"
+local runtime_conf = require "game.runtime_conf"
 
 local queue = require "skynet.queue"
 
@@ -486,6 +487,48 @@ local function get_visiable_club_templates(club,getter_role)
     end)
 end
 
+local function all_game_ids()
+	return table.series(channel.query(),function(_,item)
+		local id = string.match(item,"game.(%d+)")
+		if not id then return end
+		id = tonumber(id)
+		local sconf = serviceconf[id]
+		if not sconf.conf or not sconf.conf.private_conf then return end
+		return sconf.conf.first_game_type
+	end)
+end
+
+local function get_game_list(guid,club_id)
+    local player = base_players[guid]
+	if player then
+		local channel_id = player.channel_id
+		channel_id = channel_id and channel_id ~= "" and channel_id or "default"
+
+		local promoter = player.promoter
+        promoter = promoter and promoter ~= 0 and promoter or nil
+
+		local conf_games = runtime_conf.get_game_conf(channel_id,promoter)
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			return conf_games
+		end
+
+		conf_games = runtime_conf.get_game_conf("default")
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			return conf_games
+		end
+
+		conf_games = all_game_ids()
+		if conf_games and table.nums(conf_games) > 0 then
+			log.dump(conf_games)
+			return conf_games
+		end
+	end
+
+	return
+end
+
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     if not club_id then
@@ -504,23 +547,7 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local gameservices = table.map(channel.list(),function(_,sid)
-        local id = string.match(sid,"service.(%d+)")
-        if not id then return end
-        id = tonumber(id)
-        local conf = serviceconf[id]
-        if conf and conf.name == "game" and conf.conf.first_game_type ~= 1 then  return id,conf end
-    end)
-
-    local games = table.map(gameservices,function(conf) return conf.conf.first_game_type,conf.conf end)
-
-    local real_games = {}
-    local club_games = club_game_type[club_id]
-    if table.nums(club_games) ~= 0 then
-        real_games = table.select(club_games,function(id) return id ~= 1 and games[id] end)
-    else
-        real_games = table.keys(table.select(games,function(_,id) return id ~= 1 end))
-    end
+    local real_games =  get_game_list(guid)
 
     local root = club_utils.root(club)
     local tables = deep_get_club_tables(root)
@@ -607,6 +634,9 @@ function on_cs_club_detail_info_req(msg,guid)
         return table.union(fast_templates,get_fast_templates(c.parent))
     end
 
+    local keygames = table.map(real_games,function(g) return g,true end)
+    templates = table.select(templates,function(t) return keygames[t.game_id] end)
+    
     local club_info = {
         root = root.id,
         result = enum.ERROR_NONE,
