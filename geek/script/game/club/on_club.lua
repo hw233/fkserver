@@ -2005,15 +2005,6 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
 
     local from_role = club_role[club_id][from_guid] or enum.CRT_PLAYER
     local to_role = club_role[club_id][to_guid] or enum.CRT_PLAYER
-    if from_role == enum.CRT_ADMIN then
-        from_role = enum.CRT_BOSS
-        from_guid = club.owner
-    end
-
-    if to_role == enum.CRT_ADMIN then
-        to_role = enum.CRT_BOSS
-        to_guid = club.owner
-    end
 
     local from = base_players[from_guid]
     local to = base_players[to_guid]
@@ -2040,12 +2031,12 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
             [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
             [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
             [enum.CRT_PLAYER] = nil,
-            [enum.CRT_ADMIN] = nil,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
         },
         [enum.CRT_ADMIN] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
             [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
-            [enum.CRT_PLAYER] = nil,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
             [enum.CRT_ADMIN] = nil,
         }
     }
