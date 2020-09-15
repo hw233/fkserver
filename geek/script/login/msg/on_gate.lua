@@ -121,6 +121,7 @@ local function reg_account(msg)
         role = 0,
         ip = msg.ip,
         promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
+        channel_id = (msg.channel_id and msg.channel_id ~= 0) and msg.channel_id or nil,
     }
 
     local phone = msg.phone
@@ -186,6 +187,7 @@ local function open_id_login(msg,gate)
         role = player.role,
         ip = player.ip,
         promoter = player.promoter,
+        channel_id = player.channel_id,
     }
 
     base_players[guid] = nil
@@ -252,6 +254,7 @@ function on_cl_auth(msg)
         phone_type = msg.phone_type,
         version = msg.version,
         prmoter = msg.promoter,
+        channel_id = msg.channel_id,
     })
 end
 
@@ -352,6 +355,7 @@ local function sms_login(msg,_,session_id)
             role = player.role,
             ip = player.ip,
             promoter = player.promoter,
+            channel_id = player.channel_id,
         }
 
         base_players[guid] = nil
@@ -472,6 +476,7 @@ local function h5_login(msg,gate)
             ip = msg.ip,
             sex = msg.sex or false,
             promoter = msg.promoter,
+            channel_id = msg.channel_id,
         })
     end
 
@@ -498,6 +503,7 @@ local function h5_login(msg,gate)
         role = player.role,
         ip = player.ip,
         promoter = player.promoter,
+        channel_id = player.channel_id,
     }
 
     base_players[guid] = nil
