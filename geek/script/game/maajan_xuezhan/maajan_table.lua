@@ -1315,7 +1315,8 @@ end
 function maajan_table:ting(p)
     if not self:is_que(p) then return {} end
 
-    local ting_tiles = mj_util.is_ting(p.pai) or {}
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local ting_tiles = mj_util.is_ting(p.pai,si_dui) or {}
     if p.que and ting_tiles then
         table.filter(ting_tiles,function(_,tile) return mj_util.tile_men(tile) ~= p.que end)
     end
@@ -1335,7 +1336,8 @@ end
 function maajan_table:ting_full(p)
     if not self:is_que(p) then return {} end
 
-    local ting_tiles = mj_util.is_ting_full(p.pai)
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local ting_tiles = mj_util.is_ting_full(p.pai,si_dui)
     if p.que then
         ting_tiles = table.map(ting_tiles,function(tiles,discard)
             local hu_tiles = table.map(tiles,function(_,tile)
@@ -1747,7 +1749,10 @@ function maajan_table:hu_fan(pai,tile)
 end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
-    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai)
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
+
+    log.dump(actions)
 
     if p.que then
         for act,tiles in pairs(actions) do
@@ -1879,6 +1884,8 @@ function maajan_table:calculate_hu(hu)
     local play_opt = room_private_conf.play.option
     local da_dui_zi_fan = self.rule.play.da_dui_zi_fan_2 and 2 or HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
     local qing_yi_se_fan = play_opt == "er_ren_yi_fang" and (self.rule.play.qing_yi_se_fan or 0) or HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
+    -- local si_dui_fan = HU_TYPE_INFO[HU_TYPE.SI_DUI].fan
+    -- local long_si_dui_fang = HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
 
     for _,t in pairs(types) do
         if t.type == HU_TYPE.QING_YI_SE then
@@ -1891,6 +1898,22 @@ function maajan_table:calculate_hu(hu)
 
         if t.type == HU_TYPE.DA_DUI_ZI then
             t.fan = da_dui_zi_fan
+        end
+
+        if t.type == HU_TYPE.QING_QI_DUI and play_opt == "er_ren_yi_fang" then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.QI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_LONG_BEI and play_opt == "er_ren_yi_fang" then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_QI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_SI_DUI then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.SI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_LONG_SI_DUI then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
         end
     end
 
@@ -2673,15 +2696,17 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
     else
         local play_opt = private_conf.play.option
         local hu_types = mj_util.hu(pai,in_pai,mo_pai)
+        log.dump(hu_types)
         types = table.series(hu_types,function(ones)
-            local ts = {} 
+            local ts = {}
             for t,c in pairs(ones) do
                 if  (t == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5) or
                     (t == HU_TYPE.KA_ER_TIAO and not self.rule.play.ka_er_tiao) or
                     (t == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or 
                     ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not self.rule.play.men_qing) or 
-                    ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and 
-                        play_opt == "er_ren_yi_fang")
+                    -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
+                    ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
+                        not self.rule.play.si_dui)
                 then
                     
                 elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
@@ -2719,15 +2744,23 @@ function maajan_table:hu(player,in_pai,mo_pai)
     return table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
 end
 
+function maajan_table:is_hu(pai,in_pai)
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    return mj_util.is_hu(pai,in_pai,si_dui)
+end
+
 function maajan_table:can_hu(player,in_pai)
     local room_private_conf = self:room_private_conf()
     if not room_private_conf.play then
-        return mj_util.is_hu(player.pai,in_pai)
+        return self:is_hu(player.pai,in_pai)
     end
 
     local play_opt = room_private_conf.play.option
-    if not play_opt or play_opt == "si_ren_liang_fang" or play_opt == "er_ren_yi_fang" or not self.rule.play.hu_at_least_2 then
-        return mj_util.is_hu(player.pai,in_pai)
+    if  not play_opt or 
+        play_opt == "si_ren_liang_fang" or 
+        play_opt == "er_ren_yi_fang" or 
+        not self.rule.play.hu_at_least_2 then
+        return self:is_hu(player.pai,in_pai)
     end
 
     local hu_types = self:hu(player,in_pai)

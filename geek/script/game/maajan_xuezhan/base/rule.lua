@@ -197,10 +197,10 @@ local function ting(state)
 	end
 end
 
-local function ting_qi_dui(state)
-	local count_tilemaps = table.group(state.counts,function(c,_) return c end)
+local function ting_qi_dui(pai,counts)
+	local count_tilemaps = table.group(counts,function(c,_) return c end)
 	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
-	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] or 0)
+	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] * 2 or 0)
 	if count_tiles[1] and #count_tiles[1] == 1 and even_count == 6 then
 		return count_tiles[1][1]
 	end
@@ -212,12 +212,43 @@ local function ting_qi_dui(state)
 	return nil
 end
 
-local function is_qi_dui(state)
-	local dui_zi_count = table.sum(state.counts,function(c)
+local function ting_si_dui(pai,counts)
+	if table.nums(pai.ming_pai) > 0 then
+		return nil
+	end
+
+	local count_tilemaps = table.group(counts,function(c,_) return c end)
+	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
+	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] * 2 or 0)
+	if count_tiles[1] and #count_tiles[1] == 1 and even_count == 3 then
+		return count_tiles[1][1]
+	end
+
+	if count_tiles[3] and #count_tiles[3] == 1 and even_count == 2 then
+		return count_tiles[3][1]
+	end
+
+	return nil
+end
+
+local function is_qi_dui(pai,counts)
+	local dui_zi_count = table.sum(counts,function(c)
 		return c == 4 and 2 or c == 2 and 1 or 0
 	end)
 
-	return dui_zi_count == 7
+	local total_count = table.sum(counts)
+
+	return dui_zi_count == 7 and total_count == 14 and table.nums(pai.ming_pai) == 0
+end
+
+local function is_si_dui(pai,counts)
+	local dui_zi_count = table.sum(counts,function(c)
+		return c == 4 and 2 or c == 2 and 1 or 0
+	end)
+
+	local total_count = table.sum(counts)
+
+	return dui_zi_count == 4 and total_count == 8 and table.nums(pai.ming_pai) == 0
 end
 
 local function is_hu(state)
@@ -261,7 +292,7 @@ local HU_TYPE = def.HU_TYPE
 local UNIQUE_HU_TYPE = def.UNIQUE_HU_TYPE
 
 
-function rule.is_hu(pai,in_pai)
+function rule.is_hu(pai,in_pai,si_dui)
 	local cache = {}
 	for i=1,50 do
 		cache[i] = pai.shou_pai[i] or 0
@@ -271,10 +302,13 @@ function rule.is_hu(pai,in_pai)
 		sections = {},
 		counts = cache,
 	}
-	return is_hu(state) or is_qi_dui(state)
+
+	local can_hu = is_hu(state)
+	local qi_dui = is_qi_dui(pai,cache)
+	local si_dui = is_si_dui(pai,cache)
+
+	return can_hu or qi_dui or (si_dui and si_dui)
 end
-
-
 
 local function get_qi_dui_types(pai,cache)
 	local base_types = {}
@@ -355,8 +389,6 @@ local function is_duan_yao(pai,in_pai)
 
 	return not is_19
 end
-
-
 
 local function gou_count(pai,cache)
 	local shou_gou = table.sum(cache,function(c) return c == 4 and 1 or 0 end)
@@ -457,8 +489,9 @@ function rule.hu(pai,in_pai,mo_pai)
 
 	local alltypes = {}
 
-	local qi_dui = is_qi_dui(state)
-	if table.nums(state.hu) == 0 and not qi_dui then
+	local qi_dui = is_qi_dui(pai,cache)
+	local si_dui = is_si_dui(pai,cache)
+	if table.nums(state.hu) == 0 and not qi_dui and not si_dui then
 		return {{[HU_TYPE.WEI_HU] = 1}}
 	end
 
@@ -470,13 +503,24 @@ function rule.hu(pai,in_pai,mo_pai)
 	if qi_dui then
 		local base_types = {}
 		if gou > 0 then
-			if is_2_5_8(pai,cache) then
-				base_types[HU_TYPE.JIANG_QI_DUI] = 1
-			else
-				base_types[HU_TYPE.LONG_QI_DUI] = 1
-			end
+			base_types[HU_TYPE.LONG_QI_DUI] = 1
 		else
 			base_types[HU_TYPE.QI_DUI] = 1
+		end
+
+		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
+		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
+		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
+
+		table.insert(alltypes,base_types)
+	end
+
+	if si_dui then
+		local base_types = {}
+		if gou > 0 then
+			base_types[HU_TYPE.LONG_SI_DUI] = 1
+		else
+			base_types[HU_TYPE.SI_DUI] = 1
 		end
 
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
@@ -515,29 +559,36 @@ function rule.hu(pai,in_pai,mo_pai)
 	return alltypes
 end
 
-function rule.ting_tiles(shou_pai)
+function rule.ting_tiles(pai,si_dui)
 	local cache = {}
-	for i = 1,50 do cache[i] = shou_pai[i] or 0 end
+	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
-	local qi_dui_tile = ting_qi_dui(state)
+	local qi_dui_tile = ting_qi_dui(pai,cache)
 	local tiles = state.feed_tiles
 	if qi_dui_tile then tiles[qi_dui_tile] = true end
+	if si_dui then 
+		local si_dui_tile = ting_si_dui(pai,cache)
+		if si_dui_tile then
+			tiles[si_dui_tile] = true
+		end
+	end
 	return tiles
 end
 
 --未摸牌判听
-function rule.ting(pai)
-	return rule.ting_tiles(pai.shou_pai)
+function rule.ting(pai,si_dui)
+	return rule.ting_tiles(pai,si_dui)
 end
 
 --全部牌判听
-function rule.ting_full(pai)
-	local counts = table.select(pai.shou_pai,function(c,tile) return c > 0 end)
-	local discard_then_ting_tiles = table.map(counts,function(_,tile)
-		table.decr(counts,tile)
-		local tiles = rule.ting_tiles(counts)
-		table.incr(counts,tile)
+function rule.ting_full(pai,si_dui)
+	local all_pai = clone(pai)
+	local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
+		if c <= 0 then return end
+		table.decr(all_pai.shou_pai,tile)
+		local tiles = rule.ting_tiles(all_pai,si_dui)
+		table.incr(all_pai.shou_pai,tile)
 		if table.nums(tiles) > 0 then return tile,tiles end
 	end)
 
@@ -603,12 +654,12 @@ function rule.is_chi(pai,tile)
 end
 
 -- local test_pai = {
--- 	shou_pai = {[2] = 1,[3] = 1,[4] = 1,[5] = 1,[6] = 1,[7] = 1,[9] = 2},
+-- 	shou_pai = {[12] = 2,[13] = 2,[14] = 2,[17] = 2,[21] = 4,[22] = 1,[27] = 1},
 -- 	ming_pai = {
 -- 	}
 -- }
 
--- local test_hu = rule.hu(test_pai,9)
+-- local test_hu = rule.ting_full(test_pai)
 -- log.dump(test_hu)
 
 return rule

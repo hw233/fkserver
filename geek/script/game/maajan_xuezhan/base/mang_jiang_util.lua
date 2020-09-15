@@ -53,7 +53,7 @@ function mj_util.tile_men(tile)
 	return math.floor(tile / 10)
 end
 
-function mj_util.get_actions(pai, mo_pai,in_pai)
+function mj_util.get_actions(pai,mo_pai,in_pai,si_dui)
 	local actions = {}
 	local counts = pai.shou_pai
 
@@ -94,19 +94,19 @@ function mj_util.get_actions(pai, mo_pai,in_pai)
 		end
 	end
 
-	if in_pai and rule.is_hu(pai, in_pai)  then
+	if in_pai and rule.is_hu(pai,in_pai,si_dui)  then
 		actions[ACTION.HU] = {[in_pai] = true,}
 	end
 
-	if mo_pai and rule.is_hu(pai) then
+	if mo_pai and rule.is_hu(pai,nil,si_dui) then
 		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
 	end
 	
 	return actions
 end
 
-function mj_util.is_hu(pai, in_pai,mo_pai)
-	return rule.is_hu(pai,in_pai,mo_pai)
+function mj_util.is_hu(pai,in_pai,si_dui)
+	return rule.is_hu(pai,in_pai,si_dui)
 end
 
 function mj_util.hu(pai,in_pai,mo_pai)
@@ -134,12 +134,12 @@ function mj_util.panGangWithOutInPai(pai)
 	return anGangList,baGangList
 end
 
-function mj_util.is_ting(pai)
-	return rule.ting(pai)
+function mj_util.is_ting(pai,si_dui)
+	return rule.ting(pai,si_dui)
 end
 
-function mj_util.is_ting_full(pai)
-	return rule.ting_full(pai)
+function mj_util.is_ting_full(pai,si_dui)
+	return rule.ting_full(pai,si_dui)
 end
 
 function mj_util.get_fan_table_res(base_fan_table)

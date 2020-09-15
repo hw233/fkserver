@@ -208,6 +208,10 @@ local HU_TYPE = {
 	KA_WU_XING					= pb.enum("HU_TYPE","KA_WU_XING"), --卡五星
 	ZHONG_ZHANG					= pb.enum("HU_TYPE","ZHONG_ZHANG"), --中张
 	KA_ER_TIAO					= pb.enum("HU_TYPE","KA_ER_TIAO"), --卡二条
+	SI_DUI 						= pb.enum("HU_TYPE","SI_DUI"), --7张牌四对(当作12张七对)
+	LONG_SI_DUI 				= pb.enum("HU_TYPE","LONG_SI_DUI"),	--龙四对
+	QING_SI_DUI 				= pb.enum("HU_TYPE","QING_SI_DUI"), --清四对
+	QING_LONG_SI_DUI 			= pb.enum("HU_TYPE","QING_LONG_SI_DUI"), --清龙四对
 }
 
 define.HU_TYPE = HU_TYPE
@@ -320,6 +324,11 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.DAI_GOU]				= {name = "DAI_GOU",fan = 1,score = 0},	--带根
 	[HU_TYPE.KA_WU_XING]			= {name = "KA_WU_XING",fan = 1,score = 0}, --卡五星
 	[HU_TYPE.KA_ER_TIAO]			= {name = "KA_ER_TIAO",fan = 1,score = 0}, --卡二条
+
+	[HU_TYPE.SI_DUI]				= {name = "SI_DUI",fan = 2,score = 0}, --四对
+	[HU_TYPE.QING_SI_DUI]			= {name = "QING_SI_DUI",fan = 3,score = 0}, --清四对
+	[HU_TYPE.LONG_SI_DUI]			= {name = "LONG_SI_DUI",fan = 3,score = 0}, --龙四对
+	[HU_TYPE.QING_LONG_SI_DUI]		= {name = "QING_LONG_SI_DUI",fan = 4,score = 0}, --龙四对
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
@@ -394,6 +403,8 @@ local UNIQUE_HU_TYPE = {
 	[HU_TYPE.QING_QI_DUI]			= {[HU_TYPE.QI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
 	[HU_TYPE.QING_LONG_BEI] 		= {[HU_TYPE.LONG_QI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
 	[HU_TYPE.QING_DA_DUI]			= {[HU_TYPE.DA_DUI_ZI] = true,[HU_TYPE.QING_YI_SE]=true},
+	[HU_TYPE.QING_SI_DUI]			= {[HU_TYPE.SI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
+	[HU_TYPE.QING_LONG_SI_DUI] 		= {[HU_TYPE.LONG_SI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
 }
 
 

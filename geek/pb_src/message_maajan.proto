@@ -113,6 +113,10 @@ enum HU_TYPE{
 	QING_DI_LONG 			= 108;  //清地龙
 	KA_ER_TIAO 				= 109; //夹二条
 	KA_WU_XING 				= 110; //夹五星
+	SI_DUI 					= 111; //7张牌四对(当作12张七对)
+	LONG_SI_DUI 			= 112;	//龙四对
+	QING_SI_DUI 			= 113;	//清四对
+	QING_LONG_SI_DUI		= 114;	//清龙四对
 }
 
 
