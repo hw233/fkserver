@@ -24,6 +24,11 @@ THE SOFTWARE.
 
 get_second_time = os.time
 
+local skynet = require "skynet" 
+function get_ms_time()
+    return skynet.time()
+end
+
 function printLog(tag, fmt, ...)
     local t = {
         "[",
