@@ -942,6 +942,8 @@ function base_table:dismiss()
 	self:cancel_all_dealy_kickout()
 	self:on_private_pre_dismiss()
 
+	self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
+
 	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
 	local private_table_conf = base_private_table[self.private_id]
 	local club_id = private_table_conf.club_id
@@ -949,7 +951,6 @@ function base_table:dismiss()
 	local private_table_owner = private_table_conf.owner
 	reddb:del("table:info:"..private_table_id)
 	reddb:del("player:table:"..private_table_owner)
-	self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
 	
 	if club_id then
 		reddb:srem("club:table:"..club_id,private_table_id)
@@ -1150,10 +1151,10 @@ function base_table:player_stand_up(player, reason)
 
 		self.players[chairid] = nil
 
-		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
-
 		if player_count == 1 and reason ~= enum.STANDUP_REASON_OFFLINE then
 			self:dismiss()
+		else
+			self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
 		end
 
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"global_table")
