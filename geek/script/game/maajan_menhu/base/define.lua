@@ -109,7 +109,7 @@ define.FSM_state = {
 	WAIT_QIANG_GANG_HU			= pb.enum("FSM_STATE","WAIT_QIANG_GANG_HU"), --等待抢杠胡
 	GAME_BALANCE				= pb.enum("FSM_STATE","GAME_BALANCE"),	--结算
 	GAME_CLOSE					= pb.enum("FSM_STATE","GAME_CLOSE"),	--关闭游戏
-
+	GU_MAI						= pb.enum("FSM_STATE","FS_GU_MAI"), -- 估卖
 	GAME_IDLE_HEAD				= pb.enum("FSM_STATE","GAME_IDLE_HEAD"), --用于客户端播放动画延迟				
 }
 
@@ -218,6 +218,7 @@ local HU_TYPE = {
 	ZHE_REN_JING_JI				= pb.enum("HU_TYPE","ZHE_REN_JING_JI"), --责任金鸡
 	ZHE_REN_JING_WU_GU			= pb.enum("HU_TYPE","ZHE_REN_JING_WU_GU"),--责任金乌骨鸡
 	GANG_SHANG_PAO				= pb.enum("HU_TYPE","GANG_SHANG_PAO"),--杠上炮
+	GU_MAI						= pb.enum("HU_TYPE","GU_MAI"),--估卖
 }
 
 define.HU_TYPE = HU_TYPE

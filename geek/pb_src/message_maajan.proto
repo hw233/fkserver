@@ -117,6 +117,7 @@ enum HU_TYPE{
 	LONG_SI_DUI 			= 112;	//龙四对
 	QING_SI_DUI 			= 113;	//清四对
 	QING_LONG_SI_DUI		= 114;	//清龙四对
+	GU_MAI 					= 115;	//估卖
 }
 
 
@@ -176,6 +177,7 @@ enum FSM_STATE {
 	DING_QUE				= 18;	//定缺
 	FAST_START_VOTE			= 19;
 	FINAL_END 				= 20;
+	FS_GU_MAI				= 21;	//估卖
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 
@@ -216,6 +218,7 @@ message Maajan_Player_Info {
 	int32 round_score 	= 15;
 	repeated int32 men_pai = 16;
 	int32 mo_pai = 17;
+	int32 gu_mai_score = 18;
 }
 
 message Maajan_Reconnect_Data {
@@ -544,4 +547,20 @@ message SC_MaajanXueZhanFinalGameOver{
 message SC_MaajanWaitingDiscard{
 	enum MsgID { Nil = 0; ID = 23138;}
 	int32 chair_id = 1;
+}
+
+message SC_MaajanZhuoJiBeginGuMai{
+	enum MsgID { Nil = 0; ID = 23139;}
+}
+
+message CS_MaajanZhuoJiGuMai{
+	enum MsgID { Nil = 0; ID = 23140;}
+	int32 score = 1;
+}
+
+message SC_MaajanZhuoJiGuMai{
+	enum MsgID { Nil = 0; ID = 23141;}
+	int32 result = 1;
+	int32 chair_id = 2;
+	int32 score = 3;
 }
