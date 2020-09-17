@@ -253,7 +253,7 @@ function on_cl_auth(msg)
         package_name = msg.package_name,
         phone_type = msg.phone_type,
         version = msg.version,
-        prmoter = msg.promoter,
+        promoter = msg.promoter,
         channel_id = msg.channel_id,
     })
 end
