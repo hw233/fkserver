@@ -249,11 +249,10 @@ function on_sd_log_player_commission_contribute(msg)
         return
     end
 
-    local date_timestamp = math.floor(os.time() / 86400) * 86400
-    local res = dbopt.log:query([[INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,club,date)
-        VALUES(%s,%s,%s,%s,%s,%s)
-        ON DUPLICATE KEY UPDATE commission = commission + %d;]],
-        parent,guid,commission or 0,template or "NULL",club,date_timestamp,commission or 0)
+    local res = dbopt.log:query([[
+        INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,club,create_time)
+        VALUES(%s,%s,%s,%s,%s,%s)]],
+        parent,guid,commission or 0,template or "NULL",club,os.time())
     if res.errno then
         log.error("on_sd_log_player_commission_contribute INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
@@ -277,4 +276,57 @@ function on_sd_request_share_param(sid)
     end
 
     return res[1]
+end
+
+function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
+    if not guids or #guids == 0 then
+        return {}
+    end
+
+    limit = limit or 2
+
+    start_date =  start_date or (math.floor(os.time() / 86400) - 1) * 86400
+
+    local where_sql = table.concat(guids,",")
+
+    local logs = dbopt.log:query([[
+        SELECT cou.guid,count play_count,commission,cou.date 
+        FROM 
+            (
+                SELECT guid,club,count,date FROM t_log_team_daily_play_count
+                WHERE guid in (%s) AND club = %s
+            ) cou
+        JOIN 
+            (
+                SELECT son guid,club,SUM(commission) commission,date 
+                FROM t_log_player_daily_commission_contribute
+                WHERE son in (%s) AND club = %s and parent = %s
+                GROUP BY son,club,date
+            ) com
+        ON cou.guid = com.guid AND cou.club = com.club AND cou.date = com.date
+        WHERE cou.date >= %s
+        ORDER BY cou.date DESC
+        LIMIT %s
+    ]],where_sql,club,where_sql,club,getter,start_date,limit)
+
+    local states = dbopt.game:query([[
+        SELECT m.guid,m.money + pm.money money,c.count player_count FROM
+            t_team_money m
+        JOIN
+            t_team_player_count c
+        ON c.guid = m.guid AND c.club = m.club 
+        JOIN
+            (
+                SELECT guid,money,club FROM 
+                    t_player_money pm
+                JOIN
+                    t_club_money_type t
+                ON pm.money_id = t.money_id
+                WHERE guid in (%s) AND club = %s
+            ) pm
+        ON pm.guid = m.guid AND m.club = pm.club
+        WHERE m.guid in (%s) AND m.club = %s
+    ]],where_sql,club,where_sql,club)
+
+    return logs,states
 end

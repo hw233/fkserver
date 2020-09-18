@@ -817,6 +817,19 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min,"limit",page_index * page_size,page_size) or
         reddb:zrevrangebyscore(key,score_max,score_min)
 
+    local logs,states
+    if req_role == enum.CRT_PARTNER then
+        local today = math.floor(os.time() / 86400) * 86400
+        logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,today,1)
+    else
+        local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
+        logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
+    end
+
+    logs = table.group(logs,function(c) return c.guid end)
+    states = table.group(states,function(s) return s.guid end)
+
+    json.encode_sparse_array(true)
     local ms = table.series(mems,function(m)
         local p = base_players[tonumber(m)]
         if not p then return end
@@ -834,7 +847,12 @@ function on_cs_club_query_memeber(msg,guid)
                 money = {
                     money_id = money_id,
                     count = player_money[p.guid][money_id] or 0,
-                }
+                },
+                extra_data = json.encode({
+                    info = states[p.guid] and table.values(states[p.guid])[1] or nil,
+                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
+                }),
+                parent = club_member_partner[club_id][p.guid],
             }
         end
     end)
@@ -2797,8 +2815,6 @@ function on_cs_search_club_player(msg,guid)
     local partner_id = msg.partner
     local pattern = msg.guid_pattern
 
-    log.dump(guid)
-
     local club = base_clubs[club_id]
     if not club then
         onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
@@ -2809,7 +2825,7 @@ function on_cs_search_club_player(msg,guid)
 
     local self_role = club_role[club_id][guid]
 
-    local key
+    
     if partner_id and partner_id ~= 0 then
         if not self_role or self_role == enum.CRT_PLAYER then
             onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
@@ -2829,8 +2845,6 @@ function on_cs_search_club_player(msg,guid)
         if self_role == enum.CRT_ADMIN and partner_id == guid then
             partner_id = club.owner
         end
-
-        key = string.format("club:partner:member:%s:%s",club_id,partner_id)
     else
         if not self_role or (self_role ~= enum.CRT_ADMIN and self_role ~= enum.CRT_BOSS) then
             onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
@@ -2838,38 +2852,70 @@ function on_cs_search_club_player(msg,guid)
             })
             return
         end
-
-        key = string.format("club:member:%s",club_id)
     end
 
+    local key = string.format("club:member:%s",club_id)
     local mems = {}
     local cursor = "0"
     repeat
-        local scanner = reddb:sscan(key,cursor,"MATCH","*"..pattern.."*","COUNT",500)
+        local scanner = reddb:sscan(key,cursor,"MATCH","*"..pattern.."*","COUNT",1000)
         if not scanner or #scanner < 2 then break end
         cursor = scanner[1]
         table.unionto(mems,scanner[2])
     until cursor == "0"
 
+    local function match_partner(club,parnter,guid)
+        local uid = guid
+        repeat 
+            local uid = club_member_partner[club_id][uid]
+            if uid == partner then return true end
+        until not uid
+    end
+
+    mems = table.series(mems,function(m)
+        if  partner_id and 
+            partner_id ~= 0 and 
+            not match_partner(club_id,partner_id,guid) then
+            return
+        end
+
+        return m
+    end)
+
     local money_id = club_money_type[club_id]
+
+    local today = math.floor(os.time() / 86400) * 86400
+    local logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today,1)
+
+    logs = table.group(logs,function(c) return c.guid end)
+    states = table.group(states,function(s) return s.guid end)
+
+    json.encode_sparse_array(true)
     local infos = table.series(mems,function(m)
         local p = base_players[tonumber(m)]
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
-        return {
-            info = {
-                guid = p.guid,
-                icon = p.icon,
-                nickname = p.nickname,
-                sex = p.sex,
-            },
-            role = role,
-            money = {
-                money_id = money_id,
-                count = player_money[p.guid][money_id] or 0,
+        if not req_role or req_role == 0 or req_role == role then
+            return {
+                info = {
+                    guid = p.guid,
+                    icon = p.icon,
+                    nickname = p.nickname,
+                    sex = p.sex,
+                },
+                role = role,
+                money = {
+                    money_id = money_id,
+                    count = player_money[p.guid][money_id] or 0,
+                },
+                extra_data = json.encode({
+                    info = states[p.guid] and table.values(states[p.guid])[1] or nil,
+                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
+                }),
+                parent = club_member_partner[club_id][p.guid],
             }
-        }
+        end
     end)
 
     onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{

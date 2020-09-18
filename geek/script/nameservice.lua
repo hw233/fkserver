@@ -11,12 +11,14 @@ local nameservice = {
     TNGM = "gm",
     TNGATE = "gate",
     TNLOGIN = "login",
+    TNSTATISTICS = "statistics",
     TIDDB = 1,
     TIDCONFIG = 2,
     TIDLOGIN = 3,
     TIDGM = 4,
     TIDGATE = 5,
     TIDGAME = 6,
+    TIDSTATISTICS = 7,
 }
 
 function nameservice.unique(id,name,...)

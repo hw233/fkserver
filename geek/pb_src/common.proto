@@ -119,6 +119,8 @@ message CLUB_MEMBER{
     PLAYER_BASE_INFO info = 1;
     int32 role = 2;
     MONEY_INFO money = 3;
+    string extra_data = 4;
+    int32 parent = 5;
 }
 
 message REQUEST_INFO{
