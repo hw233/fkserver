@@ -596,11 +596,16 @@ function table.filter(t, fn)
     end
 end
 
-function table.select(t,fn)
+function table.select(t,fn,serial)
     local tb = {}
 
     for k,v in pairs(t or {}) do
-        tb[k] = (fn and fn(v,k)) and v  or nil
+        local v = (fn and fn(v,k)) and v  or nil
+        if serial then
+            if v then table.insert(tb,v) end
+        else
+            tb[k] = v
+        end 
     end
 
     return tb
@@ -819,6 +824,75 @@ function table.get(tb,field,default)
 
     return tb[field]
 end
+
+function table.join(left,right,on,join_type,prefix)
+    prefix = prefix or "r"
+    join_type = join_type or "inner"
+
+    local function merge_with_prefix(l,r,pre)
+        pre = pre or "r"
+        local tb = clone(l)
+        for k,v in pairs(r) do
+            k = not tb[k] and k or pre .. "_".. k
+            tb[k] = v
+        end
+        return tb
+    end
+    local join_func = {
+        left = function()
+            local res = {}
+            for _,lr in pairs(left) do
+                local row
+                for _,rr in pairs(right) do
+                    if on(lr,rr) then
+                        row = merge_with_prefix(lr,rr,prefix)
+                    end
+                end
+                table.insert(res,row or lr)
+            end
+
+            return res
+        end,
+        right = function()
+            local res = {}
+            for _,rr in pairs(right) do
+                local row
+                for _,lr in pairs(left) do
+                    if on(lr,rr) then
+                        row = merge_with_prefix(lr,rr,prefix)
+                    end
+                end
+                if not row then
+                    table.insert(res,table.map(rr,function(v,k) return prefix .. "_".. k,v end))
+                else
+                    table.insert(res,row)
+                end
+            end
+
+            return res
+        end,
+        inner = function()
+            local res = {}
+            for _,lr in pairs(left) do
+                local row
+                for _,rr in pairs(right) do
+                    if on(lr,rr) then
+                        row = merge_with_prefix(lr,rr,prefix)
+                    end
+                end
+                if row then
+                    table.insert(res,row)
+                end
+            end
+
+            return res
+        end
+    }
+    
+    return join_func[join_type]()
+end
+
+table.extract = table.series
 
 string._htmlspecialchars_set = {}
 string._htmlspecialchars_set["&"] = "&amp;"
