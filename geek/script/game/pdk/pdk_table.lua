@@ -872,8 +872,13 @@ function pdk_table:game_balance(winner)
 		end
 	end)
 
+	local logids = {
+		[210] = enum.LOG_MONEY_OPT_TYPE_PDK_ER_REN,
+		[211] = enum.LOG_MONEY_OPT_TYPE_PDK,
+	}
+
 	local moneies = table.map(scores,function(score,chair) return chair,self:calc_score_money(score) end)
-	moneies = self:balance(moneies,enum.LOG_MONEY_OPT_TYPE_PDK)
+	moneies = self:balance(moneies,logids[def_first_game_type])
 	self:foreach(function(p,chair)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.round_score = scores[chair]
