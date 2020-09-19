@@ -1577,7 +1577,16 @@ function maajan_table:do_balance()
 
     log.dump(msg)
 
-    chair_money = self:balance(chair_money,enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN)
+    local logids = {
+        [200] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN,
+        [201] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_SI_ER,
+        [202] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_SAN_ER,
+        [203] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_SAN,
+        [204] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_ER,
+        [205] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_YI,
+    }
+
+    chair_money = self:balance(chair_money,logids[def_first_game_type])
     for _,balance in pairs(msg.player_balance) do
         local p = self.players[balance.chair_id]
         local p_log = self.game_log.players[balance.chair_id]
