@@ -2046,27 +2046,27 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
 
     local whies = {
         [enum.CRT_BOSS] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
             [enum.CRT_BOSS] = nil,
         },
         [enum.CRT_PARTNER] = {
             [enum.CRT_PARTNER] = nil,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
         },
         [enum.CRT_PLAYER] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
             [enum.CRT_PLAYER] = nil,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
+            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
         },
         [enum.CRT_ADMIN] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
             [enum.CRT_ADMIN] = nil,
         }
     }
