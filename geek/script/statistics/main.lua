@@ -6,7 +6,7 @@ local log = require "log"
 require "functions"
 local timer = require "timer"
 
-local trigger_interval = 1 * 60
+local trigger_interval = 5 * 60
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 5000)
