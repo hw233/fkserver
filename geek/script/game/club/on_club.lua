@@ -2113,9 +2113,9 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         end
     elseif from_role == enum.CRT_PARTNER and to_role == enum.CRT_PARTNER then
         if recursive_search_partner(club_id,from_guid,to_guid) then
-            why = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY
+            why = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB
         elseif recursive_search_partner(club_id,to_guid,from_guid) then
-            why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY
+            why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB
         else
             res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
