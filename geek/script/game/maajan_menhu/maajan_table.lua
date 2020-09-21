@@ -1317,7 +1317,7 @@ function maajan_table:calculate_hu(p,hu)
                 end
             end
 
-            table.insert(types[chair_id].typescore,{score = all_gu_mai_score,type = t,count = 1})
+            table.insert(types[p.chair_id].typescore,{score = all_gu_mai_score,type = t,count = 1})
         end
 
         for _,t in pairs(ts) do
