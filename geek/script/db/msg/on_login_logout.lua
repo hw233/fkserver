@@ -2937,13 +2937,33 @@ end
 
 function on_sd_update_player_info(msg)
 	local guid = msg.guid
-	local r = dbopt.game:query([[
-		UPDATE t_player SET 
-				nickname = '%s',
-				head_url = '%s',
-				phone = '%s'
-			WHERE guid = %s;
-	]],msg.nickname,msg.icon,msg.phone,guid)
+
+	if 	(not guid or guid == 0) or
+		(
+			not msg.nickname and 
+			not msg.icon and 
+			not msg.phone
+		) 
+	then
+		return
+	end
+
+	local sql = "UPDATE t_player SET "
+	if msg.nickname then
+		sql = sql .. string.format(" nickname = '%s'",msg.nickname)
+	end
+
+	if msg.icon then
+		sql = sql .. string.format(", head_url = '%s'",msg.icon)
+	end
+
+	if msg.phone then
+		sql = sql .. string.format(", phone = '%s'",msg.icon)
+	end
+
+	sql = sql .. string.format(" WHERE guid = %s;",guid)
+
+	local r = dbopt.game:query(sql)
 	if r.errno then
 		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
 	end
