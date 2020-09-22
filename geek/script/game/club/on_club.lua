@@ -818,13 +818,8 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min)
 
     local logs,states
-    if req_role == enum.CRT_PARTNER then
-        local today = math.floor(os.time() / 86400) * 86400
-        logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,today,1)
-    else
-        local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
-        logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
-    end
+    local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
+    logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
 
     logs = table.group(logs,function(c) return c.guid end)
     states = table.group(states,function(s) return s.guid end)
