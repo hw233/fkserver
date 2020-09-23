@@ -410,21 +410,25 @@ local function player_commission_contribute()
     end
 end
 
-local function task()
+local function task(dbconf)
+    log.dump(dbconf)
     log.info("do player statistics task ...")
-    team_money()
-    team_player_count()
-    player_play_count()
-    team_play_count()
-    player_commission_contribute()
+    os.execute(string.format(
+        "python3 ./geek/script/statistics/player.py host %s port %s user %s password %s",
+        dbconf.host,
+        dbconf.port,
+        dbconf.user,
+        dbconf.password
+    ))
+    log.info("do player statistics end")
 end
 
 function player_statistics.setup()
     create_table()
 end
 
-function player_statistics.task()
-    task()
+function player_statistics.task(dbconf)
+    task(dbconf)
 end
 
 

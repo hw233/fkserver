@@ -21,6 +21,7 @@ local serviceid
 
 local setup
 local task
+local dbconf
 
 local function checkdbconf(conf)
     assert(conf)
@@ -55,7 +56,7 @@ local player = require "statistics.player"
 
 task = function()
     skynet.fork(function()
-        player.task()
+        player.task(dbconf)
     end)
 end
 
@@ -64,10 +65,8 @@ setup = function()
 end
 
 skynet.start(function()
-    local dbconf = channel.call("config.?","msg","query_database_conf")
-    for _,c in pairs(dbconf) do
-        dbopt.open(c)
-    end
+    local conf = channel.call("config.?","msg","query_database_conf")
+    _,dbconf = table.choice(conf)
 
     skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]
