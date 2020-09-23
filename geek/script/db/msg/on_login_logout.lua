@@ -13,6 +13,7 @@ local channel = require "channel"
 local reddb = redisopt.default
 local enum = require "pb_enums"
 local queue = require "skynet.queue"
+local timer = require "timer"
 
 local money_lock = queue()
 
@@ -2683,8 +2684,11 @@ local function incr_player_money(guid,money_id,money,where,why)
 		return
 	end
 
-	dbopt.log:query("INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,opt_type) VALUES(%d,%d,%d,%d,%d,%d);",
-		guid,money_id,oldmoney,newmoney,where,why)
+	dbopt.log:query([[
+			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,created_time) 
+			VALUES(%d,%d,%d,%d,%d,%d,%d);
+		]],
+		guid,money_id,oldmoney,newmoney,where,why,timer.ms_time())
 	return oldmoney,newmoney
 end
 
@@ -2744,8 +2748,10 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	local logsqls = {
 		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
 					club_id,money_id,old_club_money,new_club_money,why,why_ext),
-		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
-					guid,money_id,old_player_money,new_player_money,why,why_ext),
+		string.format([[
+				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+				]],guid,money_id,old_player_money,new_player_money,why,why_ext,timer.ms_time()),
 	}
 	res = dbopt.log:query(table.concat(logsqls,"\n"))
 	if res.errno then
@@ -2788,8 +2794,10 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	local logsqls = {
 		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
 					club_id,money_id,old_club_money,new_club_money,why,why_ext),
-		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
-					guid,money_id,old_player_money,new_player_money,why,why_ext),
+		string.format([[
+				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+				]],guid,money_id,old_player_money,new_player_money,why,why_ext,timer.ms_time()),
 	}
 	res = dbopt.log:query(table.concat(logsqls,"\n"))
 	if res.errno then
@@ -2885,10 +2893,16 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
-		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
-					from_guid,money_id,old_from_money,new_from_money,why,why_ext),
-		string.format([[INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext) VALUES(%d,%d,%d,%d,0,%d,'%s');]],
-					to_guid,money_id,old_to_money,new_to_money,why,why_ext),
+		string.format(
+			[[
+				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+			]],from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.ms_time()),
+		string.format(
+			[[
+				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+			]],to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.ms_time()),
 	}
 
 	log.dump(logsqls)

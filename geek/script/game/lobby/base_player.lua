@@ -17,6 +17,7 @@ local item_details_table = item_details_table
 local base_active_android = base_active_android
 local club_partner_commission = require "game.club.club_partner_commission"
 local queue = require "skynet.queue"
+local timer = require "timer"
 
 require "game.net_func"
 require "table_func"
@@ -407,6 +408,7 @@ function base_player:log_money(money_id,old,now,why,why_ext,where)
 		where = where,
 		reason = why,
 		reason_ext = why_ext,
+		created_time = timer.ms_time(),
 	})
 end
 
