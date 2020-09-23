@@ -450,7 +450,7 @@ function base_player:incr_money(item,why,why_ext)
 			money = math.floor(item.money),
 			money_id = item.money_id,
 			where = where,
-		}},why)
+		}},why,why_ext)
 
 		if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
 			log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
@@ -479,7 +479,6 @@ function base_player:incr_money(item,why,why_ext)
 	
 	log.info("base_player:incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
 	self:notify_money(item.money_id)
-	self:log_money(item.money_id,oldmoney,newmoney,why,why_ext)
 	return oldmoney,newmoney
 end
 

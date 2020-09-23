@@ -2650,7 +2650,7 @@ function on_reg_account(msg)
 	end
 end
 
-local function incr_player_money(guid,money_id,money,where,why)
+local function incr_player_money(guid,money_id,money,where,why,why_ext)
 	log.info("%s,%s,%s,%s,%s",guid,money_id,money,where,why)
 	local res = dbopt.game:query([[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where)
 	if res.errno then
@@ -2685,17 +2685,17 @@ local function incr_player_money(guid,money_id,money,where,why)
 	end
 
 	dbopt.log:query([[
-			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,created_time) 
-			VALUES(%d,%d,%d,%d,%d,%d,%d);
+			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+			VALUES(%d,%d,%d,%d,%d,%d,%s,%d);
 		]],
-		guid,money_id,oldmoney,newmoney,where,why,timer.ms_time())
+		guid,money_id,oldmoney,newmoney,where,why,why_ext and string.format('"%s"',why_ext) or 'NULL',timer.ms_time())
 	return oldmoney,newmoney
 end
 
-function on_sd_change_player_money(items,why)
+function on_sd_change_player_money(items,why,why_ext)
 	local changes = {}
 	for _,item in pairs(items) do
-		local oldmoney,newmoney = incr_player_money(item.guid,item.money_id,item.money,item.where or 0,why)
+		local oldmoney,newmoney = incr_player_money(item.guid,item.money_id,item.money,item.where or 0,why,why_ext)
 		table.insert(changes,{
 			oldmoney = oldmoney,
 			newmoney = newmoney,
