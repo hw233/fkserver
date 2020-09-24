@@ -287,6 +287,7 @@ function base_club:exit(guid)
     reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
     reddb:hdel(string.format("player:money:%d",guid),money_id)
     reddb:hdel(string.format("club:role:%d",self.id),guid)
+
     club_member[self.id][guid] = nil
     player_money[guid][money_id] = nil
     player_club[guid][self.type] = nil
@@ -443,7 +444,6 @@ function base_club:create_table_template(game_id,desc,rule)
     
     return enum.ERROR_NONE,info
 end
-
 
 
 function base_club:recusive_broadcast(msgname,msg,except)
@@ -648,8 +648,6 @@ function base_club:incr_member_money(guid,delta_money,why,why_ext)
         },why,why_ext)
 
     local partner = club_member_partner[self.id][guid]
-    log.dump(partner)
-    log.dump(delta_money)
     while partner and partner ~= 0 do
         reddb:hincrby(string.format("club:team_money:%s",self.id),partner,delta_money)
         partner = club_member_partner[self.id][partner]

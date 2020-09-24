@@ -11,6 +11,7 @@ local club_partner_commission = require "game.club.club_partner_commission"
 local player_money = require "game.lobby.player_money"
 local base_players = require "game.lobby.base_players"
 local util = require "util"
+local club_member_partner = require "game.club.club_member_partner"
 
 local reddb = redisopt.default
 
@@ -95,6 +96,13 @@ function club_partner:join(guid)
     reddb:hset(string.format("club:member:partner:%s",self.club_id),guid,self.guid)
     reddb:sadd(string.format("club:partner:member:%s:%s",self.club_id,self.guid),guid)
     reddb:zadd(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),enum.CRT_PLAYER,guid)
+
+    local partner  = self.guid
+    while partner and partner ~= 0 do
+        reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,1)
+        partner = club_member_partner[self.club_id][partner]
+    end
+
     return enum.ERROR_NONE
 end
 
@@ -110,6 +118,13 @@ function club_partner:exit(mem)
     channel.publish("db.?","msg","SD_ExitPartner",{
         club = self.club_id,guid = mem,partner = self.guid
     })
+
+    local partner  = self.guid
+    while partner and partner ~= 0 do
+        reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,-1)
+        partner = club_member_partner[self.club_id][partner]
+    end
+    
     return enum.ERROR_NONE
 end
 
@@ -135,6 +150,8 @@ function club_partner:dismiss()
     reddb:del(string.format("club:partner:member:%s:%s",self.club_id,self.guid))
     reddb:del(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid))
     reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
+    reddb:hdel(string.format("club:team_player_count:%s",self.club_id),self.guid)
+    reddb:hdel(string.format("club:team_money:%s",self.club_id),self.guid)
     return enum.ERROR_NONE
 end
 
