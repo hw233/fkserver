@@ -418,10 +418,11 @@ function base_table:do_commission(taxes)
 		end
 	end
 
+	local club = base_clubs[club_id]
 	for guid,commission in pairs(commissions) do
 		commission = math.floor(commission + 0.0001)
 		if commission > 0 then
-			club_partners[club_id][guid]:incr_commission(commission,self.ext_round_id)
+			club:incr_team_commission(guid,commission,self.ext_round_id)
 		end
 	end
 end
@@ -472,12 +473,9 @@ function base_table:cost_tax(winlose)
 	local function do_cost_tax_money(taxes)
 		for _,p in pairs(self.players) do
 			local change = taxes[p.guid] or 0
-
+			log.dump(change)
 			if change ~= 0 then
-				p:cost_money({{
-					money_id = money_id,
-					money = change,
-				}},enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
+				club:incr_member_money(p.guid,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
 			end
 		end
 
@@ -1385,7 +1383,7 @@ function base_table:cost_private_fee()
 	if pay.option == enum.PAY_OPTION_AA then
 		local money_each = money
 		for _,p in pairs(self.players) do
-			p:cost_money({{
+			p:incr_money({{
 				money_id = 0,
 				money = -money_each,
 			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
@@ -1410,9 +1408,9 @@ function base_table:cost_private_fee()
 			return
 		end
 
-		owner:cost_money({{
+		owner:incr_money({{
 			money_id = 0,
-			money = money,
+			money = -money,
 		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.round_id)
 	else
 		log.error("base_table:cost_private_fee [%d] got wrong pay option.")
@@ -1453,7 +1451,6 @@ function base_table:balance(moneies,why)
 	log.dump(moneies)
 
 	local money_id = self:get_money_id() or -1
-
 	if self.private_id and self.conf.club and self.conf.club.type  == enum.CT_UNION then
 		local minrate = 1
 		for pid,money in pairs(moneies) do
@@ -1468,10 +1465,21 @@ function base_table:balance(moneies,why)
 		for pid,_ in pairs(moneies) do
 			moneies[pid] = math.floor(moneies[pid] * minrate)
 		end
+
+		log.dump(moneies)
+
+		local club = self.conf.club
+
+		for chair_or_guid,money in pairs(moneies) do
+			if money ~= 0 then
+				local p = self.players[chair_or_guid] or base_players[chair_or_guid]
+				club:incr_member_money(p.guid,math.floor(money),why,self.round_id)
+			end
+		end
+
+		return moneies
 	end
 	
-	log.dump(moneies)
-
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]

@@ -483,11 +483,11 @@ function base_player:incr_money(item,why,why_ext)
 end
 
 -- 花钱
-function base_player:cost_money(price, why,why_ext)
+function base_player:_cost_money(price, why,why_ext)
 	for _, item in ipairs(price) do
 		log.info("guid[%d] money_id[%d]  money[%d] why[%d] why_ext[%s]" ,self.guid, item.money_id, item.money,why,why_ext)
 		if item.money < 0 then 
-			log.error("cost_money but got minus money values.")
+			log.error("_cost_money but got minus money values.")
 			return
 		end
 

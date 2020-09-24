@@ -125,16 +125,6 @@ end
 
 function on_bs_club_create(owner,name)
     local guid = owner
-    -- if club_info.type == 1 or club_info.parent and club_info.parent ~= 0 then
-    --     local p_club = base_clubs[msg.parent]
-    --     if not p_club then
-    --         log.error("on_cs_club_create no parent club,%s.",msg.parent)
-    --         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
-    --             result = enum.ERROR_CLUB_NOT_FOUND,
-    --         })
-    --         return
-    --     end
-    -- end
 
     local player = base_players[guid]
     if not player then
@@ -148,13 +138,10 @@ function on_bs_club_create(owner,name)
 
     local id = rand_union_club_id()
 
-    base_club:create(id,name or "","",player,enum.CT_UNION)
+    local club = base_club:create(id,name or "","",player,enum.CT_UNION)
 
     -- 初始送分 金币
-    player:incr_money({
-        money_id = club_money_type[id],
-        money = math.floor(global_conf.union_init_money),
-    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     return enum.ERROR_NONE,id
 end
@@ -176,12 +163,9 @@ function on_bs_club_create_with_group(group_id,name)
     end
 
     local id = rand_union_club_id()
-    base_club:create(id,name or "","",player,enum.CT_UNION)
+    local club = base_club:create(id,name or "","",player,enum.CT_UNION)
 
-    player:incr_money({
-        money_id = club_money_type[id],
-        money = math.floor(global_conf.union_init_money),
-    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    club:incr_member_money(player.guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     local son_club_id = rand_union_club_id()
     base_club:create(son_club_id,group.name,"",player,enum.CT_UNION,id)
@@ -208,13 +192,10 @@ function on_cs_club_create(msg,guid)
 
     local id = rand_group_club_id()
 
-    base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
+    local club = base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
     -- 初始送分 金币
-    player:incr_money({
-        money_id = club_money_type[id],
-        money = math.floor(global_conf.union_init_money),
-    },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
@@ -2155,12 +2136,12 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
             return
         end
 
-        local new_from_money = from:incr_redis_money(money_id,-money,club_id)
+        local new_from_money = club:incr_member_redis_money(from.guid,-money)
         if new_from_money ~= new_db_from_money then
             log.warning("transfer_money_player2player from player %s db money ~= redis money,%s,%s",from_guid,new_db_from_money,new_from_money)
         end
 
-        local new_to_money = to:incr_redis_money(money_id,money,club_id)
+        local new_to_money = club:incr_member_redis_money(to.guid,money)
         if new_to_money ~= new_db_to_money then
             log.warning("transfer_money_player2player to player %s db money ~= redis money,%s,%s",from_guid,new_db_to_money,new_to_money)
         end
@@ -2250,7 +2231,7 @@ function on_cs_exchagne_club_commission(msg,guid)
         count = commission
     end
 
-    local result = club_partners[club_id][guid]:exchange_commission(count)
+    local result = club:exchange_team_commission(guid,count)
     onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
         result = result,
         club_id = club_id,

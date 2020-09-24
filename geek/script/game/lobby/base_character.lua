@@ -92,7 +92,7 @@ function base_character:get_header_icon()
 end
 
 -- 花钱
-function base_character:cost_money(price, opttype)
+function base_character:_cost_money(price, opttype)
 end
 
 -- 加钱

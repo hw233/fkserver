@@ -26,6 +26,8 @@ local club_partners = require "game.club.club_partners"
 local util = require "util"
 local club_conf = require "game.club.club_conf"
 local club_member_partner = require "game.club.club_member_partner"
+local club_team_money = require "game.club.club_team_money"
+local club_partner_commission = require "game.club.club_partner_commission"
 
 local reddb = redisopt.default
 
@@ -124,7 +126,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
     club_role[id][owner_guid] = nil
     setmetatable(c,{__index = base_club})
 
-    return id
+    return c
 end
 
 function base_club:exit_from_parent()
@@ -632,5 +634,85 @@ function base_club:check_money_limit(money,money_id)
     return self_money < money
 end
 
+function base_club:incr_member_money(guid,delta_money,why,why_ext)
+    local player = base_players[guid]
+    if not player or not club_member[self.id][guid] then
+        log.error("base_club:incr_member_money got nil player or not member,club:%s,guid:%s",self.id,guid)
+        return
+    end
+
+    delta_money = math.floor(delta_money)
+    player:incr_money({
+            money_id = club_money_type[self.id],
+            money = delta_money,
+        },why,why_ext)
+
+    local partner = club_member_partner[self.id][guid]
+    log.dump(partner)
+    log.dump(delta_money)
+    while partner and partner ~= 0 do
+        reddb:hincrby(string.format("club:team_money:%s",self.id),partner,delta_money)
+        partner = club_member_partner[self.id][partner]
+    end
+end
+
+function base_club:incr_member_redis_money(guid,delta_money)
+    local player = base_players[guid]
+    if not player or not club_member[self.id][guid] then
+        log.error("base_club:incr_member_money got nil player or not member,club:%s,guid:%s",self.id,guid)
+        return
+    end
+
+    local money_id = club_money_type[self.id]
+    local new_money = player:incr_redis_money(money_id,delta_money,self.id)
+
+    local partner = club_member_partner[self.id][guid]
+    while partner and partner ~= 0 do
+        reddb:hincrby(string.format("club:team_money:%s",self.id),partner,delta_money)
+        partner = club_member_partner[self.id][partner]
+    end
+
+    return new_money
+end
+
+function base_club:exchange_team_commission(partner_id,money)
+    local commission = club_partner_commission[self.id][partner_id]
+    if money < 0 then money = commission  end
+
+    if money == 0 then return enum.ERROR_NONE end
+
+    if money < 0 then  return enum.ERROR_PARAMETER_ERROR end
+
+    if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
+
+    money = math.floor(money)
+    reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-money)
+    self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+    club_partners[self.id][partner_id]:notify_money()
+
+    return enum.ERROR_NONE
+end
+
+function base_club:incr_team_commission(partner_id,money,round_id)
+    if money == 0 then return end
+
+    if not channel.call("db.?","msg","SD_LogPlayerCommission",{
+        club = self.id,
+        commission = money,
+        round_id = round_id or "",
+        money_id = club_money_type[self.id],
+        guid = partner_id,
+    }) then
+        log.error("base_club:incr_team_commission unknown db error.")
+        return
+    end
+
+    local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.id),partner_id,money)
+    newmoney = newmoney and tonumber(newmoney) or 0
+    club_partner_commission[self.id] = nil
+
+    club_partners[self.id][partner_id]:notify_money()
+    return newmoney
+end
 
 return base_club

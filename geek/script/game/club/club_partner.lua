@@ -161,48 +161,5 @@ function club_partner:notify_money()
     ))
 end
 
-function club_partner:incr_commission(money,round_id)
-    if money == 0 then return end
-
-    if not channel.call("db.?","msg","SD_LogPlayerCommission",{
-        club = self.club_id,
-        commission = money,
-        round_id = round_id or "",
-        money_id = club_money_type[self.club_id],
-        guid = self.guid,
-    }) then
-        log.error("club_partner:incr_commission unknown db error.")
-        return
-    end
-
-    local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.club_id),self.guid,money)
-    newmoney = newmoney and tonumber(newmoney) or 0
-    club_partner_commission[self.club_id] = nil
-
-    self:notify_money()
-    return newmoney
-end
-
-function club_partner:exchange_commission(money)
-    local commission = club_partner_commission[self.club_id][self.guid]
-    if money < 0 then money = commission  end
-
-    if money == 0 then return enum.ERROR_NONE end
-
-    if money < 0 then  return enum.ERROR_PARAMETER_ERROR end
-
-    if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
-
-    reddb:hincrby(string.format("club:partner:commission:%s",self.club_id),self.guid,-math.floor(money))
-    local money_id = club_money_type[self.club_id]
-    base_players[self.guid]:incr_money({
-        money_id = money_id,
-        money = money,
-    },enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
-
-    self:notify_money()
-
-    return enum.ERROR_NONE
-end
 
 return club_partner
