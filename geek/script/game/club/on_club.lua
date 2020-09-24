@@ -43,6 +43,8 @@ local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
 local club_conf = require "game.club.club_conf"
 local runtime_conf = require "game.runtime_conf"
+local club_team_player_count = require "game.club.club_team_player_count"
+local club_team_money = require "game.club.club_team_money"
 
 local queue = require "skynet.queue"
 
@@ -798,12 +800,10 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min,"limit",page_index * page_size,page_size) or
         reddb:zrevrangebyscore(key,score_max,score_min)
 
-    local logs,states
     local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
-    logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
+    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
 
     logs = table.group(logs,function(c) return c.guid end)
-    states = table.group(states,function(s) return s.guid end)
 
     json.encode_sparse_array(true)
     local ms = table.series(mems,function(m)
@@ -825,8 +825,12 @@ function on_cs_club_query_memeber(msg,guid)
                     count = player_money[p.guid][money_id] or 0,
                 },
                 extra_data = json.encode({
-                    info = states[p.guid] and table.values(states[p.guid])[1] or nil,
-                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
+                    info = {
+                        guid = p.guid,
+                        player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
+                        money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
+                    },
+                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil
                 }),
                 parent = club_member_partner[club_id][p.guid],
             }
@@ -2861,10 +2865,9 @@ function on_cs_search_club_player(msg,guid)
     local money_id = club_money_type[club_id]
 
     local today = math.floor(os.time() / 86400) * 86400
-    local logs,states = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today,1)
+    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today,1)
 
     logs = table.group(logs,function(c) return c.guid end)
-    states = table.group(states,function(s) return s.guid end)
 
     json.encode_sparse_array(true)
     local infos = table.series(mems,function(m)
@@ -2886,7 +2889,11 @@ function on_cs_search_club_player(msg,guid)
                     count = player_money[p.guid][money_id] or 0,
                 },
                 extra_data = json.encode({
-                    info = states[p.guid] and table.values(states[p.guid])[1] or nil,
+                    info = {
+                        guid = p.guid,
+                        player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
+                        money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
+                    },
                     logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
                 }),
                 parent = club_member_partner[club_id][p.guid],

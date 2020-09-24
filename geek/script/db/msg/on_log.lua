@@ -309,24 +309,5 @@ function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
         LIMIT %s
     ]],where_sql,club,where_sql,club,getter,start_date,limit)
 
-    local states = dbopt.game:query([[
-        SELECT m.guid,m.money + pm.money money,c.count player_count FROM
-            t_team_money m
-        JOIN
-            t_team_player_count c
-        ON c.guid = m.guid AND c.club = m.club 
-        JOIN
-            (
-                SELECT guid,money,club FROM 
-                    t_player_money pm
-                JOIN
-                    t_club_money_type t
-                ON pm.money_id = t.money_id
-                WHERE guid in (%s) AND club = %s
-            ) pm
-        ON pm.guid = m.guid AND m.club = pm.club
-        WHERE m.guid in (%s) AND m.club = %s
-    ]],where_sql,club,where_sql,club)
-
-    return logs,states
+    return logs
 end
