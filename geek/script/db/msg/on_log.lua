@@ -311,3 +311,19 @@ function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
 
     return logs
 end
+
+function on_sd_log_club_action_msg(msg)
+    local operator = msg.operator
+    local club = msg.club
+    local actionmsg = msg.msg
+    local type = msg.type
+
+    local res = dbopt.log:query([[
+            INSERT INTO t_log_club_msg(club,operator,type,content,created_time)
+            VALUES(%s,%s,%s,'%s',%s)
+        ]],club,operator,type,actionmsg and json.encode(actionmsg) or "",os.time())
+
+    if res.errno then
+        log.error("on_sd_log_club_action_msg error:%s",res.err)
+    end
+end

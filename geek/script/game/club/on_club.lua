@@ -993,6 +993,15 @@ local function on_cs_club_exit(msg,guid)
         if club then
             club:exit(exit_guid)
         end
+
+        channel.publish("db.?","msg","SD_LogClubActionMsg",{
+            club = club_id,
+            operator = guid,
+            type = enum.CLUB_ACTION_EXIT,
+            msg = {
+                guid = exit_guid,
+            },
+        })
     end
     
     return enum.ERROR_NONE
@@ -1484,6 +1493,15 @@ function on_cs_club_kickout(msg,guid)
     local partner_id = club_member_partner[club_id][target_guid]
     local partner = club_partners[club_id][partner_id]
     partner:exit(target_guid)
+
+    channel.publish("db.?","msg","SD_LogClubActionMsg",{
+        club = club_id,
+        operator = guid,
+        type = enum.CLUB_ACTION_EXIT,
+        msg = {
+            guid = target_guid,
+        },
+    })
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,

@@ -203,6 +203,14 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
         end
 
         self:join(invitee,inviter)
+        channel.publish("db.?","msg","SD_LogClubActionMsg",{
+            club = self.id,
+            operator = inviter,
+            type = enum.CLUB_ACTION_JOIN,
+            msg = {
+                guid = invitee,
+            },
+        })
         club_member[self.id] = nil
         return enum.ERROR_NONE
     end
