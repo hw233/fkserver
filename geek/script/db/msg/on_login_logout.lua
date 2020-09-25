@@ -2972,7 +2972,7 @@ function on_sd_update_player_info(msg)
 	end
 
 	if msg.phone then
-		sql = sql .. string.format(", phone = '%s'",msg.icon)
+		sql = sql .. string.format(", phone = '%s'",msg.phone)
 	end
 
 	sql = sql .. string.format(" WHERE guid = %s;",guid)
