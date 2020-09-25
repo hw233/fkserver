@@ -182,6 +182,7 @@ def team_play_count():
     today = math.floor(time.time() / day_seconds) * day_seconds
     members = pd.read_sql_query('SELECT club,guid,partner FROM game.t_partner_member;',db_engine)
     play_counts = pd.read_sql_query('SELECT club,guid,count,date FROM log.t_log_player_daily_play_count WHERE date >= {};'.format(today),db_engine)
+    play_counts['club'].fillna(0,inplace=True)
     play_counts = pd.merge(members,play_counts,how='left',on=['club','guid'])
     play_counts['count'].fillna(0,inplace=True)
     play_counts['date'] = today

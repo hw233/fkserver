@@ -411,7 +411,6 @@ local function player_commission_contribute()
 end
 
 local function task(dbconf)
-    log.dump(dbconf)
     log.info("do player statistics task ...")
     os.execute(string.format(
         "python3 ./geek/script/statistics/player.py host %s port %s user %s password %s",
