@@ -269,8 +269,8 @@ def player_commission_contribute():
     pass
 
 create_table()
-team_player_count()
-team_money()
+# team_player_count()
+# team_money()
 player_play_count()
 team_play_count()
 player_commission_contribute()
