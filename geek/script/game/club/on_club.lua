@@ -1075,7 +1075,7 @@ local function on_cs_club_agree_request(msg,guid)
     end
 
     if msg.sid and msg.sid ~= "" then
-        -- on_cs_club_agree_join_club_with_share_id(msg,guid)
+        on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
