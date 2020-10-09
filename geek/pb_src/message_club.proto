@@ -545,3 +545,18 @@ message SC_SEARCH_CLUB_PLAYER{
 	int32 result = 1;
 	repeated CLUB_MEMBER players = 2;
 }
+
+message C2S_CLUB_EDIT_TEAM_CONFIG {
+    enum MsgID {NIL = 0;ID = 14119;}
+    int32 club_id = 1;
+    int32 partner = 2;
+    string conf = 3;
+}
+
+message S2C_CLUB_EDIT_TEAM_CONFIG {
+    enum MsgID {NIL = 0;ID = 14120;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 partner = 3;
+    string conf = 4;
+}

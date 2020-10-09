@@ -2924,3 +2924,9 @@ function on_cs_search_club_player(msg,guid)
         players = infos,
     })
 end
+
+
+function on_cs_club_edit_team_config(msg,guid)
+    log.dump(msg)
+    
+end
