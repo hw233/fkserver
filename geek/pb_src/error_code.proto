@@ -33,6 +33,7 @@ enum ERROR_CODE {
     ERROR_IP_TREAT = 253;//IP防作弊，加入失败
     ERROR_GPS_TREAT = 254;//GPS防作弊，加入失败
     ERROR_CLUB_TABLE_JOIN_BLOCK = 255; //禁止联盟同桌
+    ERROR_CLUB_TEAM_IS_LOCKED = 256; //合伙人冻结
 
     ERROR_BANKRUPTCY_WARNING = 500;//破产通知码
     ERROR_PLAYER_NO_RIGHT = 502;//没有权限

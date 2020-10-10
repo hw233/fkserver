@@ -27,6 +27,7 @@ local club_conf = require "game.club.club_conf"
 local club_member_partner = require "game.club.club_member_partner"
 local club_team_money = require "game.club.club_team_money"
 local club_partner_commission = require "game.club.club_partner_commission"
+local club_partner_conf = require "game.club.club_partner_conf"
 
 local reddb = redisopt.default
 
@@ -306,6 +307,37 @@ function base_club:broadcast(msgname,msg,except)
     broadcast(self.id,msgname,msg,except)
 end
 
+function base_club:is_team_credit_block_play(guid)
+    local function is_credit_less(cid,pid)
+        local money_id = club_money_type[cid]
+        local credit = club_partner_conf[cid][pid].credit or 0
+        local team_money = (club_team_money[cid][pid] or 0) + player_money[pid][money_id]
+        if team_money < credit then
+            return true
+        end
+    end
+
+    local is_block_switch_on = club_conf[self.id].credit_block_play
+    if not is_block_switch_on then
+        return 
+    end
+
+    local role = club_role[self.id][guid]
+    local partner_id
+    if role == enum.CRT_PARTNER or role == enum.CRT_BOSS then 
+        partner_id = guid
+    else
+        partner_id = club_member_partner[self.id][guid]
+    end
+
+    while partner_id and partner_id ~= 0 do
+        if is_credit_less(self.id,partner_id) then
+            return true
+        end
+
+        partner_id = club_member_partner[self.id][partner_id]
+    end
+end
 
 function base_club:create_table(player,chair_count,round,rule,template)
     local member = club_member[self.id][player.guid]
@@ -318,6 +350,11 @@ function base_club:create_table(player,chair_count,round,rule,template)
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
+    local is_credit_block = self:is_team_credit_block_play(player.guid)
+    if is_credit_block then
+        return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    end
+   
     local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,rule,self)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hmset(string.format("table:info:%d",global_tid),{
@@ -386,6 +423,10 @@ function base_club:join_table(player,private_table,chair_count)
 
     if is_block_join or is_block_partner_player then
         return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+    end
+
+    if self:is_team_credit_block_play(player.guid) then
+        return enum.ERROR_CLUB_TEAM_IS_LOCKED
     end
 
     return g_room:join_private_table(player,private_table,chair_count)

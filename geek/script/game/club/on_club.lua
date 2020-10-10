@@ -45,6 +45,7 @@ local club_conf = require "game.club.club_conf"
 local runtime_conf = require "game.runtime_conf"
 local club_team_player_count = require "game.club.club_team_player_count"
 local club_team_money = require "game.club.club_team_money"
+local club_partner_conf = require "game.club.club_partner_conf"
 
 local queue = require "skynet.queue"
 
@@ -830,7 +831,10 @@ function on_cs_club_query_memeber(msg,guid)
                         player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
                         money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
                     },
-                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil
+                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
+                    conf = {
+                        credit = club_partner_conf[club_id][p.guid].credit or 0,
+                    },
                 }),
                 parent = club_member_partner[club_id][p.guid],
             }
@@ -1719,6 +1723,43 @@ function on_cs_club_team_list(msg,guid)
     })
 end
 
+local function can_transfer(club_id,partner_id)
+    if not base_clubs[club_id] then
+        return enum.ERROR_CLUB_NOT_FOUND
+    end
+
+    if not club_member[club_id][partner_id] then
+        return enum.ERROR_MEMBERS_NOT_FOUND
+    end
+
+    local role = club_role[club_id][partner_id]
+    if role ~= enum.CRT_PARTNER and role ~= enum.CRT_BOSS then
+        return enum.ERROR_PLAYER_NO_RIGHT
+    end
+
+    local function is_credit_less(cid,pid)
+        local money_id = club_money_type[cid]
+        local credit = club_partner_conf[cid][pid].credit or 0
+        local team_money = (club_team_money[cid][pid] or 0) + player_money[pid][money_id]
+        if team_money < credit then
+            return true
+        end
+    end
+
+    local is_block_switch_on = club_conf[club_id].credit_block_score
+    if is_block_switch_on then
+        while partner_id and partner_id ~= 0 do
+            if is_credit_less(club_id,partner_id) then
+                return enum.ERROR_CLUB_TEAM_IS_LOCKED
+            end
+
+            partner_id = club_member_partner[club_id][partner_id]
+        end
+    end
+
+    return enum.ERROR_NONE
+end
+
 local function transfer_money_player2club(source_guid,target_club_id,money,guid)
     local res = {
         result = enum.ERROR_NONE,
@@ -2103,13 +2144,34 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
+
+        local can = can_transfer(club_id,from_guid)
+        if can ~= enum.ERROR_NONE then
+            res.result = can
+            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+            return
+        end
     elseif to_role == enum.CRT_PARTNER and from_role == enum.CRT_PLAYER then
+        local can = can_transfer(club_id,to_guid)
+        if can ~= enum.ERROR_NONE then
+            res.result = can
+            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+            return
+        end
+
         if not recursive_search_partner(club_id,to_guid,from_guid) then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
     elseif from_role == enum.CRT_PARTNER and to_role == enum.CRT_PARTNER then
+        local can = can_transfer(club_id,from_guid)
+        if can ~= enum.ERROR_NONE then
+            res.result = can
+            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+            return
+        end
+
         if recursive_search_partner(club_id,from_guid,to_guid) then
             why = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB
         elseif recursive_search_partner(club_id,to_guid,from_guid) then
@@ -2171,6 +2233,8 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
+
+
 
 function on_cs_transfer_money(msg,guid)
     local source_type = msg.source_type
@@ -2726,6 +2790,8 @@ function on_cs_club_edit_config(msg,guid)
         return
     end
 
+    tconf = table.map(tconf,function(c,k) return k,c and true or false end)
+
     log.dump(tconf)
 
     reddb:hmset(string.format("club:conf:%s",club_id),tconf)
@@ -2927,5 +2993,36 @@ end
 
 function on_cs_club_edit_team_config(msg,guid)
     log.dump(msg)
-    
+    local club_id = msg.club_id
+    local partner_id = msg.partner
+
+    local club = base_clubs[club_id]
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if (role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER) or
+        club_member_partner[club_id][partner_id] ~= guid 
+    then 
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end
+
+    local ok,conf = pcall(json.decode,msg.conf)
+    if not ok then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",{
+            result = enum.ERROR_PARAMETER_ERROR,
+        })
+        return
+    end
+
+    reddb:hmset(string.format("club:partner:conf:%s:%s",club_id,partner_id),conf)
+
+    onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",msg)
 end

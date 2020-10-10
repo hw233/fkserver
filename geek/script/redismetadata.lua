@@ -95,7 +95,9 @@ tree.club.request["%d+"] = "set"
 tree.club.request["%d+"]["%d+"] = "number"
 tree.club.conf["%d+"] = "hash"
 tree.club.conf["%d+"] = {
-    block_partner_player = "bool"
+    block_partner_player = "bool",
+    credit_block_play = "bool",
+    credit_block_score = "bool",
 }
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"
@@ -104,6 +106,11 @@ tree.club.template.commission.default["%d+"]["%d+"] = "number_hash"
 tree.club.template.commission.default["%d+"]["%d+"]["%d+"] = "number"
 tree.club.template.commission["%d+"]["%d+"] = "number_hash"
 tree.club.template.commission["%d+"]["%d+"]["%d+"] = "number"
+
+tree.club.partner.conf["%d+"]["%d+"] = "hash"
+tree.club.partner.conf["%d+"]["%d+"] = {
+    credit = "number",
+}
 
 tree.conf["%d+"] = "hash"
 tree.conf["%d+"] = {
