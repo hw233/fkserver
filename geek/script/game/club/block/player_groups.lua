@@ -6,7 +6,7 @@ local player_groups = setmetatable({},{
         local gs = setmetatable({},{
             __index = function(_,guid)
                 local groups = reddb:smembers(string.format("club:block:player:group:%s:%s",club_id,guid))
-                return table.map(groups,function(v) return tonumber(v),true end)
+                return groups
             end
         })
         t[club_id] = gs

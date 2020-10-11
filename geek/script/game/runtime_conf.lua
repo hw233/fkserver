@@ -22,21 +22,21 @@ local global = setmetatable({},{
 local channel_games = setmetatable({},{
     __index = function(_,channel)
         local v = reddb:smembers(string.format("runtime_conf:channel_game:%s",channel))
-        return v and table.series(v,function(gid) tonumber(gid) end) or nil
+        return v and table.keys(v) or nil
     end,
 })
 
 local promoter_games = setmetatable({},{
     __index = function(_,promoter)
         local v = reddb:smembers(string.format("runtime_conf:promoter_game:%s",promoter))
-        return v and table.series(v,function(gid) tonumber(gid) end) or nil
+        return v and table.keys(v) or nil
     end,
 })
 
 local club_games = setmetatable({},{
     __index = function(_,club_id)
         local v = reddb:smembers(string.format("runtime_conf:club_game:%s",club_id))
-        return v and table.series(v,function(gid) tonumber(gid) end) or nil
+        return v and table.keys(v) or nil
     end,
 })
 

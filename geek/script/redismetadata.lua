@@ -61,6 +61,12 @@ tree.player.online.guid["%d+"] = {
     global_table = "number",
 }
 
+tree.player.request["%d+"] = "set"
+tree.player.request["%d+"]["%d+"] = "number"
+
+tree.player.mail["%d+"] = "set"
+tree.player.mail["%d+"]["%d+"] = "number"
+
 tree.club.info["%d+"] = "hash"
 tree.club.info["%d+"] = {
     id = "number",
@@ -72,6 +78,8 @@ tree.club.info["%d+"] = {
     parent = "number",
 }
 
+tree.club.game["%d+"] = "set"
+tree.club.game["%d+"]["%d+"] = "number"
 tree.club.member["%d+"] = "set"
 tree.club.member["%d+"]["%d+"] = "number"
 tree.club.member.partner["%d+"] = "number_hash"
@@ -89,8 +97,11 @@ tree.club.template["%d+"] = "set"
 tree.club.template["%d+"]["%d+"] = "number"
 tree.club.block.group.id = "number"
 tree.club.block.groups["%d+"] = "set"
+tree.club.block.groups["%d+"]["%d+"] = "number"
 tree.club.block.player.group["%d+"]["%d+"] = "set"
 tree.club.block.player.group["%d+"]["%d+"]["%d+"] = "number"
+tree.club.block.group.player["%d+"]["%d+"] = "set"
+tree.club.block.group.player["%d+"]["%d+"]["%d+"] = "number"
 tree.club.request["%d+"] = "set"
 tree.club.request["%d+"]["%d+"] = "number"
 tree.club.conf["%d+"] = "hash"
@@ -102,6 +113,9 @@ tree.club.conf["%d+"] = {
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"
 
+tree.club.team["%d+"] = "set"
+tree.club.team["%d+"]["%d+"] = "number"
+
 tree.club.template.commission.default["%d+"]["%d+"] = "number_hash"
 tree.club.template.commission.default["%d+"]["%d+"]["%d+"] = "number"
 tree.club.template.commission["%d+"]["%d+"] = "number_hash"
@@ -111,6 +125,9 @@ tree.club.partner.conf["%d+"]["%d+"] = "hash"
 tree.club.partner.conf["%d+"]["%d+"] = {
     credit = "number",
 }
+
+tree.club.notice["%d+"] = "set"
+tree.club.notice["%d+"]["%d+"] = "number"
 
 tree.conf["%d+"] = "hash"
 tree.conf["%d+"] = {
@@ -187,5 +204,11 @@ tree.notice.info["%d+"] = {
 
 tree.runtime_conf.private_fee["-?%d+"] = "number"
 tree.runtime_conf.global.h5_login = "number"
+tree.runtime_conf.channel_game["%S+"] = "set"
+tree.runtime_conf.channel_game["%S+"]["%d+"] = "number"
+tree.runtime_conf.promoter_game["%S+"] = "set"
+tree.runtime_conf.promoter_game["%S+"]["%d+"] = "number"
+tree.runtime_conf.club_game["%S+"] = "set"
+tree.runtime_conf.club_game["%S+"]["%d+"] = "number"
 
 return tree

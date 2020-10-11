@@ -6,11 +6,7 @@ local player_mail = {}
 
 setmetatable(player_mail,{
     __index = function(t,guid)
-        local mids = reddb:smembers(string.format("player:mail:%d",guid))
-        local mail_ids = {}
-        for _,mail_id in pairs(mids) do
-            mail_ids[mail_id] = true
-        end
+        local mail_ids = reddb:smembers(string.format("player:mail:%d",guid))
         t[guid] = mail_ids
         return mail_ids
     end
