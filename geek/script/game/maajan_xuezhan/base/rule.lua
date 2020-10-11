@@ -292,7 +292,7 @@ local HU_TYPE = def.HU_TYPE
 local UNIQUE_HU_TYPE = def.UNIQUE_HU_TYPE
 
 
-function rule.is_hu(pai,in_pai,si_dui)
+function rule.is_hu(pai,in_pai,with_si_dui)
 	local cache = {}
 	for i=1,50 do
 		cache[i] = pai.shou_pai[i] or 0
@@ -305,9 +305,9 @@ function rule.is_hu(pai,in_pai,si_dui)
 
 	local can_hu = is_hu(state)
 	local qi_dui = is_qi_dui(pai,cache)
-	local si_dui = is_si_dui(pai,cache)
+	local si_dui = with_si_dui and is_si_dui(pai,cache)
 
-	return can_hu or qi_dui or (si_dui and si_dui)
+	return can_hu or qi_dui or si_dui
 end
 
 local function get_qi_dui_types(pai,cache)

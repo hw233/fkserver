@@ -105,6 +105,25 @@ function mj_util.get_actions(pai,mo_pai,in_pai,si_dui)
 	return actions
 end
 
+
+function mj_util.get_actions_first_turn(pai,mo_pai,si_dui)
+	local actions = {}
+	local counts = pai.shou_pai
+
+	for t,c in pairs(counts) do
+		if c == 4 then
+			actions[ACTION.AN_GANG] = actions[ACTION.AN_GANG] or {}
+			actions[ACTION.AN_GANG][t] = true
+		end
+	end
+
+	if rule.is_hu(pai,nil,si_dui) then
+		actions[ACTION.ZI_MO] = {[mo_pai] = true,}
+	end
+	
+	return actions
+end
+
 function mj_util.is_hu(pai,in_pai,si_dui)
 	return rule.is_hu(pai,in_pai,si_dui)
 end

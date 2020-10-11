@@ -579,8 +579,6 @@ function maajan_table:on_huan_pai(player,msg)
         end
     end
 
-    player.mo_pai = nil
-
     self:cancel_auto_action_timer(player)
 
     player.pai.huan = {old = tiles,}
@@ -1005,14 +1003,29 @@ function maajan_table:action_after_mo_pai(waiting_actions)
     end
 end
 
+function maajan_table:choice_first_turn_mo_pai(player)
+    local fake_mo_pai
+    for tile,c in pairs(player.pai.shou_pai) do
+        if c > 0 then 
+            fake_mo_pai = tile
+            break
+        end
+    end
+
+    player.mo_pai = fake_mo_pai
+    return fake_mo_pai
+end
+
 function maajan_table:action_after_ding_que()
     local player = self:chu_pai_player()
-    local mo_pai = player.mo_pai
 
-    log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
+    local mo_pai = self:choice_first_turn_mo_pai(player)
+    log.dump(mo_pai)
+
+    log.info("---------fake mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    local actions = self:get_actions(player,mo_pai)
+    local actions = self:get_actions_first_turn(player,mo_pai)
     log.dump(actions)
     if table.nums(actions) > 0 then
         self:action_after_mo_pai({
@@ -1255,7 +1268,6 @@ function maajan_table:fake_mo_pai()
     player.guo_shou_peng = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
-    player.mo_pai = mo_pai
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
 end
 
@@ -1713,7 +1725,7 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     self.pre_tiles = {
-        -- [1] = {1,1,2,2,3,3,4,4,5,5,6,6,7},
+        -- [1] = {21,21,22,22,23,23,24,24,25,25,25,25,26},
         -- [2] = {11,12,13,14,15,16,17,18,19,8,8,8,7},
         -- [3] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
         -- [4] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
@@ -1755,6 +1767,34 @@ function maajan_table:hu_fan(pai,tile)
     })
 
     return table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+end
+
+function maajan_table:get_actions_first_turn(p,mo_pai)
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local actions = mj_util.get_actions_first_turn(p.pai,mo_pai,si_dui)
+
+    log.dump(actions)
+
+    if p.que then
+        for act,tiles in pairs(actions) do
+            for tile,_ in pairs(tiles) do
+                if mj_util.tile_men(tile) == p.que then
+                    tiles[tile] = nil
+                end
+            end
+
+            if table.nums(tiles) == 0 then
+                actions[act] = nil
+            end
+        end
+    end
+
+    if not self:is_que(p) and (actions[ACTION.HU] or actions[ACTION.ZI_MO]) then
+        actions[ACTION.HU] = nil
+        actions[ACTION.ZI_MO] = nil
+    end
+
+    return actions
 end
 
 function maajan_table:get_actions(p,mo_pai,in_pai)
