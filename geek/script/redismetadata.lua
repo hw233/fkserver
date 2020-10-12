@@ -109,6 +109,8 @@ tree.club.conf["%d+"] = {
     block_partner_player = "bool",
     credit_block_play = "bool",
     credit_block_score = "bool",
+    block_partner_player_branch = "bool",
+    block_partner_player_2_layer = "bool",
 }
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"

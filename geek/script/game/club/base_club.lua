@@ -398,14 +398,8 @@ function base_club:is_player_bankrupt(template,player)
     return min_score > money
 end
 
-function base_club:join_table(player,private_table,chair_count)
-    local rule = private_table.rule
-    if rule and not self:can_sit_down(rule,player) then
-        return enum.ERROR_LESS_GOLD
-    end
-
-    local tb = g_room:find_table(private_table.real_table_id)
-    local is_block_join = table.logic_or(tb.players,function(p)
+function base_club:is_block_in_block_group(tb,player)
+    return table.logic_or(tb.players,function(p)
         local inters = reddb:sinter(
             string.format("club:block:player:group:%s:%s",self.id,p.guid),
             string.format("club:block:player:group:%s:%s",self.id,player.guid)
@@ -413,20 +407,88 @@ function base_club:join_table(player,private_table,chair_count)
 
         return table.nums(inters) > 0
     end)
+end
 
-    local is_block_partner_player
-    if club_conf[self.id].block_partner_player then
-        is_block_partner_player = table.logic_or(tb.players,function(p)
-            return club_member_partner[self.id][p.guid] == club_member_partner[self.id][player.guid]
-        end)
+function base_club:team_parents_within_layer(player,layer)
+    local pids = {}
+    local pid = player.guid
+    local role = club_role[self.id][pid]
+    if club_role[self.id][pid] == enum.CRT_PARTNER then
+        table.insert(pids,pid)
+    end
+    
+    for i = 1,layer or math.huge do
+        pid = club_member_partner[self.id][pid]
+        if not pid or pid == 0 then
+            break
+        end
+
+        table.insert(pids,pid)
     end
 
-    if is_block_join or is_block_partner_player then
-        return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+    return pids
+end
+
+function base_club:is_block_in_same_team_branch(tb,player)
+    if club_conf[self.id].block_partner_player_branch then
+        local pids = table.reverse(self:team_parents_within_layer(player))
+        return table.logic_or(tb.players,function(p)
+            local other_pids = table.reverse(self:team_parents_within_layer(p))
+            for i = 2,math.min(#pids,#other_pids) do
+                if pids[i] == other_pids[i] then
+                    return true
+                end
+            end
+        end)
+    end
+end
+
+function base_club:is_block_play_in_same_team_layer(tb,player)
+    if club_conf[self.id].block_partner_player then
+        local pids = self:team_parents_within_layer(player,1)
+        return table.logic_or(tb.players,function(p)
+            local other_pids = self:team_parents_within_layer(p,1)
+            local inter = table.intersect(pids,other_pids,function(l,r) return l == r end)
+            return #inter > 0
+        end)
+    end
+end
+
+function base_club:is_block_in_2_team_layer(tb,player)
+    if club_conf[self.id].block_partner_player_2_layer then
+        local pids = table.reverse(self:team_parents_within_layer(player,2))
+        if pids[1] == self.owner then
+            table.remove(pids,1)
+        end
+        return table.logic_or(tb.players,function(p)
+            local other_pids = self:team_parents_within_layer(p,2)
+            if other_pids[1] == self.owner then
+                table.remove(pids,1)
+            end
+            local inter = table.intersect(pids,other_pids,function(l,r) return l == r end)
+            log.dump(inter)
+            return #inter > 0
+        end)
+    end
+end
+
+function base_club:join_table(player,private_table,chair_count)
+    local rule = private_table.rule
+    if rule and not self:can_sit_down(rule,player) then
+        return enum.ERROR_LESS_GOLD
     end
 
     if self:is_team_credit_block_play(player.guid) then
         return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    end
+
+    local tb = g_room:find_table(private_table.real_table_id)
+    if  self:is_block_in_block_group(tb,player) or
+        self:is_block_play_in_same_team_layer(tb,player) or
+        self:is_block_in_same_team_branch(tb,player) or
+        self:is_block_in_2_team_layer(tb,player)
+    then
+        return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
     end
 
     return g_room:join_private_table(player,private_table,chair_count)
