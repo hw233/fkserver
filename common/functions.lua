@@ -892,6 +892,26 @@ function table.join(left,right,on,join_type,prefix)
     return join_func[join_type]()
 end
 
+function table.reverse(tb)
+    local ret = {}
+    for j = #tb,1,-1 do
+        table.insert(ret,tb[j])
+    end
+    return ret
+end
+
+function table.intersect(left,right,on)
+    local inter = {}
+    for _,l in pairs(left) do
+        for _,r in pairs(right) do
+            if on(l,r) then
+                table.insert(inter,l)
+            end
+        end
+    end
+    return inter
+end
+
 table.extract = table.series
 
 string._htmlspecialchars_set = {}
