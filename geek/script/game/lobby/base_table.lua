@@ -286,21 +286,19 @@ function base_table:commit_dismiss(player,agree)
 		agree = agree,
 	})
 
-	local is_done = self:check_dismiss_commit(commissions)
-	if  is_done == nil then
-		self:broadcast2client("SC_DismissTable",{
-			success = false,
-		})
-
-		self:clear_dismiss_request()
-		return
-	end
-
-	if not is_done then
+	local done,succ = self:check_dismiss_commit(commissions)
+	if not done then
 		return
 	end
 
 	self:clear_dismiss_request()
+	
+	if not succ then
+		self:broadcast2client("SC_DismissTable",{
+			success = false,
+		})
+		return
+	end
 
 	self:dismiss()
 end
@@ -918,11 +916,16 @@ function base_table:can_dismiss()
 end
 
 function base_table:check_dismiss_commit(agrees)
-	if table.sum(agrees,function(agree) return not agree and 1 or 0  end) > 0 then
-		return
-	end
-
-	return table.logic_and(self.players,function(p) return agrees[p.chair_id] end)
+	local all_count = table.nums(self.players)
+    local done_count = table.nums(agrees)
+    local agree_count_at_least = self.rule.room.dismiss_all_agree and all_count or math.floor(all_count / 2) + 1
+    local refuse_done_count = all_count - agree_count_at_least
+    local agree_count = table.sum(agrees,function(agree) return agree and 1 or 0 end)
+    local refuse_count = done_count - agree_count
+    local agreed = agree_count >= agree_count_at_least
+    local refused = refuse_count > refuse_done_count
+    local done = agreed or refused or done_count >= all_count
+	return done,agreed
 end
 
 function base_table:dismiss()

@@ -98,16 +98,6 @@ function land_table:can_dismiss()
 	return true
 end
 
-function land_table:check_dismiss_commit(agrees)
-	if table.logic_or(agrees,function(agree) return not agree end) then
-		return
-	end
-
-	local agree_count = table.sum(self.players,function(p) return agrees[p.chair_id] and 1 or 0 end)
-	local agree_count_at_least = self.rule.room.dismiss_all_agree and table.nums(self.players) or math.ceil(table.nums(self.players) / 2)
-	return agree_count >= agree_count_at_least 
-end
-
 function land_table:on_process_start()
 	self.cur_competer = nil
 	self:foreach(function(p) 
