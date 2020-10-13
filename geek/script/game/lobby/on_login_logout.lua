@@ -2202,12 +2202,12 @@ function on_cs_play_once_again(msg,guid)
 		return
 	end
 
-	tb:lockcall(function() 
+	local result = tb:lockcall(function() 
 		return tb:play_once_again(player)
 	end)
 
 	onlineguid.send(guid,"SC_PlayOnceAgain",{
-		result = enum.ERROR_NONE,
+		result = result,
 		round_info = {
 			round_id = tb:hold_ext_game_id(),
 		}

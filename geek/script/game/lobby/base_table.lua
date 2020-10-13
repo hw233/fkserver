@@ -564,40 +564,37 @@ function base_table:game_over()
 	self:on_game_overed()
 end
 
-function base_table:on_final_game_overed()
+function base_table:on_final_game_overed(bankruptcy)
 	self:on_process_over()
+
 	self.round_id = nil
 	self.ext_round_id = nil
 	self.cur_round = nil
-	self.ext_round_status = nil
+
+	if bankruptcy or table.nums(self.players) == 0 then
+		self:dismiss()
+	else
+		self:delay_dismiss()
+	end
 end
 
 function base_table:on_game_overed()
 	self.old_moneies = nil
 	self:clear_ready()
 	if self.private_id then
-		local is_bankruptcy = false
 		local private_table = base_private_table[self.private_id]
 		local club = base_clubs[private_table.club_id]
 		if club and club.type == enum.CT_UNION then
 			local bankruptcy = self:check_bankruptcy()
-			for guid,is in pairs(bankruptcy) do
-				is_bankruptcy = is_bankruptcy or is
-				if is_bankruptcy  then
-					self:notify_bankruptcy(
-						player_money[guid][self:get_money_id()] <= 0 and
-							enum.ERROR_BANKRUPTCY_WARNING or
-							enum.ERROR_LESS_MIN_LIMIT
-					)
-					break
-				end
+			if table.logic_or(bankruptcy,function(is) return is end) then
+				self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+				self:on_final_game_overed(true)
+				return
 			end
 		end
 
-		if (self.cur_round and self.cur_round >= self.conf.round) or is_bankruptcy then
+		if self.cur_round and self.cur_round >= self.conf.round then
 			self:on_final_game_overed()
-
-			self:delay_dismiss()
 		end
 	end
 end
@@ -968,6 +965,7 @@ function base_table:dismiss()
 	self.conf = nil
 	self.cur_round = nil
 	self.start_count = self.chair_count
+	self.ext_round_status = nil
 
 	return enum.GAME_SERVER_RESULT_SUCCESS
 end
@@ -1122,7 +1120,10 @@ function base_table:player_stand_up(player, reason)
 	if self:can_stand_up(player, reason) then
 		local player_count = table.nums(self.players)
 		-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
-		if self.private_id and self.ext_round_status == EXT_ROUND_STATUS.FREE and reason == enum.STANDUP_REASON_OFFLINE then
+		if 	self.private_id and 
+			self.ext_round_status == EXT_ROUND_STATUS.FREE and 
+			reason == enum.STANDUP_REASON_OFFLINE 
+		then
 			self:delay_kickout(player)
 			return
 		end
@@ -1152,7 +1153,9 @@ function base_table:player_stand_up(player, reason)
 
 		self.players[chairid] = nil
 
-		if player_count == 1 and reason ~= enum.STANDUP_REASON_OFFLINE then
+		if 	player_count == 1 and
+			(self.ext_round_status == EXT_ROUND_STATUS.END or reason ~= enum.STANDUP_REASON_OFFLINE) 
+		then
 			self:dismiss()
 		else
 			self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
@@ -1560,14 +1563,20 @@ function base_table:on_process_over(l)
 		log = l,
 	})
 
+	local club = self.conf.club
 	self:foreach(function(p)
 		if p.inactive or p.trustee then 
-			p:forced_exit() 
+			p:forced_exit()
+			return
+		end
+
+		if club and not club:can_sit_down(self.rule,p) then
+			p:forced_exit()
 			return
 		end
 	end)
 
-	self.ext_round_status = EXT_ROUND_STATUS.FREE
+	self.ext_round_status = EXT_ROUND_STATUS.END
 end
 
 -- 开始游戏
@@ -1719,12 +1728,9 @@ end
 function base_table:check_bankruptcy()
 	local money_id = self:get_money_id()
 	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
-	local bankruptcy = {}
-	for _,p in pairs(self.players) do
-		local money = player_money[p.guid][money_id]
-		bankruptcy[p.guid] = money <= limit
-	end
-
+	local bankruptcy = table.map(self.players,function(p)
+		return p.guid,player_money[p.guid][money_id] < limit
+	end)
 	return bankruptcy
 end
 
@@ -1798,7 +1804,13 @@ function base_table:log_msg(str)
 end
 
 function base_table:play_once_again(player)
+	local club = self.conf.club
+	if self.rule and not club:can_sit_down(self.rule,player) then
+        return enum.ERROR_LESS_GOLD
+	end
+	
 	self:ready(player)
+	return enum.ERROR_NONE
 end
 
 function base_table:new_timer(timeout,fn,...)
