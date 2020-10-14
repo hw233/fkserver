@@ -1,5 +1,3 @@
-local pb = require "pb_files"
-
 local dbopt = require "dbopt"
 local redisopt = require "redisopt"
 local channel = require "channel"

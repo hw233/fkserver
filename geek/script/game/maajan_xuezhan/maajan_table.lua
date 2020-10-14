@@ -1,4 +1,3 @@
-local pb = require "pb_files"
 local base_table = require "game.lobby.base_table"
 local def 		= require "game.maajan_xuezhan.base.define"
 local mj_util 	= require "game.maajan_xuezhan.base.mang_jiang_util"

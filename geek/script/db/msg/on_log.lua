@@ -1,6 +1,4 @@
 -- 日志消息处理
-
-local pb = require "pb_files"
 local log = require "log"
 local json = require "cjson"
 local dbopt = require "dbopt"

@@ -1,4 +1,3 @@
-local pb = require "pb_files"
 local skynet = require "skynetproto"
 local netguidopt = require "netguidopt"
 local channel = require "channel"

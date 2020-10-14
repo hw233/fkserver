@@ -1,6 +1,4 @@
 -- 房间操作消息处理
-
-local pb = require "pb_files"
 local log = require "log"
 require "game.net_func"
 require "game.common"

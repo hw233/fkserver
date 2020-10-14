@@ -1,5 +1,4 @@
 -- 玩家和机器人基类
-local pb = require "pb_files"
 local log = require "log"
 local enum = require "pb_enums"
 

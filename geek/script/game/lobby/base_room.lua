@@ -1,6 +1,4 @@
 
-local pb = require "pb_files"
-
 local base_table = require "game.lobby.base_table"
 local base_prize_pool = require "game.lobby.base_prize_pool"
 local base_bonus = require "game.lobby.base_bonus"

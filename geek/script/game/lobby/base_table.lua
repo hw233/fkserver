@@ -1,7 +1,5 @@
 -- 桌子基类
 
-local pb = require "pb_files"
-
 require "game.net_func"
 local log = require "log"
 require "table_func"

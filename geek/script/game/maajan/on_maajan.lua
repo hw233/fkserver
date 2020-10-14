@@ -1,7 +1,5 @@
 -- 诈金花消息处理
 
-local pb = require "pb_files"
-
 require "game.net_func"
 local send2client_pb = send2client_pb
 

@@ -1,4 +1,3 @@
-local pb = require "pb_files"
 
 local base_room = require "game.lobby.base_room"
 local maajan_table = require "game.maajan.maajan_table"

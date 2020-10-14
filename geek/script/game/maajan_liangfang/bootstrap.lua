@@ -1,5 +1,4 @@
 
-local pb = require "pb_files"
 local enum = require "pb_enums"
 
 require "game.maajan_liangfang.register"
