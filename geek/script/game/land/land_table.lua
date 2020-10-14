@@ -776,6 +776,7 @@ function land_table:on_process_over()
 			chair_id = chair,
 			guid = p.guid,
 			score = p.total_score or 0,
+			money = p.total_money or 0,
 			statistics = statistics,
 		}
 	end),

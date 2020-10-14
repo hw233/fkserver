@@ -106,7 +106,8 @@ message PdkFinalOverPlayerInfo{
 	int32 chair_id = 1;
 	int32 guid = 2;
 	int32 score = 3;
-	repeated PdkStatisticsItem statistics = 4;
+	int32 money = 4;
+	repeated PdkStatisticsItem statistics = 5;
 }
 
 message SC_PdkFinalGameOver{
