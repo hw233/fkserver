@@ -475,7 +475,7 @@ function base_table:cost_tax(winlose)
 
 	local club = self.conf.club
 	if not club then
-		log.error("base_table:cost_tax [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club_id)
+		log.error("base_table:cost_tax [%d] got nil club id,don't cost tax = 0.",self.private_id)
 		return
 	end
 
