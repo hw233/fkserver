@@ -344,26 +344,65 @@ function base_table:calc_score_money(score)
 	return score * 100 * base_multi
 end
 
+function base_table:do_commission_standalone(guid,commission,contributer)
+	if not self.private_id then 
+		return
+	end
+
+	local club = self.conf.club
+	if not club or club.type ~= enum.CT_UNION then
+		log.error("base_table:do_commission_standalone [%d] got private club.",self.private_id)
+		return
+	end
+
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.error("base_table:do_commission_standalone [%d] got nil private table.",self.private_id)
+		return
+	end
+
+	local template_id = private_table.template
+	if not template_id then
+		log.error("base_table:do_commission_standalone [%d] got nil template.",self.private_id)
+		return
+	end
+
+	commission = math.floor(commission + 0.000001)
+	if commission <= 0 then
+		return
+	end
+
+	channel.publish("db.?","msg","SD_LogPlayerCommissionContribute",{
+		parent = guid,
+		guid = contributer,
+		commission = commission,
+		template = template_id,
+		club = club.id,
+	})
+
+	club:incr_team_commission(guid,commission,self.ext_round_id)
+end
+
 function base_table:do_commission(taxes)
+	if not self.private_id then 
+		return
+	end
+
 	local money_id = self:get_money_id()
 	if not money_id then
 		log.error("base_table:do_commission [%d] got nil private money id.",self.private_id)
 		return
 	end
 
-	if not self.private_id then 
+	local club = self.conf.club
+	if not club then
+		log.error("base_table:do_commission [%d] got private club.",self.private_id)
 		return
 	end
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
 		log.error("base_table:do_commission [%d] got nil private table.",self.private_id)
-		return
-	end
-
-	local club_id = private_table.club_id
-	if not club_id then
-		log.error("base_table:do_commission [%d] got private club.",self.private_id)
 		return
 	end
 
@@ -386,6 +425,7 @@ function base_table:do_commission(taxes)
 		return commission_rate and commission_rate / 10000 or 0
 	end
 
+	local club_id = club.id
 	local commissions = {}
 	for guid,tax in pairs(taxes) do
 		local last_rate = 0
@@ -416,7 +456,6 @@ function base_table:do_commission(taxes)
 		end
 	end
 
-	local club = base_clubs[club_id]
 	for guid,commission in pairs(commissions) do
 		commission = math.floor(commission + 0.0001)
 		if commission > 0 then
@@ -436,17 +475,7 @@ function base_table:cost_tax(winlose)
 		return
 	end
 
-	local private_table = base_private_table[self.private_id]
-	if not private_table then
-		log.error("base_table:cost_tax [%d] got nil private conf.",self.private_id)
-		return
-	end
-
-	if not private_table.club_id then
-		return
-	end
-
-	local club = base_clubs[private_table.club_id]
+	local club = self.conf.club
 	if not club then
 		log.error("base_table:cost_tax [%d] got nil club id [%d],set tax = 0.",self.private_id,private_table.club_id)
 		return
@@ -456,7 +485,7 @@ function base_table:cost_tax(winlose)
 		return
 	end
 
-	local rule = private_table.rule
+	local rule = self.rule
 	if not rule then
 		log.error("base_table:cost_tax [%d] got nil private rule conf.",self.private_id)
 		return
@@ -499,43 +528,58 @@ function base_table:cost_tax(winlose)
 	if taxconf.big_win and winlose and table.nums(winlose) > 0 then
 		log.dump(winlose)
 		log.dump(taxconf)
-		local bigwin = taxconf.big_win
-		local winloselist = {}
-		for guid,change in pairs(winlose) do
-			table.insert(winloselist,{guid = guid,change = change})
-		end
+
+		local bigwin_conf = taxconf.big_win
+		local winloselist = table.series(winlose,function(change,guid) 
+			return {guid = guid,change = change} 
+		end)
 
 		table.sort(winloselist,function(l,r) return l.change > r.change end)
 
-		local maxwin = winloselist[1].change
-		local tax = {}
-		local totalwin = 0
-		for _,c in pairs(winloselist) do
-			local change = c.change
-			if change == maxwin then
-				local threshold = 0
-				for _,s in ipairs(bigwin) do
-					if not s then break end
-					if change > threshold and (change <= s[1] or s[1] < 0) then
-						totalwin = totalwin + (s[2] or 0)
-						tax[c.guid] = s[2] or 0
-						break
-					end
-					threshold = s[1]
-				end
+		table.sort(bigwin_conf,function(l,r)
+			if l[1] < 0 then return false end
+			if r[1] < 0 then return true end
+			return l[1] < r[1] 
+		end)
+
+		local bigwin_data = winloselist[1]
+		local maxwin = bigwin_data.change
+		if maxwin <= 0 then
+			log.warning("base_table:cost_tax [%d] invalid maxwin:%s.",self.private_id,maxwin)
+			return
+		end
+
+		local bigwin_guid
+		local bigwin_tax
+		for _,s in ipairs(bigwin_conf) do
+			if not s or #s < 2 then break end
+			if maxwin <= s[1] or s[1] < 0 then
+				bigwin_tax = s[2] or 0
+				bigwin_guid = bigwin_data.guid
+				break
 			end
 		end
 
-		log.dump(tax)
-		log.dump(totalwin)
-
-		local eachwin = totalwin / table.nums(self.players)
-		local commission_tax = {}
-		for _,p in pairs(self.players) do
-			commission_tax[p.guid] = math.floor(eachwin)
+		if not bigwin_tax or not bigwin_guid then
+			log.warning("base_table:cost_tax [%d] invalid bigwin tax,maxwin:%s.",self.private_id,maxwin)
+			return
 		end
 
-		do_cost_tax_money(tax)
+		log.dump(bigwin_guid)
+		log.dump(bigwin_tax)
+
+		do_cost_tax_money({
+			[bigwin_guid] = bigwin_tax,
+		})
+
+		if bigwin_tax <= (taxconf.min_ensurance or 0) then
+			self:do_commission_standalone(club.owner,bigwin_tax,bigwin_guid)
+			return
+		end
+
+		local eachwin = bigwin_tax / table.nums(self.players)
+		local commission_tax = table.map(self.players,function(p) return p.guid,math.floor(eachwin) end)
+
 		self:do_commission(commission_tax)
 		return
 	end
