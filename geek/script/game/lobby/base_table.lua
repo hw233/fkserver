@@ -570,31 +570,24 @@ function base_table:on_final_game_overed(bankruptcy)
 	self.round_id = nil
 	self.ext_round_id = nil
 	self.cur_round = nil
-
-	if bankruptcy or table.nums(self.players) == 0 then
-		self:dismiss()
-	else
-		self:delay_dismiss()
-	end
 end
 
 function base_table:on_game_overed()
 	self.old_moneies = nil
 	self:clear_ready()
 	if self.private_id then
-		local private_table = base_private_table[self.private_id]
-		local club = base_clubs[private_table.club_id]
-		if club and club.type == enum.CT_UNION then
-			local bankruptcy = self:check_bankruptcy()
-			if table.logic_or(bankruptcy,function(is) return is end) then
-				self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
-				self:on_final_game_overed(true)
-				return
-			end
+		if table.logic_or(self.players,function(p) return self:is_bankruptcy(p) end) then
+			self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
+			self:on_final_game_overed()
+			self:foreach(function(p)
+				p:forced_exit()
+			end)
+			return
 		end
 
 		if self.cur_round and self.cur_round >= self.conf.round then
 			self:on_final_game_overed()
+			self:delay_dismiss()
 		end
 	end
 end
@@ -1732,6 +1725,17 @@ function base_table:check_bankruptcy()
 		return p.guid,player_money[p.guid][money_id] < limit
 	end)
 	return bankruptcy
+end
+
+function base_table:is_bankruptcy(player)
+	local club = self.conf.club
+	if not club or club.type ~= enum.CT_UNION then
+		return
+	end
+
+	local money_id = self:get_money_id()
+	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
+	return player_money[player.guid][money_id] < limit
 end
 
 --玩家破产日志
