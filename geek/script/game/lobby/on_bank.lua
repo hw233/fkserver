@@ -4,7 +4,6 @@ local pb = require "pb_files"
 local log = require "log"
 require "game.net_func"
 local send2client_pb = send2client_pb
-local send2db_pb = send2db_pb
 
 local base_players = require "game.lobby.base_players"
 
@@ -50,7 +49,7 @@ function on_cs_bank_set_password(msg,guid)
 		result = BANK_OPT_RESULT_SUCCESS,
 	})
 	player.bank_password = msg.password
-	send2db_pb("SD_BankSetPassword", {
+	channel.publish("db.?","msg","SD_BankSetPassword", {
 		guid = player.guid,
 		password = msg.password,
 	})
@@ -75,7 +74,7 @@ function  on_cl_ResetBankPW( msg,guid)
 		})
 		return
 	end
-	send2db_pb("SD_ResetPW", {
+	channel.publish("db.?","msg","SD_ResetPW", {
 		guid = player.guid,
 		bank_password_new = msg.bank_password_new,
 	})	
@@ -113,7 +112,7 @@ function on_cs_bank_change_password(msg,guid)
 		return
 	end
 	
-	send2db_pb("SD_BankChangePassword", {
+	channel.publish("db.?","msg","SD_BankChangePassword", {
 		guid = player.guid,
 		old_password = msg.old_password,
 		password = msg.password,
@@ -147,7 +146,7 @@ function on_cs_bank_login(msg,guid)
 		return
 	end
 	
-	send2db_pb("SD_BankLogin", {
+	channel.publish("db.?","msg","SD_BankLogin", {
 		guid = player.guid,
 		password = msg.password,
 	})
@@ -230,7 +229,7 @@ function on_cs_bank_deposit(msg,guid)
 
 	-- 银行流程修改 不再存储于玩家身上 修改为只保存在数据库中
 	log.info("guid[%d] optType[%d] oldmoeny[%d] newmoney[%d] changeMoney[%d] player.money[%d]", player.guid, 2 , money, player.money, money_ ,player.money)
-	send2db_pb("SD_ChangeBank",{
+	channel.publish("db.?","msg","SD_ChangeBank",{
 			guid = player.guid,
 			changemoney = money_,
 			oldmoney = money,
@@ -246,7 +245,7 @@ function on_cs_bank_deposit(msg,guid)
 	--})
 	--
 	---- 日志
-	--send2db_pb("SD_BankLog", {
+	--channel.publish("db.?","msg","SD_BankLog", {
 	--	time = os.time(),
 	--	guid = player.guid,
 	--	nickname = player.nickname,
@@ -261,7 +260,7 @@ function on_cs_bank_deposit(msg,guid)
 	--	gameid = def_game_id,
 	--})
 
-	--[[send2db_pb("SD_SaveBankStatement", {
+	--[[channel.publish("db.?","msg","SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
 			time = os.time(),
@@ -332,7 +331,7 @@ function on_cs_bank_draw(msg,guid)
 
 	-- 银行流程修改 不再存储于玩家身上 修改为只保存在数据库中
 	log.info("guid[%d] optType[%d] changeMoney[%d] gameid[%d] player.money[%d]", player.guid, 1 , money_ , def_game_id , player.money)
-	send2db_pb("SD_ChangeBank",{
+	channel.publish("db.?","msg","SD_ChangeBank",{
 			guid = player.guid,
 			changemoney = money_,
 			optType = 1,
@@ -356,7 +355,7 @@ function on_cs_bank_draw(msg,guid)
 	-- })
 	-- 
 	-- -- 日志
-	-- send2db_pb("SD_BankLog", {
+	-- channel.publish("db.?","msg","SD_BankLog", {
 	-- 	time = os.time(),
 	-- 	guid = player.guid,
 	-- 	nickname = player.nickname,
@@ -382,7 +381,7 @@ function on_ds_changebank(msg)
 		if (tonumber(msg.optType) == 1  and tonumber(msg.retcode) == 1 ) 			-- 取钱成功 但玩家不在线 则回存
 			or (tonumber(msg.optType) == 2 and tonumber(msg.retcode) ~= 1) then		-- 存钱失败 但玩家不在线 则回存
 			log.info("guid[%d] optType[%d] changemoney[%d] gameid[%d]", msg.guid, 3, msg.changemoney , def_game_id)
-			send2db_pb("SD_ChangeBank",{
+			channel.publish("db.?","msg","SD_ChangeBank",{
 				guid = msg.guid,
 				changemoney = msg.changemoney,
 				optType = 3,
@@ -401,7 +400,7 @@ function on_ds_changebank(msg)
 			player.bank = msg.newbankmoney
 			log.info("BankDraw Success guid[%d] oldmoeny[%d] newmoney[%d] oldbank[%d] newbank[%d]", player.guid, oldmoeny_, newmoney, msg.oldbankmoeny , player.bank)
 			-- 记录日志
-			send2db_pb("SD_BankLog_New", {
+			channel.publish("db.?","msg","SD_BankLog_New", {
 				guid = player.guid,
 				nickname = player.nickname,
 				phone = player.phone,

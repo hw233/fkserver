@@ -2,9 +2,6 @@
 
 local pb = require "pb_files"
 local log = require "log"
-require "db.net_func"
-local send2game_pb = send2game_pb
-local send2login_pb = send2login_pb
 local onlineguid = require "netguidopt"
 local dbopt = require "dbopt"
 local redisopt = require "redisopt"
@@ -98,9 +95,9 @@ function on_SD_Get_Instructor_Weixin(game_id, msg)
 			table.insert(nmsg.instructor_weixin, data[sendin].weixin)
 			log.info("index B[%d]:%s", sendin,data[sendin].weixin)
 		end
-		send2game_pb(game_id,"DS_Get_Instructor_Weixin",nmsg)
+		channel.publish("game."..tostring(game_id),"DS_Get_Instructor_Weixin",nmsg)
 	else
-		send2game_pb(game_id,"DS_Get_Instructor_Weixin",{
+		channel.publish("game."..tostring(game_id),"DS_Get_Instructor_Weixin",{
 			guid = guid_,
 			instructor_weixin = {},
 		})
@@ -529,7 +526,7 @@ function  online_proc_recharge_order(guid_ ,gameid , data)		-- 该功能暂时�
 				)
 			}
 			log.info(notify.data)
-			send2login_pb(1,"WL_GMMessage",notify)
+			channel.publish("login.1","msg","WL_GMMessage",notify)
 
 			--插入金钱记录	
 			local log_money_={
@@ -1115,7 +1112,7 @@ function cost_agent_money(notify)
 		log.info("cost_agent_money transfer_id [%s]  data.ret [%d]",notify.transfer_id,data.ret)
 		if tonumber(data.ret) ~= 1 then  -- 2 代理商金币不足 4 代理商金币为空 5 update 代理商金币失败
 			log.info("cost_agent_money faild ,data.ret[%d] [%d]",data.ret,notify.retcode)
-			-- send2login_pb(login_id, "DL_CC_ChangeMoney",notify)
+			-- channel.publish("login.?","msg",login_id, "DL_CC_ChangeMoney",notify)
 			-- return
 		else
 			log.info("transfer_id [%s] cost_agent_money is ok",notify.transfer_id)

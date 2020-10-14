@@ -1,11 +1,6 @@
 -- 银行消息处理
 
 local pb = require "pb_files"
-
-require "db.net_func"
-local send2game_pb = send2game_pb
-local send2login_pb = send2login_pb
-
 local dbopt = require "dbopt"
 local redisopt = require "redisopt"
 local httpc = require "http.httpc"
@@ -168,7 +163,7 @@ local function get_bank_statement(guid_, serial, gameid)
 		item.serial = item.serial
 	end
 	
-	send2game_pb(gameid, "DS_BankStatement", {
+	channel.publish("game."..tostring(gameid),"msg","DS_BankStatement", {
 		guid = guid_,
 		pb_statement = data,
 	})

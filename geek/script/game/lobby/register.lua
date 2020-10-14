@@ -5,7 +5,7 @@ require "functions"
 
 
 function query_many_ox_config_data()
-	send2db_pb("SD_QueryOxConfigData", {
+	channel.publish("db.?","msg","SD_QueryOxConfigData", {
 		cur_time = os.time(),
 	})
 end

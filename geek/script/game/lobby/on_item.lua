@@ -9,7 +9,6 @@ local item_market_table = item_market_table
 
 require "game.net_func"
 local send2client_pb = send2client_pb
-local send2db_pb = send2db_pb
 
 local base_player = require "game.lobby.base_player"
 local log = require "log"

@@ -5,8 +5,6 @@ local redisopt = require "redisopt"
 local channel = require "channel"
 local log = require "log"
 
-require "db.net_func"
-
 local reddb = redisopt.default
 
 local enum = require "pb_enums"

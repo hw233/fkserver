@@ -9,9 +9,6 @@ local log = require "log"
 local pb = require "pb_files"
 local json = require "cjson"
 
-
-local send2db_pb = send2db_pb
-local send2client_pb = send2client_pb
 local def_first_game_type = def_first_game_type
 local def_second_game_type = def_second_game_type
 
@@ -104,7 +101,7 @@ end
 local active_bonus_activities = {}
 
 local function load_activity(id)
-	send2db_pb("SD_ReqQueryBonusActivity",{id = id})
+	channel.publish("db.?","msg","SD_ReqQueryBonusActivity",{id = id})
 end
 
 local function filter_by_platform(platform_id)
@@ -170,7 +167,7 @@ function base_bonus:pick()
 		return
 	end
 
-	send2db_pb("SD_ReqPickPlayerBonus",{guid = self.guid,bonus_activity_id = self.activity_id,bonus_index = self.index})
+	channel.publish("db.?","msg","SD_ReqPickPlayerBonus",{guid = self.guid,bonus_activity_id = self.activity_id,bonus_index = self.index})
 	self.is_pick = false
 end
 
@@ -255,7 +252,7 @@ function base_player:check_and_switch_to_next_bonus(activity_id)
 		cur_activity_bonus_data.cur_bonus_play_count = cur_activity_bonus_data.cur_bonus_play_count or {}
 		cur_activity_bonus_data.cur_bonus_play_count.min = bonus_trigger.play_count[1]
 		cur_activity_bonus_data.cur_bonus_play_count.max = bonus_trigger.play_count[2]
-		send2db_pb("SD_UpdatePlayerCurrentBonusLimitInfo",{
+		channel.publish("db.?","msg","SD_UpdatePlayerCurrentBonusLimitInfo",{
 			guid = self.guid,
 			activity_id = activity_id,
 			bonus_index = cur_activity_bonus_data.cur_bonus_index,
@@ -276,7 +273,7 @@ function base_player:check_and_switch_to_next_bonus(activity_id)
 		cur_activity_bonus_data.cur_bonus_play_count.max = cur_activity_bonus_data.cur_bonus_play_count.max + bonus_trigger.play_count[2]
 		cur_activity_bonus_data.cur_bonus_play_count.min = cur_bonus_play_count_min + bonus_trigger.play_count[1]
 
-		send2db_pb("SD_UpdatePlayerCurrentBonusLimitInfo",{
+		channel.publish("db.?","msg","SD_UpdatePlayerCurrentBonusLimitInfo",{
 			guid = self.guid,
 			activity_id = activity_id,
 			bonus_index = cur_activity_bonus_data.cur_bonus_index,
@@ -335,7 +332,7 @@ function base_player:check_and_create_bonus()
 			local float_money_increment = math.random(bonus_cfg.money_percent_per_bonus[1], bonus_cfg.money_percent_per_bonus[2]) / 10000
 			local hongbao_money = math.floor((1 + real_money_increment * (cur_bonus_index - 1) + float_money_increment) * x)
 			log.warning("get bonus guid [%d] money [%d] activity_id[%d] index[%d]",self.guid,hongbao_money,activity.id,cur_bonus_index)
-			send2db_pb("SD_ReqCreatePlayerBonus",{pb_bonuses = {
+			channel.publish("db.?","msg","SD_ReqCreatePlayerBonus",{pb_bonuses = {
 				{
 					guid = self.guid,
 					bonus_activity_id = activity.id,
@@ -373,7 +370,7 @@ function base_player:load_bonus_hongbao(activity_or_id,is_pick)
 	end
 
 	dump(msg)
-	send2db_pb("SD_ReqQueryPlayerBonus",msg)
+	channel.publish("db.?","msg","SD_ReqQueryPlayerBonus",msg)
 end
 
 
@@ -386,7 +383,7 @@ function base_player:load_bonus_game_statisticss(activity_or_id)
 	end
 
 	dump(msg)
-	send2db_pb("SD_ReqPlayerBonusGameStatistics",msg)
+	channel.publish("db.?","msg","SD_ReqPlayerBonusGameStatistics",msg)
 end
 
 function base_player:load_bonus_activity_limit_info(activity_or_id)
@@ -400,7 +397,7 @@ function base_player:load_bonus_activity_limit_info(activity_or_id)
 		msg.activity_id = activity.id
 	end
 
-	send2db_pb("SD_QueryPlayerCurrentBonusLimitInfo",msg)
+	channel.publish("db.?","msg","SD_QueryPlayerCurrentBonusLimitInfo",msg)
 end
 
 function base_player:on_ds_load_game_statistics(statistic)

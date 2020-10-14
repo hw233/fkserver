@@ -2,10 +2,6 @@
 
 local pb = require "pb_files"
 
-require "db.net_func"
-local send2center_pb = send2center_pb
-local send2game_pb = send2game_pb
-
 local dbopt = require "dbopt"
 local db_execute = db_execute
 local db_execute_query = db_execute_query

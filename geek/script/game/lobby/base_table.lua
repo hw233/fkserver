@@ -710,7 +710,7 @@ function base_table:player_bet_flow_log(player,money)
 		money = money
 	}
 
-	send2db_pb("SD_LogBetFlow",msg)
+	channel.publish("db.?","msg","SD_LogBetFlow",msg)
 end
 
 function base_table:player_money_log_when_gaming(player,money_id,old_money,change_money)
@@ -743,7 +743,7 @@ function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,mo
 		money_change = money_change,
 		id = round_id,
 	}
-	send2db_pb("SL_Log_Robot_Money",nMsg)
+	channel.publish("db.?","msg","SL_Log_Robot_Money",nMsg)
 end
 
 --渠道税收分成
@@ -761,7 +761,7 @@ function base_table:channel_invite_taxes(channel_id_p,guid_p,guid_invite_p,tax_p
 			guid_invite = guid_invite_p,--受益者
 			val = math.floor(tax_p*cfg.tax_rate/100)
 		}
-		send2db_pb("SL_Channel_Invite_Tax",nMsg)
+		channel.publish("db.?","msg","SL_Channel_Invite_Tax",nMsg)
 	end
 end
 
@@ -1801,7 +1801,7 @@ function  base_table:save_player_collapse_log(player)
 			channel_id = player.channel_id ,
 			platform_id = player.platform_id,
 		}
-		send2db_pb("SD_SaveCollapseLog",nmsg)
+		channel.publish("db.?","msg","SD_SaveCollapseLog",nmsg)
 	end
 end
 

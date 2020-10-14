@@ -7,7 +7,6 @@ local login_award_table = login_award_table
 
 require "game.common"
 require "game.net_func"
-local send2db_pb = send2db_pb
 
 local base_player = require "game.lobby.base_player"
 local base_players = require "game.lobby.base_players"
@@ -237,7 +236,7 @@ function on_cs_login_validatebox(player, msg)
 	count = tonumber(count)
 	if count > 2 then
 		log.info("login_validate_error_count guid[%d] count[%d]",player.guid, count)
-		send2db_pb("SD_ValidateboxFengIp", {
+		channel.publish("db.?","msg","SD_ValidateboxFengIp", {
 			ip = player.ip,
 		})
 	end
@@ -288,7 +287,7 @@ function logout(guid,offline)
 	
 	--- 把下面这段提出来，有还没有请求base_info客户端就退出，导致现在玩家数据没有清理
 	-- 给db退出消息
-	send2db_pb("S_Logout", {
+	channel.publish("db.?","msg","S_Logout", {
 		account = player.account,
 		guid = guid,
 		login_time = player.login_time,
@@ -1456,7 +1455,7 @@ function on_cs_reset_account(player, msg)
 		
 	player.flag_wait_reset_account = true
 
-	send2db_pb("SD_ResetAccount", {
+	channel.publish("db.?","msg","SD_ResetAccount", {
 		guid = player.guid,
 		account = msg.account,
 		password = msg.password,
@@ -1583,7 +1582,7 @@ function on_cs_set_password(player, msg)
 		return
 	end
 
-	send2db_pb("SD_SetPassword", {
+	channel.publish("db.?","msg","SD_SetPassword", {
 		guid = player.guid,
 		old_password = msg.old_password,
 		password = msg.password,
@@ -1611,7 +1610,7 @@ function on_cs_set_password_by_sms(player, msg)
 		log.warning("set password error");
 	end
 
-	send2db_pb("SD_SetPasswordBySms", {
+	channel.publish("db.?","msg","SD_SetPasswordBySms", {
 		guid = player.guid,
 		password = msg.password,
 	})
@@ -1715,7 +1714,7 @@ function on_gm_android_opt(opt_type_, roomid_, num_)
 		end
 
 		if n ~= num_ then
-			send2db_pb("SD_LoadAndroidData", {
+			channel.publish("db.?","msg","SD_LoadAndroidData", {
 				opt_type = opt_type_,
 				room_id = roomid_,
 				guid = android_manager:get_max_guid(),

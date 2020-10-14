@@ -1,10 +1,7 @@
 local pb = require "pb_files"
 
 require "functions"
-require "db.net_func"
 local log = require "log"
-local send2center_pb = send2center_pb
-local send2game_pb = send2game_pb
 
 local dbopt = require "dbopt"
 

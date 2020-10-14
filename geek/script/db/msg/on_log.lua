@@ -3,7 +3,6 @@
 local pb = require "pb_files"
 local log = require "log"
 local json = require "cjson"
-require "db.net_func"
 local dbopt = require "dbopt"
 local enum = require "pb_enums"
 

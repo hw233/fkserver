@@ -39,7 +39,7 @@ function on_cs_chat_private(msg,guid)
 	if target then
 		send2client_pb(target,  "SC_ChatPrivate", chat)
 	else
-		send2login_pb("SC_ChatPrivate", chat)
+		channel.publish("login.?","msg","SC_ChatPrivate", chat)
 	end
 end
 

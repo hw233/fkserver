@@ -24,7 +24,7 @@ function prize_pool:init(game_name)
 
     --向数据库请求初始值
     local function get_db_bonus()
-        send2db_pb("SD_GetBonusPoolMoney", {
+        channle.publish("db.?","msg","SD_GetBonusPoolMoney", {
           bonus_pool_name = self:get_redis_key()
         })
     end
@@ -45,7 +45,7 @@ function prize_pool:init(game_name)
 
     -- 定时写数据库
     local function write_db_bonus()
-        send2db_pb("SD_UpdateBonusPool", {
+        channle.publish("db.?","msg","SD_UpdateBonusPool", {
             bonus_pool_name = self:get_redis_key(),
             money = self.total_bonus_money_
             })

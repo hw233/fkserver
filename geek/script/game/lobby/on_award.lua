@@ -10,7 +10,6 @@ local online_award_table = online_award_table
 
 require "game.net_func"
 local send2client_pb = send2client_pb
-local send2db_pb = send2db_pb
 
 local base_player = require "game.lobby.base_player"
 
@@ -79,7 +78,7 @@ function on_cs_receive_reward_login(msg,guid)
 		money = award,
 	})
 	
-	--[[send2db_pb("SD_SaveBankStatement", {
+	--[[channel.publish("db.?","msg","SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
 			time = os.time(),
@@ -90,13 +89,13 @@ function on_cs_receive_reward_login(msg,guid)
 	})]]
 	
 	-- 收益
-	send2db_pb("SD_UpdateEarnings", {
+	channel.publish("db.?","msg","SD_UpdateEarnings", {
 		guid = player.guid,
 		money = award,
 	})
 
 	-- log
-	send2db_pb("SD_LogMoney", {
+	channel.publish("db.?","msg","SD_LogMoney", {
 		guid = player.guid,
 		old_money = player.money,
 		new_money = player.money,
@@ -146,7 +145,7 @@ function on_cs_receive_reward_online(msg,guid)
 		money = award.money,
 	})
 	
-	--[[send2db_pb("SD_SaveBankStatement", {
+	--[[channel.publish("db.?","msg","SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
 			time = os.time(),
@@ -157,13 +156,13 @@ function on_cs_receive_reward_online(msg,guid)
 	})]]
 	
 	-- 收益
-	send2db_pb("SD_UpdateEarnings", {
+	channel.publish("db.?","msg","SD_UpdateEarnings", {
 		guid = player.guid,
 		money = award.money,
 	})
 
 	-- log
-	send2db_pb("SD_LogMoney", {
+	channel.publish("db.?","msg","SD_LogMoney", {
 		guid = player.guid,
 		old_money = player.money,
 		new_money = player.money,
@@ -201,7 +200,7 @@ function on_cs_receive_relief_payment(msg,guid)
 		money = relief_payment_money,
 	})
 	
-	--[[send2db_pb("SD_SaveBankStatement", {
+	--[[channel.publish("db.?","msg","SD_SaveBankStatement", {
 		pb_statement = {
 			guid = player.guid,
 			time = os.time(),
@@ -212,13 +211,13 @@ function on_cs_receive_relief_payment(msg,guid)
 	})]]
 	
 	-- 收益
-	send2db_pb("SD_UpdateEarnings", {
+	channel.publish("db.?","msg","SD_UpdateEarnings", {
 		guid = player.guid,
 		money = relief_payment_money,
 	})
 
 	-- log
-	send2db_pb("SD_LogMoney", {
+	channel.publish("db.?","msg","SD_LogMoney", {
 		guid = player.guid,
 		old_money = player.money,
 		new_money = player.money,

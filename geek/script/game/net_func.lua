@@ -60,16 +60,3 @@ function send2client_pb(player_or_guid, msgname, msg)
 	local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
 	netguidopt.send(guid,msgname,msg)
 end
-
-
-function send2login_pb(msgname, msg)
-	channel.publish("login.?","msg",msgname,msg)
-end
-
-function send2loginid_pb(id,msgname,msg)
-	channel.publish("login."..tostring(id),"msg",msgname,msg)
-end
-
-function send2db_pb(msgname,msg)
-	channel.publish("db.?","msg",msgname,msg)
-end

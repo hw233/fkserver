@@ -17,7 +17,7 @@ function gm_change_money(guid,money,log_type)
 	
     player:change_money(money, log_type or LOG_MONEY_OPT_TYPE_GM)
 
-	send2db_pb("SD_SavePlayerData", {
+	channel.publish("db.?","msg","SD_SavePlayerData", {
 		guid = guid,
 		pb_base_info = player.pb_base_info,		
 	})
@@ -31,7 +31,7 @@ function gm_change_bank_money(guid,money,log_type)
 	end
     player:change_bank(money,log_type or LOG_MONEY_OPT_TYPE_GM)
 
-	send2db_pb("SD_SavePlayerData", {
+	channel.publish("db.?","msg","SD_SavePlayerData", {
 		guid = guid,
 		pb_base_info = player.pb_base_info,
 	})
@@ -43,7 +43,7 @@ function gm_change_player_bank(web_id_,login_id_, guid_,banktype_,order_id_,mone
 	local player = base_players[guid_]
 	if not player then
 		log.warning("guid[%d] not find in game=%d", guid_, def_game_id)
-		send2loginid_pb(login_id_, "SL_LuaCmdPlayerResult", {
+		channel.publish("login."..tostring(login_id_),"msg","SL_LuaCmdPlayerResult", {
 	    	web_id = web_id_,
 	    	result = 122,
 	    	guid = guid_,
@@ -65,7 +65,7 @@ function gm_change_player_bank(web_id_,login_id_, guid_,banktype_,order_id_,mone
 	else --failed
 		log.error(string.format("gm_change_player_bank: guid[%d] cost money[%d] failed",guid_,money_))	
 	end
-	send2loginid_pb(login_id_, "SL_LuaCmdPlayerResult", {
+	channel.publish("login."..tostring(login_id_),"msg","SL_LuaCmdPlayerResult", {
 	    	web_id = web_id_,
 	    	result = ret,
 	    	guid = guid_,
@@ -82,7 +82,7 @@ function gm_change_bank(web_id_, login_id, guid, money, log_type)
 	local player = base_players[guid]
 	if not player then
 		log.warning("guid[%d] not find in game=%d", guid, def_game_id)
-		send2loginid_pb(login_id, "SL_LuaCmdPlayerResult", {
+		channel.publish("login."..tostring(login_id),"msg","SL_LuaCmdPlayerResult", {
 	    	web_id = web_id_,
 	    	result = 0,
 	    	})
@@ -92,7 +92,7 @@ function gm_change_bank(web_id_, login_id, guid, money, log_type)
 	print ("web_id_, login_id, guid, money, log_type", web_id_, login_id, guid, money, log_type)
     player:change_bank(money, log_type or LOG_MONEY_OPT_TYPE_GM, true)
 
-    send2loginid_pb(login_id, "SL_LuaCmdPlayerResult", {
+    channel.publish("login."..tostring(login_id),"msg","SL_LuaCmdPlayerResult", {
     	web_id = web_id_,
     	result = 1,
     	})
@@ -119,7 +119,7 @@ function gm_set_slotma_rate(guid,count)
 	print ("random_count-> is :",player.slotma_addition)
 	player.flag_base_info = true
 
-	send2db_pb("SD_SavePlayerData", {
+	channel.publish("db.?","msg","SD_SavePlayerData", {
 		guid = guid,
 		pb_base_info = player.pb_base_info,
 	})
@@ -150,7 +150,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 						if money > player:get_money() then
 							money = 0 - player:get_money()
 							player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
-							send2db_pb("SD_LogProxyCostPlayerMoney", {
+							channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 								transfer_id = transfer_id,
 								proxy_guid = proxy_guid,
 								player_guid = player_guid,
@@ -163,7 +163,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 						else
 							money = 0 - money
 							player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
-							send2db_pb("SD_LogProxyCostPlayerMoney", {
+							channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 								transfer_id = transfer_id,
 								proxy_guid = proxy_guid,
 								player_guid = player_guid,
@@ -183,7 +183,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 	if money > player:get_money() then
 		money = 0 - player:get_money()
 		player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
-		send2db_pb("SD_LogProxyCostPlayerMoney", {
+		channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 			transfer_id = transfer_id,
 			proxy_guid = proxy_guid,
 			player_guid = player_guid,
@@ -196,7 +196,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 	else
 		money = 0 - money
 		player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
-		send2db_pb("SD_LogProxyCostPlayerMoney", {
+		channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 			transfer_id = transfer_id,
 			proxy_guid = proxy_guid,
 			player_guid = player_guid,
