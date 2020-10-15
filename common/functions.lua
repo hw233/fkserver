@@ -979,15 +979,13 @@ function string.ucfirst(input)
     return string.upper(string.sub(input, 1, 1)) .. string.sub(input, 2)
 end
 
-local function urlencodechar(char)
-    return "%" .. string.format("%02X", string.byte(char))
-end
-
 function string.urlencode(input)
     -- convert line endings
     input = string.gsub(tostring(input), "\n", "\r\n")
     -- escape all characters but alphanumeric, '.' and '-'
-    input = string.gsub(input, "([^%w%.%- ])", urlencodechar)
+    input = string.gsub(input, "([^%w%.%- ])", function(char)
+        string.format("%%%02X", string.byte(char))
+    end)
     -- convert spaces to "+" symbols
     return string.gsub(input, " ", "+")
 end
@@ -1027,4 +1025,8 @@ function string.formatnumberthousands(num)
         if k == 0 then break end
     end
     return formatted
+end
+
+function string.eval(str)
+    return assert(load(str))()
 end
