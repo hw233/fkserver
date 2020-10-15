@@ -3,131 +3,16 @@ local enum = require "pb_enums"
 local base_clubs = require "game.club.base_clubs"
 local base_players = require "game.lobby.base_players"
 local log = require "log"
-local club_template_conf = require "game.club.club_template_conf"
-local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_member = require "game.club.club_member"
 local club_role = require "game.club.club_role"
 local club_template = require "game.club.club_template"
 local table_template = require "game.lobby.table_template"
 local club_partners = require "game.club.club_partners"
-local club_partner_template_commission = require "game.club.club_partner_template_commission"
-local club_member_partner = require "game.club.club_member_partner"
 local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
+local club_utils = require "game.club.club_utils"
 local redisopt = require "redisopt"
 
-
 local reddb = redisopt.default
-
-
-local function get_real_partner_template_commission_rate(club_id,template_id,partner_id)
-    local commission_rate = club_partner_template_commission[club_id][template_id][partner_id]
-    if not commission_rate then
-        partner_id = club_member_partner[club_id][partner_id]
-        if not partner_id then
-            return 10000
-        end
-        commission_rate = club_partner_template_default_commission[club_id][template_id][partner_id]
-    end
-
-    return commission_rate or 0
-end
-
-local function get_real_club_template_conf(club,template)
-    local conf = club_template_conf[club.id][template.template_id]
-    if not conf then
-        club = base_clubs[club.parent]
-        if not club then return end
-        conf = club_team_template_conf[club.id][template.template_id]
-        if not conf then return end
-    end
-
-    return conf
-end
-
-
-local function get_real_club_template_commission_rate(club,template)
-    if not club or not club.parent or club.parent == 0 then
-        return 1
-    end
-
-    local conf = get_real_club_template_conf(club,template)
-    if not conf then
-        return 0
-    end
-
-    local rate = (conf and conf.commission_rate or 0) / 10000
-    return rate
-end
-
-
-local function calc_club_template_commission_rate(club,template)
-    if not club or not club.parent or club.parent == 0 then
-        return 1
-    end
-
-    local conf = get_real_club_template_conf(club,template)
-    if not conf then
-        return 0
-    end
-
-    local rate = (conf and conf.commission_rate or 0) / 10000
-    if rate == 0 then
-        return rate
-    end
-
-    return rate * calc_club_template_commission_rate(base_clubs[club.parent],template)
-end
-
-local function calc_club_template_commission(club,template)
-    if not template or not template.rule or not template.rule.union then
-        return 0
-    end
-
-    local function get_bigwin_commission(big_win)
-        for _,s in pairs(big_win) do
-            if s[2] and s[2] ~= 0 then
-                return s[2]
-            end
-        end
-
-        return 0
-    end
-
-    local tax = template.rule.union.tax
-    local commission = tax and tax.AA or get_bigwin_commission(tax.big_win)
-    local commission_rate = calc_club_template_commission_rate(club,template)
-    commission = commission * commission_rate
-    return math.floor(commission)
-end
-
-local function get_club_team_template_conf(club,template)
-    if not club then
-        return
-    end
-
-    local conf = club_team_template_conf[club.id][template.id]
-    if not conf then
-        return get_club_team_template_conf(base_clubs[club.parent],template)
-    end
-
-    return conf
-end
-
-local function recusive_get_club_templates(club)
-    if not club then return end
-
-    local templates = {}
-    for tid,_ in pairs(club_template[club.id]) do
-        local template = table_template[tid]
-        if template then
-            table.insert(templates,template)
-        end
-    end
-
-    table.unionto(templates,recusive_get_club_templates(base_clubs[club.parent]) or {})
-
-    return templates
-end
 
 function on_cs_get_club_template_commission(msg,guid)
     local player = base_players[guid]
@@ -176,13 +61,13 @@ function on_cs_get_club_template_commission(msg,guid)
     local confs = {}
     local template_id = msg.template_id
     if not template_id or template_id == 0 then
-        local templates = recusive_get_club_templates(club)
+        local templates = club_utils.recusive_get_club_templates(club)
         for _,template in pairs(templates) do
             table.insert(confs,{
                 template_id = template.template_id,
                 partner_id = partner_id,
-                my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid),
-                team_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,partner_id),
+                my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid),
+                team_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,partner_id),
             })
         end
     else
@@ -196,8 +81,8 @@ function on_cs_get_club_template_commission(msg,guid)
 
         table.insert(confs,{
             template_id = template.id,
-            my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid),
-            team_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,partner_id),
+            my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid),
+            team_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,partner_id),
         })
     end
 
@@ -271,7 +156,7 @@ function on_cs_config_club_template_commission(msg,guid)
         return
     end
 
-    local my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid)
+    local my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid)
 
     if not conf.team_commission_rate or conf.team_commission_rate > 10000 or conf.team_commission_rate < 0 or my_commission_rate < conf.team_commission_rate then
         log.error("on_cs_config_club_template_commission illegal template [%d].",template_id)
@@ -352,7 +237,7 @@ function on_cs_config_club_team_template(msg,guid)
         return
     end
 
-    local my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid)
+    local my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid)
 
     if not conf.team_commission_rate or conf.team_commission_rate > 10000 or conf.team_commission_rate < 0 or my_commission_rate < conf.team_commission_rate then
         log.error("on_cs_config_club_table_template illegal template [%d].",template_id)
@@ -405,9 +290,9 @@ function on_cs_get_club_team_template_conf(msg,guid)
 
     local confs = {}
     if not template_id or template_id == 0 then
-        local templates = recusive_get_club_templates(club)
+        local templates = club_utils.recusive_get_club_templates(club)
         for _,template in pairs(templates) do
-            local my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid)
+            local my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid)
             local partner_commission_rate = club_partner_template_default_commission[club_id][template.template_id][guid]
             table.insert(confs,{
                 template_id = template.template_id,
@@ -424,7 +309,7 @@ function on_cs_get_club_team_template_conf(msg,guid)
             return
         end
 
-        local my_commission_rate = get_real_partner_template_commission_rate(club_id,template.template_id,guid)
+        local my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid)
         local partner_commission_rate = club_partner_template_default_commission[club_id][template.template_id][guid]
         table.insert(confs,{
             template_id = template.id,

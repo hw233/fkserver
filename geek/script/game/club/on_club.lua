@@ -7,10 +7,7 @@ local base_clubs = require "game.club.base_clubs"
 local club_member = require "game.club.club_member"
 local player_club = require "game.lobby.player_club"
 local channel = require "channel"
-local serviceconf = require "serviceconf"
 local onlineguid = require "netguidopt"
-local club_table = require "game.club.club_table"
-local club_template = require "game.club.club_template"
 local player_request = require "game.club.player_request"
 local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
@@ -25,12 +22,10 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
 local club_commission = require "game.club.club_commission"
-local club_team_template_conf = require "game.club.club_team_template_conf"
 local util = require "util"
 local enum = require "pb_enums"
 local json = require "cjson"
 local club_fast_template = require "game.club.club_fast_template"
-local base_private_table = require "game.lobby.base_private_table"
 local crypt = require "skynet.crypt"
 local url = require "url"
 local club_partner = require "game.club.club_partner"
@@ -42,7 +37,6 @@ local club_block_groups = require "game.club.block.groups"
 local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
 local club_conf = require "game.club.club_conf"
-local runtime_conf = require "game.runtime_conf"
 local club_team_player_count = require "game.club.club_team_player_count"
 local club_team_money = require "game.club.club_team_money"
 local club_partner_conf = require "game.club.club_partner_conf"
@@ -77,55 +71,6 @@ local club_op = {
     OP_DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_DISMISS_CLUB"),
 }
 
-local function rand_union_club_id()
-    local id_begin = (math.random(10) > 5 and 6 or 8) * 10000000
-    local id_end = id_begin + 9999999
-    local id = math.random(id_begin,id_end)
-    for _ = 1,1000 do
-        if not base_clubs[id] then break end
-        id = math.random(id_begin,id_end)
-    end
-
-    return id
-end
-
-local function rand_group_club_id()
-    local id_begin = (math.random(10) > 5 and 6 or 8) * 100000
-    local id_end = id_begin + 99999
-    local id = math.random(id_begin,id_end)
-    for _ = 1,1000 do
-        if not base_clubs[id] then break end
-        id = math.random(id_begin,id_end)
-    end
-
-    return id
-end
-
-local function recusive_is_in_club(club,guid)
-    if not club or not guid then return end
-    return table.logic_or(club_member[club.id] or {},function(_,pid) return guid == pid end)
-        or table.logic_or(club_team[club] or {},function(_,teamid)
-            return recusive_is_in_club(base_clubs[teamid],guid)
-        end)
-end
-
-local function import_union_player_from_group(from,to)
-    local root = club_utils.root(to)
-    local members = club_member[from.id]
-    local guids = table.series(members or {},function(_,guid)
-        if not recusive_is_in_club(root,guid) then
-            return guid
-        end
-    end)
-
-    if table.nums(guids) == 0 then
-        return
-    end
-
-    to:batch_join(guids)
-    return true
-end
-
 function on_bs_club_create(owner,name)
     local guid = owner
 
@@ -139,7 +84,7 @@ function on_bs_club_create(owner,name)
         return enum.ERROR_PLAYER_NO_RIGHT
     end
 
-    local id = rand_union_club_id()
+    local id = club_utils.rand_union_club_id()
 
     local club = base_club:create(id,name or "","",player,enum.CT_UNION)
 
@@ -165,16 +110,16 @@ function on_bs_club_create_with_group(group_id,name)
         return enum.ERROR_PLAYER_NOT_EXIST
     end
 
-    local id = rand_union_club_id()
+    local id = club_utils.rand_union_club_id()
     local club = base_club:create(id,name or "","",player,enum.CT_UNION)
 
     club:incr_member_money(player.guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
-    local son_club_id = rand_union_club_id()
+    local son_club_id = club_utils.rand_union_club_id()
     base_club:create(son_club_id,group.name,"",player,enum.CT_UNION,id)
     local son_club = base_clubs[son_club_id]
 
-    import_union_player_from_group(son_club,group)
+    club_utils.import_union_player_from_group(son_club,group)
 
     return enum.ERROR_NONE,id
 end
@@ -193,7 +138,7 @@ function on_cs_club_create(msg,guid)
 
     log.dump(player)
 
-    local id = rand_group_club_id()
+    local id = club_utils.rand_group_club_id()
 
     local club = base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
 
@@ -239,7 +184,7 @@ function on_cs_club_import_player_from_group(msg,guid)
         return
     end
 
-    import_union_player_from_group(from,to)
+    club_utils.import_union_player_from_group(from,to)
     onlineguid.send(guid,"S2C_IMPORT_PLAYER_FROM_GROUP",{
         result = enum.ERROR_NONE
     })
@@ -302,7 +247,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
-    local id = rand_union_club_id()
+    local id = club_utils.rand_union_club_id()
 
     local club_info = msg.club_info
 
@@ -415,104 +360,6 @@ function on_cs_club_invite_join_club(msg,guid)
     player_request[club.owner] = nil
 end
 
-local function get_club_tables(club)
-    if not club then return {} end
-    local ct = club_table[club.id] or {}
-    local tables = table.series(ct,function(_,tid)
-        local priv_tb = base_private_table[tid]
-        local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-        return tableinfo
-    end)
-
-    return tables
-end
-
-local function deep_get_club_tables(club,getter_role)
-    local tables = get_club_tables(club,getter_role)
-    for teamid,_ in pairs(club_team[club.id]) do
-        local team = base_clubs[teamid]
-        if team then
-            table.unionto(tables,deep_get_club_tables(team,getter_role))
-        end
-    end
-
-    return tables
-end
-
-local function is_template_visiable(club,template)
-    local conf = club_team_template_conf[club.id][template.template_id]
-    local visiable = (not conf or conf.visual == nil) and true or conf.visual
-    if visiable and club.parent and club.parent ~= 0 then
-        local parent = base_clubs[club.parent]
-        visiable = visiable and is_template_visiable(parent,template)
-    end
-    return visiable
-end
-
-local function get_club_templates(club,getter_role)
-    if not club then return {} end
-
-    local ctt = club_template[club.id] or {}
-    local templates = table.series(ctt,function(_,tid) return table_template[tid] end)
-
-    table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
-
-    return templates
-end
-
-local function get_visiable_club_templates(club,getter_role)
-    local templates = get_club_templates(club,getter_role)
-    return table.series(templates,function(template)
-        local visiable = is_template_visiable(club,template)
-        if  visiable or
-            getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
-            return template
-        end
-    end)
-end
-
-local function all_game_ids()
-	return table.series(channel.query(),function(_,item)
-		local id = string.match(item,"game.(%d+)")
-		if not id then return end
-		id = tonumber(id)
-		local sconf = serviceconf[id]
-		if not sconf.conf or not sconf.conf.private_conf then return end
-		return sconf.conf.first_game_type
-	end)
-end
-
-local function get_game_list(guid,club_id)
-    local player = base_players[guid]
-	if player then
-		local channel_id = player.channel_id
-		channel_id = channel_id and channel_id ~= "" and channel_id or "default"
-
-		local promoter = player.promoter
-        promoter = promoter and promoter ~= 0 and promoter or nil
-
-		local conf_games = runtime_conf.get_game_conf(channel_id,promoter)
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			return conf_games
-		end
-
-		conf_games = runtime_conf.get_game_conf("default")
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			return conf_games
-		end
-
-		conf_games = all_game_ids()
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			return conf_games
-		end
-	end
-
-	return
-end
-
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     if not club_id then
@@ -531,10 +378,9 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
-    local real_games =  get_game_list(guid)
-
+    local real_games =  club_utils.get_game_list(guid)
     local root = club_utils.root(club)
-    local tables = deep_get_club_tables(root)
+    local tables = club_utils.deep_get_club_tables(root)
 
     local online_count = 0
     local total_count = 0
@@ -567,7 +413,7 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local role = club_role[club_id][guid] or enum.CRT_PLAYER
 
-    local templates = get_visiable_club_templates(club,role)
+    local templates = club_utils.get_visiable_club_templates(club,role)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
     local myself = base_players[guid]
@@ -700,7 +546,7 @@ function on_cs_club_join_req(msg,guid)
         return
     end
 
-    if recusive_is_in_club(club_utils.root(club),guid) then
+    if club_utils.recusive_is_in_club(club_utils.root(club),guid) then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = enum.ERROR_AREADY_MEMBER,
@@ -1041,7 +887,7 @@ local function on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
-    if recusive_is_in_club(club_utils.root(club),guid) then
+    if club_utils.recusive_is_in_club(club_utils.root(club),guid) then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_AREADY_MEMBER,
             op = msg.op,
@@ -1295,69 +1141,17 @@ end
 local function dismiss_club(club)
     log.dump(club)
 
-    local function is_member_in_gaming(c)
-        if not c then return false end
-        return table.logic_or(club_member[c.id] or {},function(_,mid)
-            local os = onlineguid[mid]
-            return os and os.table
-        end)
-    end
-
-    local function member_money_sum(c,money_id)
-        return table.sum(club_member[c.id] or {},function(_,mid)
-            return player_money[mid][money_id] or 0
-        end)
-    end
-
-    local function deep_is_member_in_gaming(c,money_id)
-        local gaming = is_member_in_gaming(c,money_id)
-        if gaming then return true end
-        local teamids = club_team[c.id]
-        return table.logic_or(teamids,function(_,teamid)
-            local team = base_clubs[teamid]
-            return team and deep_is_member_in_gaming(team,money_id)
-        end)
-    end
-
-    local function deep_member_money_sum(c,money_id)
-        local sum = member_money_sum(c,money_id) + (club_money[c.id][money_id] or 0) + (club_commission[c.id] or 0)
-        local teamids = club_team[c.id]
-        return sum + table.sum(teamids,function(_,teamid)
-            local team = base_clubs[teamid]
-            return team or deep_member_money_sum(team) or 0
-        end)
-    end
-
-    if deep_is_member_in_gaming(club) then
+    if club_utils.deep_is_member_in_gaming(club) then
         return enum.ERROR_PLAYER_IN_GAME
     end
 
     local money_id = club_money_type[club.id]
-    local member_money = deep_member_money_sum(club,money_id)
+    local member_money = club_utils.deep_member_money_sum(club,money_id)
     if member_money > 0 then
         return enum.ERROR_MORE_MAX_LIMIT
     end
 
-    local function deep_dismiss_club(c,money_id)
-        local teamids = club_team[c.id]
-        if not teamids or table.nums(teamids) == 0 then
-            c:dismiss()
-            if c.parent and c.parent ~= 0 then
-                local role = club_role[c.parent][c.owner]
-                if role == enum.CRT_PARTNER then
-                    reddb:hdel(string.format("club:role:%d",c.parent),c.id)
-                    club_role[c.parent][c.owner] = nil
-                end
-            end
-        end
-
-        return table.foreach(teamids,function(_,teamid)
-            local team = base_clubs[teamid]
-            return team and deep_dismiss_club(team,money_id)
-        end)
-    end
-
-    deep_dismiss_club(club,money_id)
+    club_utils.deep_dismiss_club(club,money_id)
     return enum.ERROR_NONE
 end
 
@@ -2888,7 +2682,6 @@ function on_cs_search_club_player(msg,guid)
 
     local self_role = club_role[club_id][guid]
 
-    
     if partner_id and partner_id ~= 0 then
         if not self_role or self_role == enum.CRT_PLAYER then
             onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{
