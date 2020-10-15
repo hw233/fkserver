@@ -5,7 +5,6 @@ local channel = require "channel"
 
 LOG_NAME = "redisd"
 
-require "table_func"
 require "functions"
 
 local function get_redis_conf(t,id)

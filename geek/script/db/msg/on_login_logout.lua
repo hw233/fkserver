@@ -12,7 +12,6 @@ local timer = require "timer"
 
 local money_lock = queue()
 
-require "table_func"
 local server_start_time =  os.time()
 
 local md5 = require "md5"

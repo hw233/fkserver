@@ -3,7 +3,6 @@ local log = require "log"
 local meta_tree = require "redismetadata"
 local meta_matcher = require "redisorm.meta_matcher"
 
-require "table_func"
 require "functions"
 
 local redisd = ".redisd"

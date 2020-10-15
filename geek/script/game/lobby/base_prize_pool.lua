@@ -4,7 +4,6 @@ local random = require "random"
 require "game.net_func"
 local base_player = require "game.lobby.base_player"
 require "data.prize_pool_robot_name"
-require "table_func"
 local log = require "log"
 local redisopt = require "redisopt"
 local json = require "cjson"
@@ -58,7 +57,7 @@ function base_prize_pool:prize_pool_is_open()
 
 			log.info("prize_pool_is_open =============================== %s",self.player_list)
 			for room_id , room in pairs(self.player_list) do
-				log.info("roooid [%d] ============== prize pool close table_count[%d]" , room_id,getNum(room))
+				log.info("roooid [%d] ============== prize pool close table_count[%d]" , room_id,table.nums(room))
 				for table_id , _ in pairs(room) do
 					log.info("room_id[%d] table[%d] send SC_PrizePool_show = 0 ",room_id , table_id)
 					self:broadcast2client(room_id , table_id, "SC_PrizePool_show",{money = 0})
@@ -250,7 +249,7 @@ function base_prize_pool:set_table_player_list(room_id , table_id , player_list)
 	end
 	self.player_list[room_id][table_id] = player_list
 
-	log.info("set_table_player_list roooid [%d] ============== prize pool open table_count[%d]" , room_id,getNum(self.player_list[room_id]))
+	log.info("set_table_player_list roooid [%d] ============== prize pool open table_count[%d]" , room_id,table.nums(self.player_list[room_id]))
 end
 
 -- ingame 游戏调用了 base_table:player_sit_down 不用处理 如果没有需要在游戏中处理
@@ -301,7 +300,7 @@ function base_prize_pool:load_lua_cfg(room_id , cfgstr )
 			if is_open and not self:prize_pool_is_open() then
 				log.info("close prize_pool ===============================1 %s",self.player_list)
 				for room_id , room in pairs(self.player_list ) do
-					log.info("roooid [%d] ============== prize pool close table_count[%d]" , room_id,getNum(room))
+					log.info("roooid [%d] ============== prize pool close table_count[%d]" , room_id,table.nums(room))
 					for table_id , _ in pairs(room) do
 						log.info("room_id[%d] table[%d] send SC_PrizePool_show = 0 ",room_id , table_id)
 						self:broadcast2client(room_id , table_id, "SC_PrizePool_show",{money = 0})
@@ -313,7 +312,7 @@ function base_prize_pool:load_lua_cfg(room_id , cfgstr )
 			elseif not is_open and self:prize_pool_is_open() then
 				log.info("close prize_pool ===============================2 %s",self.player_list)
 				for room_id , room in pairs(self.player_list ) do
-					log.info("roooid [%d] ============== prize pool open table_count[%d]" , room_id,getNum(room))
+					log.info("roooid [%d] ============== prize pool open table_count[%d]" , room_id,table.nums(room))
 					for table_id , _ in pairs(room) do
 						log.info("room_id[%d] table[%d] send SC_PrizePool_show ",room_id , table_id)
 						self:prize_pool_show(room_id ,table_id)

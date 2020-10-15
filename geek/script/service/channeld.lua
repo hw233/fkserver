@@ -1,5 +1,4 @@
 local skynet = require "skynetproto"
-require "table_func"
 require "functions"
 local log = require "log"
 local cluster = require "cluster"

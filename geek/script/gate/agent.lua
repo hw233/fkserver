@@ -10,7 +10,6 @@ local cluster = require "cluster"
 local serviceconf = require "serviceconf"
 local json = require "cjson"
 local enum = require "pb_enums"
-require "table_func"
 require "functions"
 local log = require "log"
 

@@ -16,8 +16,6 @@ function on_gm_update_cfg()
 end
 
 skynet.start(function()
-	require "table_func"
-
 	require "game.lobby.on_login_logout"
 	require "game.lobby.on_bank"
 	require "game.lobby.on_item"

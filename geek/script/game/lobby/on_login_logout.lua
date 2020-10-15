@@ -40,9 +40,6 @@ local reddb = redisopt.default
 local def_register_money = get_register_money()
 local def_private_room_bank = get_private_room_bank()
 
-require "table_func"
-
-
 -- 登陆验证框相关
 local validatebox_ch = {}
 for i=243,432 do

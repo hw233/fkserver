@@ -9,7 +9,6 @@ local util = require "gate.util"
 local enum = require "pb_enums"
 local serviceconf = require "serviceconf"
 
-require "table_func"
 require "functions"
 local log = require "log"
 local datacenter = require "skynet.datacenter"

@@ -1,4 +1,3 @@
-require "table_func"
 require "functions"
 local log = require "log"
 

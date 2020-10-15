@@ -1,6 +1,5 @@
 
 local channel = require "channel"
-require "table_func"
 local md5 = require "md5"
 local base_players = require "game.lobby.base_players"
 local onlineguid = require "netguidopt"

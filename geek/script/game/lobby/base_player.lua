@@ -18,7 +18,6 @@ local queue = require "skynet.queue"
 local timer = require "timer"
 
 require "game.net_func"
-require "table_func"
 local send2client_pb = send2client_pb
 local redisopt = require "redisopt"
 local reddb = redisopt.default

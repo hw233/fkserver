@@ -14,7 +14,6 @@ local queue = require "skynet.queue"
 
 
 require "game.net_func"
-require "table_func"
 local timer_manager = require "game.timer_manager"
 
 require "msgopt"

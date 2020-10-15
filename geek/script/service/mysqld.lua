@@ -1,6 +1,4 @@
 -- db操作相关
-
-require "table_func"
 require "functions"
 local log = require "log"
 local skynet = require "skynetproto"

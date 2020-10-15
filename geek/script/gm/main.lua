@@ -1,6 +1,5 @@
 local skynet = require "skynetproto"
 local httpd = require "gm.httpd"
-require "table_func"
 local log = require "log"
 local msgopt = require "msgopt"
 require "functions"
