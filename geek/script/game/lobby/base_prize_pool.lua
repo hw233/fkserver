@@ -1,6 +1,4 @@
 -- game room
-
-local pb = require "pb_files"
 require "functions"
 local random = require "random"
 require "game.net_func"
@@ -10,10 +8,9 @@ require "table_func"
 local log = require "log"
 local redisopt = require "redisopt"
 local json = require "cjson"
+local enum = require "pb_enums"
 
 local base_prize_pool = {}
-
-local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
 
 function base_prize_pool:new()  
     local o = {}
@@ -99,7 +96,7 @@ function base_prize_pool:prize_pool_show(room_id ,table_id)
 end
 
 -- 广播桌子中所有人消息
-function base_prize_pool:broadcast2client(room_id , table_id, msg_name, pb)
+function base_prize_pool:broadcast2client(room_id , table_id, msg_name, msg)
 	if not self.player_list[room_id] then
 		log.info("no ======== room_id")
 		return
@@ -108,11 +105,11 @@ function base_prize_pool:broadcast2client(room_id , table_id, msg_name, pb)
 		log.info("no ======== table_id")
 		return
 	end
-	local id, msg = get_msg_id_str(msg_name, pb)
+	local id, msg = get_msg_id_str(msg_name, msg)
 	for i, p in pairs(self.player_list[room_id][table_id] ) do
 		if p and type(p) == "table" then
 			log.info("============send guid[%d]",p.guid)
-			send2client_pb(p,msg_name,pb)
+			send2client_pb(p,msg_name,msg)
 		end
 	end
 end
@@ -207,7 +204,7 @@ function base_prize_pool:send_prize_pool_money(table_id , table_self , user_list
 				local notify = {}
 				notify.prize_money = money
 				notify.prize_join = 1
-				v.player:add_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = money}}, self.log_money_type)				
+				v.player:add_money({{money_type = enum.ITEM_PRICE_TYPE_GOLD, money = money}}, self.log_money_type)				
 				notify.player_money = v.player:get_money()
 				log.info("guid[%d] old_money[%d] new_money[%d]" , k, smoney, v.player:get_money())
 				table_self:player_money_log(v.player,2,smoney,0,money,self.game_log_id[table_id])

@@ -1,21 +1,12 @@
 -- 游戏机器人
-
-local pb = require "pb_files"
-
 require "data.land_data"
 require "functions"
+local enum = require "pb_enums"
 local robot_ip_area = robot_ip_area
 
 local base_character = require "game.lobby.base_character"
 
---local base_room = require "game.lobby.base_room"
 local room = g_room
-
-
-local GAME_SERVER_RESULT_SUCCESS = pb.enum("GAME_SERVER_RESULT", "GAME_SERVER_RESULT_SUCCESS")
-
-local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
-
 
 local game_android = base_character:new()
 
@@ -100,7 +91,7 @@ function  game_android:judge_ip(player)
 end
 
 function game_android:on_sit_down(table_id_, chair_id_, result_)
-	return GAME_SERVER_RESULT_SUCCESS
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 function game_android:change_table( room_id_, table_id_, chair_id_, result_, tb )
@@ -111,7 +102,7 @@ function game_android:cost_money(price, opttype, bRet)
 
 	for _, p in ipairs(price) do
 		p.money = math.ceil(p.money)
-		if p.money_type == ITEM_PRICE_TYPE_GOLD then
+		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			if p.money <= 0 then
 				return false
 			end
@@ -132,7 +123,7 @@ function game_android:add_money(price, opttype)
 	local money = self.money
 
 	for _, p in ipairs(price) do
-		if p.money_type == ITEM_PRICE_TYPE_GOLD then
+		if p.money_type == enum.ITEM_PRICE_TYPE_GOLD then
 			if p.money <= 0 then
 				return false
 			end

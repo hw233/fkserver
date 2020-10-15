@@ -6,14 +6,11 @@ require "functions"
 require "table_func"
 require "game.timer_manager"
 local log = require "log"
-local pb = require "pb_files"
 local json = require "cjson"
+local enum = require "pb_enums"
 
 local def_first_game_type = def_first_game_type
 local def_second_game_type = def_second_game_type
-
-local LOG_MONEY_OPT_TYPE_BONUS_HONGBAO = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_BONUS_HONGBAO")
-local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
 
 
 local base_bonus_activity = class("base_bonus_activity")
@@ -433,7 +430,7 @@ function base_player:on_ds_pick_bonus(activity_id,bonus_index)
 	local bonus_money = self.bonus[activity_id].hongbao[bonus_index].money
 
 	self:add_money(
-		{{ money_type = ITEM_PRICE_TYPE_GOLD, money = bonus_money }}, LOG_MONEY_OPT_TYPE_BONUS_HONGBAO
+		{{ money_type = enum.ITEM_PRICE_TYPE_GOLD, money = bonus_money }}, enum.LOG_MONEY_OPT_TYPE_BONUS_HONGBAO
 	)
 
 	send2client_pb(self,"SC_PickBonusResult",{

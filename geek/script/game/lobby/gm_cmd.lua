@@ -1,11 +1,10 @@
-local pb = require "pb_files"
+
 local base_room = require "game.lobby.base_room"
 local room = g_room
 local base_players = require "game.lobby.base_players"
 local log = require "log"
+local enum = require "pb_enums"
 
-local LOG_MONEY_OPT_TYPE_GM = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_GM")
-local LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY")
 require "game.net_func"
 
 function gm_change_money(guid,money,log_type)
@@ -15,7 +14,7 @@ function gm_change_money(guid,money,log_type)
 			return
 	end
 	
-    player:change_money(money, log_type or LOG_MONEY_OPT_TYPE_GM)
+    player:change_money(money, log_type or enum.LOG_MONEY_OPT_TYPE_GM)
 
 	channel.publish("db.?","msg","SD_SavePlayerData", {
 		guid = guid,
@@ -29,7 +28,7 @@ function gm_change_bank_money(guid,money,log_type)
 		log.warning("guid[%d] not find in game=%d", guid, def_game_id)
 		return
 	end
-    player:change_bank(money,log_type or LOG_MONEY_OPT_TYPE_GM)
+    player:change_bank(money,log_type or enum.LOG_MONEY_OPT_TYPE_GM)
 
 	channel.publish("db.?","msg","SD_SavePlayerData", {
 		guid = guid,
@@ -90,7 +89,7 @@ function gm_change_bank(web_id_, login_id, guid, money, log_type)
 	end
 
 	print ("web_id_, login_id, guid, money, log_type", web_id_, login_id, guid, money, log_type)
-    player:change_bank(money, log_type or LOG_MONEY_OPT_TYPE_GM, true)
+    player:change_bank(money, log_type or enum.LOG_MONEY_OPT_TYPE_GM, true)
 
     channel.publish("login."..tostring(login_id),"msg","SL_LuaCmdPlayerResult", {
     	web_id = web_id_,
@@ -149,7 +148,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 					player:add_game_end_event(function ()
 						if money > player:get_money() then
 							money = 0 - player:get_money()
-							player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
+							player:change_money(money,enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
 							channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 								transfer_id = transfer_id,
 								proxy_guid = proxy_guid,
@@ -162,7 +161,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 							})
 						else
 							money = 0 - money
-							player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
+							player:change_money(money,enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
 							channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 								transfer_id = transfer_id,
 								proxy_guid = proxy_guid,
@@ -182,7 +181,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 	end
 	if money > player:get_money() then
 		money = 0 - player:get_money()
-		player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
+		player:change_money(money,enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
 		channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 			transfer_id = transfer_id,
 			proxy_guid = proxy_guid,
@@ -195,7 +194,7 @@ function gm_cost_player_money(transfer_id,proxy_guid,player_guid,transfer_type,t
 		})
 	else
 		money = 0 - money
-		player:change_money(money,LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
+		player:change_money(money,enum.LOG_MONEY_OPT_TYPE_PLAYERTOAGENT_MONEY)
 		channel.publish("db.?","msg","SD_LogProxyCostPlayerMoney", {
 			transfer_id = transfer_id,
 			proxy_guid = proxy_guid,

@@ -1,4 +1,3 @@
-local pb = require "pb_files"
 local skynet = require "skynetproto"
 local dbopt = require "dbopt"
 local msgopt = require "msgopt"
@@ -8,12 +7,11 @@ local log = require "log"
 local json = require "cjson"
 require "functions"
 local redisopt = require "redisopt"
+local enum = require "pb_enums"
 
 local reddb = redisopt.default
 
 LOG_NAME = "config"
-
-local LOG_MONEY_OPT_TYPE_RECHARGE_MONEY = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_RECHARGE_MONEY")
 
 local globalconf = {}
 
@@ -222,7 +220,7 @@ function MSG.WF_Recharge(msg)
     log.info("MSG.WF_Recharge......order_id[%d]  web[%d]",msg.order_id, from)
     return channel.call("db.?","msg","FD_ChangMoney",{
         order_id = msg.order_id,
-        type_id = LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
+        type_id = enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,
     })
 end
 

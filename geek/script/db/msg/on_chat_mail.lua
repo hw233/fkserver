@@ -1,10 +1,5 @@
 -- 聊天，邮件消息处理
-
-local pb = require "pb_files"
-
 local dbopt = require "dbopt"
-local db_execute = db_execute
-local db_execute_query = db_execute_query
 
 local find_player = find_player
 
@@ -13,10 +8,8 @@ local def_expiration_time = 30*24*60*60 -- 邮件30天过期
 
 -- 发送邮件
 function on_sd_send_mail(game_id, msg)
-	local mail_ = pb.decode(msg.pb_mail[1], msg.pb_mail[2])
-	for i, item in ipairs(mail_.pb_attachment) do
-		mail_.pb_attachment[i] = pb.decode(item[1], item[2])
-	end
+	local mail_ = msg.pb_mail
+	mail_.pb_attachment = msg.pb_attachment
 	
 	local player = find_player(mail_.send_guid)
 	if not player then

@@ -1,7 +1,4 @@
 -- 登陆，退出，切换服务器消息处理
-
-local pb = require "pb_files"
-
 require "data.login_award_table"
 local login_award_table = login_award_table
 
@@ -1482,13 +1479,13 @@ function do_on_ds_reset_account(msg, register_money)
 		-- redis数据修改
 		redis_cmd_query(string.format("HGET player:login_info %s", account_key), function (reply)
 			if type(reply) == "string" then
-				local info = pb.decode("PlayerLoginInfo", from_hex(reply))
+				local info = reply
 				info.account = msg.account
 				info.nickname = msg.nickname
 				redis_command(string.format("HDEL player:login:info %s", account_key))
 				redis_command(string.format("HDEL player:login:info:guid %d", player.guid))
-				redis_command(string.format("HSET player:login:info %s %s", account_key, to_hex(pb.encode("PlayerLoginInfo", info))))
-				redis_command(string.format("HSET player:login:info:guid %d %s", player.guid, to_hex(pb.encode("PlayerLoginInfo", info))))
+				redis_command(string.format("HSET player:login:info %s %s", account_key, info))
+				redis_command(string.format("HSET player:login:info:guid %d %s", player.guid, info))
 			end
 		end)
 

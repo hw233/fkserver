@@ -1,6 +1,4 @@
 -- 玩家数据消息处理
-
-local pb = require "pb_files"
 local log = require "log"
 local onlineguid = require "netguidopt"
 local dbopt = require "dbopt"
@@ -24,9 +22,6 @@ local get_init_regmoney = get_init_regmoney
 
 local def_save_db_time = 60 -- 1分钟存次档
 local def_offline_cache_time = 600 -- 离线玩家数据缓存10分钟
-
-local GMmessageRetCode_ReChargeDBSetError = pb.enum("GMmessageRetCode", "GMmessageRetCode_ReChargeDBSetError")
-local GMmessageRetCode_Success = pb.enum("GMmessageRetCode", "GMmessageRetCode_Success")
 
 
 -- 存档到数据库
@@ -294,11 +289,6 @@ function  on_sd_query_player_marquee(game_id, msg)
 				print(i,info)
 			end
 		end
-		--local msg = {
-		--	pb_msg_data_info = data,
-		--}
-		--print("-----------------2")
-		--redis_command(string.format("HSET player_Msg_info %d %s", guid_, to_hex(pb.encode("Msg_Data", msg))))
 		print("-----------------3")
 		local b = true
 		for _, item in ipairs(data) do
@@ -1406,14 +1396,14 @@ function on_sd_recharge(gameid,msg)
 		guid = msg.guid,
 		retid = msg.retid,
 		orderid = msg.orderid,
-		retcode = GMmessageRetCode_ReChargeDBSetError,
+		retcode = enum.GMmessageRetCode_ReChargeDBSetError,
 	}
 	local aft_bank = msg.after_bank
 	local bef_bank = msg.befor_bank
 
 	local data = dbopt.recharge:query(sql)
 	if not data then
-		notify.retcode = GMmessageRetCode_ReChargeDBSetError
+		notify.retcode = enum.GMmessageRetCode_ReChargeDBSetError
 		log.info(string.format("on_sd_recharge dberror guid[%d] orderid[%d] bef_bank[%d] aft_bank[%d]",notify.guid,notify.orderid,bef_bank,aft_bank))			
 		channel.publish("login."..tostring(loginid),"msg", "DL_ReCharge",notify)
 		return
@@ -1423,7 +1413,7 @@ function on_sd_recharge(gameid,msg)
 	
 	if tonumber(data.retCode) == 0 then
 		log.info("on_sd_recharge success guid[%d] orderid[%d] bef_bank[%d] aft_bank[%d]",notify.guid,notify.orderid,bef_bank,aft_bank)
-		notify.retcode = GMmessageRetCode_Success
+		notify.retcode = 0
 	else			
 		log.info("on_sd_recharge db faild guid[%d] orderid[%d] bef_bank[%d] aft_bank[%d] ret [%d]",notify.guid,notify.orderid,bef_bank,aft_bank,data.retCode)
 	end
@@ -2523,7 +2513,7 @@ function on_s_request_proxy_info(msg)
 	end
 
 	local reply = {
-		pb_platform_proxys = pb.decode("PlatformProxyInfos",data[1][1])
+		pb_platform_proxys = data[1][1]
 	}
 
 	return reply

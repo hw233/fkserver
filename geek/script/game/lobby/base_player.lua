@@ -1,6 +1,4 @@
 -- game player
-
-local pb = require "pb_files"
 require "functions"
 local base_character = require "game.lobby.base_character"
 require "game.lobby.base_android"
@@ -24,19 +22,6 @@ require "table_func"
 local send2client_pb = send2client_pb
 local redisopt = require "redisopt"
 local reddb = redisopt.default
-
-
--- enum ITEM_PRICE_TYPE 
-local ITEM_PRICE_TYPE_GOLD = pb.enum("ITEM_PRICE_TYPE", "ITEM_PRICE_TYPE_GOLD")
-local ITEM_PRICE_TYPE_ROOM_CARD = pb.enum("ITEM_PRICE_TYPE","ITEM_PRICE_TYPE_ROOM_CARD")
-local ITEM_PRICE_TYPE_DIAMOND = pb.enum("ITEM_PRICE_TYPE","ITEM_PRICE_TYPE_DIAMOND")
-
--- enum ITEM_TYPE 
-local ITEM_TYPE_MONEY = pb.enum("ITEM_TYPE", "ITEM_TYPE_MONEY")
-local ITEM_TYPE_BOX = pb.enum("ITEM_TYPE", "ITEM_TYPE_BOX")
-
--- enum LOG_MONEY_OPT_TYPE
-local LOG_MONEY_OPT_TYPE_BOX = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_BOX")
 
 -- 玩家
 local base_player = setmetatable({
@@ -372,7 +357,7 @@ function base_player:save2redis()
 	if self.flag_base_info then
 		self.flag_base_info = false
 		if self.pb_base_info then
-			--redis_command(string.format("HSET player_base_info %d %s", self.guid, to_hex(pb.encode("PlayerBaseInfo", self.pb_base_info))))
+			
 		end
 		self.flag_save_db = true
 	end
@@ -560,7 +545,7 @@ function base_player:add_item(id, num)
 		return
 	end
 	
-	if item.item_type == ITEM_TYPE_MONEY then
+	if item.item_type == enum.ITEM_TYPE_MONEY then
 		local oldmoney = self.money
 		self.money = self.money + num
 		self.flag_base_info = true
@@ -571,7 +556,7 @@ function base_player:add_item(id, num)
 			money = num,
 		})
 
-		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,LOG_MONEY_OPT_TYPE_BOX,oldmoney,self.money,self.bank,self.bank)
+		self:log_money(enum.ITEM_PRICE_TYPE_GOLD,enum.LOG_MONEY_OPT_TYPE_BOX,oldmoney,self.money,self.bank,self.bank)
 		return
 	end
 	
@@ -623,7 +608,7 @@ function base_player:use_item(id, num)
 				self.flag_item_bag = true
 				
 				local itemdetail = item_details_table[id]
-				if itemdetail.item_type == ITEM_TYPE_BOX then
+				if itemdetail.item_type == enum.ITEM_TYPE_BOX then
 					for _, v in ipairs(itemdetail.sub_item) do
 						self:add_item(v.item_id, v.item_num * num)
 					end

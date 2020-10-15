@@ -1,6 +1,4 @@
 -- 银行消息处理
-
-local pb = require "pb_files"
 local dbopt = require "dbopt"
 local redisopt = require "redisopt"
 local httpc = require "http.httpc"
@@ -128,7 +126,7 @@ end
 
 -- 记录银行流水
 function on_sd_save_bank_statement(msg)
-	local statement_ = pb.decode(msg.pb_statement[1], msg.pb_statement[2])
+	local statement_ = msg.pb_statement
 	
 	local sql = string.format("CALL save_bank_statement(%d,%d,%d,'%s',%d,%d);", 
 		statement_.guid, statement_.time, statement_.opt, statement_.target, statement_.money, statement_.bank_balance)

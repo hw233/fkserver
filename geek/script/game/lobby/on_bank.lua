@@ -1,35 +1,13 @@
 -- 银行消息处理
-
-local pb = require "pb_files"
 local log = require "log"
 require "game.net_func"
 local send2client_pb = send2client_pb
 
 local base_players = require "game.lobby.base_players"
+local enum = require "pb_enums"
 
 
 local get_db_status = get_db_status
--- enum BANK_OPT_RESULT
-local BANK_OPT_RESULT_SUCCESS = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_SUCCESS")
-local BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET")
-local BANK_OPT_RESULT_PASSWORD_IS_NOT_SET = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_PASSWORD_IS_NOT_SET")
-local BANK_OPT_RESULT_OLD_PASSWORD_ERR = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_OLD_PASSWORD_ERR")
-local BANK_OPT_RESULT_ALREADY_LOGGED = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_ALREADY_LOGGED")
-local BANK_OPT_RESULT_LOGIN_FAILED = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_LOGIN_FAILED")
-local BANK_OPT_RESULT_NOT_LOGIN = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_NOT_LOGIN")
-local BANK_OPT_RESULT_MONEY_ERR = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_MONEY_ERR")
-local BANK_OPT_RESULT_TRANSFER_ACCOUNT = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_TRANSFER_ACCOUNT")
-local BANK_OPT_RESULT_BANK_MAINTAIN = pb.enum("BANK_OPT_RESULT", "BANK_OPT_RESULT_BANK_MAINTAIN")
-
-
--- enum BANK_STATEMENT_OPT_TYPE
-local BANK_STATEMENT_OPT_TYPE_DEPOSIT = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_DEPOSIT")
-local BANK_STATEMENT_OPT_TYPE_DRAW = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_DRAW")
-local BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_TRANSFER_OUT")
-local BANK_STATEMENT_OPT_TYPE_TRANSFER_IN = pb.enum("BANK_STATEMENT_OPT_TYPE", "BANK_STATEMENT_OPT_TYPE_TRANSFER_IN")
-
-local LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_AGENTBANKTOPLAYER_MONEY")
-local LOG_MONEY_OPT_TYPE_BANKTRANSFER = pb.enum("LOG_MONEY_OPT_TYPE", "LOG_MONEY_OPT_TYPE_BANKTRANSFER")
 
 
 -- 设置银行密码
@@ -38,7 +16,7 @@ function on_cs_bank_set_password(msg,guid)
 	if player.has_bank_password then
 		log.info("guid[%d] password is already set", player.guid)
 		send2client_pb(player, "SC_BankSetPassword", {
-			result = BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET,
+			result = enum.BANK_OPT_RESULT_PASSWORD_HAS_BEEN_SET,
 		})
 		return
 	end
@@ -46,7 +24,7 @@ function on_cs_bank_set_password(msg,guid)
 	player.has_bank_password = true
 
 	send2client_pb(player, "SC_BankSetPassword", {
-		result = BANK_OPT_RESULT_SUCCESS,
+		result = enum.BANK_OPT_RESULT_SUCCESS,
 	})
 	player.bank_password = msg.password
 	channel.publish("db.?","msg","SD_BankSetPassword", {
@@ -62,7 +40,7 @@ function  on_cl_ResetBankPW( msg,guid)
 	local player = base_players[guid]
 	if not player.has_bank_password then
 		send2client_pb(player, "SC_ResetBankPW", {
-			result = BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
+			result = enum.BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
 			guid = player.guid,
 		})
 		return
@@ -70,7 +48,7 @@ function  on_cl_ResetBankPW( msg,guid)
 	if player.bank_password == msg.bank_password_new then
 		send2client_pb(player,"SC_ResetBankPW", {
 			guid = player.guid,
-			result = BANK_OPT_RESULT_SUCCESS,
+			result = enum.BANK_OPT_RESULT_SUCCESS,
 		})
 		return
 	end
@@ -107,7 +85,7 @@ function on_cs_bank_change_password(msg,guid)
 	local player = base_players[guid]
 	if not player.has_bank_password then
 		send2client_pb(player, "SC_BankChangePassword", {
-			result = BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
+			result = enum.BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
 		})
 		return
 	end
@@ -141,7 +119,7 @@ function on_cs_bank_login(msg,guid)
 	local player = base_players[guid]
 	if player.bank_login then
 		send2client_pb(player, "SC_BankLogin", {
-			result = BANK_OPT_RESULT_ALREADY_LOGGED,
+			result = enum.BANK_OPT_RESULT_ALREADY_LOGGED,
 		})
 		return
 	end
@@ -162,7 +140,7 @@ function on_ds_bank_login(msg)
 		return
 	end
 
-	if msg.result == BANK_OPT_RESULT_SUCCESS then
+	if msg.result == enum.BANK_OPT_RESULT_SUCCESS then
 		player.bank_login = true
 	end
 
@@ -178,7 +156,7 @@ local room_mgr = g_room
 function on_cs_bank_deposit(msg,guid)
 	--[[if not player.bank_login then
 		send2client_pb(player, "SC_BankDeposit", {
-			result = BANK_OPT_RESULT_NOT_LOGIN,
+			result = enum.BANK_OPT_RESULT_NOT_LOGIN,
 		})
 		return
 	end]]-- 策划说不需要密码了
@@ -191,7 +169,7 @@ function on_cs_bank_deposit(msg,guid)
 	if player.table_id ~= nil or player.room_id ~= nil then
 	     log.error("player guid[%d] on_cs_bank_deposit error.",player.guid)
 	    send2client_pb(player, "SC_BankDeposit", {
-	      result = BANK_OPT_RESULT_FORBID_IN_GAMEING,
+	      result = enum.BANK_OPT_RESULT_FORBID_IN_GAMEING,
 	    })
 	    return
 	  end
@@ -200,7 +178,7 @@ function on_cs_bank_deposit(msg,guid)
 	log.info("player [%s]  is_play [%s]",tostring(player.guid), tostring(room_mgr:is_play(player)))
 	if room_mgr:is_play(player) then
 		send2client_pb(player, "SC_BankDeposit", {
-			result = BANK_OPT_RESULT_FORBID_IN_GAMEING,
+			result = enum.BANK_OPT_RESULT_FORBID_IN_GAMEING,
 		})
 		return
 	end
@@ -210,14 +188,14 @@ function on_cs_bank_deposit(msg,guid)
 	
 	if money_ <= 0 or money < money_ then
 		send2client_pb(player, "SC_BankDeposit", {
-			result = BANK_OPT_RESULT_MONEY_ERR,
+			result = enum.BANK_OPT_RESULT_MONEY_ERR,
 		})
 		return
 	end
 
 	if get_db_status() == 0 then
 		send2client_pb(player, "SC_BankDeposit", {
-			result = BANK_OPT_RESULT_BANK_MAINTAIN,
+			result = enum.BANK_OPT_RESULT_BANK_MAINTAIN,
 		})
 	end
 	
@@ -240,7 +218,7 @@ function on_cs_bank_deposit(msg,guid)
 			ip = player.ip,
 		})
 	--send2client_pb(player, "SC_BankDeposit", {
-	--	result = BANK_OPT_RESULT_SUCCESS,
+	--	result = enum.BANK_OPT_RESULT_SUCCESS,
 	--	money = money_,
 	--})
 	--
@@ -259,23 +237,13 @@ function on_cs_bank_deposit(msg,guid)
 	--	ip = player.ip,
 	--	gameid = def_game_id,
 	--})
-
-	--[[channel.publish("db.?","msg","SD_SaveBankStatement", {
-		pb_statement = {
-			guid = player.guid,
-			time = os.time(),
-			opt = BANK_STATEMENT_OPT_TYPE_DEPOSIT,
-			money = money_,
-			bank_balance = player.bank,
-		},
-	})]]
 end
 
 -- 取钱
 function on_cs_bank_draw(msg,guid)
 	--[[if not player.bank_login then
 		send2client_pb(player, "SC_BankDraw", {
-			result = BANK_OPT_RESULT_NOT_LOGIN,
+			result = enum.BANK_OPT_RESULT_NOT_LOGIN,
 		})
 		return
 	end]]-- 策划说不需要密码了
@@ -288,7 +256,7 @@ function on_cs_bank_draw(msg,guid)
 	if player.table_id ~= nil or player.room_id ~= nil then
 		log.info("===================")
 		send2client_pb(player, "SC_BankDeposit", {
-			result = BANK_OPT_RESULT_FORBID_IN_GAMEING,
+			result = enum.BANK_OPT_RESULT_FORBID_IN_GAMEING,
 		})
 		return
 	end
@@ -297,7 +265,7 @@ function on_cs_bank_draw(msg,guid)
 			log.info("on_cs_bank_draw player[%s] bankA[%s]",player.guid,msg.bank_password )
 			log.info("on_cs_bank_draw player[%s] bankA[%s]",player.guid,player.bank_password )
 			send2client_pb(player, "SC_BankDraw", {
-				result = BANK_OPT_RESULT_NOT_LOGIN,
+				result = enum.BANK_OPT_RESULT_NOT_LOGIN,
 			})
 			return
 		end
@@ -307,14 +275,14 @@ function on_cs_bank_draw(msg,guid)
 	--游戏中，限制该操作
 	if room_mgr:is_play(player) then
 		send2client_pb(player, "SC_BankDraw", {
-			result = BANK_OPT_RESULT_FORBID_IN_GAMEING,
+			result = enum.BANK_OPT_RESULT_FORBID_IN_GAMEING,
 		})
 		return
 	end
 	
 	if get_db_status() == 0 then
 		send2client_pb(player, "SC_BankDraw", {
-			result = BANK_OPT_RESULT_BANK_MAINTAIN,
+			result = enum.BANK_OPT_RESULT_BANK_MAINTAIN,
 		})
 	end
 
@@ -323,7 +291,7 @@ function on_cs_bank_draw(msg,guid)
 	if money_ <= 0 or bank < money_ then
 		log.info("guid[%d] money[%d] bank[%d]", player.guid, money_, bank)
 		send2client_pb(player, "SC_BankDraw", {
-			result = BANK_OPT_RESULT_MONEY_ERR,
+			result = enum.BANK_OPT_RESULT_MONEY_ERR,
 		})
 		return
 	end
@@ -350,7 +318,7 @@ function on_cs_bank_draw(msg,guid)
 	-- player.flag_base_info = true
 	-- 
 	-- send2client_pb(player, "SC_BankDraw", {
-	-- 	result = BANK_OPT_RESULT_SUCCESS,
+	-- 	result = enum.BANK_OPT_RESULT_SUCCESS,
 	-- 	money = money_,
 	-- })
 	-- 
@@ -414,18 +382,18 @@ function on_ds_changebank(msg)
 				gameid = def_game_id,
 			})
 			send2client_pb(player, "SC_BankDraw", {
-				result = BANK_OPT_RESULT_SUCCESS,
+				result = enum.BANK_OPT_RESULT_SUCCESS,
 				money = msg.changemoney,
 			})
 		else
 		 	send2client_pb(player, "SC_BankDraw", {
-		 		result = BANK_OPT_RESULT_MONEY_ERR,
+		 		result = enum.BANK_OPT_RESULT_MONEY_ERR,
 		 	})
 		end
 	elseif tonumber(msg.optType) == 2 then
 		if tonumber(msg.retcode) == 1 then
 			send2client_pb(player, "SC_BankDeposit", {
-				result = BANK_OPT_RESULT_SUCCESS,
+				result = enum.BANK_OPT_RESULT_SUCCESS,
 				money = msg.changemoney,
 			})
 			return
@@ -435,7 +403,7 @@ function on_ds_changebank(msg)
 			player.flag_base_info = true
 			log.info(" guid [%d] playermoney[%d] updater [%d]", player.guid, playermoney, player.money)
 			send2client_pb(player, "SC_BankDeposit", {
-				result = BANK_OPT_RESULT_MONEY_ERR,
+				result = enum.BANK_OPT_RESULT_MONEY_ERR,
 			})
 			return
 		end

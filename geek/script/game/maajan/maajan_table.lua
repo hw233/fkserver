@@ -1,17 +1,17 @@
-local pb = require "pb_files"
+
 local base_table = require "game.lobby.base_table"
 local def 		= require "game.maajan.base.define"
 local mj_util 	= require "game.maajan.base.mang_jiang_util"
 local base_player = require "game.lobby.base_player"
 local json = require "cjson"
 local log = require "log"
+local enum = require "pb_enums"
 
 
 local FSM_E     = def.FSM_event
 local FSM_S     = def.FSM_state
 local def_second_game_type = def_second_game_type
 local def_game_name = def_game_name
-local LOG_MONEY_OPT_TYPE_MAAJAN = pb.enum("LOG_MONEY_OPT_TYPE","LOG_MONEY_OPT_TYPE_MAAJAN") or 100
 
 local maajan_table = base_table:new()
 
@@ -1363,8 +1363,8 @@ function maajan_table:FSM_event(event_table)
 
                 if lost_player.cost_money then
                     win_taxes = math.ceil(win_money * self.room_:get_room_tax())
-					--lost_player:cost_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = win_money}}, LOG_MONEY_OPT_TYPE_MAAJAN)
-					--hu_player:add_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = win_money - win_taxes}}, LOG_MONEY_OPT_TYPE_MAAJAN)
+					--lost_player:cost_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = win_money}}, enum.LOG_MONEY_OPT_TYPE_MAAJAN)
+					--hu_player:add_money({{money_type = ITEM_PRICE_TYPE_GOLD, money = win_money - win_taxes}}, enum.LOG_MONEY_OPT_TYPE_MAAJAN)
 				end 
             else
                 --流局
