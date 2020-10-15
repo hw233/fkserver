@@ -7,6 +7,7 @@ local json = require "cjson"
 local maajan_tile_dealer = require "maajan_tile_dealer"
 local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
+local timer = require "timer"
 
 require "functions"
 
@@ -648,7 +649,7 @@ function maajan_table:do_action_after_chu_pai(do_actions)
         for _,act in pairs(do_actions) do
             local p = self.players[act.chair_id]
             p.hu = {
-                time = get_ms_time(),
+                time = timer.milliseconds_time(),
                 tile = tile,
                 types = mj_util.hu(p.pai,tile),
                 zi_mo = false,
@@ -669,7 +670,7 @@ function maajan_table:do_action_after_chu_pai(do_actions)
             local p = self.players[act.chair_id]
             p.men = p.men or {}
             table.insert(p.men,{
-                time = get_ms_time(),
+                time = timer.milliseconds_time(),
                 tile = tile,
                 types = mj_util.hu(p.pai,tile),
                 whoee = self.chu_pai_player_index,
@@ -755,7 +756,7 @@ function maajan_table:on_action_after_mo_pai(evt)
                 local p = self.players[chair]
                 self:log_game_action(p,ACTION.HU,tile)
                 p.hu = {
-                    time = get_ms_time(),
+                    time = timer.milliseconds_time(),
                     tile = tile,
                     types = mj_util.hu(p.pai,tile),
                     whoee = player.chair_id,
@@ -777,7 +778,7 @@ function maajan_table:on_action_after_mo_pai(evt)
 
     if do_action == ACTION.ZI_MO then
         player.hu = {
-            time = get_ms_time(),
+            time = timer.milliseconds_time(),
             tile = tile,
             types = mj_util.hu(player.pai),
             zi_mo = true,
@@ -800,7 +801,7 @@ function maajan_table:on_action_after_mo_pai(evt)
         table.decr(player.pai.shou_pai,tile)
         player.men = player.men or {}
         table.insert(player.men,{
-            time = get_ms_time(),
+            time = timer.milliseconds_time(),
             tile = tile,
             types = mj_util.hu(player.pai,tile),
             zi_mo = true,
@@ -1078,7 +1079,7 @@ function maajan_table:on_hu_when_wait_chu_pai(evt) --自摸胡
         if self:hu_fan_match(player) then
             local _,last_chu_tile = self:get_last_chu_pai()
             player.hu = {
-                time = get_ms_time(),
+                time = timer.milliseconds_time(),
                 tile = last_chu_tile,
                 types = mj_util.hu(player.pai,last_chu_tile),
                 zi_mo = true,

@@ -392,7 +392,7 @@ function base_player:log_money(money_id,old,now,why,why_ext,where)
 		where = where,
 		reason = why,
 		reason_ext = why_ext,
-		created_time = timer.ms_time(),
+		created_time = timer.ms_milliseconds_timetime(),
 	})
 end
 

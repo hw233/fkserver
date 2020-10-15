@@ -19,15 +19,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
 ]]
-
-get_second_time = os.time
-
-local skynet = require "skynet" 
-function get_ms_time()
-    return skynet.time()
-end
 
 function printLog(tag, fmt, ...)
     local t = {

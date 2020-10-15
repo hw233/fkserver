@@ -8,7 +8,7 @@ end
 
 timer.timeout = timer.add_timer
 
-function timer.ms_time()
+function timer.milliseconds_time()
 	return math.floor(skynet.time() * 1000)
 end
 
