@@ -313,7 +313,7 @@ end
 redis.default = redis[1]
 
 skynet.init(function()
-	redisd = skynet.uniqueservice("service.redisd")
+	redisd = skynet.uniqueservice("service.cache_redisd")
 end)
 
 return redis
