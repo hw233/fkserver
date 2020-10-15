@@ -290,7 +290,9 @@ function on_cs_get_club_team_template_conf(msg,guid)
 
     local confs = {}
     if not template_id or template_id == 0 then
+        local game_ids = table.map(club_utils.get_game_list(guid,club.id),function(gid) return gid,true end)
         local templates = club_utils.recusive_get_club_templates(club)
+        templates = table.select(templates,function(template) return game_ids[template.game_id] end,true)
         for _,template in pairs(templates) do
             local my_commission_rate = club_utils.get_real_partner_template_commission_rate(club_id,template.template_id,guid)
             local partner_commission_rate = club_partner_template_default_commission[club_id][template.template_id][guid]
