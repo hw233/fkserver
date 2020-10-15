@@ -972,14 +972,14 @@ function string.ucfirst(input)
 end
 
 function string.urlencode(input)
-    -- convert line endings
-    input = string.gsub(tostring(input), "\n", "\r\n")
-    -- escape all characters but alphanumeric, '.' and '-'
-    input = string.gsub(input, "([^%w%.%- ])", function(char)
-        string.format("%%%02X", string.byte(char))
+    -- input = string.gsub(tostring(input), "\n", "\r\n")
+
+    input = string.gsub(input, "([^A-Za-z0-9_])", function(c)
+        return string.format("%%%02X", string.byte(c))
     end)
+    -- input = string.gsub(input, " ", "+")
     -- convert spaces to "+" symbols
-    return string.gsub(input, " ", "+")
+    return input
 end
 
 function string.urldecode(input)
