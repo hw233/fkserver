@@ -2003,7 +2003,7 @@ function on_cs_request_sms_verify_code(msg,guid)
 	local rkey = string.format("sms:verify_code:guid:%s",guid)
 	reddb:set(rkey,code)
 	reddb:expire(rkey,expire)
-	local reqid = channel.call("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+	local reqid = channel.call("gate.?","msg","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
 	onlineguid.send(guid,"SC_RequestSmsVerifyCode",{
 		result = not reqid and enum.ERROR_REQUEST_SMS_FAILED or enum.ERROR_NONE,
 		timeout = expire,
@@ -2062,33 +2062,9 @@ function on_cs_game_server_cfg(msg,guid)
 	return true
 end
 
-local function http_get(url)
-    local host,url = string.match(url,"(https?://[^/]+)(.+)")
-    log.info("http.get %s%s",host,url)
-    return httpc.get(host,url)
-end
-
 local function wx_auth(code)
     log.dump(code)
-    local conf = global_conf.auth.wx
-    local _,authjson = http_get(string.format(conf.auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
-            conf.appid,conf.secret,code))
-    local auth = json.decode(authjson)
-    if auth.errcode then
-        log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
-        return tonumber(auth.errcode),auth.errmsg
-    end
-
-    local _,userinfojson = http_get(string.format(conf.userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
-    local userinfo = json.decode(userinfojson)
-    if userinfo.errcode then
-        log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
-        return tonumber(auth.errcode),auth.errmsg
-    end
-
-    log.dump(userinfo)
-
-    return nil,userinfo
+    return channel.call("gate.?","msg","LG_WxAuth",code)
 end
 
 function on_cs_request_bind_wx(msg,guid)

@@ -7,10 +7,8 @@ local log = require "log"
 local json = require "cjson"
 local serviceconf = require "serviceconf"
 local base_players = require "game.lobby.base_players"
-local md5 = require "md5.core"
-local crypt = require "skynet.crypt"
 local enum = require "pb_enums"
-local httpc = require "http.httpc"
+local util = require "util"
 local player_money = require "game.lobby.player_money"
 require "functions"
 require "login.msg.runtime"
@@ -18,25 +16,9 @@ local runtime_conf = require "game.runtime_conf"
 
 local reddb = redisopt.default
 
-local function http_get(url)
-    local host,url = string.match(url,"(https?://[^/]+)(.+)")
-    log.info("http.get %s%s",host,url)
-    return httpc.get(host,url)
-end
-
-local function sha1(text)
-	local c = crypt.sha1(text)
-	return crypt.hexencode(c)
-end
-
-local function hmac_sha1(key, text)
-	local c = crypt.hmac_sha1(key, text)
-	return crypt.hexencode(c)
-end
-
 local function gen_uuid(basestr)
     local entirestr = basestr..tostring(skynet.time())..tostring(math.random(10000))
-    return sha1(entirestr)
+    return util.sha1(entirestr)
 end
 
 function on_s_logout(msg)
@@ -206,25 +188,8 @@ end
 
 local function wx_auth(msg)
     log.dump(msg)
-    local conf = global_conf.auth.wx
-    local _,authjson = http_get(string.format(conf.auth_url.."?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
-            conf.appid,conf.secret,msg.code))
-    local auth = json.decode(authjson)
-    if auth.errcode then
-        log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
-        return tonumber(auth.errcode),auth.errmsg
-    end
-
-    local _,userinfojson = http_get(string.format(conf.userinfo_url.."?access_token=%s&openid=%s",auth.access_token,auth.openid))
-    local userinfo = json.decode(userinfojson)
-    if userinfo.errcode then
-        log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
-        return tonumber(auth.errcode),auth.errmsg
-    end
-
-    log.dump(userinfo)
-
-    return nil,userinfo
+    local code = msg.code
+    return channel.call("gate.?","msg","LG_WxAuth",msg.code)
 end
 
 function on_cl_auth(msg)
@@ -260,7 +225,7 @@ end
 
 
 local function sms_reg_account(msg)
-    local password = md5(msg.account)
+    local password = util.md5(msg.account)
     local guid = reddb:incr("player:global:guid")
     local info = {
         guid = guid,
@@ -839,7 +804,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
     local rkey = string.format("sms:verify_code:phone:%s",phone_num)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
-    local reqid = channel.call("gate.?","lua","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+    local reqid = channel.call("gate.?","msg","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
     if not reqid then
         return enum.ERROR_REQUEST_SMS_FAILED
     end
