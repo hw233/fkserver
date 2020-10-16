@@ -208,6 +208,7 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
             operator = inviter,
             type = enum.CLUB_ACTION_JOIN,
             msg = {
+                team = inviter,
                 guid = invitee,
             },
         })

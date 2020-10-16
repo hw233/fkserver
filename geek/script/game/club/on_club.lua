@@ -849,6 +849,7 @@ local function on_cs_club_exit(msg,guid)
             operator = guid,
             type = enum.CLUB_ACTION_EXIT,
             msg = {
+                team = partner_id,
                 guid = exit_guid,
             },
         })
@@ -1297,6 +1298,7 @@ function on_cs_club_kickout(msg,guid)
         operator = guid,
         type = enum.CLUB_ACTION_EXIT,
         msg = {
+            team = partner_id,
             guid = target_guid,
         },
     })
