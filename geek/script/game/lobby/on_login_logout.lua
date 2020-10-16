@@ -285,7 +285,7 @@ function logout(guid,offline)
 		account = player.account,
 		guid = guid,
 		login_time = player.login_time,
-		logout_time = player.logout_time,
+		logout_time = os.time(),
 		phone = player.phone,
 		phone_type = player.phone_type,
 		version = player.version,
