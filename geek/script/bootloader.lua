@@ -20,6 +20,7 @@ local servicepath = {
     [nameservice.TIDGATE] = "gate.main",
     [nameservice.TIDGAME] = "game.main",
     [nameservice.TIDSTATISTICS] = "statistics.main",
+    [nameservice.TIBROKER] = "broker.main",
 
     [nameservice.TNDB] = "db.main",
     [nameservice.TNCONFIG] = "config.main",
@@ -28,6 +29,7 @@ local servicepath = {
     [nameservice.TNGATE] = "gate.main",
     [nameservice.TNGAME] = "game.main",
     [nameservice.TNSTATISTICS] = "statistics.main",
+    [nameservice.TNBROKER] = "broker.main",
 }
 
 local function isselfcluster(id)

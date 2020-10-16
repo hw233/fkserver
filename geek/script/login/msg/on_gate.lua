@@ -189,7 +189,7 @@ end
 local function wx_auth(msg)
     log.dump(msg)
     local code = msg.code
-    return channel.call("gate.?","msg","LG_WxAuth",msg.code)
+    return channel.call("broker.?","msg","SB_WxAuth",msg.code)
 end
 
 function on_cl_auth(msg)
@@ -804,7 +804,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
     local rkey = string.format("sms:verify_code:phone:%s",phone_num)
     reddb:set(rkey,code)
     reddb:expire(rkey,expire)
-    local reqid = channel.call("gate.?","msg","LG_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
+    local reqid = channel.call("broker.?","msg","SB_PostSms",phone_num,string.format("【友愉互动】您的验证码为%s, 请在%s分钟内验证完毕.",code,math.floor(expire / 60)))
     if not reqid then
         return enum.ERROR_REQUEST_SMS_FAILED
     end
