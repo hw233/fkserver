@@ -3,83 +3,17 @@ local channel = require "channel"
 local msgopt = require "msgopt"
 require "functions"
 local log = require "log"
-local httpc = require "http.httpc"
 local json = require "cjson"
 local util = require "util"
 
 LOG_NAME = "gate"
 
-local sconf 
+local sconf
 local gateid
 local gateconf
 protocol = nil
 
-local global_conf
-
-local function qirui_request_sms(phone,sms)
-    local params = {
-        dc = 8,
-        un = "2294280010",
-        pw = "b13f4de0d2ff3687e2fd",
-        sm = sms,
-        da = phone,
-        tf = 3,
-        rf = 2,
-        rd = 0,
-    }
-
-    local status,body = util.http_get("http://api.qirui.com:7891/mt",params)
-    log.dump(status)
-    log.dump(body)
-    if status ~= 200 then 
-        return 
-    end
-    local ok,rep = pcall(json.decode,body)
-    if ok and rep.success then 
-        return rep.id
-    end
-    return
-end
-
-local function wx_auth(code)
-    log.dump(code)
-    local conf = global_conf.auth.wx
-    local _,authjson = util.http_get(conf.auth_url,{
-        appid = conf.appid,
-        secret = conf.secret,
-        code = code,
-        grant_type="authorization_code",
-    })
-    local ok,auth = pcall(json.decode,authjson)
-    if not ok or auth.errcode then
-        log.warning("wx_auth get access token failed,errcode:%s,errmsg:%s",auth.errcode,auth.errmsg)
-        return tonumber(auth.errcode),auth.errmsg
-    end
-
-    local _,userinfojson = util.http_get(conf.userinfo_url,{
-        access_token = auth.access_token,
-        openid = auth.openid
-    })
-    local ok,userinfo = pcall(json.decode,userinfojson)
-    if not ok or userinfo.errcode then
-        log.warning("wx_auth get user info failed,errcode:%s,errmsg:%s",userinfo.errcode,userinfo.errmsg)
-        return tonumber(userinfo.errcode),userinfo.errmsg
-    end
-
-    log.dump(userinfo)
-
-    return nil,userinfo
-end
-
 local MSG = {}
-
-function MSG.LG_PostSms(phone,sms)
-    return qirui_request_sms(phone,sms)
-end
-
-function MSG.LG_WxAuth(code)
-    return wx_auth(code)
-end
 
 local CMD = {}
 
