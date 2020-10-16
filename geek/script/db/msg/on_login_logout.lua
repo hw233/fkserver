@@ -105,20 +105,35 @@ function on_s_logout(msg)
 	local db = dbopt.account
 	local sql
 	if msg.phone then
-		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d),last_login_phone = '%s', 
-			last_login_phone_type = '%s', last_login_version = '%s', last_login_channel_id = '%s', last_login_package_name = '%s', last_login_imei = '%s', last_login_ip = '%s' WHERE guid = %d;]],
-			msg.login_time, msg.logout_time, msg.phone, msg.phone_type, msg.version, msg.channel_id, msg.package_name, msg.imei, msg.ip, msg.guid)
+		sql = string.format([[
+				UPDATE t_account SET 
+					login_time = FROM_UNIXTIME(%s), 
+					logout_time = FROM_UNIXTIME(%s),
+					last_login_phone = '%s', 
+					last_login_phone_type = '%s', 
+					last_login_version = '%s', 
+					last_login_channel_id = '%s', 
+					last_login_package_name = '%s', 
+					last_login_imei = '%s', 
+					last_login_ip = '%s' 
+					WHERE guid = %s;
+			]],
+			msg.login_time, msg.logout_time, msg.phone, msg.phone_type, 
+			msg.version, msg.channel_id, msg.package_name, 
+			msg.imei, msg.ip, msg.guid)
 	else
-		sql = string.format([[UPDATE t_account SET login_time = FROM_UNIXTIME(%d), logout_time = FROM_UNIXTIME(%d) WHERE guid = %d;]],
+		sql = string.format([[
+				UPDATE t_account SET 
+					login_time = FROM_UNIXTIME(%s), 
+					logout_time = FROM_UNIXTIME(%s) 
+					WHERE guid = %s;
+			]],
 			msg.login_time, msg.logout_time, msg.guid)
 	end
 	local ret = db:query(sql)
 	if ret.errno then
 		log.error(ret.err)
 	end
-
-	-- 删除在线
-	db:query("DELETE FROM t_online_account WHERE guid=%d", msg.guid)
 end
 
 function on_sd_delonline_player(game_id, msg)
