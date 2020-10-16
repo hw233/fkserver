@@ -516,7 +516,6 @@ function on_cl_login(msg,gate,session_id)
         local reconnect = 1
         info.reconnect = reconnect
         reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
-        reddb:set("player:online:account:"..account,info.guid)
 
         channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,reconnect)
 
@@ -559,7 +558,6 @@ function on_cl_login(msg,gate,session_id)
         gate = gate,
         login = def_game_id,
     })
-    reddb:set("player:online:account:"..account,info.guid)
 
     channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
 
@@ -625,8 +623,6 @@ function on_cl_reg_account(msg,gate)
         server = gameid,
         gate = gate,
     })
-
-    reddb:set("player:online:account:"..account,info.guid)
 
     channel.publish("game."..tostring(gameid),"msg","LS_LoginNotify",{
         player_login_info = info,
