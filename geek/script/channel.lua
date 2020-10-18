@@ -3,15 +3,22 @@ local log = require "log"
 
 local channeld = ".channeld"
 
+local max_ttl = 3
+
 local channel = {}
 
-function channel.call(id,proto,...)
+function channel.call(id,proto,cmd,...)
     if id:match("%*") then
         log.error("channel.call id include '*' to call multi target,id:%s",id)
         return nil
     end
-
-    return skynet.call(channeld,"lua","call",id,proto,...)
+    local now = skynet.time()
+    local rets = {skynet.call(channeld,"lua","call",id,proto,cmd,...)}
+    local deltatime = skynet.time() - now
+    if deltatime > max_ttl then
+        log.warnging("channel.call %s,%s,%s time > max_ttl %s",id,proto,cmd,deltatime)
+    end
+    return table.unpack(rets)
 end
 
 function channel.publish(id,proto,...)
