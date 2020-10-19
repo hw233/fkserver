@@ -478,34 +478,36 @@ function land_table:do_compete_landlord_normal(player,msg)
 end
 
 function land_table:do_compete_landlord(player,msg)
-	local action = msg.action
-	if player.chair_id ~= self.cur_competer then
-		send2client_pb(player,"SC_DdzCallLandlord",{
-			result = enum.ERROR_OPERATION_INVALID
-		})
-		return
-	end
-
-	if not action or action < -4 or action > 3 then
-		send2client_pb(player,"SC_DdzCallLandlord",{
-			result = enum.ERROR_PARAMETER_ERROR
-		})
-		return
-	end
-
-	local play = self.rule.play
-	if play.call_landlord then
-		if not self:do_compete_landlord_normal(player,msg) then 
+	self.lock(function()
+		local action = msg.action
+		if player.chair_id ~= self.cur_competer then
+			send2client_pb(player,"SC_DdzCallLandlord",{
+				result = enum.ERROR_OPERATION_INVALID
+			})
 			return
 		end
-	else
-		if not self:do_compete_landlord_score(player,msg) then
+
+		if not action or action < -4 or action > 3 then
+			send2client_pb(player,"SC_DdzCallLandlord",{
+				result = enum.ERROR_PARAMETER_ERROR
+			})
 			return
 		end
-	end
 
-	self:next_landlord_competer()
-	self:allow_compete_landlord()
+		local play = self.rule.play
+		if play.call_landlord then
+			if not self:do_compete_landlord_normal(player,msg) then 
+				return
+			end
+		else
+			if not self:do_compete_landlord_score(player,msg) then
+				return
+			end
+		end
+
+		self:next_landlord_competer()
+		self:allow_compete_landlord()
+	end)
 end
 
 function land_table:on_compete_landlord_over()
@@ -844,29 +846,31 @@ function land_table:cur_player()
 end
 
 function land_table:do_action(player,act)
-	if not act or not act.action then
-		log.error("land_table:do_action act is nil.")
-		return
-	end
+	self.lock(function()  
+		if not act or not act.action then
+			log.error("land_table:do_action act is nil.")
+			return
+		end
 
-	log.dump(act)
+		log.dump(act)
 
-	local do_actions = {
-		[ACTION.DISCARD] = function(act)
-			self:do_action_discard(player,act.cards)
-		end,
-		[ACTION.PASS] = function(act)
-			self:do_action_pass(player)
-		end,
-	}
+		local do_actions = {
+			[ACTION.DISCARD] = function(act)
+				self:do_action_discard(player,act.cards)
+			end,
+			[ACTION.PASS] = function(act)
+				self:do_action_pass(player)
+			end,
+		}
 
-	local fn = do_actions[act.action]
-	if fn then
-		fn(act)
-		return
-	end
+		local fn = do_actions[act.action]
+		if fn then
+			fn(act)
+			return
+		end
 
-	log.error("land_table:do_action invalid action:%s",act.action)
+		log.error("land_table:do_action invalid action:%s",act.action)
+	end)
 end
 
 function land_table:get_cards_type(cards)

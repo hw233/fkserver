@@ -551,31 +551,31 @@ function pdk_table:cur_player()
 end
 
 function pdk_table:do_action(player,act)
-	if not act or not act.action then
-		log.error("pdk_table:do_action act is nil.")
-		return
-	end
+	self.lock(function()
+		if not act or not act.action then
+			log.error("pdk_table:do_action act is nil.")
+			return
+		end
 
-	log.dump(act)
+		log.dump(act)
 
-	
+		local do_actions = {
+			[ACTION.DISCARD] = function(act)
+				self:do_action_discard(player,act.cards)
+			end,
+			[ACTION.PASS] = function(act)
+				self:do_action_pass(player)
+			end,
+		}
 
-	local do_actions = {
-		[ACTION.DISCARD] = function(act)
-			self:do_action_discard(player,act.cards)
-		end,
-		[ACTION.PASS] = function(act)
-			self:do_action_pass(player)
-		end,
-	}
+		local fn = do_actions[act.action]
+		if fn then
+			fn(act)
+			return
+		end
 
-	local fn = do_actions[act.action]
-	if fn then
-		fn(act)
-		return
-	end
-
-	log.error("pdk_table:do_action invalid action:%s",act.action)
+		log.error("pdk_table:do_action invalid action:%s",act.action)
+	end)
 end
 
 function pdk_table:get_cards_type(cards)
