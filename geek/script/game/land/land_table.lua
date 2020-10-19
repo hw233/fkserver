@@ -231,6 +231,7 @@ function land_table:allow_compete_landlord()
 			}
 		}
 
+		local action
 		-- -4:不叫 -3:不抢  -2:叫地主  -1:抢地主  1:1分 2:2分 3:3分  
 		local is_call_landlord = play.call_landlord and true or false
 		if play.san_da_must_call then
@@ -886,15 +887,15 @@ function land_table:do_action_discard(player, cards)
 	end
 
 	if player.chair_id ~= self.cur_discard_chair then
-		log.warning("land_table:discard guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_turn)
+		log.warning("land_table:discard guid[%s] turn[%s] error, cur[%s]", player.guid, player.chair_id, self.cur_turn)
 		send2client_pb(player,"SC_DdzDoAction",{
-			result = enum.ERROR_PARAMETER_ERROR
+			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
 	end
 
 	if not table.logic_and(cards,function(c) return player.hand_cards[c] ~= nil end) then
-		log.warning("land_table:discard guid[%d] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
+		log.warning("land_table:discard guid[%s] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client_pb(player,"SC_DdzDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
@@ -909,7 +910,7 @@ function land_table:do_action_discard(player, cards)
 		(cardstype == CARD_TYPE.FOUR_WITH_DOUBLE and not play.si_dai_er) or 
 		(cardstype == CARD_TYPE.THREE and not play.san_zhang) or 
 		(cardstype == CARD_TYPE.THREE_WITH_TWO and not play.san_dai_er)then
-		log.warning("land_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
+		log.warning("land_table:discard guid[%s] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client_pb(player,"SC_DdzDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
@@ -918,7 +919,7 @@ function land_table:do_action_discard(player, cards)
 	
 	local cmp = cards_util.compare_cards({type = cardstype, count = #cards, value = cardsval}, self.last_discard)
 	if self.last_discard and (not cmp or cmp <= 0) then
-		log.warning("land_table:discard guid[%d] compare_cards error, cards[%s], cur_discards[%d,%d,%d], last_discard[%d,%d,%d]", 
+		log.warning("land_table:discard guid[%s] compare_cards error, cards[%s], cur_discards[%s,%s,%s], last_discard[%s,%s,%s]", 
 			player.guid, table.concat(cards, ','),cardstype, #cards,
 			cardsval,self.last_discard.type,self.last_discard.count,self.last_discard.value)
 		send2client_pb(player,"SC_DdzDoAction",{
@@ -951,7 +952,7 @@ function land_table:do_action_discard(player, cards)
 		cards = cards,
 	})
 
-	log.info("land_table:do_action_discard  chair_id [%d] cards{%s}", player.chair_id, table.concat(cards, ','))
+	log.info("land_table:do_action_discard  chair_id [%s] cards{%s}", player.chair_id, table.concat(cards, ','))
 	
 	table.foreach(cards,function(c) player.hand_cards[c] = nil end)
 
@@ -979,7 +980,7 @@ end
 -- 放弃出牌
 function land_table:do_action_pass(player)
 	if self.status ~= TABLE_STATUS.PLAY then
-		log.warning("land_table:pass_card guid[%d] status error", player.guid)
+		log.warning("land_table:pass_card guid[%s] status error", player.guid)
 		send2client_pb(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -987,7 +988,7 @@ function land_table:do_action_pass(player)
 	end
 
 	if player.chair_id ~= self.cur_discard_chair then
-		log.warning("land_table:pass_card guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_discard_chair)
+		log.warning("land_table:pass_card guid[%s] turn[%s] error, cur[%s]", player.guid, player.chair_id, self.cur_discard_chair)
 		send2client_pb(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -995,7 +996,7 @@ function land_table:do_action_pass(player)
 	end
 
 	if not self.last_discard then
-		log.error("land_table:pass_card guid[%d] first turn", player.guid)
+		log.error("land_table:pass_card guid[%s] first turn", player.guid)
 		send2client_pb(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1012,7 +1013,7 @@ function land_table:do_action_pass(player)
 		time = os.time(),
 	})
 
-	log.info("cur_chair_id[%d],pass_chair_id[%d]",self.cur_discard_chair,player.chair_id)
+	log.info("cur_chair_id[%s],pass_chair_id[%s]",self.cur_discard_chair,player.chair_id)
 	self:broadcast2client("SC_DdzDoAction", {
 		chair_id = player.chair_id,
 		action = ACTION.PASS
