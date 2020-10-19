@@ -288,10 +288,11 @@ function base_room:force_dismiss_table(table_id,reason)
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	local result = tb:lockcall(function() return tb:force_dismiss(reason) end)
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		return result
-	end
+	tb:lockcall(function()
+		for _,p in pairs(tb.players) do
+			p:forced_exit()
+		end
+	end)
 	
 	return enum.ERROR_NONE
 end

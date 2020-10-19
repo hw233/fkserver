@@ -13,7 +13,7 @@ local reddb = redisopt.default
 
 LOG_NAME = "game"
 
-local private_table_elapsed_seconds = 60 * 60 * 2
+local private_table_elapsed_seconds = 60 * 60 * 4
 
 register_dispatcher = msgopt.register
 
@@ -62,7 +62,7 @@ function get_private_room_bank()
 end
 
 local function clean_private_table()
-	log.info("try to clean up private table ...")
+	log.info("try to clean up private table %s %s %s...",def_game_name,def_first_game_type,def_second_game_type)
 	local table_keys = reddb:keys("table:info:*")
 	for _,table_key in pairs(table_keys) do
 		local tid = string.match(table_key,"table:info:(%d+)")
