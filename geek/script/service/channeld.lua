@@ -3,41 +3,22 @@ require "functions"
 local log = require "log"
 local cluster = require "cluster"
 
+local table = table
+local string = string
+
 LOG_NAME = "channeld"
 
-local delimter = "."
+local nodemetaindex = {}
 
-local match = {
-    MULTI = 1,
-    SINGLE = 2,
-}
-
-match["*"] = function(tree)
-    assert(type(tree) == "table")
-    return match.MULTI,tree
+local function createnode(p)
+    local n = setmetatable({},{
+        __index = nodemetaindex,
+    })
+    
+    return n
 end
 
-match["?"] = function(tree)
-    assert(type(tree) == "table")
-    local _,r = table.choice(tree)
-    return match.SINGLE,r
-end
-
-setmetatable(match,{
-__index = function(t,k)
-    local f = function(tree)
-        assert(type(tree) == "table")
-        return match.SINGLE,tree[k]
-    end
-
-    t[k] = f
-    return f
-end})
-
-
-local treenode = {}
-
-function treenode:call(proto,...)
+function nodemetaindex.call(self,proto,...)
     if self.global then
         local node,addr = self.addr:match("([^%@]+)(@.+)")
         return cluster.call(node,addr,proto,...)
@@ -46,7 +27,16 @@ function treenode:call(proto,...)
     end
 end
 
-function treenode:send(proto,...)
+function nodemetaindex.rawcall(self,proto,msg,sz)
+    if self.global then
+        local node,addr = self.addr:match("([^%@]+)(@.+)")
+        return cluster.rawcall(node,addr,proto,msg,sz)
+    else
+        return skynet.rawcall(self.addr,proto,msg,sz)
+    end
+end
+
+function nodemetaindex.send(self,proto,...)
     if self.global then
         local node,addr = self.addr:match("([^%@]+)(@.+)")
         return cluster.send(node,addr,proto,...)
@@ -55,81 +45,180 @@ function treenode:send(proto,...)
     end
 end
 
-
-function treenode:deepin(ss,cb,i)
-    i = i or 1
-    local s = ss[i]
-
-    local c,nodes = match[s](self.son)
-    if c == match.SINGLE and i == #ss then
-        cb(nodes)
-        return
-    end
-
-    if c == match.MULTI and nodes then
-        for _,n in pairs(nodes) do
-            n:deepin(ss,cb, i + 1)
-        end
-    elseif c == match.SINGLE and nodes then
-        nodes:deepin(ss,cb, i + 1)
+function nodemetaindex.rawsend(self,proto,msg,sz)
+    if self.global then
+        local node,addr = self.addr:match("([^%@]+)(@.+)")
+        return cluster.rawsend(node,addr,proto,msg,sz)
+    else
+        return skynet.rawsend(self.addr,proto,msg,sz)
     end
 end
 
+function nodemetaindex.broadcast(self,proto,...)
+    if self.addr or self.global then
+        self:send(proto,...)
+    end
 
-local treenodecreator = {}
+    if self.__son and type(self.__son) == "table" then
+        for _,n in pairs(self.__son) do
+            n:broadcast(proto,...)
+        end
+    end
+end
 
-setmetatable(treenodecreator,{
-    __index = function(t,k)
-        local n = setmetatable({
-            s = k,
-            son = setmetatable({},getmetatable(treenodecreator))
-        },{__index = treenode})
-        t[k] = n
+function nodemetaindex.rawbroadcast(self,proto,msg,sz)
+    if self.addr or self.global then
+        self:rawsend(proto,msg,sz)
+    end
+
+    if self.__son and type(self.__son) == "table" then
+        for _,n in pairs(self.__son) do
+            n:rawbroadcast(proto,msg,sz)
+        end
+    end
+end
+
+function nodemetaindex.son(self,s)
+    if not self.__son then
+        local n = createnode(node)
+        self.__son = {
+            [s] = n
+        }
+        return n
+    end
+
+    self.__son[s] = self.__son[s] or createnode(self)
+    return self.__son[s]
+end
+
+function nodemetaindex.del(self,model)
+    local son = self.__son
+    if son[model] then
+        son[model] = nil
+        return
+    end
+
+    if model == "*" then
+        self.__son = nil
+        return
+    end
+end
+
+local batchmatchmetaindex = {}
+
+local function createbatchmatch(nodes)
+    return setmetatable({__nodes = nodes},{__index = batchmatchmetaindex})
+end
+
+function batchmatchmetaindex.match(self,model)
+    local ns = table.series(self.__nodes,function(n) 
+        return n:match(model) 
+    end)
+
+    if #ns == 0 then
+        return
+    end
+
+    return #ns > 1 and createbatchmatch(ns) or ns[1]
+end
+
+function batchmatchmetaindex.send(self,proto,...)
+    for _,n in pairs(self.__nodes) do
+        n:broadcast(proto,...)
+    end
+end
+
+function batchmatchmetaindex.rawsend(self,proto,msg,sz)
+    for _,n in pairs(self.__nodes) do
+        n:rawbroadcast(proto,msg,sz)
+    end
+end
+
+function batchmatchmetaindex.del(self,model)
+    for _,n in pairs(self.__nodes) do
+        n:del(model)
+    end
+end
+
+local modelmatcher = {
+    ["*"] = function(n)
+        return createbatchmatch(n.__son)
+    end,
+    ["?"] = function(n)
+        local _,n = table.choice(n.__son or {})
         return n
     end,
-})
+}
 
-local root = treenodecreator["root"]
-
-local function search(id,cb)
-    local ss 
-    if type(id) == "string" then
-        ss = string.split(id,"[^\\"..delimter.."]+")
-    else
-        ss = id
+local function match_son(node,model)
+    local son = node.__son
+    if not son then return end
+    local n = son[model]
+    if n then return n end 
+    local mfn = modelmatcher[model]
+    if mfn then
+        return mfn(node)
     end
-
-    if #ss == 0 then
-        log.error("search, invalid id")
-        return
-    end
-
-    root:deepin(ss,cb)
 end
 
-local function put(id,addr,global)
-    local ss = string.split(id,"[^\\"..delimter.."]+")
-    if not ss then
-        log.error("invalid id:%s",id)
-        return
+function nodemetaindex.match(self,id)
+    local n = self
+    for model in string.gmatch(id,"[^%:|%.]+") do
+        n = match_son(n,model)
+        if not n then 
+            return
+        end
     end
+    return n
+end
 
-    local node = root
-    for _,s in ipairs(ss) do
-        node = node.son[s]
+local buildermetatable
+buildermetatable = {
+    __index = function(self,s)
+        local n = self.__node:son(s)
+        local bn = setmetatable({__node = n},buildermetatable)
+        return bn
+    end,
+    __newindex = function(self,s,v)
+        self.__node[s] = v
     end
-    node.addr = addr
-    node.global = global
+}
+
+local function createbuilder(root)
+    return setmetatable({__node = root,},buildermetatable)
+end
+
+local function creatematcher(root)
+    return setmetatable({},{
+        __index = function(t,id)
+            return root:match(id)
+        end
+    })
+end
+
+local root = createnode()
+local builder = createbuilder(root)
+local matcher = creatematcher(root)
+
+local function put(id,addr,global)
+    local n = builder
+    for model in string.gmatch(id,"[^%:|%.]+") do
+        n = n[model]
+    end
+    n.addr = addr
+    n.global = global
 end
 
 local function pop(id)
-    local ss = string.split(id,"[^\\"..delimter.."]+")
-    if not ss then
-        log.error("invalid id:%s",id)
-        return
-    end
-
     local node = root
+    for model in string.gmatch(id,"[^%:|%.]+") do
+        local n = node:match(model)
+        if not n then
+            node:del(model)
+            return
+        end
+        n = node
+    end
 end
 
 local CMD = {}
@@ -137,18 +226,35 @@ local waiting = {}
 local address = {}
 local selfprovider
 
-local function wait(id)
-    local waitco = waiting[id] or {}
+local function get_node(id)
+    local n = matcher[id]
+    if n then
+        return n
+    end
 
-    waitco[#waitco + 1] = coroutine.running()
-    waiting[id] = waitco
+    log.warning("channeld get node %s,got nil node,waiting...",id)
+    local cos = waiting[id] or {}
+    table.insert(cos,coroutine.running())
+    waiting[id] = cos
     skynet.wait()
+
+    --double check
+    n = matcher[id]
+    if not n then
+        error(string.format("channeld wait id %s,got nil",id))
+    end
+
+    return n
 end
 
 local function wakeup()
-    for _,w in pairs(waiting) do
-        for _,co in pairs(w) do
-            skynet.wakeup(co)
+    for id,w in pairs(waiting) do
+        local n = matcher[id]
+        if n then
+            for _,co in pairs(w) do
+                skynet.wakeup(co)
+            end
+            waiting[id] = nil
         end
     end
 end
@@ -218,61 +324,29 @@ function CMD.unsubscribe(_,service,provider)
     cluster.register(service,nil)
 end
 
-function CMD.call(_,id,proto,...)
+function CMD.rawcall(_,id,proto,msg,sz)
     if id:match("%*") then
-        log.error("senderd.call id include '*' to call multi target,id:%s",id)
+        log.error("channeld.rawcall id include '*' to rawcall multi target,id:%s",id)
         return nil
     end
 
-    local function dosearch(id)
-        local node
-        search(id,function(n)
-            if not n then
-                log.error("search got nil,%s",id)
-                return
-            end
-            node = n
-        end)
-        return node
-    end
-
-    local node
-    repeat
-        node = dosearch(id)
-        if node then break end
-
-        log.warning("senderd.call %s,got nil node,waiting...",id)
-        wait(id)
-    until node ~= nil
-
-    return node:call(proto,...)
+    local n = get_node(id)
+    return n:rawcall(proto,msg,sz)
 end
 
-function CMD.publish(_,id,proto,...)
-    local function dosearch(id)
-        local nodes = {}
-        search(id,function(n)
-            if not n then
-                log.error("senderd:search got nil,%s",id)
-                return
-            end
-            table.insert(nodes,n)
-        end)
-        return nodes
+function CMD.call(_,id,proto,...)
+    if id:match("%*") then
+        log.error("channeld.call id include '*' to call multi target,id:%s",id)
+        return nil
     end
 
-    local nodes
-    repeat
-        nodes = dosearch(id)
-        if #nodes > 0 then break end
- 
-        log.warning("senderd.call %s,got nil node,waiting...",id)
-        wait(id)
-    until #nodes > 0
+    local n = get_node(id)
+    return n:call(proto,...)
+end
 
-    for _,n in pairs(nodes) do
-        n:send(proto,...)
-    end
+function CMD.publish(_,id,proto,...)    
+    local n = get_node(id)
+    n:send(proto,...)
 end
 
 function CMD.warmdead(_,id)
