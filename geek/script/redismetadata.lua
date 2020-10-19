@@ -195,13 +195,16 @@ tree.money.info["%d+"] = {
     type = "number",
 }
 
-tree.notice.info["%d+"] = "hash"
-tree.notice.info["%d+"] = {
+tree.notice.info["%S+"] = "hash"
+tree.notice.info["%S+"] = {
     id = "string",
-    club = "number",
+    club_id = "number",
     type = "number",
     where = "number",
-    content = "json",
+    content = "string",
+    expiration = "number",
+    create_time = "number",
+    status = "number",
 }
 
 tree.runtime_conf.private_fee["-?%d+"] = "number"

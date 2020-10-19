@@ -174,10 +174,11 @@ enum NOTICE_TYPE{
 
 
 message NOTICE{
-    int32 type = 1;
-    int32 where = 2;
-	string content = 3;
-	int32 club_id = 4;
+    string id = 1;
+    int32 type = 2;
+    int32 where = 3;
+	string content = 4;
+	int32 club_id = 5;
 }
 
 message ROUND_INFO{
