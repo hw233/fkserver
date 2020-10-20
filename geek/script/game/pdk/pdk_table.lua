@@ -287,11 +287,6 @@ function pdk_table:get_trustee_conf()
 	return nil
 end
 
-function pdk_table:set_trusteeship(player,trustee)
-	player.trustee = trustee
-	base_table.set_trusteeship(self,player,trustee)
-end
-
 function pdk_table:begin_discard()
 	self:broadcast2client("SC_PdkDiscardRound",{
 		chair_id = self.cur_discard_chair
@@ -418,20 +413,6 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 	end
 end
 
-
-function pdk_table:set_trusteeship(player,trustee)
-    if not self.rule or not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
-        return 
-    end
-
-    if player.trustee and trustee then
-        return
-    end
-
-    base_table.set_trusteeship(self,player,trustee)
-    player.trustee = trustee
-end
-
 function pdk_table:on_game_overed()
     self.game_log = {}
 
@@ -446,15 +427,6 @@ function pdk_table:on_game_overed()
 	
 	local trustee_type,ready_seconds = self:get_trustee_conf()
 	if trustee_type and ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
-		self:foreach(function(p)
-			if p.trustee then 
-				self:calllater(math.random(2,3),function()
-					if not self.ready_list[p.chair_id] then
-						self:ready(p)
-					end
-				end)
-			end
-		end)
         self:begin_clock_timer(ready_seconds,function()
             self:cancel_clock_timer()
             self:cancel_discard_timer()

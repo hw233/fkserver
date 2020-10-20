@@ -204,18 +204,6 @@ function maajan_table:on_private_dismissed()
     base_table.on_private_dismissed(self)
 end
 
-function maajan_table:get_trustee_conf()
-    local trustee = self.rule and self.rule.trustee or nil
-    if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-        local trstee_conf = self.room_.conf.private_conf.trustee
-        local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-        local type = trstee_conf.type_opt[trustee.type_opt + 1]
-        return type,seconds
-    end
-
-    return nil
-end
-
 function base_table:check_start()
     if table.nums(self.ready_list) == self.start_count then
         self:start(self.start_count)
@@ -372,12 +360,7 @@ function maajan_table:set_trusteeship(player,trustee)
         return 
     end
 
-    if player.trustee and trustee then
-        return
-    end
-
     base_table.set_trusteeship(self,player,trustee)
-    player.trustee = trustee
     if not trustee then
         self:cancel_auto_action_timer(player)
     end
@@ -2135,16 +2118,6 @@ function maajan_table:on_game_overed()
 
     local trustee_type,ready_seconds = self:get_trustee_conf()
     if trustee_type and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
-        self:foreach(function(p)
-			if p.trustee then 
-				self:calllater(math.random(2,3),function()
-					if not self.ready_list[p.chair_id] then
-						self:ready(p)
-					end
-				end)
-			end
-        end)
-        
         self:begin_clock_timer(ready_seconds,function()
             self:cancel_clock_timer()
             self:cancel_all_auto_action_timer()

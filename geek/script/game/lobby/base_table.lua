@@ -599,6 +599,16 @@ function base_table:notify_game_money()
 		}))
 end
 
+function base_table:force_dismiss(reason)
+	if self.cur_round and self.cur_round > 0 then
+		self:on_final_game_overed()
+	end
+
+	self:foreach(function(p)
+		p:forced_exit(reason)
+	end)
+end
+
 function base_table:game_over()
 	self:check_game_maintain()
 
@@ -613,22 +623,64 @@ function base_table:on_final_game_overed(bankruptcy)
 	self.cur_round = nil
 end
 
+function base_table:get_trustee_conf()
+	if not self.private_id then return end
+
+	local trustee = self.rule and self.rule.trustee or nil
+	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
+	    local trstee_conf = self.room_.conf.private_conf.trustee
+	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
+	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
+	    return type,seconds
+	end
+    
+	return nil
+end
+
+function base_table:incr_trustee_round()
+	if not self.is_someone_trustee then
+		return 
+	end
+
+	self.someone_trustee_round = (self.someone_trustee_round or 0) + 1
+end
+
 function base_table:on_game_overed()
 	self.old_moneies = nil
 	self:clear_ready()
 	if self.private_id then
 		if table.logic_or(self.players,function(p) return self:is_bankruptcy(p) end) then
 			self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
-			self:on_final_game_overed()
-			self:foreach(function(p)
-				p:forced_exit()
-			end)
+			self:force_dismiss()
 			return
 		end
 
 		if self.cur_round and self.cur_round >= self.conf.round then
 			self:on_final_game_overed()
 			self:delay_dismiss()
+		elseif self.cur_round and self.cur_round > 0 then
+			local trustee,_ = self:get_trustee_conf()
+			if not trustee then return end
+
+			local auto_dismiss = self.rule.room.auto_dismiss
+			if auto_dismiss and auto_dismiss.trustee_round and self.is_someone_trustee then 
+				if self.someone_trustee_round and self.someone_trustee_round >= auto_dismiss.trustee_round then
+					self:force_dismiss()
+					return
+				end
+			end
+
+			self:incr_trustee_round()
+
+			self:foreach(function(p)
+				if p.trustee then 
+					self:calllater(math.random(2,3),function()
+						if not self.ready_list[p.chair_id] then
+							self:ready(p)
+						end
+					end)
+				end
+			end)
 		end
 	end
 end
@@ -1216,13 +1268,37 @@ function base_table:on_offline(player)
 	player.inactive = true
 end
 
+function base_table:clear_trustee()
+	self.is_someone_trustee = nil
+	self.someone_trustee_round = nil
+end
+
 function base_table:set_trusteeship(player,trustee)
-	log.info("====================base_table:set_trusteeship")
+	if not self.private_id then return end
+
+	if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
+        return 
+	end
+	
+	log.info("base_table:set_trusteeship,%s,%s",player.guid,trustee)
+	if player.trustee and trustee then
+        return
+	end
+	
+	player.trustee = trustee
 	self:broadcast2client("SC_Trustee",{
 		result = enum.ERROR_NONE,
 		chair_id = player.chair_id,
 		is_trustee = trustee and true or false,
 	})
+
+	local has_player_trustee = table.sum(self.players,function(p) return p.trustee and 1 or 0 end) > 0
+	self.is_someone_trustee = has_player_trustee or nil
+	if has_player_trustee then
+		self.someone_trustee_round = self.someone_trustee_round or 1
+	else
+		self.someone_trustee_round = nil
+	end
 end
 
 -- 准备开始
@@ -1539,6 +1615,8 @@ function base_table:on_process_start(player_count)
 		return
 	end
 
+	self:clear_trustee()
+
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
 		log.warning("base_table:on_process_start [%d] got nil private table.",self.private_id)
@@ -1570,6 +1648,8 @@ function base_table:on_process_over(l)
 		log.warning("base_table:on_process_over [%s] got nil private id.",self.private_id)
 		return
 	end
+
+	self:clear_trustee()
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
@@ -1713,6 +1793,8 @@ function base_table:private_init(private_id,rule,conf)
 	self:cancel_delay_dismiss()
 	self:cancel_all_dealy_kickout()
 	self.ext_round_status = EXT_ROUND_STATUS.FREE
+	self.someone_trustee_round = nil
+	self.is_someone_trustee = nil
 	self:on_private_inited()
 end
 

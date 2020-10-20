@@ -530,23 +530,6 @@ function land_table:on_compete_landlord_over()
 	self:begin_discard()
 end
 
-function land_table:get_trustee_conf()
-	local trustee = self.rule and self.rule.trustee or nil
-	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-	    local trstee_conf = self.room_.conf.private_conf.trustee
-	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
-	    return type,seconds
-	end
-    
-	return nil
-end
-
-function land_table:set_trusteeship(player,trustee)
-	player.trustee = trustee
-	base_table.set_trusteeship(player,trustee)
-end
-
 function land_table:get_max_times()
 	local play = self.rule.play
 	if play and play.max_times then
@@ -691,20 +674,6 @@ function land_table:send_desk_enter_data(player,reconnect)
 	end
 end
 
-
-function land_table:set_trusteeship(player,trustee)
-    if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
-        return 
-    end
-
-    if player.trustee and trustee then
-        return
-    end
-
-    base_table.set_trusteeship(self,player,trustee)
-    player.trustee = trustee
-end
-
 function land_table:on_game_overed()
     self.game_log = {}
 
@@ -738,15 +707,6 @@ function land_table:on_game_overed()
 	
 	local trustee,ready_seconds = self:get_trustee_conf()
 	if trustee and ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
-		self:foreach(function(p)
-			if p.trustee then 
-				self:calllater(math.random(2,3),function()
-					if not self.ready_list[p.chair_id] then
-						self:ready(p)
-					end
-				end)
-			end
-		end)
         self:begin_clock_timer(ready_seconds,function()
             self:cancel_clock_timer()
             self:cancel_discard_timer()
