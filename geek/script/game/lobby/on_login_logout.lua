@@ -32,6 +32,7 @@ local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
 local runtime_conf = require "game.runtime_conf"
 local httpc = require "http.httpc"
+local game_util = require "game.util"
 
 local reddb = redisopt.default
 
@@ -903,7 +904,7 @@ local function check_rule(rule)
 end
 
 local function check_create_table_limit(player,rule,club)
-	if not runtime_conf.private_fee_switch[0] then
+	if game_util.is_private_fee_free(club) then
 		log.warning("check_create_table_limit room fee switch is closed.")
 		return
 	end

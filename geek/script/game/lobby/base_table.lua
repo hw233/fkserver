@@ -22,7 +22,6 @@ local club_utils = require "game.club.club_utils"
 local club_role = require "game.club.club_role"
 local json = require "cjson"
 local util = require "util"
-local runtime_conf = require "game.runtime_conf"
 local club_partner_commission = require "game.club.club_partner_commission"
 local club_member_partner = require "game.club.club_member_partner"
 local club_partner_template_commission = require "game.club.club_partner_template_commission"
@@ -30,6 +29,7 @@ local club_partner_template_default_commission = require "game.club.club_partner
 local club_partners = require "game.club.club_partners"
 local reddb = redisopt.default
 local queue = require "skynet.queue"
+local game_util = require "game.util"
 
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 10 * 60
@@ -1400,12 +1400,12 @@ function base_table:cost_private_fee()
 	end
 
 	local private_table = base_private_table[self.private_id]
-	if not private_table then 
-		log.error("base_table:cost_private_fee [%d] got nil private conf",self.private_id)
+	if not private_table then
+		log.error("base_table:cost_private_fee [%d] got nil private table",self.private_id)
 		return
 	end
 
-	local rule = private_table.rule
+	local rule = self.rule
 	if not rule then
 		log.error("base_table:cost_private_fee [%d] got nil private rule",self.private_id)
 		return
@@ -1413,12 +1413,12 @@ function base_table:cost_private_fee()
 
 	log.dump(rule)
 
-	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
-	if not runtime_conf.private_fee_switch[0] then
+	if game_util.is_private_fee_free(self.conf.club) then
 		log.warning("base_table:cost_private_fee private fee switch is closed.")
-		return
+		return true
 	end
 
+	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
 	local pay = rule.pay
 	if pay.option == enum.PAY_OPTION_AA then
 		local money_each = money

@@ -12,6 +12,20 @@ local private_fee_switch = setmetatable({},{
     end,
 })
 
+local private_fee_club_switch = setmetatable({},{
+    __index = function(_,club_id)
+        local v = reddb:hget("runtime_conf:private_fee:club",club_id)
+        return (not v or tonumber(v) ~= 0) and true or false
+    end,
+})
+
+local private_fee_agency_switch = setmetatable({},{
+    __index = function(_,guid)
+        local v = reddb:hget("runtime_conf:private_fee:agency",guid)
+        return (not v or tonumber(v) ~= 0) and true or false
+    end,
+})
+
 local global = setmetatable({},{
     __index = function(_,key)
         local v = reddb:get(string.format("runtime_conf:global:%s",key))
@@ -51,6 +65,8 @@ end
 
 return {
     private_fee_switch = private_fee_switch,
+    private_fee_club_switch = private_fee_club_switch,
+    private_fee_agency_switch = private_fee_agency_switch,
     global = global,
     channel_game = channel_games,
     prmoter_game = promoter_games,
