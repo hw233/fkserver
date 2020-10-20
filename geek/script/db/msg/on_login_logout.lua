@@ -2661,9 +2661,18 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	log.dump(res)
 
-	local oldmoney = res[1].money
+	local oldmoney = res[1] and res[1].money or 0
 
-	local res = dbopt.game:query([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = %d;]],money,guid,money_id,where)
+	local res = dbopt.game:query(table.concat({
+			string.format([[
+				INSERT INTO t_player_money(guid,money_id,money,where) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);
+				]],guid,money_id,money,where,money
+			),
+			string.format([[
+				SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;
+				]],guid,money_id,where
+			),
+		},""));
 	if res.errno then
 		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
 		return
@@ -2671,15 +2680,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	log.dump(res)
 
-	local res = dbopt.game:query([[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where)
-	if res.errno then
-		log.error("incr_player_money query old money error,%s,%s,%s",guid,money_id,where)
-		return
-	end
-
-	log.dump(res)
-
-	local newmoney = res[1].money
+	local newmoney = res[2].money
 	if not oldmoney or not newmoney then
 		log.error("incr_player_money bad oldmoney [%s] or newmoney [%s]",oldmoney,newmoney)
 		return
