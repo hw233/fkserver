@@ -80,8 +80,31 @@ local function reg_account(msg)
         }
         
         reddb:hmset("player:info:"..tostring(guid),reginfo)
+
+        local p = base_players[guid]
+
+        local info = {
+            guid = guid,
+            account = p.open_id,
+            nickname = p.nickname,
+            open_id = p.open_id,
+            sex = p.sex,
+            icon = p.icon,
+            version = p.version,
+            login_ip = p.ip,
+            level = 0,
+            imei = "",
+            is_guest = true,
+            login_time = os.time(),
+            package_name = p.package_name,
+            phone_type = p.phone_type,
+            role = 0,
+            ip = p.ip,
+            promoter = p.promoter,
+            channel_id = p.channel_id,
+        }
         
-        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,base_players[tonumber(guid)]
+        return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,info
     end
 
     guid = tonumber(random_guid())
