@@ -371,7 +371,7 @@ function zhajinhua_table:on_process_start(player_count)
 	base_table.on_process_start(self,player_count)
 end
 
-function zhajinhua_table:on_process_over()
+function zhajinhua_table:on_process_over(reason)
 	self.status = nil
 	self:broadcast2client("SC_ZhaJinHuaFinalOver",{
 		balances = table.series(self.players,function(p)
@@ -384,7 +384,7 @@ function zhajinhua_table:on_process_over()
 		end)
 	})
 	
-	base_table.on_process_over(self,{
+	base_table.on_process_over(self,reason,{
 		balance = table.map(self.players,function(p,chair)
 			return p.guid,p.total_money 
 		end)

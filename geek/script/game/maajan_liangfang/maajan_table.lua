@@ -1763,14 +1763,6 @@ function maajan_table:on_game_overed()
             shou_pai = {},
             desk_tiles = {},
         }
-
-        if not self.private_id then
-            if v.deposit then
-                v:forced_exit()
-            elseif v:is_android() then
-                self:ready(v)
-            end
-        end
     end
 
     base_table.on_game_overed(self)
@@ -1780,7 +1772,7 @@ function maajan_table:on_process_start(player_count)
     base_table.on_process_start(self,player_count)
 end
 
-function maajan_table:on_process_over()
+function maajan_table:on_process_over(reason)
     local final_scores = {}
     for chair_id,p in pairs(self.players) do
         table.insert(final_scores,{
@@ -1807,7 +1799,7 @@ function maajan_table:on_process_over()
 
     self.cur_state_FSM = nil
 
-	base_table.on_process_over(self,{
+	base_table.on_process_over(self,reason,{
         balance = total_winlose,
     })
 end
@@ -2673,6 +2665,7 @@ function maajan_table:global_status_info()
             },
             ready = self.ready_list[chair_id] and true or false,
             online = not p.inactive and true or false, 
+            is_trustee = p.trustee and true or false,
         })
     end
 

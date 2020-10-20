@@ -71,7 +71,7 @@ local function clean_private_table()
 		if info.game_type == def_first_game_type and (os.time() - info.create_time) >= private_table_elapsed_seconds then
 			log.warning("dismiss elapsed table: %s ...",tid)
 			log.dump(info)
-			g_room:force_dismiss_table(info.real_table_id)
+			g_room:force_dismiss_table(info.real_table_id,enum.STANDUP_REASON_TABLE_TIMEOUT)
 		end
 	end
 	timer.timeout(60 * 5,clean_private_table)

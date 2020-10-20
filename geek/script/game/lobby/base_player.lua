@@ -140,19 +140,20 @@ function base_player:change_table( room_id_, table_id_, chair_id_, result_, tb )
 end
 
 -- 站起并离开房间
-function base_player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
-	if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
-		log.info("send SC_StandUpAndExitRoom :"..result_)
+function base_player:on_stand_up_and_exit_room(room_id, table_id, chair_id, result,reason)
+	if result == enum.GAME_SERVER_RESULT_SUCCESS then
+		log.info("send SC_StandUpAndExitRoom :"..result)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
-			room_id = room_id_,
-			table_id = table_id_,
-			chair_id = chair_id_,
-			result = result_,
+			room_id = room_id,
+			table_id = table_id,
+			chair_id = chair_id,
+			result = result,
+			reason = reason,
 			})
 	else
-		log.info("send SC_StandUpAndExitRoom nil "..result_)
+		log.info("send SC_StandUpAndExitRoom nil "..result)
 		send2client_pb(self, "SC_StandUpAndExitRoom", {
-			result = result_,
+			result = result,
 			})
 	end
 end
@@ -261,6 +262,7 @@ function base_player:notify_sit_down(player,reconnect,private_table)
 		latitude = player.gps_latitude,
 		online = true,
 		ready = false,
+		is_trustee = player.trustee and true or false,
 	}
 	if private_table then
 		local club_id = private_table.club_id
@@ -296,12 +298,22 @@ function base_player:on_stand_up(table_id_, chair_id_, result_)
 end
 
 -- 通知站起
-function base_player:notify_stand_up(who,offline)
+function base_player:notify_stand_up(who,offline,reason)
 	send2client_pb(self, "SC_NotifyStandUp", {
 		table_id = who.table_id,
 		chair_id = who.chair_id,
 		guid = who.guid,
 		is_offline = offline and true or false,
+		reason = reason,
+	})
+end
+
+--通知离线
+function base_character:notify_online(is_online)
+	send2client_pb(self,"SC_NotifyOnline",{
+		chair_id = self.chair_id,
+		guid = self.guid,
+		is_online = is_online,
 	})
 end
 

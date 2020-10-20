@@ -2116,35 +2116,13 @@ function maajan_table:on_game_overed()
     end)
 
     base_table.on_game_overed(self)
-
-    local trustee_type,ready_seconds = self:get_trustee_conf()
-    if trustee_type and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
-        self:begin_clock_timer(ready_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_all_auto_action_timer()
-            self:foreach(function(p)
-                if not self.ready_list[p.chair_id] then
-                    self:ready(p)
-                    if not p.trustee then
-                        self:set_trusteeship(p,true)
-                    end
-                end
-            end)
-        end)
-    end
-    
-    self:foreach(function(p)
-        if trustee_type and trustee_type == 3 then
-            self:set_trusteeship(p)
-        end
-    end)
 end
 
 function maajan_table:on_process_start(player_count)
     base_table.on_process_start(self,player_count)
 end
 
-function maajan_table:on_process_over()
+function maajan_table:on_process_over(reason)
     self:broadcast2client("SC_MaajanXueZhanFinalGameOver",{
         players = table.series(self.players,function(p,chair)
             return {
@@ -2170,7 +2148,7 @@ function maajan_table:on_process_over()
     self.zhuang = nil
     self.cur_state_FSM = nil
 
-	base_table.on_process_over(self,{
+	base_table.on_process_over(self,reason,{
         balance = total_winlose,
     })
 
@@ -2235,10 +2213,6 @@ end
 
 function maajan_table:load_lua_cfg()
 	
-end
-
-function maajan_table:on_offline(player)
-    base_table.on_offline(self,player)
 end
 
 -- 检查是否可取消准备
@@ -2804,6 +2778,7 @@ function maajan_table:global_status_info()
                 latitude = p.gps_latitude,
             },
             ready = self.ready_list[chair_id] and true or false,
+            
         })
     end
 

@@ -282,13 +282,13 @@ function base_room:save_private_table(owner,table_id,chair_id)
 	
 end
 
-function base_room:force_dismiss_table(table_id)
+function base_room:force_dismiss_table(table_id,reason)
 	local tb = self:find_table(table_id)
 	if not tb then
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	local result = tb:lockcall(function() return tb:dismiss() end)
+	local result = tb:lockcall(function() return tb:force_dismiss(reason) end)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		return result
 	end
@@ -633,8 +633,9 @@ function base_room:is_play(player)
 end
 
 -- 退出服务器
-function base_room:exit_server(player,offline)
-	log.info("base_room:exit_server guid[%d],offline:%s",player.guid,offline)
+function base_room:exit_server(player,offline,reason)
+	reason = reason or enum.STANDUP_REASON_NORMAL
+	log.info("base_room:exit_server guid[%d],offline:%s,reason:%s",player.guid,offline,reason)
 	if not player.table_id or not player.chair_id then
 		log.warning("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
 		self:player_exit_room(player,offline)
@@ -648,8 +649,8 @@ function base_room:exit_server(player,offline)
 		return true,enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or nil) end)
-	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s]",player.guid,player.table_id,can_exit)
+	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or reason) end)
+	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",player.guid,player.table_id,can_exit,reason)
 	if not can_exit then
 		return true,enum.GAME_SERVER_RESULT_SUCCESS
 	end

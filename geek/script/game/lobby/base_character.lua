@@ -29,11 +29,11 @@ function base_character:check_money_limit(score)
 end
 
 -- 进入房间并坐下
-function base_character:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, result_, tb)
+function base_character:on_enter_room_and_sit_down(room_id, table_id, chair_id, result, tb)
 end
 
 -- 站起并离开房间
-function base_character:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
+function base_character:on_stand_up_and_exit_room(room_id, table_id, chair_id, result,reason)
 end
 
 -- 切换座位
@@ -68,7 +68,12 @@ function base_character:on_stand_up()
 end
 
 -- 通知站起
-function base_character:notify_stand_up(who)
+function base_character:notify_stand_up(who,offline,reason)
+end
+
+--通知离线
+function base_character:notify_online(is_online)
+
 end
 
 -- 通知空位置坐机器人
@@ -129,8 +134,9 @@ end
 
 -- 强制踢出房间
 function base_character:forced_exit(reason)
+	log.dump(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
-	log.info("force exit,guid:%s,table_id:%s,chair_id:%s",self.guid,self.chair_id,reason)
+	log.info("force exit,guid:%s,chair_id:%s,reason:%s",self.guid,self.chair_id,reason)
 	local tb = g_room:find_table_by_player(self)
 	if not tb then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
@@ -148,7 +154,7 @@ function base_character:forced_exit(reason)
 	
 	g_room:player_exit_room(self)
 
-	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.GAME_SERVER_RESULT_SUCCESS)
+	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.ERROR_NONE,reason)
 	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
 end
 

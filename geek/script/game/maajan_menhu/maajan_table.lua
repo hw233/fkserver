@@ -2077,7 +2077,7 @@ function maajan_table:on_process_start(player_count)
     base_table.on_process_start(self,player_count)
 end
 
-function maajan_table:on_process_over()
+function maajan_table:on_process_over(reason)
 
     local final_scores = {}
     for chair_id,p in pairs(self.players) do
@@ -2105,7 +2105,7 @@ function maajan_table:on_process_over()
 
     self.cur_state_FSM = nil
 
-    base_table.on_process_over(self,{
+    base_table.on_process_over(self,reason,{
         balance = total_winlose,
     })
 end
@@ -2954,6 +2954,7 @@ function maajan_table:global_status_info()
                 sex = p.sex,
             },
             ready = self.ready_list[chair_id] and true or false,
+            is_trustee = p.trustee and true or false,
         })
     end
 

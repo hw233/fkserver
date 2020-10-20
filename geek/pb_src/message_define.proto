@@ -773,6 +773,7 @@ message SC_NotifyStandUp {
 	int32 chair_id = 2;
 	int32 guid = 3;
 	bool is_offline = 4;					// 是掉线
+	int32 reason = 5;
 }
 
 // 进入房间并坐下
@@ -807,6 +808,7 @@ message SC_StandUpAndExitRoom {
 	int32 table_id = 2;
 	int32 chair_id = 3;
 	int32 result = 4;						// GAME_SERVER_RESULT
+	int32 reason = 5;	//离开原因
 }
 
 // 切换座位
@@ -1403,6 +1405,7 @@ message SC_DismissTableCommit{
 message SC_DismissTable{
 	enum MsgID{Nil = 0; ID = 1185;}
 	bool success = 1;
+	int32 reason = 2;
 }
 
 
@@ -1717,4 +1720,11 @@ message SC_PlayOnceAgain{
 	enum MsgID { Nil = 0; ID = 1231; }
 	int32 result = 1;
 	ROUND_INFO round_info = 2;
+}
+
+message SC_NotifyOnline{
+	enum MsgID { Nil = 0; ID = 1232; }
+	int32 chair_id = 1;
+	int32 guid = 2;
+	bool is_online = 3;
 }

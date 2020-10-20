@@ -81,6 +81,7 @@ message SEAT_INFO {
     float longitude = 5;
     float latitude = 6;
     bool  online = 7; //是否掉线
+    bool  is_trustee = 8;
 }
 
 message TABLE_INFO {

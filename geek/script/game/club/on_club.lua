@@ -2247,7 +2247,7 @@ function on_cs_force_dismiss_table(msg,guid)
         return
     end
 
-    local succ = g_room:force_dismiss_table(tb.real_table_id)
+    local succ = g_room:force_dismiss_table(tb.real_table_id,enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
     onlineguid.send(guid,"S2C_CLUB_FORCE_DISMISS_TABLE",{
         result = succ
     })

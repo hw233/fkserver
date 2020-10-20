@@ -685,7 +685,7 @@ function land_table:on_game_overed()
 	p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
         if not self.private_id then
             if p.deposit then
-                p:forced_exit()
+                p:forced_exit(enum.STANDUP_REASON_BANKRUPCY)
             elseif p:is_android() then
                 self:ready(p)
             end
@@ -704,26 +704,9 @@ function land_table:on_game_overed()
 	self:update_status(TABLE_STATUS.FREE)
 
 	base_table.on_game_overed(self)
-	
-	local trustee,ready_seconds = self:get_trustee_conf()
-	if trustee and ready_seconds and self.cur_round and self.cur_round > 0 and self.cur_round < self.conf.round then
-        self:begin_clock_timer(ready_seconds,function()
-            self:cancel_clock_timer()
-            self:cancel_discard_timer()
-            self:foreach(function(p)
-                if not self.ready_list[p.chair_id] then
-                    self:ready(p)
-                    if not p.trustee then
-                        self:set_trusteeship(p,true)
-                    end
-                end
-            end)
-        end)
-	end
-	
 end
 
-function land_table:on_process_over()
+function land_table:on_process_over(reason)
 	self.cur_competer = nil
 
 	self:cancel_clock_timer()
@@ -760,7 +743,7 @@ function land_table:on_process_over()
     end
 
     self.landlord = nil
-	base_table.on_process_over(self,{
+	base_table.on_process_over(self,reason,{
         balance = total_winlose,
     })
 end
@@ -778,10 +761,6 @@ function land_table:can_stand_up(player, reason)
     end
 
     return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round
-end
-
-function land_table:on_offline(player)
-	base_table.on_offline(self,player)
 end
 
 function land_table:load_lua_cfg()

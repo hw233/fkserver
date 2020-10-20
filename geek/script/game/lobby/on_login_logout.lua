@@ -263,7 +263,7 @@ function logout(guid,offline)
 	end
 
 	player.logout_time = os.time()
-	if g_room:exit_server(player,offline) then
+	if g_room:exit_server(player,offline,offline and enum.STANDUP_REASON_OFFLINE or nil) then
 		log.info("logout offlined...")
 		return true -- 掉线处理
 	end
@@ -1101,7 +1101,7 @@ function on_cs_create_private_room(msg,guid)
 			money = {
 				money_id = money_id,
 				count = player:get_money(money_id),
-			}
+			},
 		}},
 		round_info = tb and {
 			round_id = tb:hold_ext_game_id()
@@ -1139,9 +1139,8 @@ function on_cs_reconnect(guid)
 	local club_id = private_table.club_id
 	local money_id = club_id and club_money_type[club_id] or -1
 	local tb = g_room.tables[table_id]
-	local seats = {}
-	tb:foreach(function(p)
-		table.insert(seats,{
+	local seats = table.series(tb.players,function(p) 
+		return {
 			chair_id = p.chair_id,
 			player_info = {
 				icon = p.icon,
@@ -1157,7 +1156,8 @@ function on_cs_reconnect(guid)
 			},
 			longitude = p.gps_longitude,
 			latitude = p.gps_latitude,
-		})
+			is_trustee = p.trustee and true or false,
+		}
 	end)
 
 	onlineguid.send(guid,"SC_JoinRoom",{
@@ -1282,10 +1282,11 @@ function on_cs_join_private_room(msg,guid)
 	end
 
 	local money_id = club_id and club_money_type[club_id] or -1
-	local seats = {}
+	local seats
 	if result == enum.GAME_SERVER_RESULT_SUCCESS then
-		tb:foreach(function(p) 
-			table.insert(seats,{
+		seats = table.series(tb.players,function(p) 
+			log.dump(p.trustee)
+			return {
 				chair_id = p.chair_id,
 				player_info = {
 					icon = p.icon,
@@ -1300,12 +1301,15 @@ function on_cs_join_private_room(msg,guid)
 				money = {
 					money_id = money_id,
 					count = p:get_money(money_id),
-				}
-			})
+				},
+				is_trustee = p.trustee and true or false,
+			}
 		end)
 	else
 		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
 	end
+
+	log.dump(seats)
 
 	onlineguid.send(guid,"SC_JoinRoom",{
 		result = result,
