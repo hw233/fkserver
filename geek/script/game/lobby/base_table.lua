@@ -1932,7 +1932,7 @@ end
 
 function base_table:play_once_again(player)
 	local club = self.conf.club
-	if self.rule and not club:can_sit_down(self.rule,player) then
+	if club and self.rule and not club:can_sit_down(self.rule,player) then
         return enum.ERROR_LESS_GOLD
 	end
 	
