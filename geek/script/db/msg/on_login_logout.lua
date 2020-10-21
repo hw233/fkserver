@@ -2698,7 +2698,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	local res = dbopt.game:query(table.concat({
 			string.format([[
-				INSERT INTO t_player_money(guid,money_id,money,where) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);
+				INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);
 				]],guid,money_id,money,where,money
 			),
 			string.format([[
@@ -2713,7 +2713,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	log.dump(res)
 
-	local newmoney = res[2].money
+	local newmoney = res[2][1].money
 	if not oldmoney or not newmoney then
 		log.error("incr_player_money bad oldmoney [%s] or newmoney [%s]",oldmoney,newmoney)
 		return
