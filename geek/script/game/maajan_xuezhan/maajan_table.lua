@@ -1632,7 +1632,8 @@ function maajan_table:do_huan_pai()
         pop_shou_pai(p,p.pai.huan.old)
     end)
 
-    local huan_order = self.player_count == 4 and math.random(0,2) or math.random(0,1)
+    local player_count = table.sum(self.players,function(p) return p and 1 or 0 end)
+    local huan_order = player_count == 4 and math.random(0,2) or math.random(0,1)
     if huan_order == 0 then
         self:foreach(function(p,i)
             local j  = i
