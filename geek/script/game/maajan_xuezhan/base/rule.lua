@@ -104,7 +104,7 @@ local function hu(state)
 			table.decr(counts,tile)
 			table.decr(counts,tile + 1)
 			table.decr(counts,tile + 2)
-			sections[section_index] = {area = TILE_AREA.SHOU_TILE, type = SECTION_TYPE.LEFT_CHI,tile = tile,}
+			sections[section_index] = {area = TILE_AREA.SHOU_TILE, type = SECTION_TYPE.CHI,tile = tile,}
 			hu(state)
 			table.incr(counts,tile)
 			table.incr(counts,tile + 1)
@@ -399,8 +399,7 @@ end
 local function is_all_1_9(pai,sections)
 	return table.logic_and(sections,function(s)
 		local val = rule.tile_value(s.tile)
-		if 	s.type == SECTION_TYPE.LEFT_CHI or s.type == SECTION_TYPE.CHI or
-			s.type == SECTION_TYPE.MID_CHI or s.type == SECTION_TYPE.RIGHT_CHI then
+		if 	s.type == SECTION_TYPE.CHI then
 			return table.logic_or({val,val + 1,val + 2},function(v) 
 				return v == 1 or v == 9
 			end)
@@ -433,8 +432,7 @@ local function get_hu_types(pai,cache,sections,in_pai)
 	local base_types = {}
 
 	local shun_zi_list = table.select(sections,function(v)
-		return v.type == SECTION_TYPE.LEFT_CHI or v.type == SECTION_TYPE.CHI or
-			v.type == SECTION_TYPE.MID_CHI or v.type == SECTION_TYPE.RIGHT_CHI
+		return v.type == SECTION_TYPE.CHI
 	end)
 
 	if table.nums(shun_zi_list) == 0 then
@@ -447,17 +445,13 @@ local function get_hu_types(pai,cache,sections,in_pai)
 
 	for _,s in pairs(shun_zi_list) do
 		if in_pai == 22 then
-			if (s.type == SECTION_TYPE.LEFT_CHI and s.tile + 1 == 22) or
-				(s.type == SECTION_TYPE.RIGHT_CHI and s.tile - 1 == 22) or 
-				(s.type == SECTION_TYPE.MID_CHI and s.tile == 22) then
+			if s.type == SECTION_TYPE.CHI and s.tile + 1 == 22 then
 				base_types[HU_TYPE.KA_ER_TIAO] = 1
 			end
 		end
 
 		if in_pai % 10 == 5 then
-			if (s.type == SECTION_TYPE.LEFT_CHI and (s.tile + 1) % 10 == 5) or
-				(s.type == SECTION_TYPE.RIGHT_CHI and (s.tile - 1) % 10 == 5) or 
-				(s.type == SECTION_TYPE.MID_CHI and s.tile % 10 == 5) then
+			if s.type == SECTION_TYPE.CHI and (s.tile + 1) % 10 == 5 and (s.tile + 1) == in_pai then
 				base_types[HU_TYPE.KA_WU_XING] = 1
 			end
 		end
@@ -654,12 +648,28 @@ function rule.is_chi(pai,tile)
 end
 
 -- local test_pai = {
--- 	shou_pai = {[12] = 2,[13] = 2,[14] = 2,[17] = 2,[21] = 4,[22] = 1,[27] = 1},
+-- 	shou_pai = {[14] = 3,[16] = 1,[17] = 1,[22] = 2,[24] = 1,[25] = 1,[26] = 1,[27] = 1,[28] = 1,[29] = 1},
 -- 	ming_pai = {
--- 	}
+-- 	},
+
 -- }
 
--- local test_hu = rule.ting_full(test_pai)
+-- local test_pai = {
+-- 	shou_pai = {[3] = 1,[4] = 1,[5] = 1,[7] = 2,[25] = 1,[26] = 1,[26] = 1},
+-- 	ming_pai = {
+-- 		{
+-- 			tile = 6,
+-- 			type = SECTION_TYPE.PENG,
+-- 		},
+-- 		{
+-- 			tile = 22,
+-- 			type = SECTION_TYPE.PENG,
+-- 		}
+-- 	},
+-- }
+
+-- local test_hu = rule.hu(test_pai,nil,nil)
+
 -- log.dump(test_hu)
 
 return rule
