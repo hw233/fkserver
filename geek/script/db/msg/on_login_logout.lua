@@ -53,7 +53,7 @@ local function save_player(guid, info_)
 end
 
 function on_SD_OnlineAccount(game_id, msg)
-	dbopt.account:query("REPLACE INTO t_online_account SET guid=%d, first_game_type=%d, second_game_type=%d, game_id=%d, in_game=%d", 
+	dbopt.account:batchquery("REPLACE INTO t_online_account SET guid=%d, first_game_type=%d, second_game_type=%d, game_id=%d, in_game=%d", 
 		msg.guid, msg.first_game_type, msg.second_game_type, msg.gamer_id, msg.in_game)
 end
 
@@ -64,7 +64,7 @@ function on_SD_Get_Instructor_Weixin(game_id, msg)
 	--------------------------------------------------------
 	local sql = string.format([[select weixin from t_instructor_weixin]])
 	log.info(sql)
-	local data = dbopt.recharge:query(sql)
+	local data = dbopt.recharge:batchquery(sql)
 	if data.errno then
 		log.error(data.err)
 	end
@@ -130,7 +130,7 @@ function on_s_logout(msg)
 			]],
 			msg.login_time, msg.logout_time, msg.guid)
 	end
-	local ret = db:query(sql)
+	local ret = db:batchquery(sql)
 	if ret.errno then
 		log.error(ret.err)
 	end
@@ -138,7 +138,7 @@ end
 
 function on_sd_delonline_player(game_id, msg)
 	print ("on_sd_delonline_player........................... begin")
-	dbopt.account:query("DELETE FROM t_online_account WHERE guid=%d and game_id=%d", msg.guid, msg.game_id)
+	dbopt.account:batchquery("DELETE FROM t_online_account WHERE guid=%d and game_id=%d", msg.guid, msg.game_id)
 	print ("on_sd_delonline_player........................... end")
 end
 
@@ -164,7 +164,7 @@ function on_sd_cash_money_type(game_id, msg)
 		select type as cash_type,money,created_at,status,agent_guid,exchange_code from t_cash where  guid = %d and created_at BETWEEN (curdate() - INTERVAL 6 DAY) and (curdate() - INTERVAL -1 DAY) and type in %s  order by created_at desc limit 50
 	]], guid_,cash_type)
 
-	local data = dbopt.recharge:query(sql)
+	local data = dbopt.recharge:batchquery(sql)
 	if data.errno then
 		log.error(data.err)
 	end
@@ -185,7 +185,7 @@ function on_sd_check_cashTime(game_id, msg)
 
 	local sql = string.format([[CALL check_cash_time(%d,%d)]], guid_,cash_type_)
 
-	local data = dbopt.recharge:query(sql)
+	local data = dbopt.recharge:batchquery(sql)
 	if data.errno then
 		log.error(data.err)
 		return
@@ -239,7 +239,7 @@ function on_sd_proxy_cash_to_bank(game_id,msg)
 		return
 	end
 
-	local data = dbopt.proxy:query("call cash_commission(%d,%d)",guid,money)
+	local data = dbopt.proxy:batchquery("call cash_commission(%d,%d)",guid,money)
 	if data.errno then
 		log.error("not commission or not proxy do cash money to bank.guid:[%d],money:[%d],%s",guid,money,data.err)
 		return
@@ -268,7 +268,7 @@ function  on_sd_query_player_msg(game_id, msg)
 	log.info(sql)
 
 	local pb_msg_data = {}
-	local data = dbopt.game:query(sql)
+	local data = dbopt.game:batchquery(sql)
 	if not data.errno and #data > 0 then	
 		for _, item in ipairs(data) do
 			table.insert(pb_msg_data,item)
@@ -295,7 +295,7 @@ function  on_sd_query_player_marquee(game_id, msg)
 	log.info(sql)
 
 	local items = {}
-	local data = dbopt.game:query(sql)
+	local data = dbopt.game:batchquery(sql)
 	if not data.errno and #data > 0 then
 		for _,datainfo in ipairs(data) do
 			print(datainfo)
@@ -327,7 +327,7 @@ function on_sd_Set_Msg_Read_Flag( game_id, msg )
 		-- 消息
 		local sql = string.format("update t_notice_private set is_read = 2 where guid = %d and id = %d", 
 			msg.guid, msg.id)
-		local data = db:query(sql)
+		local data = db:batchquery(sql)
 		if data.errno or data.effected_rows == 0 then
 			log.error("set read flag faild :" ..guid_)
 			return
@@ -340,7 +340,7 @@ function on_sd_Set_Msg_Read_Flag( game_id, msg )
 		-- 公告
 		local sql = string.format("replace into t_notice_read set guid = %d ,n_id = %d,is_read = 2", 
 			msg.guid, msg.id)
-		local data = db:query(sql)
+		local data = db:batchquery(sql)
 		if data.err or data.errno then
 			log.error("set read flag faild :" ..guid_)
 			return
@@ -354,7 +354,7 @@ end
 
 function on_sd_query_channel_invite_cfg(game_id, msg)
 	local gameid = game_id
-	local data = dbopt.account:query("SELECT * FROM t_channel_invite")
+	local data = dbopt.account:batchquery("SELECT * FROM t_channel_invite")
 	if data.errno then
 		log.error("on_sd_query_channel_invite_cfg not find guid:")
 		return
@@ -384,7 +384,7 @@ function on_sd_query_player_invite_reward(game_id, msg)
 	local guid_ = msg.guid
 	local gameid = game_id
 
-	local data = dbopt.game:query("CALL get_player_invite_reward(%d)",guid_)
+	local data = dbopt.game:batchquery("CALL get_player_invite_reward(%d)",guid_)
 	if data.errno then
 		log.error("on_sd_query_player_invite_reward not find guid:" .. guid_)
 		return
@@ -403,7 +403,7 @@ function agent_transfer(guid_ ,gameid , data)
 		proxy_after_money from t_Agent_recharge_order where player_guid = %d and proxy_status = 1 and player_status = 0 and created_at < now() - 1]] , guid_)
 	log.info("Agent [%s]",sqlAgent)
 	
-	local dataAgent = dbopt.recharge:query(sqlAgent)
+	local dataAgent = dbopt.recharge:batchquery(sqlAgent)
 	if dataAgent and #dataAgent > 0 then
 		local Ttotal = #dataAgent
 		local Tnum = 0
@@ -418,7 +418,7 @@ function agent_transfer(guid_ ,gameid , data)
 
 			local TsqlR = string.format([[update t_Agent_recharge_order set player_status = 1, player_before_money = %d, player_after_money = %d, updated_at = current_timestamp where  transfer_id = '%s']], Tbefore_bank, Tafter_bank, Agentdatainfo.transfer_id)
 			log.info("sqlR:" ..TsqlR)
-			local ret = dbopt.recharge:query(TsqlR)
+			local ret = dbopt.recharge:batchquery(TsqlR)
 			if ret and ret.errno then
 				log.info(ret.err)
 			end
@@ -495,7 +495,7 @@ function  online_proc_recharge_order(guid_ ,gameid , data)		-- 该功能暂时�
 	-- 查询未处理的订单
 	local sqlT =  string.format([[ select id,exchange_gold,actual_amt,payment_amt,serial_order_no from t_recharge_order where pay_status = 1 and server_status ~= 1 and guid = %d]] , guid_)
 	log.info("tttt %s",sqlT)
-	local dataTR = dbopt.recharge:query(sqlT)
+	local dataTR = dbopt.recharge:batchquery(sqlT)
 	if dataTR and #dataTR > 0 then
 		local Ttotal = #dataTR
 		local Tnum = 0
@@ -511,7 +511,7 @@ function  online_proc_recharge_order(guid_ ,gameid , data)		-- 该功能暂时�
 			local TsqlR = string.format([[
 					update t_recharge_order set server_status = 1, before_bank = %d, after_bank = %d where  id = '%d']], Tbefore_bank, Tafter_bank, Tdatainfo.id)
 			log.info("sqlR:" ..TsqlR)
-			local ret = dbopt.recharge:query(TsqlR)
+			local ret = dbopt.recharge:batchquery(TsqlR)
 			if ret and ret.errno then
 				log.error(ret.err)
 			end
@@ -568,7 +568,7 @@ function proc_recharge_order( guid_ , data , opttype ,last_login_channel_id )		-
 	-- 查询未处理的订单
 	local sqlT =  string.format("call proc_recharge_order(%d)" , guid_)
 	log.info("proc_recharge_order : %s" , sqlT)
-	local dataTR = dbopt.recharge:query(sqlT)
+	local dataTR = dbopt.recharge:batchquery(sqlT)
 	local bankmoney = 0
 	local changemoney = 0
 	if dataTR then
@@ -684,7 +684,7 @@ function charge_rate(gameid , guid , last_login_channel_id)
 	log.info("charge_rate gameid [%d] guid[%d]" , gameid, guid)
 	local sqlT =  string.format("call charge_rate(%d,'%s')" , guid,last_login_channel_id)
 	log.info("charge_rate : %s" , sqlT)
-	local dataTR = dbopt.recharge:query(sqlT)
+	local dataTR = dbopt.recharge:batchquery(sqlT)
 	if dataTR then
 		dataTR = dataTR[1]
 		log.info(string.format(
@@ -732,7 +732,7 @@ function get_player_append_info(gameid, guid)
 	log.info("get_player_append_info gameid [%d] guid[%d]" , gameid, guid)
 	local sqlT =  string.format("call get_player_append_info(%d)" , guid)
 	log.info("get_player_append_info : %s" , sqlT)
-	local dataTR = dbopt.account:query(sqlT)
+	local dataTR = dbopt.account:batchquery(sqlT)
 	if dataTR then
 		dataTR = dataTR[1]
 		log.info(string.format(
@@ -779,7 +779,7 @@ function on_sd_query_player_data(game_id, msg)
 	end
 
 	
-    local data_count = dbopt.account:query("call get_account_count(%d , '%s' )" , guid_ , platform_id)
+    local data_count = dbopt.account:batchquery("call get_account_count(%d , '%s' )" , guid_ , platform_id)
 	if not data_count then
 		log.error("on_sd_query_player_data get_account_count not find guid: %d" , guid_)
 		return
@@ -803,7 +803,7 @@ function on_sd_query_player_data(game_id, msg)
 		l_reg_money = 0
 	end
 
-	local data = dbopt.game:query("CALL get_player_data(%d,'%s','%s',%d,'%s', %d, %d)",guid_,account,nick,l_add_money,platform_id,is_guest_,l_reg_money)
+	local data = dbopt.game:batchquery("CALL get_player_data(%d,'%s','%s',%d,'%s', %d, %d)",guid_,account,nick,l_add_money,platform_id,is_guest_,l_reg_money)
 	if not data then
 		log.error("on_sd_query_player_data not find guid: %d" , guid_)
 		return
@@ -829,19 +829,19 @@ end
 
 -- 立即保存钱
 function on_SD_SavePlayerMoney(game_id, msg)
-	dbopt.game:query("UPDATE t_player SET money=" .. (msg.money or 0) .. " WHERE guid=" .. msg.guid .."")
+	dbopt.game:batchquery("UPDATE t_player SET money=" .. (msg.money or 0) .. " WHERE guid=" .. msg.guid .."")
 end
 
 -- 立即保存银行钱
 function on_SD_SavePlayerBank(game_id, msg)	
-	dbopt.game:query("UPDATE t_player SET bank=" .. (msg.bank or 0) .. " WHERE guid=" .. msg.guid .."")
+	dbopt.game:batchquery("UPDATE t_player SET bank=" .. (msg.bank or 0) .. " WHERE guid=" .. msg.guid .."")
 end
 
 -- 请求机器人数据
 function on_sd_load_android_data(game_id, msg)
 	local opttype = msg.opt_type
 	local roomid = msg.room_id
-	local data = dbopt.game:query("SELECT guid, account, nickname FROM t_player WHERE guid>%d AND is_android=1 ORDER BY guid ASC LIMIT %d", msg.guid, msg.count)
+	local data = dbopt.game:batchquery("SELECT guid, account, nickname FROM t_player WHERE guid>%d AND is_android=1 ORDER BY guid ASC LIMIT %d", msg.guid, msg.count)
 
 	if data and #data > 0 then
 		return {
@@ -864,7 +864,7 @@ function on_ld_AlipayEdit(login_id, msg)
 	local sql = string.format("update t_account set alipay_name = '%s',alipay_name_y = '%s',alipay_account = '%s',alipay_account_y = '%s' where guid = %d  ",
 		msg.alipay_name , msg.alipay_name_y , msg.alipay_account , msg.alipay_account_y,msg.guid  )
 	print(sql)
-	local ret = dbopt.account:query(sql)
+	local ret = dbopt.account:batchquery(sql)
 	if ret and ret.errno then 
 		log.error(ret.err)
 	end
@@ -888,7 +888,7 @@ function  on_ld_do_sql( login_id, msg)
 	}
 	print(sql)
 
-	local data = db:query(sql)
+	local data = db:batchquery(sql)
 	if not data then
 		notify.retCode = 9999
 		notify.retData = "not Data"
@@ -906,7 +906,7 @@ end
 
 function send_user_transfer_msg(transfer_id,proxy_guid,player_guid,transfer_money)
 	--查询代理商名字
-    local data_ = dbopt.recharge:query("SELECT proxy_name FROM t_proxy_ad WHERE proxy_uid = %d",proxy_guid)
+    local data_ = dbopt.recharge:batchquery("SELECT proxy_name FROM t_proxy_ad WHERE proxy_uid = %d",proxy_guid)
 	if not data_ then
 		log.error("send_user_transfer_msg  get agent name failed proxy_uid[%d]"  , proxy_guid)
 		return
@@ -945,7 +945,7 @@ function on_sd_agent_transfer_success(game_id , msg)
  	local sql_set_order_status = string.format("CALL update_AgentTransfer_Order('%s' , %d , %d , %d , %d )",msg.transfer_id, 2 , player_status , msg.player_oldmoney , msg.player_newmoney)
 	log.info(sql_set_order_status)
 
-	local data = dbopt.recharge:query(sql_set_order_status)
+	local data = dbopt.recharge:batchquery(sql_set_order_status)
 	if not data or data.errno then
 		log.error("on_sd_agent_transfer_success update status faild : transfer_id:[%s] opt_type[%d]" ,msg.transfer_id, 2)
 		return
@@ -992,7 +992,7 @@ function add_player_money(notify ,proxy_before_money,  proxy_after_money)
 	-- 订单生成成功 开始扣减代理商金币
 	local sql_csot_agent_money = string.format("CALL change_player_bank_money(%d, %d,0)",notify.player_guid, notify.transfer_money)
 	log.info(sql_csot_agent_money)
-	local data = dbopt.game:query(sql_csot_agent_money)
+	local data = dbopt.game:batchquery(sql_csot_agent_money)
 	if not data or data.errno then
 		notify.retcode = 28 -- 数据库错误 无法 扣减代理商金币 
 		log.error("add_player_money  mysql faild :[%d]  transfer_id[%s],%s"  , notify.retcode, notify.transfer_id,data.err)
@@ -1041,7 +1041,7 @@ function update_agent_order(opt_type, notify , code , proxy_before_money ,proxy_
 	local sql_update_order = string.format("CALL update_AgentTransfer_Order('%s' , %d , %d , %d , %d )",notify.transfer_id, opt_type , code , notify.oldmoney , notify.newmoney)
 	log.info(sql_update_order)
 	-- 下面 前缀 1 与 9 的区别 1 表示 db 报错 9 表示 存储过程 检校报错
-	local data = dbopt.recharge:query(sql_update_order)
+	local data = dbopt.recharge:batchquery(sql_update_order)
 	if not data then
 		-- 11 需要注意 表示 代理商金币扣减成功 opt_type 
 			-- 1 表示代理商扣钱操作  原来 11 表示代理商扣钱成功 但更新代理商状态失败 现在变为  111 表示上述意思
@@ -1107,7 +1107,7 @@ function cost_agent_money(notify)
 	-- 订单生成成功 开始扣减代理商金币
 	local sql_csot_agent_money = string.format("CALL change_player_bank_money(%d, %d,0)",notify.proxy_guid, -1 * notify.transfer_money)
 	log.info(sql_csot_agent_money)
-	local data = dbopt.game:query(sql_csot_agent_money)
+	local data = dbopt.game:batchquery(sql_csot_agent_money)
 	if not data then
 		notify.retcode = 8 -- 数据库错误 无法 扣减代理商金币 
 		log.info("cost_agent_money  mysql faild :[%d]  transfer_id[%s]"  , notify.retcode, notify.transfer_id)
@@ -1175,7 +1175,7 @@ function do_ld_cc_changemoney(msg, platform_id,channel_id,seniorpromoter)
 	local sql_create_order  = string.format("CALL insert_AgentTransfer_Order( '%s' , %d , %d , %d , %d , '%s', '%s' , %d)",
 		msg.transfer_id, msg.proxy_guid, msg.player_guid, msg.transfer_type, msg.transfer_money, platform_id, channel_id, seniorpromoter)
 	log.info(sql_create_order)
-	local data = dbopt.recharge:query(sql_create_order)
+	local data = dbopt.recharge:batchquery(sql_create_order)
 	log.info("===============================1")
 	if not data then
 		log.info("===============================2")
@@ -1222,7 +1222,7 @@ function on_ld_cc_changemoney(msg)
 	}
 
 	--判断平台是否相同，平台不同返回为找不到玩家
-	local data  = dbopt.account:query("SELECT platform_id,channel_id,ifnull(seniorpromoter,0) as seniorpromoter FROM t_account WHERE guid = %d", msg.player_guid)
+	local data  = dbopt.account:batchquery("SELECT platform_id,channel_id,ifnull(seniorpromoter,0) as seniorpromoter FROM t_account WHERE guid = %d", msg.player_guid)
 	data = data[1]
 	if not data then
 		notify.retcode = 7 --db error
@@ -1245,7 +1245,7 @@ function on_ld_DelMessage(login_id, msg)
 		retid = msg.retid,
 		asyncid = msg.asyncid,
 	}
-	local data = dbopt.game:query("CALL del_msg(%d, %d)",msg.msg_id, msg.msg_type)
+	local data = dbopt.game:batchquery("CALL del_msg(%d, %d)",msg.msg_id, msg.msg_type)
 	if not data then
 		print("on_ld_DelMessage faild :" ..notify.msg_type)
 		return notify
@@ -1283,7 +1283,7 @@ function on_ld_AgentTransfer_finish( login_id, msg)
 		msg.p_oldmoney,
 		msg.p_newmoney)
 	log.info(sql)
-	dbopt.log:query(sql)
+	dbopt.log:batchquery(sql)
 end
 
 function on_ld_NewNotice(login_id, msg)
@@ -1330,7 +1330,7 @@ function on_ld_NewNotice(login_id, msg)
 		log.error("on_ld_NewNotice not find type:"..msg.type)
 	end
 	log.info("%s",sql)
-	local ret = dbopt.game:query(sql)[1]
+	local ret = dbopt.game:batchquery(sql)[1]
 	-- print("on_ld_NewNotice=============================================1")
 	if ret > 0 then
 		print("on_ld_NewNotice success :" ..notify.type)
@@ -1358,13 +1358,13 @@ function on_sd_save_player_Ox_data(game_id, msg)
 	local sql = string.format("REPLACE INTO t_ox_player_info set guid = %d, is_android = %d, table_id = %d, banker_id = %d, \
 	nickname = '%s', money = %d, win_money = %d, bet_money = %d,tax = %d, curtime = %d",
 	msg.guid,msg.is_android,msg.table_id,msg.banker_id,msg.nickname,msg.money,msg.win_money,msg.bet_money,msg.tax,msg.curtime)
-	dbopt.game:query(sql)
+	dbopt.game:batchquery(sql)
 end
 
 -- 请求百人牛牛基础数据
 function on_sd_query_Ox_config_data(game_id, msg)
 	print(string.format("on_sd_query_Ox_config_data game_id = [%d],curtime = [%d]",game_id,msg.cur_time))
-	local data = dbopt.game:query(
+	local data = dbopt.game:batchquery(
 		[[select FreeTime,BetTime,EndTime,MustWinCoeff,BankerMoneyLimit,SystemBankerSwitch,BankerCount,RobotBankerInitUid,RobotBankerInitMoney,BetRobotSwitch,
 			BetRobotInitUid,BetRobotInitMoney,BetRobotNumControl,BetRobotTimesControl,RobotBetMoneyControl,BasicChip from t_many_ox_server_config]]
 		)
@@ -1415,7 +1415,7 @@ function on_sd_recharge(gameid,msg)
 	local aft_bank = msg.after_bank
 	local bef_bank = msg.befor_bank
 
-	local data = dbopt.recharge:query(sql)
+	local data = dbopt.recharge:batchquery(sql)
 	if not data then
 		notify.retcode = enum.GMmessageRetCode_ReChargeDBSetError
 		log.info(string.format("on_sd_recharge dberror guid[%d] orderid[%d] bef_bank[%d] aft_bank[%d]",notify.guid,notify.orderid,bef_bank,aft_bank))			
@@ -1439,7 +1439,7 @@ end
 function cash_failed_back_bankMoney(guid_,back_bank_money,error_code)
 	log.info("cash_failed_back_bankMoney guid_[%d],back_bank_money[%d]",guid_,back_bank_money)
 
-	local data = dbopt.game:query([[call change_player_bank_money(%d,%d,0)]], guid_,back_bank_money)
+	local data = dbopt.game:batchquery([[call change_player_bank_money(%d,%d,0)]], guid_,back_bank_money)
 	if not data then
 		log.error("cash_failed_back_bankMoney failed")
 		return
@@ -1486,7 +1486,7 @@ function do_WithDrawCash_Success(game_id,msg,oldbank,newbank)
 	local cash_type_ = msg.cash_type
 	local platform_id_ = msg.platform_id
 
-	local data = dbopt.account:query([[
+	local data = dbopt.account:batchquery([[
 		select channel_id as bag_id_ from t_account where guid = %d]], 
 		guid_)
 
@@ -1497,7 +1497,7 @@ function do_WithDrawCash_Success(game_id,msg,oldbank,newbank)
 	]], guid_, money_, coins_, pay_money_, ip_, phone_, phone_type_, bag_id_, bef_money_, bef_bank_, aft_money_, aft_bank_,cash_type_,platform_id_,msg.seniorpromoter)
 
 	log.info("sql [%s]",sql)
-	data = dbopt.recharge:query(sql)
+	data = dbopt.recharge:batchquery(sql)
 	if not data then
 		log.error("on_sd_cash_money:" .. sql)
 		--退还扣除所有的金币
@@ -1534,7 +1534,7 @@ function on_SD_WithDrawCash(game_id , msg)
 	local sql = string.format([[call change_player_bank_money(%d,%d,0)]], msg.guid, -msg.cost_bank)
 	log.info(sql)
 
-	local data = dbopt.game:query(sql)
+	local data = dbopt.game:batchquery(sql)
 	if not data then
 		--退还之前扣除的金币
 		return cash_failed_back_bankMoney(game_id,msg.guid,msg.cost_money,6)
@@ -1558,7 +1558,7 @@ function do_agent_addplayer_money_sucess(msg,oldbank,newbank)
  	local sql_set_order_status = string.format("CALL update_AgentTransfer_Order('%s' , %d , %d , %d , %d )",msg.transfer_id, 2 , player_status ,oldbank, newbank)
 	log.info(sql_set_order_status)
 
-	local data = dbopt.recharge:query(sql_set_order_status)
+	local data = dbopt.recharge:batchquery(sql_set_order_status)
 	if not data or data.errno then
 		log.error("on_sd_agent_transfer_success update status faild : transfer_id:[%s] opt_type[%d]" ,msg.transfer_id, 2)
 		return
@@ -1620,7 +1620,7 @@ function on_LD_AgentAddPlayerMoney(login_id,msg)
 	local sql = string.format([[call change_player_bank_money(%d,%d,0)]], msg.player_guid,msg.transfer_money)
 	log.info(sql)
 
-	local data = dbopt.game:query(sql)
+	local data = dbopt.game:batchquery(sql)
 	if not data then
 		log.error("on_LD_AgentAddPlayerMoney failed player_guid[%d] proxy_guid[%d] transfer_id[%s]",msg.player_guid,msg.proxy_guid,msg.transfer_id)
 		return notify_agent_addmoney(login_id,msg,0,0,3)
@@ -1644,7 +1644,7 @@ function query_player_is_or_not_collapse(guid_)
 	if guid_ > 0 then
 		local sql =  string.format("call judge_player_is_collapse(%d)" , guid_)
 
-		local data = dbopt.game:query(sql)
+		local data = dbopt.game:batchquery(sql)
 		if data then
 			data = data[1]
 			local playerData = json.decode(data.retdata)
@@ -1678,7 +1678,7 @@ function on_ld_BankcardEdit(login_id, msg)
 		,msg.bank_card_name , msg.bank_card_num, msg.bank_name, msg.bank_province, msg.bank_city, msg.bank_branch, msg.guid )
 	log.info(sql)
 
-	local ret = dbopt.account:query(sql)
+	local ret = dbopt.account:batchquery(sql)
 	if ret and ret.errno then
 		log.info(ret.err)
 	end
@@ -1701,7 +1701,7 @@ function on_ld_verify_account(msg)
 	local imei = msg.imei
 	local deprecated_imei = msg.deprecated_imei
 
-	local reply = dbopt.account:query(string.format( "CALL verify_account(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")",
+	local reply = dbopt.account:batchquery(string.format( "CALL verify_account(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")",
 		account,msg.verify_account.password,msg.ip,msg.phone,msg.phone_type,msg.version,msg.channel_id,msg.package_name,
 		msg.imei,msg.deprecated_imei,msg.platform_id,msg.shared_id))
 
@@ -1725,7 +1725,7 @@ function on_ld_verify_account(msg)
 			reply.create_time, reply.register_time, deprecated_imei , platform_id , reply.seniorpromoter)
 
 		log.info(sql)
-		dbopt.account:query(sql)
+		dbopt.account:batchquery(sql)
 	else
 		-- 维护中
 	end
@@ -1741,7 +1741,7 @@ function on_ld_reg_account(msg)
 
 	local guid = msg.guid
 
-	local rs = dbopt.account:query(
+	local rs = dbopt.account:batchquery(
 			[[
 				INSERT INTO account.t_account(
 					guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
@@ -1771,10 +1771,11 @@ function on_ld_reg_account(msg)
 	end
 
 	local transqls = {
-		string.format([[
+		{	[[
 				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,promoter,channel_id,created_time) 
-				VALUES(%d,'%s','%s','%s','%s','%s',%s,'%s',NOW());
+				VALUES(%d,'%s','%s','%s','%s','%s',%s,'%s',NOW())
 			]],
+		{
 			guid,
 			msg.account,
 			msg.nickname,
@@ -1782,19 +1783,20 @@ function on_ld_reg_account(msg)
 			msg.icon,
 			msg.phone or "",
 			msg.promoter or "NULL",
-			msg.channel_id or ""),
-		string.format([[INSERT INTO t_player_money(guid,money_id) VALUES(%d,0),(%d,-1);]],
-			guid,guid),
+			msg.channel_id or ""
+		}},
+		{	[[INSERT INTO t_player_money(guid,money_id) VALUES(%d,0),(%d,-1)]],
+			{guid,guid}
+		},
 	}
 
-	rs = dbopt.game:query(table.concat(transqls,"\n"))
+	rs = dbopt.game:batchquery(transqls)
 	if rs.errno then
 		log.error("on_ld_reg_account insert into game player info throw exception.[%d],[%s]",res.errno,res.err)
 		return
 	end
 
-
-	rs = dbopt.log:query([[
+	rs = dbopt.log:batchquery([[
 				INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
 				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');
 			]],
@@ -1823,7 +1825,7 @@ function on_ld_sms_login( msg )
 									 msg.shared_id )
 	log.info( "sql = [%s]", strsql )
 
-	local data = dbopt.account:query(sql)
+	local data = dbopt.account:batchquery(sql)
 	local reply = {}
 	if data then
 		reply.verify_account_result = data
@@ -1852,7 +1854,7 @@ function on_ld_sms_login( msg )
 					,msg.platform_id 
 					,data.seniorpromoter )
 				log.info( "%s", sql )
-				dbopt.log:query(sql)
+				dbopt.log:batchquery(sql)
 			else
 				-- 维护中
 				log.info( "game is MaintainStatus" )
@@ -1896,7 +1898,7 @@ function on_ld_sms_login( msg )
 						msg.invite_code,
 						msg.invite_type)
 			
-			local data = dbopt.account:query(sql)
+			local data = dbopt.account:batchquery(sql)
 			reply.account = data.account
 			reply.guid = data.guid
 			reply.nickname = data.nickname
@@ -1934,9 +1936,9 @@ function on_ld_sms_login( msg )
 									, msg.platform_id
 									, data.seniorpromoter )
 					log.info( "%s", sql )
-					dbopt.account:query(sql)
+					dbopt.account:batchquery(sql)
 					-- 插入代理关系
-					dbopt.proxy:query(
+					dbopt.proxy:batchquery(
 						"INSERT INTO proxy.player_proxy_relationship(guid,proxy_guid,proxy_account) VALUES(%d,%d,'%s')"
 						, data.guid, data.inviter_guid, data.inviter_account
 						)
@@ -1968,18 +1970,18 @@ function on_sd_reset_account( msg )
 	local game_id = server_id_
 
 	local reply = {}
-	local data = dbopt.account:query("UPDATE t_account SET account = '%s', `password` = '%s', nickname = '%s', is_guest = 0, register_time = NOW() WHERE guid = %d AND is_guest != 0",
+	local data = dbopt.account:batchquery("UPDATE t_account SET account = '%s', `password` = '%s', nickname = '%s', is_guest = 0, register_time = NOW() WHERE guid = %d AND is_guest != 0",
 				account, msg.password, nickname, guid)
 
-	local has = dbopt.account:query("SELECT account FROM t_account WHERE nickname = '%s' AND guid <> %d", nickname, guid)
+	local has = dbopt.account:batchquery("SELECT account FROM t_account WHERE nickname = '%s' AND guid <> %d", nickname, guid)
 	reply.guid = guid
 	reply.account = account
 	reply.nickname = nickname
 	reply.ret = has and LOGIN_RESULT_RESET_ACCOUNT_DUP_NICKNAME or LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC
 	reply.addflag = 0
 	reply.ret = LOGIN_RESULT_SUCCESS
-	dbopt.game:query("UPDATE t_player SET account='%s', nickname = '%s' WHERE guid=%d", account, nickname, guid)
-	local data = dbopt.account:query("select change_alipay_num from t_account where guid = '%d'", guid)
+	dbopt.game:batchquery("UPDATE t_player SET account='%s', nickname = '%s' WHERE guid=%d", account, nickname, guid)
+	local data = dbopt.account:batchquery("select change_alipay_num from t_account where guid = '%d'", guid)
 	if nmsg then
 		nmsg.guid = guid
 		nmsg.sing_num = tonumber(data[1][1])
@@ -1988,7 +1990,7 @@ function on_sd_reset_account( msg )
 
 
 	log.info( "select reg_gold from t_player where guid = '%d'", guid )
-	data = dbopt.game:query("select reg_gold from t_player where guid = '%d'", guid)
+	data = dbopt.game:batchquery("select reg_gold from t_player where guid = '%d'", guid)
 	if data then
 		reply.addflag = tonumber(data[1][1]) > 0 and 1 or 0
 	end
@@ -2003,11 +2005,11 @@ function on_sd_set_password( msg )
 		guid = msg.guid,
 	}
 
-	local data = dbopt.account:query("select password from t_account where guid = '%d'", guid)
+	local data = dbopt.account:batchquery("select password from t_account where guid = '%d'", guid)
 	if data  then
 		local old_password_from_db = data[1]
 		if old_password_from_client == old_password_from_db then
-			local data = dbopt.account:query("UPDATE t_account SET `password` = '%s' WHERE guid = %d AND `password` = '%s'",
+			local data = dbopt.account:batchquery("UPDATE t_account SET `password` = '%s' WHERE guid = %d AND `password` = '%s'",
 				new_password, guid, old_password_from_client)
 			if ret > 0 then
 				reply.ret = LOGIN_RESULT_SUCCESS
@@ -2030,7 +2032,7 @@ end
 
 function on_sd_set_password_by_sms(msg)
 	local guid = msg.guid
-	local data = dbopt.account:query("UPDATE t_account SET `password` = '%s' WHERE guid = %d", msg.password, guid)
+	local data = dbopt.account:batchquery("UPDATE t_account SET `password` = '%s' WHERE guid = %d", msg.password, guid)
 	if data.errno then
 		log.error(data.err)
 		return
@@ -2043,7 +2045,7 @@ function on_sd_set_password_by_sms(msg)
 		return reply
 	end
 	
-	local data = dbopt.account:query("select guid from t_account where guid = '%d'", guid)
+	local data = dbopt.account:batchquery("select guid from t_account where guid = '%d'", guid)
 	if data.errno then
 		log.error(data.err)
 		return
@@ -2057,7 +2059,7 @@ function on_sd_set_nickname(msg)
 	local guid = msg.guid
 	local nickname = msg.nickname
 
-	local ret = dbopt.game:query("UPDATE t_player SET `nickname` = '%s' WHERE guid = %d;", nickname, guid)
+	local ret = dbopt.game:batchquery("UPDATE t_player SET `nickname` = '%s' WHERE guid = %d;", nickname, guid)
 	if ret.errno then
 		log.error(ret.err)
 	end
@@ -2066,7 +2068,7 @@ function on_sd_set_nickname(msg)
 end
 
 function on_sd_update_earnings( msg )
-	dbopt.account:query([[UPDATE t_earnings SET daily_earnings = daily_earnings + %d, weekly_earnings = weekly_earnings + %d, 
+	dbopt.account:batchquery([[UPDATE t_earnings SET daily_earnings = daily_earnings + %d, weekly_earnings = weekly_earnings + %d, 
 						monthly_earnings = monthly_earnings + %d WHERE guid = %d]],msg.money, msg.money, msg.money, msg.guid )
 end
 
@@ -2076,14 +2078,14 @@ function on_ld_cash_false( msg )
 	local web_id = msg.web_id
 	local del = msg.del
 	local reply = {}
-	local data = dbopt.account:query("SELECT guid, order_id, coins, status, status_c FROM t_cash WHERE order_id='%d'", order_id)
+	local data = dbopt.account:batchquery("SELECT guid, order_id, coins, status, status_c FROM t_cash WHERE order_id='%d'", order_id)
 	data = data and data[1] or nil
 	if (data and (data.status ~= 1) and (data.status ~= 0) and (data.status ~= 4) and (data.status_c == 0)) then
 		local guid = data.guid
 		reply.web_id = web_id
 		reply.info = data
 		if del then
-			dbopt.account:query([[UPDATE t_account SET `alipay_account_y` = NULL, alipay_name_y = NULL, alipay_account = NULL, 
+			dbopt.account:batchquery([[UPDATE t_account SET `alipay_account_y` = NULL, alipay_name_y = NULL, alipay_account = NULL, 
 				alipay_name = NULL  WHERE guid = %d]], guid )
 		end
 		return reply
@@ -2096,7 +2098,7 @@ end
 
 
 function on_ld_cash_reply(msg )
-	dbopt.account:query("UPDATE t_cash SET `status_c` = '%d' WHERE order_id = %d", msg.result, msg.order_id)
+	dbopt.account:batchquery("UPDATE t_cash SET `status_c` = '%d' WHERE order_id = %d", msg.result, msg.order_id)
 end
 
 
@@ -2106,22 +2108,22 @@ function on_ld_cash_deal(msg )
 	local money = msg.info.coins
 	local web_id = msg.web_id
 
-	local res = dbopt.game:query("UPDATE t_player SET `bank` = `bank` +  '%d' WHERE guid = %d", money, guid)
+	local res = dbopt.game:batchquery("UPDATE t_player SET `bank` = `bank` +  '%d' WHERE guid = %d", money, guid)
 	reply.web_id = web_id
 	if res > 0 then
 		reply.result = 1
-		dbopt.account:query("UPDATE t_cash SET `status_c` = '1' WHERE order_id = %d", order_id)
-		local data = dbopt.game:query("SELECT money, bank FROM t_player WHERE guid='%d'", guid)
+		dbopt.account:batchquery("UPDATE t_cash SET `status_c` = '1' WHERE order_id = %d", order_id)
+		local data = dbopt.game:batchquery("SELECT money, bank FROM t_player WHERE guid='%d'", guid)
 		if data then
 			data = data[1]
-			dbopt.log:query("INSERT INTO t_log_money (`guid`,`old_money`,`new_money`,`old_bank`,`new_bank`,`opt_type`)VALUES ('%d','%I64d','%I64d','%I64d','%I64d','%d')",
+			dbopt.log:batchquery("INSERT INTO t_log_money (`guid`,`old_money`,`new_money`,`old_bank`,`new_bank`,`opt_type`)VALUES ('%d','%I64d','%I64d','%I64d','%I64d','%d')",
 			guid, data.money(), data.money(), data.bank() - money, data.bank(), enum.LOG_MONEY_OPT_TYPE_CASH_MONEY)
 		end
 		return reply
 	end
 
 	reply.result = 4
-	dbopt.account:query( "UPDATE t_cash SET `status_c` = '4' WHERE order_id = %d", order_id)
+	dbopt.account:batchquery( "UPDATE t_cash SET `status_c` = '4' WHERE order_id = %d", order_id)
 	return reply
 end
 
@@ -2131,12 +2133,12 @@ function on_ld_re_add_player_money( msg )
 	local money = msg.money
 	local Add_Type = msg.add_type
 
-	local res = dbopt.game:query("UPDATE t_player SET `bank` = `bank` +  '%d' WHERE guid = %d", money, guid)
+	local res = dbopt.game:batchquery("UPDATE t_player SET `bank` = `bank` +  '%d' WHERE guid = %d", money, guid)
 	if res then
-		local data = dbopt.game:query("SELECT money, bank FROM t_player WHERE guid='%d'", guid)
+		local data = dbopt.game:batchquery("SELECT money, bank FROM t_player WHERE guid='%d'", guid)
 		if data then
 			data = data[1]
-			dbopt.log:query("INSERT INTO t_log_money (`guid`,`old_money`,`new_money`,`old_bank`,`new_bank`,`opt_type`)VALUES ('%d','%I64d','%I64d','%I64d','%I64d','%d')",
+			dbopt.log:batchquery("INSERT INTO t_log_money (`guid`,`old_money`,`new_money`,`old_bank`,`new_bank`,`opt_type`)VALUES ('%d','%I64d','%I64d','%I64d','%I64d','%d')",
 				guid, data.money, data.money, data.bank - money, data.bank, Add_Type)
 		end
 		return
@@ -2192,7 +2194,7 @@ function on_sd_binding_alipay(msg)
 		return reply
 	end
 
-	local data = dbopt.account:query("select account, password from t_account where alipay_account_y = '%s' and platform_id = '%s';", account, platform_id)
+	local data = dbopt.account:batchquery("select account, password from t_account where alipay_account_y = '%s' and platform_id = '%s';", account, platform_id)
 	if not data.errno or #data > 0 then
 		local reply = {
 			guid = guid,
@@ -2201,7 +2203,7 @@ function on_sd_binding_alipay(msg)
 		return reply
 	end
 
-	local ret = dbopt.account:query(
+	local ret = dbopt.account:batchquery(
 		"UPDATE t_account SET `alipay_account_y` = '%s', alipay_name_y = '%s', alipay_account = '%s', alipay_name = '%s', change_alipay_num = change_alipay_num - 1  WHERE guid = %d", 
 		account, name, start_account, start_name, guid )
 	
@@ -2212,9 +2214,9 @@ function on_sd_binding_alipay(msg)
 		}
 	end
 
-	local data = dbopt.account:query("select account, password from t_account where  guid = %d and not(bang_alipay_time is NULL)", guid)
+	local data = dbopt.account:batchquery("select account, password from t_account where  guid = %d and not(bang_alipay_time is NULL)", guid)
 	if data.errno or #data == 0 then
-		dbopt.account:query("UPDATE t_account SET `bang_alipay_time` = current_timestamp WHERE guid = %d", guid)
+		dbopt.account:batchquery("UPDATE t_account SET `bang_alipay_time` = current_timestamp WHERE guid = %d", guid)
 	end
 
 	return {
@@ -2284,7 +2286,7 @@ function on_sd_binding_bankcard(msg)
 		bank_branch = bank_branch,
 	}
 
-	local data = dbopt.account:query(sql)
+	local data = dbopt.account:batchquery(sql)
 	if data.errno or #data == 0 then
 		reply.result = GAME_BAND_ALIPAY_DB_ERROR
 		return reply
@@ -2317,7 +2319,7 @@ function on_ld_phone_query(msg)
 		platform_id = platform_id,
 	}
 
-	local data = dbopt.account:query(sql)
+	local data = dbopt.account:batchquery(sql)
 	if data.errno or #data == 0 then
 		reply.ret = 1
 	else
@@ -2342,7 +2344,7 @@ function on_ld_get_inviter_info(msg)
 		gate_session_id = gate_session_id,
 		gate_id = gate_id,
 	}
-	local data = dbopt.account:query("select guid,account,alipay_name_y,alipay_account_y from t_account where invite_code = '%s';", invite_code)
+	local data = dbopt.account:batchquery("select guid,account,alipay_name_y,alipay_account_y from t_account where invite_code = '%s';", invite_code)
 	if data.errno or #data == 0 then
 		return reply
 	end
@@ -2354,7 +2356,7 @@ function on_ld_get_inviter_info(msg)
 	reply.alipay_account = data.alipay_account
 	reply.guid_self = new_player_guid
 	local inviter_guid = data.guid
-	dbopt.account:query("UPDATE t_account SET `inviter_guid` = %d WHERE guid = %d;", inviter_guid, new_player_guid)
+	dbopt.account:batchquery("UPDATE t_account SET `inviter_guid` = %d WHERE guid = %d;", inviter_guid, new_player_guid)
 	return reply
 end
 
@@ -2362,10 +2364,10 @@ end
 function on_sd_changemoney( msg )
 	log.info( "on_sd_changemoney  web[%d] gudi[%d] order_id[%d] type[%d]", msg.web_id, msg.info.guid, msg.info.order_id, msg.info.type_id )
 	if msg.info.type_id == enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
-		dbopt.recharge:query("UPDATE t_recharge_order SET `server_status` = '1', before_bank = '%I64d', after_bank = '%I64d' WHERE id = %d",
+		dbopt.recharge:batchquery("UPDATE t_recharge_order SET `server_status` = '1', before_bank = '%I64d', after_bank = '%I64d' WHERE id = %d",
 				msg.befor_bank, msg.after_bank, msg.info.order_id)
 	elseif msg.info.type_id == enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
-		dbopt.recharge:query("UPDATE t_cash SET `status_c` = '1' WHERE order_id = %d", msg.info.order_id)
+		dbopt.recharge:batchquery("UPDATE t_cash SET `status_c` = '1' WHERE order_id = %d", msg.info.order_id)
 	end
 
 	return {
@@ -2380,7 +2382,7 @@ local function insert_into_changemoney( msg )
 	local login_id = msg.login_id
 	local web_id = msg.web_id
 	local info = msg.info
-	local data = dbopt.recharge:query("select id, guid from t_re_recharge where type = '%d' and order_id = '%d'", info.type_id, info.order_id)
+	local data = dbopt.recharge:batchquery("select id, guid from t_re_recharge where type = '%d' and order_id = '%d'", info.type_id, info.order_id)
 
 	if data then
 		log.info( "on_DF_ChangMoney  order[%d] is  deal", info.order_id )
@@ -2391,7 +2393,7 @@ local function insert_into_changemoney( msg )
 	end
 
 	log.info( "on_DF_ChangMoney  order[%d] is not deal", info.order_id )
-	local data = dbopt.recharge:query(
+	local data = dbopt.recharge:batchquery(
 		"INSERT INTO t_re_recharge(`guid`,`money`,`type`,`order_id`,`created_at`)VALUES('%d', '%I64d', '%d', '%d', current_timestamp)", 
 		info.guid, info.gold, info.type_id, info.order_id)
 
@@ -2402,10 +2404,10 @@ local function insert_into_changemoney( msg )
 		log.info( "on_DF_ChangMoney  order[%d] insert t_re_recharge  true", info.order_id )
 		reply.result = 6
 		if info.type_id == enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY then
-			dbopt.recharge:query("UPDATE t_recharge_order SET `server_status` = '6' WHERE id = %d", info.order_id)
+			dbopt.recharge:batchquery("UPDATE t_recharge_order SET `server_status` = '6' WHERE id = %d", info.order_id)
 		elseif info.type_id == enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_FALSE then
 			if info.order_id ~= -1 then
-				dbopt.recharge:query("UPDATE t_cash SET `status_c` = '6' WHERE order_id = %d", info.order_id)
+				dbopt.recharge:batchquery("UPDATE t_cash SET `status_c` = '6' WHERE order_id = %d", info.order_id)
 			end
 		end
 	else
@@ -2432,12 +2434,12 @@ function on_cash_false_changemoney( msg )
 	end
 
 	local del = msg.other_oper
-	local data = dbopt.recharge:query("SELECT guid, order_id, coins, status, status_c FROM t_cash WHERE order_id='%d'", order_id)
+	local data = dbopt.recharge:batchquery("SELECT guid, order_id, coins, status, status_c FROM t_cash WHERE order_id='%d'", order_id)
 	data = data and data[1] or nil
 	if (data and (data.status ~= 1) and (data.status ~= 0) and (data.status ~= 4) and (data.status_c == 0)) then
 		local guid = data.guid
 		local add_bank_money = data.coins
-		local data = dbopt.recharge:query("CALL change_player_bank_money(%d,%d,0)", guid, add_bank_money)
+		local data = dbopt.recharge:batchquery("CALL change_player_bank_money(%d,%d,0)", guid, add_bank_money)
 		data = data and data[1] or nil
 		if data and #data == 3 then
 			local ret = data[1]
@@ -2453,14 +2455,14 @@ function on_cash_false_changemoney( msg )
 			}
 
 			log.info("change_player_bank_money guid[%d] order_id[%d] ret[%d]", guid, order_id, ret )
-			dbopt.recharge:query("UPDATE t_cash SET `status_c` = %d WHERE order_id = %d", ret, order_id)
+			dbopt.recharge:batchquery("UPDATE t_cash SET `status_c` = %d WHERE order_id = %d", ret, order_id)
 			return reply
 		end
 
 		log.error("change_player_bank_money error guid[%d] order_id[%d]", guid, order_id )
 
 		if del == 1 then
-			local res = dbopt.account:query("UPDATE t_account SET `alipay_account_y` = NULL, alipay_name_y = NULL, alipay_account = NULL, alipay_name = NULL  WHERE guid = %d", guid)
+			local res = dbopt.account:batchquery("UPDATE t_account SET `alipay_account_y` = NULL, alipay_name_y = NULL, alipay_account = NULL, alipay_name = NULL  WHERE guid = %d", guid)
 			channel.publish("login.?","msg","DL_ResetAlipay",{
 				guid = guid,
 				alipay_name = "",
@@ -2472,7 +2474,7 @@ function on_cash_false_changemoney( msg )
 		end
 
 		if del == 2 then
-			dbopt.game:query([[UPDATE t_player_bankcard SET bank_card_name = '**', bank_card_num = '**',
+			dbopt.game:batchquery([[UPDATE t_player_bankcard SET bank_card_name = '**', bank_card_num = '**',
 				bank_name = '', bank_province = '', bank_city = '' , bank_branch = '' where guid = %d]], guid)
 		end
 	else
@@ -2506,7 +2508,7 @@ function on_ld_create_proxy_account(msg)
 		asyncid = asyncid,
 	}
 
-	local data = dbopt.account:query("CALL create_proxy_account(%d,%d,'%s');", guid, proxy_id, str_platform_id)
+	local data = dbopt.account:batchquery("CALL create_proxy_account(%d,%d,'%s');", guid, proxy_id, str_platform_id)
 	if data.errno or #data == 0 or #data[1] ~= 4 then
 		log.error( "create_proxy_account error guid[%d] proxy_id[%d]", guid, proxy_id )
 		return reply
@@ -2518,12 +2520,12 @@ function on_ld_create_proxy_account(msg)
 
 	-- 0成功 3重复创建t_account
 	if ret == 0 or ret == 3 then
-		local data = dbopt.account:query("CALL get_player_data(%d,'%s','%s',0,'%s',1);", proxy_guid, account, nickname, str_platform_id)
+		local data = dbopt.account:batchquery("CALL get_player_data(%d,'%s','%s',0,'%s',1);", proxy_guid, account, nickname, str_platform_id)
 		if not data.errno and #data > 0 then
 			proxy.ret = 1
 			proxy.proxy_guid = proxy_guid
 			-- 修改状态为创建完毕
-			dbopt.account:query("UPDATE t_player_proxy SET `status` = 2 WHERE guid = %d AND proxy_id = %d;", guid, proxy_id)
+			dbopt.account:batchquery("UPDATE t_player_proxy SET `status` = 2 WHERE guid = %d AND proxy_id = %d;", guid, proxy_id)
 		else
 			log.error( "CALL get_player_data error guid[%d] proxy_id[%d] proxy_guid[%d] account[%s]", guid, proxy_id, proxy_guid, account)
 		end
@@ -2535,7 +2537,7 @@ function on_ld_create_proxy_account(msg)
 end
 
 function on_s_request_proxy_platform_ids(msg)
-	local data = dbopt.account:query("SELECT DISTINCT platform_id FROM t_proxy_ad ;")
+	local data = dbopt.account:batchquery("SELECT DISTINCT platform_id FROM t_proxy_ad ;")
 	if data.errno or #data == 0 then
 		log.error("RequestProxyIds error")
 		return nil
@@ -2548,7 +2550,7 @@ end
 function on_s_request_proxy_info(msg)
 	local login_id = msg.loginid
 	local platform_id = msg.platform_id
-	local data = dbopt.proxy:query("CALL get_proxy_info(%d);", platform_id)
+	local data = dbopt.proxy:batchquery("CALL get_proxy_info(%d);", platform_id)
 	if data.errno or #data == 0 then
 		log.error( "load cfg from db error" )
 		return
@@ -2573,7 +2575,7 @@ function on_ld_gm_changemoney(msg)
 	local change_bank_money = msg.bank_money
 	local type_id = msg.type_id
 	
-	local data = dbopt.recharge:query("CALL change_player_bank_money(%d,%d,0);", guid, change_bank_money)
+	local data = dbopt.recharge:batchquery("CALL change_player_bank_money(%d,%d,0);", guid, change_bank_money)
 	if data.errno or #data == 0 or #data[1] ~= 3 then
 		log.error( "change_player_bank_money error guid[%d] type_id[%d]", guid, type_id )
 		return 
@@ -2604,7 +2606,7 @@ function on_ld_return_agent_money(msg)
 	local type_id = msg.type_id
 	local order_id = msg.order_id
 
-	local data = dbopt.game:query("CALL change_player_bank_money(%d,%d,1);", guid, change_bank_money)
+	local data = dbopt.game:batchquery("CALL change_player_bank_money(%d,%d,1);", guid, change_bank_money)
 	if data.errno or #data == 0 and #data[1] ~= 3 then
 		log.error( "change_player_bank_money error guid[%d] type_id[%d]", guid, type_id )
 		return
@@ -2633,7 +2635,7 @@ end
 function get_binding_bankcard_num(msg)
 	local guid = msg.guid
 	log.info( "get_band_bankcard_num: player guid[%d] game_id[%d].", guid, game_id )
-	local data = dbopt.account:query("select change_bankcard_num from t_account where guid = '%d';", guid)
+	local data = dbopt.account:batchquery("select change_bankcard_num from t_account where guid = '%d';", guid)
 	if data.errno or #data == 0 then
 		return
 	end
@@ -2647,7 +2649,7 @@ end
 
 function on_reg_account(msg)
 	log.dump(msg)
-	local res = dbopt.account:query(
+	local res = dbopt.account:batchquery(
 					[[insert into t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
 						register_time,ip,version,phone_type,package_name) 
 					values(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s');]],
@@ -2668,7 +2670,7 @@ function on_reg_account(msg)
 		return
 	end
 
-	res = dbopt.log:query(
+	res = dbopt.log:batchquery(
 		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
 			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
 		msg.guid,
@@ -2686,7 +2688,9 @@ end
 
 local function incr_player_money(guid,money_id,money,where,why,why_ext)
 	log.info("%s,%s,%s,%s,%s",guid,money_id,money,where,why)
-	local res = dbopt.game:query([[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where)
+	local res = dbopt.game:batchquery(
+		[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where
+	)
 	if res.errno then
 		log.error("incr_player_money query old money error,%s,%s,%s",guid,money_id,where)
 		return
@@ -2696,7 +2700,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	local oldmoney = res[1] and res[1].money or 0
 
-	local res = dbopt.game:query(table.concat({
+	local res = dbopt.game:batchquery({
 			string.format([[
 				INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);
 				]],guid,money_id,money,where,money
@@ -2705,7 +2709,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 				SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;
 				]],guid,money_id,where
 			),
-		},""));
+		});
 	if res.errno then
 		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
 		return
@@ -2719,7 +2723,7 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 		return
 	end
 
-	dbopt.log:query([[
+	dbopt.log:batchquery([[
 			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 			VALUES(%d,%d,%d,%d,%d,%d,%s,%d);
 		]],
@@ -2745,26 +2749,26 @@ function on_sd_new_money_type(msg)
 	local id = msg.id
 	local club_id = msg.club_id
 	local money_type = msg.type
-	dbopt.game:query("INSERT INTO t_money(id,type,club_id) VALUES(%d,%d,%s)",id,money_type,club_id)
+	dbopt.game:batchquery("INSERT INTO t_money(id,type,club_id) VALUES(%d,%d,%s)",id,money_type,club_id)
 end
 
 local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_ext)
 	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
-		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],- amount,club_id,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
-		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],amount,guid,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{- amount,club_id,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],{amount,guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
 	}
 
 	local gamedb = dbopt.game
 
 	local transid,res = gamedb:begin_trans()
 
-	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
+	transid,res = gamedb:do_batchtrans(transid,sqls)
 	if res.errno then
 		gamedb:rollback_trans(transid)
 		log.error("transfer_money_club2player do money error,errno:%d,err:%s",res.errno,res.err)
@@ -2781,14 +2785,18 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	local new_player_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
-		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-					club_id,money_id,old_club_money,new_club_money,why,why_ext),
-		string.format([[
-				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-				]],guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()),
+		{
+			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+			{club_id,money_id,old_club_money,new_club_money,why,why_ext}
+		},
+		{	
+			[[
+			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+			VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+			]],{guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()}
+		},
 	}
-	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	res = dbopt.log:batchquery(logsqls)
 	if res.errno then
 		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
@@ -2801,18 +2809,18 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	log.info("transfer_money_player2club club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
-		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],- amount,guid,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
-		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id),
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],{- amount,guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{amount,club_id,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
 	}
 
 	local gamedb = dbopt.game
 
 	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_trans(nil,table.concat(sqls,"\n"))
+	transid,res = gamedb:do_batchtrans(transid,sqls)
 	if res.errno then
 		gamedb:rollback_trans(transid)
 		log.error("transfer_money_player2club do money error,errno:%d,err:%s",res.errno,res.err)
@@ -2827,14 +2835,19 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	local new_club_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
-		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-					club_id,money_id,old_club_money,new_club_money,why,why_ext),
-		string.format([[
-				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-				]],guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()),
+		{
+			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+			{club_id,money_id,old_club_money,new_club_money,why,why_ext}
+		},
+		{
+			[[
+			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+			VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+			]],
+			{guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()}
+		},
 	}
-	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	res = dbopt.log:batchquery(logsqls)
 	if res.errno then
 		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
@@ -2847,12 +2860,12 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	log.info("transfer_money_club2club from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id_from,club_id_to,money_id,amount,why,why_ext)
 	local sqls = {
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
-		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]], -amount,club_id_from,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
-		string.format([[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id_to,money_id),
-		string.format([[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id),
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_from,money_id}},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{-amount,club_id_from,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_from,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_to,money_id}},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{amount,club_id_to,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_to,money_id}},
 	}
 
 	log.dump(sqls)
@@ -2860,7 +2873,7 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	local gamedb = dbopt.game
 
 	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
+	transid,res = gamedb:do_batchtrans(transid,sqls)
 	if res.errno then
 		gamedb:rollback_trans(transid)
 		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
@@ -2877,14 +2890,18 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
-		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-					club_id_from,money_id,old_from_money,new_from_money,why,why_ext),
-		string.format([[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-					club_id_to,money_id,old_to_money,new_to_money,why,why_ext),
+		{
+			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+			{club_id_from,money_id,old_from_money,new_from_money,why,why_ext}
+		},
+		{
+			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
+			{club_id_to,money_id,old_to_money,new_to_money,why,why_ext},
+		}
 	}
 
 	log.dump(logsqls)
-	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	res = dbopt.log:batchquery(logsqls)
 	if res.errno then
 		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
@@ -2898,12 +2915,12 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		from_guid,to_guid,money_id,amount,why,why_ext)
 	local sqls = {
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id),
-		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]], -amount,from_guid,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id),
-		string.format([[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],amount,to_guid,money_id),
-		string.format([[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id),
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{from_guid,money_id}},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],{-amount,from_guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{from_guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{to_guid,money_id}},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],{amount,to_guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{to_guid,money_id}},
 	}
 
 	log.dump(sqls)
@@ -2911,7 +2928,7 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 	local gamedb = dbopt.game
 
 	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_trans(transid,table.concat(sqls,"\n"))
+	transid,res = gamedb:do_batchtrans(transid,sqls)
 	if res.errno then
 		gamedb:rollback_trans(transid)
 		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
@@ -2928,20 +2945,24 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
 
 	local logsqls = {
-		string.format(
+		{
 			[[
 				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-			]],from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.milliseconds_time()),
-		string.format(
+			]],
+			{from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.milliseconds_time()}
+		},
+		{
 			[[
 				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-			]],to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.milliseconds_time()),
+			]],
+			{to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.milliseconds_time()}
+		},
 	}
 
 	log.dump(logsqls)
-	res = dbopt.log:query(table.concat(logsqls,"\n"))
+	res = dbopt.log:batchquery(logsqls)
 	if res.errno then
 		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
@@ -2981,7 +3002,7 @@ end
 function on_sd_bind_phone(msg)
 	local guid = msg.guid
 	local phone = msg.phone
-	dbopt.game:query("UPDATE t_player SET phone = \"%s\" WHERE guid = %s;",phone,guid)
+	dbopt.game:batchquery("UPDATE t_player SET phone = \"%s\" WHERE guid = %s;",phone,guid)
 end
 
 function on_sd_update_player_info(msg)
@@ -2999,20 +3020,20 @@ function on_sd_update_player_info(msg)
 
 	local sql = "UPDATE t_player SET "
 	if msg.nickname then
-		sql = sql .. string.format(" nickname = '%s'",msg.nickname)
+		sql = sql .. string.format(" nickname = '%s'",dbopt.escapefield(msg.nickname))
 	end
 
 	if msg.icon then
-		sql = sql .. string.format(", head_url = '%s'",msg.icon)
+		sql = sql .. string.format(", head_url = '%s'",dbopt.escapefiled(msg.icon))
 	end
 
 	if msg.phone then
-		sql = sql .. string.format(", phone = '%s'",msg.phone)
+		sql = sql .. string.format(", phone = '%s'",dbopt.escapefield(msg.phone))
 	end
 
 	sql = sql .. string.format(" WHERE guid = %s;",guid)
 
-	local r = dbopt.game:query(sql)
+	local r = dbopt.game:batchquery(sql)
 	if r.errno then
 		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
 	end

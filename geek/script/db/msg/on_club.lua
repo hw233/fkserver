@@ -21,18 +21,33 @@ function on_sd_create_club(msg)
     end
 
     local transqls = {
-        string.format([[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s);]],
-                    club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()),
-        string.format([[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],club_info.id,club_info.owner),
-        string.format([[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],money_info.id,club_info.id),
-        string.format([[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id),
-        string.format([[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],club_info.id,club_info.owner),
-        string.format([[INSERT IGNORE INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]], club_info.owner,money_info.id),
+        {
+            [[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s);]],
+            {club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()}
+        },
+        {
+            [[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],{club_info.id,club_info.owner}
+        },
+        {   
+            [[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],
+            {money_info.id,club_info.id}
+        },
+        {
+            [[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],{club_info.id,money_info.id,club_info.id}
+        },
+        {
+            [[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],
+            {club_info.id,club_info.owner}
+        },
+        {
+            [[INSERT IGNORE INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]],
+            {club_info.owner,money_info.id}
+        },
     }
 
     log.dump(transqls)
 
-    local res = dbopt.game:query(table.concat(transqls,"\n"))
+    local res = dbopt.game:batchquery(transqls)
     if res.errno then
         log.error("on_sd_create_club transaction sql error:%d,%s",res.errno,res.err)
         return
@@ -303,17 +318,18 @@ function on_sd_edit_club_info(msg)
     local fields = {}
 
     if name then
-        fields.name = "'" .. name .. "'"
+        fields.name = "'" .. dbopt.escapefield(name) .. "'"
     end
 
     if icon then
         fields.icon = "'" .. icon .. "'"
     end
 
-    local r = dbopt.game:query(
-            "UPDATE t_club SET %s WHERE id = %s;",
-            table.concat(table.series(fields,function(v,k) return k .. "=" .. v end)),
-            club)
+    local r = dbopt.game:query(string.format(
+        "UPDATE t_club SET %s WHERE id = %s;",
+        table.concat(table.series(fields,function(v,k) return k .. "=" .. v end)),
+        club
+    ))
     if r.errno then
         log.error("on_sd_edit_club_info UPDATE t_club errno:%d,errstr:%s",r.errno,r.err)
         return
