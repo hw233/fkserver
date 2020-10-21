@@ -1524,10 +1524,10 @@ function base_table:cost_private_fee()
 			return
 		end
 
-		owner:incr_money({{
+		owner:incr_money({
 			money_id = 0,
 			money = -money,
-		}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.round_id)
+		},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.round_id)
 	else
 		log.error("base_table:cost_private_fee [%d] got wrong pay option.")
 	end
