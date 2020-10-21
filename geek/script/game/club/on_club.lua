@@ -1101,7 +1101,7 @@ local function on_cs_club_partner(msg,guid)
             for mem_id,_ in pairs(club_partner_member[c.id][partner_id] or {}) do
                 local mrole = club_role[c.id][mem_id]
                 if mrole == enum.CRT_PARTNER then
-                    sum = sum + recursive_sum_member_all_money(c.id,mem_id)
+                    sum = sum + recursive_sum_member_all_money(c,mem_id)
                 end
 
                 sum = sum + player_money[mem_id][money_id]
@@ -1115,12 +1115,12 @@ local function on_cs_club_partner(msg,guid)
             for mem_id,_ in pairs(club_partner_member[c.id][partner_id]) do
                 local mrole = club_role[c.id][mem_id]
                 if mrole == enum.CRT_PARTNER then
-                    local result = recursive_dismiss_partner(c.id,mem_id)
+                    local result = recursive_dismiss_partner(c,mem_id)
                     if result ~= enum.ERROR_NONE then
                         return result
                     end
                 end
-                club:exit(mem_id)
+                c:exit(mem_id)
             end
 
             return partner:dismiss()
