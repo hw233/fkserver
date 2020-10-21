@@ -3024,7 +3024,7 @@ function on_sd_update_player_info(msg)
 	end
 
 	if msg.icon then
-		sql = sql .. string.format(", head_url = '%s'",dbopt.escapefiled(msg.icon))
+		sql = sql .. string.format(", head_url = '%s'",msg.icon)
 	end
 
 	if msg.phone then

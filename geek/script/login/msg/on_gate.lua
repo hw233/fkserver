@@ -68,6 +68,7 @@ end
 local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
+        guid = tonumber(guid)
         log.warning("reg_account repeated.open_id:%s,guid:%s",msg.open_id,guid)
         local reginfo = {
             nickname = msg.nickname or ("guest_"..tostring(guid)),
