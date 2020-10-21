@@ -1716,9 +1716,13 @@ function on_ld_verify_account(msg)
 
 	if reply.ret == 0 and reply.vip == 100 then
 		log.info( "login step db.DL_VerifyAccountResult ok,account=%s", account )
-		local sql = string.format([[INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`, `login_version`, `login_channel_id`, `login_package_name`, `login_imei`, `login_ip`, `channel_id` , `is_guest` , `create_time` , `register_time`, `deprecated_imei` , `platform_id` , `seniorpromoter`),
-			VALUES('%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ,'%d' ,FROM_UNIXTIME('%d'), if ('%d'>'0', FROM_UNIXTIME('%d'), null) ,'%s' , '%s' , '%d')]],
-			reply.guid , phone ,phone_type ,version ,channelid ,package_name ,imei ,ip ,reply.channel_id , reply.is_guest , reply.create_time, reply.register_time, deprecated_imei , platform_id , reply.seniorpromoter)
+		local sql = string.format([[
+			INSERT INTO `log`.`t_log_login` (`guid`, `login_phone`, `login_phone_type`, `login_version`, `login_channel_id`, `login_package_name`, 
+			`login_imei`, `login_ip`, `channel_id` , `is_guest` , `create_time` , `register_time`, `deprecated_imei` , `platform_id` , `seniorpromoter`),
+			VALUES('%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ,'%d' ,FROM_UNIXTIME('%d'), if ('%d'>'0', FROM_UNIXTIME('%d'), null) ,'%s' , '%s' , '%d')
+			]],
+			reply.guid , phone ,phone_type ,version ,channelid ,package_name ,imei ,ip ,reply.channel_id , reply.is_guest , 
+			reply.create_time, reply.register_time, deprecated_imei , platform_id , reply.seniorpromoter)
 
 		log.info(sql)
 		dbopt.account:query(sql)
@@ -1735,11 +1739,19 @@ end
 function on_ld_reg_account(msg)
 	log.dump(msg)
 
-	local transqls = {
-		string.format([[INSERT INTO account.t_account(guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-						register_time,ip,version,phone_type,package_name,phone) 
-						VALUES(%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s');]],
-			msg.guid,
+	local guid = msg.guid
+
+	local rs = dbopt.account:query(
+			[[
+				INSERT INTO account.t_account(
+					guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
+					register_time,ip,version,phone_type,package_name,phone
+				)
+				VALUES(
+					%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s'
+				);
+			]],
+			guid,
 			msg.account,
 			msg.nickname,
 			msg.level,
@@ -1750,9 +1762,20 @@ function on_ld_reg_account(msg)
 			msg.version,
 			msg.phone_type or "unkown",
 			msg.package_name or "",
-			msg.phone or ""),
-		string.format([[INSERT INTO game.t_player(guid,account,nickname,level,head_url,phone,promoter,channel_id,created_time) VALUES(%d,'%s','%s','%s','%s','%s',%s,'%s',NOW());]],
-			msg.guid,
+			msg.phone or ""
+		)
+
+	if rs.errno then
+		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
+
+	local transqls = {
+		string.format([[
+				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,promoter,channel_id,created_time) 
+				VALUES(%d,'%s','%s','%s','%s','%s',%s,'%s',NOW());
+			]],
+			guid,
 			msg.account,
 			msg.nickname,
 			msg.level,
@@ -1760,22 +1783,32 @@ function on_ld_reg_account(msg)
 			msg.phone or "",
 			msg.promoter or "NULL",
 			msg.channel_id or ""),
-		string.format([[INSERT INTO game.t_player_money(guid,money_id) VALUES(%d,%d),(%d,%d);]],msg.guid,enum.ROOM_CARD_ID,msg.guid,-1),
-		string.format([[INSERT INTO log.t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
-				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');]],
-			msg.guid,
+		string.format([[INSERT INTO t_player_money(guid,money_id) VALUES(%d,0),(%d,-1);]],
+			guid,guid),
+	}
+
+	rs = dbopt.game:query(table.concat(transqls,"\n"))
+	if rs.errno then
+		log.error("on_ld_reg_account insert into game player info throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
+
+
+	rs = dbopt.log:query([[
+				INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
+				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');
+			]],
+			guid,
 			msg.version,
 			msg.phone_type or "unkown",
 			msg.ip,
 			msg.platform_id or "",
-			msg.phone or ""),
-	}
-
-	local res = dbopt.game:query(table.concat(transqls,"\n"))
-	if res.errno then
-		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
-		return
+			msg.phone or "")
+	if rs.errno then
+		log.error("on_ld_reg_account insert into log login info throw exception.[%d],[%s]",rs.errno,rs.errstr)
 	end
+
+	return true
 end
 
 
