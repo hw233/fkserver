@@ -294,7 +294,7 @@ function zhajinhua_table:get_men_turn_count()
 end
 
 function zhajinhua_table:is_check_money_limit()
-	local club = self:get_club()
+	local club = self.conf.club
 	if not club or club.type ~= enum.CT_UNION then
 		return
 	end
