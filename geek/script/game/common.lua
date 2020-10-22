@@ -6,11 +6,13 @@ local base_players = require "game.lobby.base_players"
 
 local reddb  = redisopt.default
 
+local common = {}
+
 local function get_room_player_count(room_id)
 	return channel.call("game."..tostring(room_id),"lua","get_player_count")
 end
 
-function find_best_room(first_game_type,second_game_type)
+function common.find_best_room(first_game_type,second_game_type)
 	local room_id 
 	local cur_player_count
 	for id,_ in pairs(channel.query()) do
@@ -31,7 +33,7 @@ function find_best_room(first_game_type,second_game_type)
 	return room_id
 end
 
-function switch_room(guid,room_id)
+function common.switch_room(guid,room_id)
 	if room_id == def_game_id then return end
 
 	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
@@ -40,3 +42,5 @@ function switch_room(guid,room_id)
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 end
+
+return common

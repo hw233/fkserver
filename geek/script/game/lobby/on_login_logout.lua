@@ -2,7 +2,7 @@
 require "data.login_award_table"
 local login_award_table = login_award_table
 
-require "game.common"
+local common = require "game.common"
 require "game.net_func"
 
 local base_player = require "game.lobby.base_player"
@@ -31,7 +31,6 @@ require "functions"
 local def_save_db_time = 60 -- 1分钟存次档
 local timer = require "timer"
 local runtime_conf = require "game.runtime_conf"
-local httpc = require "http.httpc"
 local game_util = require "game.util"
 
 local reddb = redisopt.default
@@ -1014,7 +1013,7 @@ function on_cs_create_private_room(msg,guid)
 	
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
-		local room_id = find_best_room(game_type)
+		local room_id = common.find_best_room(game_type)
 		if not room_id then
 			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
 			onlineguid.send(guid,"SC_CreateRoom",{
@@ -1024,8 +1023,7 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		
-		switch_room(guid,room_id)
+		common.switch_room(guid,room_id)
 		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
 		return
 	end
@@ -1222,7 +1220,7 @@ function on_cs_join_private_room(msg,guid)
 	local room_cfg = serviceconf[def_game_id].conf
 	if room_cfg.first_game_type ~= game_type then
 		onlineguid[guid] = nil
-		local room_id = find_best_room(game_type)
+		local room_id = common.find_best_room(game_type)
 		if not room_id then 
 			onlineguid.send(guid,"SC_JoinRoom",{
 				result = enum.ERROR_TABLE_NOT_EXISTS,

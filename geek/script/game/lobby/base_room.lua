@@ -11,6 +11,7 @@ local channel = require "channel"
 local serviceconf = require "serviceconf"
 local nameservice = require "nameservice"
 local queue = require "skynet.queue"
+local common = require "game.common"
 
 
 require "game.net_func"
@@ -311,19 +312,6 @@ function base_room:commit_dismiss_private_table(player,agree)
 	end
 
 	return tb:lockcall(function() return tb:commit_dismiss(player,agree) end)
-end
-
-function base_room:dismiss_private_table(global_table_id)
-	local private_table_conf = base_private_table[global_table_id]
-	local table_id = private_table_conf.real_table_id
-	local tb = self.tables[table_id]
-	if not tb then
-		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	end
-
-	tb:dismiss()
-	reddb:hdel("table:info:"..tostring(global_table_id))
-	reddb:srem("player:table:"..tostring(private_table_conf.owner),global_table_id)
 end
 
 function base_room:find_empty_table()
@@ -806,8 +794,8 @@ function base_room:player_exit_room(player,offline)
 		reddb:hdel(online_key,"second_game_type")
 	else
 		log.info("player_exit_room not set guid[%d] onlineinfo",guid)
-		local room_id = find_best_room(1)
-		switch_room(guid,room_id)
+		local room_id = common.find_best_room(1)
+		common.switch_room(guid,room_id)
 	end
 
 	onlineguid[guid] = nil
