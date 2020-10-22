@@ -376,21 +376,20 @@ function cards_util.seek_great_than(kcards,ctype,cvalue,ccount,rule)
 				return pick_func[PDK_CARD_TYPE.BOMB](i)
 			end
 		end
+
+		if has_missle then
+			return seek_func[PDK_CARD_TYPE.MISSLE]()
+		end
 	end
 
 	if ctype == PDK_CARD_TYPE.MISSLE then
 		return
 	end
 
-	local seekfns = {seek_func[ctype],seek_any_bomb}
-	if has_missle then
-		table.insert(seekfns,seek_func[PDK_CARD_TYPE.MISSLE]) 
-	end
-
 	local cards
-	for _,fn in pairs(seekfns) do
-		cards = fn()
-		if cards then break end
+	cards = seek_func[ctype]()
+	if not cards and ctype ~= PDK_CARD_TYPE.BOMB then
+		cards = seek_any_bomb()
 	end
 
 	log.dump(cards)
