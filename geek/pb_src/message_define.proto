@@ -1728,3 +1728,17 @@ message SC_NotifyOnline{
 	int32 guid = 2;
 	bool is_online = 3;
 }
+
+message SC_StartTimer{
+	enum MsgID { Nil = 0; ID = 1233; }
+	int32 id = 1;
+	int32 type = 2;
+	int32 left_time = 3;
+	int32 total_time = 4;
+	string extend = 5;
+}
+
+message SC_CancelTimer{
+	enum MsgID { Nil = 0; ID = 1234; }
+	int32 id = 1;
+}

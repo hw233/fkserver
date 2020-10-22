@@ -178,6 +178,36 @@ function base_table:get_free_chair_id()
 	return nil
 end
 
+function base_table:begin_clock_ex(timeout,id,total_time,player)
+	if player then 
+		send2client_pb(player,"SC_StartTimer",{
+			left_time = math.ceil(timeout),
+			total_time = total_time and math.floor(total_time) or nil,
+			id = id,
+		})
+		return
+	end
+	
+	self:broadcast2client("SC_StartTimer",{
+		left_time = timeout,
+		total_time = total_time and math.floor(total_time) or nil,
+		id = id,
+	})
+end
+
+function base_table:cancel_clock_ex(id,player)
+	if player then 
+		send2client_pb(player,"SC_CancelTimer",{
+			id = id,
+		})
+		return
+	end
+	
+	self:broadcast2client("SC_CancelTimer",{
+		id = id,
+	})
+end
+
 function base_table:begin_clock(timeout,player,total_time)
 	if player then 
 		send2client_pb(player,"SC_TimeOutNotify",{
@@ -650,9 +680,52 @@ function base_table:incr_trustee_round()
 	self.someone_trustee_round = (self.someone_trustee_round or 0) + 1
 end
 
+function base_table:begin_kickout_no_ready_timer(timeout,fn)
+	if self.kickout_no_ready_timer then
+		log.warning("base_table:begin_kickout_no_ready_timer timer not nil")
+		self.kickout_no_ready_timer:kill()
+	end
+
+	self.kickout_no_ready_timer = self:new_timer(timeout,fn)
+	self:begin_clock_ex(timeout,self.kickout_no_ready_timer.id)
+	log.info("base_table:begin_kickout_no_ready_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.kickout_no_ready_timer.id,timeout)
+end
+
+function base_table:sync_kickout_no_ready_timer(player)
+	if not self.kickout_no_ready_timer then
+		return
+	end
+
+	local remain_time = math.floor(self.kickout_no_ready_timer.remainder)
+	local id = self.kickout_no_ready_timer.id
+	if player then
+		send2client_pb(player,"SC_StartTimer",{
+			id = id,
+			left_time = remain_time,
+		})
+		return
+	end
+
+	self:broadcast2client("SC_StartTimer",{
+		id = id,
+		left_time = remain_time,
+	})
+end
+
+function base_table:cancel_kickout_no_ready_timer()
+	if not self.kickout_no_ready_timer then
+		return
+	end
+
+	self:cancel_clock_ex(self.kickout_no_ready_timer.id)
+	log.info("base_table:cancel_kickout_timer_when_no_ready table_id:%s,timer:%s",self.table_id_,self.kickout_no_ready_timer.id)
+	self.kickout_no_ready_timer:kill()
+	self.kickout_no_ready_timer = nil
+end
+
 function base_table:begin_ready_timer(timeout,fn)
 	if self.ready_timer then 
-		log.warning("maajan_table:begin_ready_timer timer not nil")
+		log.warning("base_table:begin_ready_timer timer not nil")
 		self.ready_timer:kill()
 	end
 
@@ -1014,6 +1087,14 @@ function base_table:on_player_sit_down(player,chair_id,reconnect)
 	end
 end
 
+function base_table:on_player_sit_downed(player,reconnect)
+	if not reconnect then
+		self:check_kickout_no_ready()
+	else
+		self:sync_kickout_no_ready_timer(player)
+	end
+end
+
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	local can =  self:can_sit_down(player,chair_id,reconnect)
@@ -1028,7 +1109,6 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 			player.guid,player.table_id,player.chair_id)
 
 	self.player_count = self.player_count + 1
-	
 	
 	if not player:is_android() then
 		for i, p in ipairs(self.players) do
@@ -1053,9 +1133,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	return enum.LOGIN_RESULT_SUCCESS
 end
 
-function base_table:player_sit_down_finished(player)
-	return
-end
+
 
 function base_table:on_private_pre_dismiss(reason)
 	
@@ -1102,7 +1180,7 @@ function base_table:do_dismiss(reason)
 
 	self:cancel_delay_dismiss()
 	self:cancel_ready_timer()
-	self:cancel_all_dealy_kickout()
+	self:cancel_all_delay_kickout()
 	self:on_private_pre_dismiss()
 
 	self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
@@ -1186,6 +1264,8 @@ function base_table:cancel_ready(chair_id)
 			is_ready = false,
 		})
 	end
+
+	self:check_kickout_no_ready()
 end
 
 function base_table:is_ready(chair_id)
@@ -1255,7 +1335,7 @@ function base_table:cancel_delay_kickout(player)
 	player.kickout_timer = nil
 end
 
-function base_table:cancel_all_dealy_kickout()
+function base_table:cancel_all_delay_kickout()
 	self:foreach(function(p)
 		self:cancel_delay_kickout(p)
 	end)
@@ -1327,6 +1407,8 @@ function base_table:player_stand_up(player, reason)
 		player.chair_id = nil
 
 		self.players[chairid] = nil
+
+		self:on_player_stand_uped(player,reason)
 
 		if 	player_count == 1 and
 			(self.ext_round_status == EXT_ROUND_STATUS.END or reason ~= enum.STANDUP_REASON_OFFLINE) 
@@ -1404,6 +1486,12 @@ function base_table:on_player_stand_up(player,reason)
 	self:notify_stand_up(player,reason)
 end
 
+function base_table:on_player_stand_uped(player,reason)
+	if resaon ~= enum.STANDUP_REASON_OFFLINE then
+		self:check_kickout_no_ready()
+	end
+end
+
 function base_table:on_offline(player,reason)
 	player.inactive = true
 	self:notify_offline(player,false)
@@ -1447,6 +1535,31 @@ function base_table:set_trusteeship(player,trustee)
 		self.someone_trustee_round = self.someone_trustee_round or 1
 	else
 		self.someone_trustee_round = nil
+	end
+end
+
+
+
+function base_table:check_kickout_no_ready()
+	local ready_count = table.sum(self.players,function(p) 
+		return self.ready_list[p.chair_id] and 1 or 0 
+	end)
+
+	local player_count = table.nums(self.players)
+	if player_count - ready_count ~= 1 or player_count ~= self.start_count then
+		self:cancel_kickout_no_ready_timer()
+		return
+	end
+
+	local trustee,seconds = self:get_trustee_conf()
+	if trustee and seconds > 0 then
+		self:begin_kickout_no_ready_timer(seconds,function()
+			self:foreach(function(p)
+				if not self.ready_list[p.chair_id] then
+					p:forced_exit(enum.STANDUP_REASON_NO_READY_TIMEOUT)
+				end
+			end)
+		end)
 	end
 end
 
@@ -1498,6 +1611,8 @@ function base_table:ready(player)
 			end
 		end)
 
+		self:check_kickout_no_ready()
+
 		-- 通知自己准备
 		self:broadcast2client("SC_Ready", {
 			ready_chair_id = player.chair_id,
@@ -1511,8 +1626,6 @@ end
 function base_table:reconnect(player)
 	-- 重新上线
 	log.info("---------base_table:reconnect,%s-----------",player.guid)
-	log.info("set Dropped is false")
-	log.info("set online is true")
 	player.inactive = nil
 	log.info("set player[%d] in_game true" ,player.guid)
 	self:on_reconnect(player)
@@ -1665,6 +1778,7 @@ end
 function base_table:on_started(player_count)
 	if not self.private_id then return end
 	self:cancel_ready_timer()
+	self:cancel_kickout_no_ready_timer()
 	self.ext_round_status = EXT_ROUND_STATUS.GAMING
 
 	self.player_count = player_count
@@ -1816,7 +1930,7 @@ end
 function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
 	self:cancel_delay_dismiss()
-	self:cancel_all_dealy_kickout()
+	self:cancel_all_delay_kickout()
 	local result_ = self:check_single_game_is_maintain()
 	if result_ == true then
 		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
@@ -1910,7 +2024,7 @@ function base_table:private_init(private_id,rule,conf)
 	self.start_count = conf.chair_count
 	self.conf = conf
 	self:cancel_delay_dismiss()
-	self:cancel_all_dealy_kickout()
+	self:cancel_all_delay_kickout()
 	self.ext_round_status = EXT_ROUND_STATUS.FREE
 	self.someone_trustee_round = nil
 	self.is_someone_trustee = nil
@@ -2060,13 +2174,12 @@ function base_table:play_once_again(player)
 end
 
 function base_table:new_timer(timeout,fn,...)
-	log.dump(timeout)
 	local timer
 	timer = timer_manager:new_timer(timeout,function()
 		log.info("base_table:new_timer timer timeout,timer:%s",timer.id)
 		self:lockcall(fn)
 	end,...)
-	log.info("base_table:new_timer timer:%s",timer.id)
+	log.info("base_table:new_timer timer:%s,time:%s",timer.id,timeout)
 	return timer
 end
 

@@ -690,7 +690,7 @@ function on_cs_change_game(msg,guid)
 			
 			onlineguid.send(player, "SC_EnterRoomAndSitDown", notify)
 
-			tb:player_sit_down_finished(player)
+			tb:on_player_sit_downed(player)
 
 			player.noready = nil 
 			tb:send_playerinfo(player)
@@ -782,7 +782,7 @@ local function check_change_complete(player, msg)
 		
 		onlineguid.send(player, "SC_EnterRoomAndSitDown", notify)
 
-		tb:player_sit_down_finished(player)
+		tb:on_player_sit_downed(player)
 
 		log.info("change step other ok,account=%s", player.account)
 	else
@@ -1107,6 +1107,8 @@ function on_cs_create_private_room(msg,guid)
 			round_id = tb:hold_ext_game_id()
 		} or nil,
 	})
+
+	tb:on_player_sit_downed(player)
 end
 
 function on_cs_reconnect(guid)
@@ -1176,6 +1178,8 @@ function on_cs_reconnect(guid)
 	})
 
 	g_room:reconnect(player,table_id,chair_id)
+
+	tb:on_player_sit_downed(player,true)
 end
 
 -- 加入私人房间
@@ -1282,32 +1286,34 @@ function on_cs_join_private_room(msg,guid)
 	end
 
 	local money_id = club_id and club_money_type[club_id] or -1
-	local seats
-	if result == enum.GAME_SERVER_RESULT_SUCCESS then
-		seats = table.series(tb.players,function(p) 
-			log.dump(p.trustee)
-			return {
-				chair_id = p.chair_id,
-				player_info = {
-					icon = p.icon,
-					guid = p.guid,
-					nickname = p.nickname,
-					sex = p.sex,
-				},
-				longitude = p.gps_longitude,
-				latitude = p.gps_latitude,
-				ready = tb.ready_list[p.chair_id] and true or false,
-				online = not p.inactive and true or false, 
-				money = {
-					money_id = money_id,
-					count = p:get_money(money_id),
-				},
-				is_trustee = p.trustee and true or false,
-			}
-		end)
-	else
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = result,
+		})
+		return
 	end
+	
+	local seats = table.series(tb.players,function(p) 
+		return {
+			chair_id = p.chair_id,
+			player_info = {
+				icon = p.icon,
+				guid = p.guid,
+				nickname = p.nickname,
+				sex = p.sex,
+			},
+			longitude = p.gps_longitude,
+			latitude = p.gps_latitude,
+			ready = tb.ready_list[p.chair_id] and true or false,
+			online = not p.inactive and true or false, 
+			money = {
+				money_id = money_id,
+				count = p:get_money(money_id),
+			},
+			is_trustee = p.trustee and true or false,
+		}
+	end)
 
 	log.dump(seats)
 
@@ -1325,6 +1331,8 @@ function on_cs_join_private_room(msg,guid)
 			round_id = tb:hold_ext_game_id(),
 		} or nil,
 	})
+
+	tb:on_player_sit_downed()
 end
 
 
