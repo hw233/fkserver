@@ -1541,6 +1541,10 @@ end
 
 
 function base_table:check_kickout_no_ready()
+	if self.ext_round_status ~= EXT_ROUND_STATUS.FREE then
+		return
+	end
+
 	local ready_count = table.sum(self.players,function(p) 
 		return self.ready_list[p.chair_id] and 1 or 0 
 	end)
@@ -1920,8 +1924,6 @@ function base_table:on_process_over(reason,l)
 		table_id = self.private_id,
 		log = l,
 	})
-
-
 
 	self.ext_round_status = EXT_ROUND_STATUS.END
 end
