@@ -2688,27 +2688,17 @@ end
 
 local function incr_player_money(guid,money_id,money,where,why,why_ext)
 	log.info("%s,%s,%s,%s,%s",guid,money_id,money,where,why)
-	local res = dbopt.game:batchquery(
-		[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where
-	)
-	if res.errno then
-		log.error("incr_player_money query old money error,%s,%s,%s",guid,money_id,where)
-		return
-	end
-
-	log.dump(res)
-
-	local oldmoney = res[1] and res[1].money or 0
-
 	local res = dbopt.game:batchquery({
-			string.format([[
-				INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);
-				]],guid,money_id,money,where,money
-			),
-			string.format([[
-				SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;
-				]],guid,money_id,where
-			),
+			{
+				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],{guid,money_id,where}
+			},
+			{
+				[[INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);]],
+				{guid,money_id,money,where,money}
+			},
+			{
+				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],{guid,money_id,where}
+			},
 		});
 	if res.errno then
 		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
@@ -2717,7 +2707,8 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	log.dump(res)
 
-	local newmoney = res[2][1].money
+	local oldmoney = res[1][1] and res[1][1].money or 0
+	local newmoney = res[3][1] and res[3][1].money or 0
 	if not oldmoney or not newmoney then
 		log.error("incr_player_money bad oldmoney [%s] or newmoney [%s]",oldmoney,newmoney)
 		return
@@ -2725,9 +2716,10 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 
 	dbopt.log:batchquery([[
 			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-			VALUES(%d,%d,%d,%d,%d,%d,%s,%d);
+			VALUES(%d,%d,%d,%d,%d,%d,'%s',%d);
 		]],
-		guid,money_id,oldmoney,newmoney,where,why,why_ext and string.format('"%s"',why_ext) or 'NULL',timer.milliseconds_time())
+		guid,money_id,oldmoney,newmoney,where,why,
+		why_ext or '',timer.milliseconds_time())
 	return oldmoney,newmoney
 end
 
