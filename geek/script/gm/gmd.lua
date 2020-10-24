@@ -480,14 +480,45 @@ end
 
 function gmd.turn_diamond_switch(data)
     reddb:set("runtime_conf:private_fee:-1",(data and data.open and data.open ~= 0) and 1 or 0)
+    return {
+        errcode = error.SUCCESS,
+    }
 end
 
 function gmd.turn_roomcard_switch(data)
     reddb:set("runtime_conf:private_fee:0",(data and data.open and data.open ~= 0) and 1 or 0)
+    return {
+        errcode = error.SUCCESS,
+    }
 end
 
 function gmd.turn_h5_login_switch(data)
     reddb:set("runtime_conf:global:h5_login",(data and data.open and data.open ~= 0) and 1 or 0)
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.update_player(data)
+    local guid = tonumber(data.guid) or nil
+    if not guid or not base_players[guid] then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "player not exists!",
+        }
+    end
+
+    local update = {
+        channel_id = data.channel_id,
+        promoter = data.promoter,
+        platform_id = data.platform_id,
+    }
+
+    reddb:hmset("player:info:"..tostring(guid),update)
+
+    return {
+        errcode = error.SUCCESS
+    }
 end
 
 gmd["club/create"] = gmd.create_club
@@ -496,5 +527,6 @@ gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove
 gmd["online/player"] = gmd.online_player
+gmd["player/update"] = gmd.update_player
 
 return gmd
