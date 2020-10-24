@@ -89,9 +89,7 @@ function land_table:on_private_dismissed()
 end
 
 function land_table:on_private_pre_dismiss()
-    if self.private_id and self.cur_round and self.cur_round > 0 then
-        self:on_final_game_overed()
-    end
+
 end
 
 function land_table:can_dismiss()
@@ -144,6 +142,7 @@ function land_table:do_game_start()
 		landlord_compete = {},
 		landlord_cards = nil,
 		base_score = nil,
+		left_cards = nil,
 	}
 
 	self.bomb = 0
@@ -169,7 +168,7 @@ function land_table:do_game_start()
 end
 
 function land_table:deal_cards()
-	local dealer = card_dealer.new(clone(all_cards[self.start_count]))
+	local dealer = card_dealer.new(all_cards[self.start_count])
 	dealer:shuffle()
 	local pei_cards = {
 		-- {3,23,43,63,4,24,44,64,5,25,45,65,14,34,54,15},
@@ -182,7 +181,6 @@ function land_table:deal_cards()
 		self.game_log.players[chair].deal_cards = cards
 		p.hand_cards = table.map(cards,function(c) return c,1 end)
 	end)
-
 
 	self:foreach(function(p)
 		self:send_desk_enter_data(p)
