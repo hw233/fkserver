@@ -33,7 +33,7 @@ local game_util = require "game.util"
 
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 10 * 60
-local auto_kickout_timer = 5 * 60
+local auto_kickout_timer = 2 * 60
 
 local EXT_ROUND_STATUS = {
 	NONE = 0,
