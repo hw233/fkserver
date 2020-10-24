@@ -564,3 +564,13 @@ message SC_MaajanZhuoJiGuMai{
 	int32 chair_id = 2;
 	int32 score = 3;
 }
+
+message CS_MaajanGetTingTilesInfo{
+	enum MsgID { Nil = 0; ID = 23143;}
+}
+
+message SC_MaajanGetTingTilesInfo{
+	enum MsgID { Nil = 0; ID = 23144;}
+	int32 result = 1;
+	repeated TingTilesInfo tiles_info = 2;
+}

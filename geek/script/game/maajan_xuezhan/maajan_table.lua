@@ -2764,6 +2764,42 @@ function maajan_table:can_hu(player,in_pai)
     return  gang > 0 or score > 1 or fan > 0
 end
 
+function maajan_table:get_ting_tiles_info(player)
+    local hu_tips = self.rule and self.rule.play.hu_tips or nil
+    if not hu_tips then 
+        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+            result = enum.ERROR_INVALIDE_OPERATION,
+        })
+        return
+    end
+
+    if player.hu then 
+        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+            result = enum.ERROR_INVALIDE_OPERATION,
+        })
+        return
+    end
+    
+    if not self:is_que(player) then
+        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+            result = enum.ERROR_NONE,
+        })
+        return
+    end
+
+    local ting_tiles = self:ting(player)
+    local pai = clone(player.pai)
+    local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
+        return {tile = tile,fan = self:hu_fan(pai,tile)} 
+    end)
+
+    log.dump(hu_tile_fans)
+
+    send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        tiles_info = hu_tile_fans,
+    })
+end
+
 function maajan_table:global_status_info()
     local seats = {}
     for chair_id,p in pairs(self.players) do
