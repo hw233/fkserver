@@ -183,18 +183,6 @@ function zhajinhua_table:player_bet(player,score)
 	self.all_score = (self.all_score or 0) + bet_score
 end
 
-function zhajinhua_table:get_trustee_conf()
-    local trustee = self.rule and self.rule.trustee or nil
-    if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-        local trstee_conf = self.room_.conf.private_conf.trustee
-        local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-        local type = trstee_conf.type_opt[trustee.type_opt + 1]
-        return type,seconds
-    end
-
-    return nil
-end
-
 function zhajinhua_table:begin_clock_timer(timeout,fn)
     if self.clock_timer then 
         log.warning("zhajinhua_table:begin_clock_timer timer not nil")
