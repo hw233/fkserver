@@ -103,9 +103,7 @@ function pdk_table:on_private_dismissed()
 end
 
 function pdk_table:on_private_pre_dismiss()
-    if self.private_id and self.cur_round and self.cur_round > 0 then
-        self:on_final_game_overed()
-    end
+	
 end
 
 function pdk_table:can_dismiss()
@@ -209,10 +207,12 @@ function pdk_table:on_started(player_count)
 		rule = self.private_id and self.rule or nil,
 		club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
 		table_id = self.private_id or nil,
+		left_cards = nil,
 	}
 
 	self.bomb = 0
 	self.last_discard = nil
+	self.left_cards = nil
 
 	-- 获取 牌局id
 	log.info("gamestart =================================================")
@@ -270,21 +270,15 @@ function pdk_table:deal_cards()
 		p.hand_cards = table.map(cards,function(c) return c,1 end)
 	end)
 
+	self.left_cards = dealer:left_cards()
+	log.dump(self.left_cards)
+	if #self.left_cards > 0 then
+		self.game_log.left_cards = self.left_cards
+	end
+
 	self:foreach(function(p)
 		self:send_desk_enter_data(p)
 	end)
-end
-
-function pdk_table:get_trustee_conf()
-	local trustee = self.rule and self.rule.trustee or nil
-	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-	    local trstee_conf = self.room_.conf.private_conf.trustee
-	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
-	    return type,seconds
-	end
-    
-	return nil
 end
 
 function pdk_table:begin_discard()
@@ -415,12 +409,13 @@ end
 
 function pdk_table:on_game_overed()
     self.game_log = {}
-
+	self.left_cards = nil
+	
     self:clear_ready()
 
     self:foreach(function(p)
 		p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
-    end)
+	end)
 
 	self.status = TABLE_STATUS.FREE
 	base_table.on_game_overed(self)
@@ -452,7 +447,8 @@ function pdk_table:on_process_over(reason)
     end
 
     self:cost_tax(total_winlose)
-    self.status = nil
+	self.status = nil
+	self.left_cards = nil
 
     for _,p in pairs(self.players) do
         p.total_money = nil
@@ -792,8 +788,9 @@ function pdk_table:game_balance(winner)
 	local card_scores = table.merge(card_winers,card_losers,function(l,r) return (l or 0) + (r or 0) end)
 	log.dump(card_scores)
 
+	local each_bomb_score = play.bomb_score or 5
 	local bomb_lose_matrix = table.map(self.players,function(p,chair)
-		local score = (p.bomb or 0) * 5
+		local score = (p.bomb or 0) * each_bomb_score
 		return chair,table.map(self.players,function(_,c) return c,c ~= chair and -score or nil end)
 	end)
 	local bomb_winners = table.map(bomb_lose_matrix,function(losers,chair) return chair,math.abs(table.sum(losers)) end)
@@ -838,7 +835,8 @@ function pdk_table:game_balance(winner)
 				bomb_score = bomb_scores[chair] or 0,
 				hand_cards = table.keys(p.hand_cards),
 			}
-		end)
+		end),
+		left_cards = self.left_cards,
 	})
 
 	self:notify_game_money()

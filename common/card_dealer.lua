@@ -81,4 +81,8 @@ function card_dealer:layout_cards(cards,begin)
     end
 end
 
+function card_dealer:left_cards()
+    return table.slice(self.cards,1,self.remainder_card_count)
+end
+
 return card_dealer

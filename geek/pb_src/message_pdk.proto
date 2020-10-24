@@ -95,6 +95,7 @@ message PdkBlanacePlayer{
 message SC_PdkGameOver {
 	enum MsgID { Nil = 0; ID = 24106; }
 	repeated PdkBlanacePlayer 	player_balance = 2;
+	repeated int32 left_cards = 3;
 }
 
 message PdkStatisticsItem{
