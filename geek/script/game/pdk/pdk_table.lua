@@ -272,7 +272,7 @@ function pdk_table:deal_cards()
 
 	self.left_cards = dealer:left_cards()
 	log.dump(self.left_cards)
-	if #self.left_cards > 0 then
+	if self.left_cards and #self.left_cards > 0 then
 		self.game_log.left_cards = self.left_cards
 	end
 
