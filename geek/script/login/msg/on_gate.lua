@@ -230,6 +230,8 @@ function on_cl_auth(msg)
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
     end
 
+    log.dump(auth)
+
     local uuid = reddb:get(string.format("player:auth_id:%s",auth.unionid))
     if not uuid or uuid == "" then
         uuid = gen_uuid(auth.unionid)
