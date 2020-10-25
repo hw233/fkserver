@@ -2108,10 +2108,36 @@ function on_cs_request_bind_wx(msg,guid)
 		sex = auth.sex
 	})
 
-	channel.publish("db.?","msg","SD_UpdatePlayerInfo",player)
+	local info = {
+		guid = player.guid,
+		account = player.open_id,
+		nickname = player.nickname,
+		open_id = player.open_id,
+		sex = player.sex,
+		icon = player.icon,
+		version = player.version,
+		login_ip = player.ip,
+		level = 0,
+		imei = "",
+		is_guest = true,
+		login_time = player.login_time,
+		package_name = player.package_name,
+		phone_type = player.phone_type,
+		role = 0,
+		ip = player.ip,
+		promoter = player.promoter,
+		channel_id = player.channel_id,
+	}
+
+	channel.publish("db.?","msg","SD_UpdatePlayerInfo",{
+		nickname = player.nickname,
+		icon = player.icon,
+		sex = player.sex,
+
+	})
 	onlineguid.send(guid,"SC_RequestBindWx",{
 		result = enum.ERROR_NONE,
-		pb_base_info = player,
+		pb_base_info = info,
 	})
 end
 
