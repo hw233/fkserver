@@ -1745,10 +1745,10 @@ function on_ld_reg_account(msg)
 			[[
 				INSERT INTO account.t_account(
 					guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-					register_time,ip,version,phone_type,package_name,phone
+					register_time,ip,version,phone_type,package_name,phone,union_id
 				)
 				VALUES(
-					%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s'
+					%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s','%s'
 				);
 			]],
 			guid,
@@ -1762,18 +1762,19 @@ function on_ld_reg_account(msg)
 			msg.version,
 			msg.phone_type or "unkown",
 			msg.package_name or "",
-			msg.phone or ""
+			msg.phone or "",
+			msg.union_id or ""
 		)
 
 	if rs.errno then
-		log.error("on_ld_reg_account insert into t_account throw exception.[%d],[%s]",res.errno,res.err)
+		log.error("on_ld_reg_account insert into t_account throw exception.[%s],[%s]",rs.errno,rs.err)
 		return
 	end
 
 	local transqls = {
 		{	[[
-				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,promoter,channel_id,created_time) 
-				VALUES(%d,'%s','%s','%s','%s','%s',%s,'%s',NOW())
+				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,union_id,promoter,channel_id,created_time) 
+				VALUES(%d,'%s','%s','%s','%s','%s','%s',%s,'%s',NOW())
 			]],
 		{
 			guid,
@@ -1782,6 +1783,7 @@ function on_ld_reg_account(msg)
 			msg.level,
 			msg.icon,
 			msg.phone or "",
+			msg.union_id or "",
 			msg.promoter or "NULL",
 			msg.channel_id or ""
 		}},
@@ -1792,7 +1794,7 @@ function on_ld_reg_account(msg)
 
 	rs = dbopt.game:batchquery(transqls)
 	if rs.errno then
-		log.error("on_ld_reg_account insert into game player info throw exception.[%d],[%s]",res.errno,res.err)
+		log.error("on_ld_reg_account insert into game player info throw exception.[%d],[%s]",rs.errno,rs.err)
 		return
 	end
 
