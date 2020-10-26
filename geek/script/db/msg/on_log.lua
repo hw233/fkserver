@@ -234,24 +234,30 @@ function on_sd_log_player_commission(msg)
     return true
 end
 
-function on_sd_log_player_commission_contribute(msg)
-    local parent = msg.parent
-    local guid = msg.guid
-    local commission = msg.commission
+function on_sd_log_player_commission_contributes(msg)
+    local contributions = msg.contributions
     local template =  msg.template
     local club = msg.club
 
-    if not parent or parent == 0 then
-        log.error("on_sd_log_player_commission_contribute parent is ilegal.")
+    if not contributions or not club or club == 0 then
+        log.error("on_sd_log_player_commission_contributes contributions is ilegal.")
         return
     end
 
+    local values = table.series(contributions,function(s)
+        local parent = s.parent
+        local guid = s.son
+        local commission = s.commission
+        return string.format("(%s,%s,%s,%s,%s,%s)",parent,guid,commission or 0,template or "NULL",club,os.time())
+    end)
+
     local res = dbopt.log:query([[
-        INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,club,create_time)
-        VALUES(%s,%s,%s,%s,%s,%s)]],
-        parent,guid,commission or 0,template or "NULL",club,os.time())
+            INSERT INTO t_log_player_commission_contribute(parent,son,commission,template,club,create_time)
+            VALUES
+            ]] .. table.concat(values,",")
+        )
     if res.errno then
-        log.error("on_sd_log_player_commission_contribute INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
+        log.error("on_sd_log_player_commission_contributes INSERT INTO t_log_player_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
 end
 

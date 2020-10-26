@@ -466,37 +466,44 @@ function base_table:do_commission(taxes)
 
 	local club_id = club.id
 	local commissions = {}
+	local contributions = {}
 	for guid,tax in pairs(taxes) do
 		local last_rate = 0
 		local p_guid = guid
 		local s_guid = guid
+		local remain = tax
 		while p_guid and p_guid ~= 0 do
-			local role = club_role[club_id][p_guid]
-			if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
-				local commission_rate = get_club_partner_template_commission_rate(club_id,template_id,p_guid)
-				local commission = tax * (commission_rate - last_rate)
-				last_rate = commission_rate
+			local commission_rate = get_club_partner_template_commission_rate(club_id,template_id,p_guid)
+			local commission = math.ceil(tax * (commission_rate - last_rate))
+			last_rate = commission_rate
 
-				commissions[p_guid] = (commissions[p_guid] or 0) + commission
+			commission = remain < commission and remain or commission
+			remain = remain - commission
+			commissions[p_guid] = (commissions[p_guid] or 0) + commission
 
-				channel.publish("db.?","msg","SD_LogPlayerCommissionContribute",{
+			if commission > 0 then
+				table.insert(contributions,{
 					parent = p_guid,
-					guid = s_guid,
-					commission = math.floor(commission + 0.00000001),
-					template = template_id,
-					club = club_id,
+					son = s_guid,
+					commission = commission,
 				})
-
-				log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)
 			end
+
+			log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)
 
 			s_guid = p_guid
 			p_guid = club_member_partner[club_id][p_guid]
 		end
 	end
+	
+	channel.publish("db.?","msg","SD_LogPlayerCommissionContributes",{
+		contributions = contributions,
+		template = template_id,
+		club = club_id,
+	})
 
 	for guid,commission in pairs(commissions) do
-		commission = math.floor(commission + 0.0001)
+		commission = math.floor(commission + 0.5)
 		if commission > 0 then
 			club:incr_team_commission(guid,commission,self.ext_round_id)
 		end
@@ -616,8 +623,21 @@ function base_table:cost_tax(winlose)
 			return
 		end
 
-		local eachwin = bigwin_tax / table.nums(self.players)
-		local commission_tax = table.map(self.players,function(p) return p.guid,math.floor(eachwin) end)
+		local function each_bigwin_commission_tax(total,win_guid)
+			local player_count = table.nums(self.players)
+			local eachwin = math.floor(bigwin_tax / player_count)
+			local commission_tax = table.map(self.players,function(p)
+				return p.guid,eachwin
+			end)
+
+			local total_delta = bigwin_tax - (eachwin * player_count)
+
+			commission_tax[win_guid] = commission_tax[win_guid] + total_delta
+
+			return commission_tax
+		end
+
+		local commission_tax = each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
 
 		self:do_commission(commission_tax)
 		return
