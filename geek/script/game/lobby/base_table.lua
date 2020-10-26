@@ -2080,7 +2080,8 @@ function base_table:check_bankruptcy()
 	local money_id = self:get_money_id()
 	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
 	local bankruptcy = table.map(self.players,function(p)
-		return p.guid,player_money[p.guid][money_id] < limit
+		local money = player_money[p.guid][money_id]
+		return p.guid,money <= 0 or money < limit
 	end)
 	return bankruptcy
 end
@@ -2093,7 +2094,8 @@ function base_table:is_bankruptcy(player)
 
 	local money_id = self:get_money_id()
 	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
-	return player_money[player.guid][money_id] < limit
+	local money = player_money[player.guid][money_id]
+	return money <= 0 or money < limit
 end
 
 --玩家破产日志
