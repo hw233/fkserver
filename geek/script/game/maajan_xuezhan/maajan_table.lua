@@ -2673,37 +2673,34 @@ end
 function maajan_table:rule_hu(pai,in_pai,mo_pai)
     local private_conf = self:room_private_conf()
     local types = {}
-    if not private_conf or not private_conf.play then
-        types = mj_util.hu(pai,in_pai,mo_pai)
-    else
-        local play_opt = private_conf.play.option
-        local hu_types = mj_util.hu(pai,in_pai,mo_pai)
-        log.dump(hu_types)
-        types = table.series(hu_types,function(ones)
-            local ts = {}
-            for t,c in pairs(ones) do
-                if  (t == HU_TYPE.KA_WU_XING and not self.rule.play.jia_xin_5) or
-                    (t == HU_TYPE.KA_ER_TIAO and (not self.rule.play.ka_er_tiao or play_opt ~= "si_ren_liang_fang")) or
-                    (t == HU_TYPE.QUAN_YAO_JIU and not self.rule.play.yao_jiu) or 
-                    ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not self.rule.play.men_qing) or 
-                    -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
-                    ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
-                        not self.rule.play.si_dui)
-                then
-                    
-                elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
-                    ts[HU_TYPE.QING_YI_SE] = 1
-                    ts[HU_TYPE.DA_DUI_ZI] = 1
-                elseif t == HU_TYPE.JIANG_DUI and not self.rule.play.yao_jiu then
-                    ts[HU_TYPE.DA_DUI_ZI] = c
-                else
-                    ts[t] = c
-                end
+    local play_opt = (not private_conf or not private_conf.play) and "xuezhan" or private_conf.play.option
+    local hu_types = mj_util.hu(pai,in_pai,mo_pai)
+    log.dump(hu_types)
+    local rule_play = self.rule.play
+    types = table.series(hu_types,function(ones)
+        local ts = {}
+        for t,c in pairs(ones) do
+            if  (t == HU_TYPE.KA_WU_XING and not rule_play.jia_xin_5) or
+                (t == HU_TYPE.KA_ER_TIAO and not rule_play.ka_er_tiao) or
+                (t == HU_TYPE.QUAN_YAO_JIU and not rule_play.yao_jiu) or 
+                ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not rule_play.men_qing) or 
+                -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
+                ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
+                    not rule_play.si_dui)
+            then
+                
+            elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
+                ts[HU_TYPE.QING_YI_SE] = 1
+                ts[HU_TYPE.DA_DUI_ZI] = 1
+            elseif t == HU_TYPE.JIANG_DUI and not rule_play.yao_jiu then
+                ts[HU_TYPE.DA_DUI_ZI] = c
+            else
+                ts[t] = c
             end
+        end
 
-            return ts
-        end)
-    end
+        return ts
+    end)
 
 
     local function get_types_info(ts)
