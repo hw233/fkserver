@@ -24,14 +24,17 @@ function server.logout(guid)
 end
 
 function server.close(fd)
+	local c = connection[fd]
 	connection[fd] = nil
 	gateserver.closeclient(fd)
+	c.fd = nil
 end
 
 function server.login(fd,guid,conf)
-	assert(user_online[guid] == nil)
-	local c = assert(connection[fd])
-	c.guid = guid
+	local c = connection[fd]
+	if c then
+		c.guid = guid
+	end
 	user_online[guid] = {
 		conf = conf,
 		version = 0,
