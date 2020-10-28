@@ -635,27 +635,27 @@ function base_room:exit_server(player,offline,reason)
 	log.info("base_room:exit_server guid[%d],offline:%s,reason:%s",player.guid,offline,reason)
 	if not player.table_id or not player.chair_id then
 		log.warning("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",player.guid)
-		self:player_exit_room(player,offline)
-		player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
-		return false,enum.GAME_SERVER_RESULT_IN_GAME
+		self:logout_game(player,offline)
+		-- player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
 
 	local tb = self:find_table_by_player(player)
 	if not tb then
 		log.warning("base_room:exit_server not found table:%s,guid:%s",player.table_id,player.guid)
-		return true,enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,offline and enum.STANDUP_REASON_OFFLINE or reason) end)
 	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",player.guid,player.table_id,can_exit,reason)
 	if not can_exit then
-		return true,enum.GAME_SERVER_RESULT_SUCCESS
+		return enum.GAME_SERVER_RESULT_IN_GAME
 	end
 
 	self:player_exit_room(player,offline)
-	player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
+	-- player:on_exit_room(enum.GAME_SERVER_RESULT_SUCCESS)
 
-	return false,enum.GAME_SERVER_RESULT_SUCCESS
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 -- 快速坐下
@@ -797,6 +797,18 @@ function base_room:player_exit_room(player,offline)
 	end
 
 	onlineguid[guid] = nil
+end
+
+function base_room:logout_game(player)
+	log.info("base_room:logout_game, guid %s, room_id %s",player.guid,def_game_id)
+	local guid = player.guid
+	base_players[guid] = nil
+	self.players[guid] = nil
+	self.cur_player_count_ = self.cur_player_count_ - 1
+	log.info("logout_game set guid[%d] onlineinfo",guid)
+	local online_key = string.format("player:online:guid:%d",guid)
+	reddb:hdel(online_key,"first_game_type")
+	reddb:hdel(online_key,"second_game_type")
 end
 
 function base_room:get_suitable_table(player,bool_change_table)

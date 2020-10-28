@@ -15,18 +15,17 @@ LOG_NAME = "gate"
 
 local server = {}
 local onlineguid = {}
+local fdsession = {}
 local heartbeat_check_time = 8
 
-local MSG = {}
-
 function server.login(fd,guid,inserverid,conf)
-    local s = onlineguid[guid]
+    local s = onlineguid[guid] or fdsession[fd]
     if s then
-        if s.fd == fd then
+        if s.fd == fd and s.guid == guid then
             log.warning(" %d login repeated!",guid)
             return
         end
-        server.kickout(guid)
+        server.kickout(s.guid)
     end
 
     local agent = skynet.newservice("gate.agent",skynet.self(),protocol,inserverid)
@@ -40,6 +39,7 @@ function server.login(fd,guid,inserverid,conf)
 
 	skynet.call(agent, "lua", "login", u)
     onlineguid[guid] = u
+    fdsession[fd] = u
 
 	msgserver.login(fd,guid,conf)
 	return
@@ -52,6 +52,7 @@ function server.logout(guid)
 		msgserver.logout(guid)
         pcall(skynet.call,loginservice, "lua", "logout",u.fd)
         onlineguid[guid] = nil
+        fdsession[u.fd] = nil
 	end
 end
 
@@ -59,7 +60,7 @@ function server.kickout(guid)
 	local u = onlineguid[guid]
 	if u then
         pcall(skynet.call, u.agent, "lua", "kickout")
-        server.logout(guid)
+        server.close(u.fd)
 	end
 end
 

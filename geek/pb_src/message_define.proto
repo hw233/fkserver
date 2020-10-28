@@ -15,6 +15,15 @@ import "common.proto";
 /// 登陆退出，玩家数据相关消息
 //////////////////////////////////////////////////////////////////////////
 
+message CS_Logout{
+	enum MsgID { Nil = 0; ID = 994;}
+}
+
+message SC_Logout{
+	enum MsgID { Nil = 0; ID = 995;}
+	int32 result = 1;
+}
+
 //其它平台授权登陆
 message CL_Auth{
 	enum MsgID { Nil = 0; ID = 997;}

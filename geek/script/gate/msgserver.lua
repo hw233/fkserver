@@ -14,11 +14,18 @@ local connection = {}
 
 function server.logout(guid)
 	local u = user_online[guid]
-	if u and u.fd then
-		connection[u.fd] = nil
-		gateserver.closeclient(u.fd)
-	end
 	user_online[guid] = nil
+	local c = connection[u.fd]
+	if c then
+		c.guid = nil
+		c.version = nil
+		c.conf = nil
+	end
+end
+
+function server.close(fd)
+	connection[fd] = nil
+	gateserver.closeclient(fd)
 end
 
 function server.login(fd,guid,conf)

@@ -263,9 +263,10 @@ function logout(guid,offline)
 	end
 
 	player.logout_time = os.time()
-	if g_room:exit_server(player,offline,offline and enum.STANDUP_REASON_OFFLINE or nil) then
+	local result = g_room:exit_server(player,offline,offline and enum.STANDUP_REASON_OFFLINE or nil)
+	if result ~= enum.ERROR_NONE then
 		log.info("logout offlined...")
-		return true -- 掉线处理
+		return result
 	end
 
 	-- local old_online_award_time = player.online_award_time
@@ -304,12 +305,16 @@ function logout(guid,offline)
 	base_players[guid] = nil
 	onlineguid[guid] = nil
 
-	return false
+	return result
 end
 
 function on_s_logout(msg)
 	log.info ("test .................. on_s_logout")
 	logout(msg.guid)
+end
+
+function on_cs_logout(msg,guid)
+	return logout(guid)
 end
 
 -- 跨天了
