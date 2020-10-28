@@ -58,10 +58,12 @@ end
 
 function server.kickout(guid)
 	local u = onlineguid[guid]
-	if u then
+    if u then
         pcall(skynet.call, u.agent, "lua", "kickout")
-        server.close(u.fd)
-	end
+        msgserver.close(u.fd)
+        fdsession[u.fd] = nil
+    end
+    onlineguid[guid] = nil
 end
 
 function server.disconnect_handler(c)
