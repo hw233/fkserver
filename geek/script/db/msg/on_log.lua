@@ -239,7 +239,7 @@ function on_sd_log_player_commission_contributes(msg)
     local template =  msg.template
     local club = msg.club
 
-    if not contributions or table.num(contributions) == 0 or not club or club == 0 then
+    if not contributions or table.nums(contributions) == 0 or not club or club == 0 then
         log.error("on_sd_log_player_commission_contributes contributions is ilegal.")
         return
     end
