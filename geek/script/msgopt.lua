@@ -9,7 +9,7 @@ local dispatcher = {}
 function MSG.on_msg(msgid,...)
     local f = dispatcher[msgid]
     if not f then
-        log.error("unkonw msgid,%s",msgid)
+        error(string.format("unkonw msgid,%s",msgid))
         return
     end
 
