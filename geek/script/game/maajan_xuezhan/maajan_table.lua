@@ -1895,15 +1895,11 @@ function maajan_table:calculate_hu(hu)
     end
 
     local room_private_conf = self:room_private_conf()
-    if not room_private_conf or not room_private_conf.play then
-        return types
-    end
 
-    local play_opt = room_private_conf.play.option
+    local play_opt = room_private_conf and room_private_conf.play and room_private_conf.play.option or "xuezhan"
+    
     local da_dui_zi_fan = self.rule.play.da_dui_zi_fan_2 and 2 or HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
     local qing_yi_se_fan = play_opt == "er_ren_yi_fang" and (self.rule.play.qing_yi_se_fan or 0) or HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
-    -- local si_dui_fan = HU_TYPE_INFO[HU_TYPE.SI_DUI].fan
-    -- local long_si_dui_fang = HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
 
     for _,t in pairs(types) do
         if t.type == HU_TYPE.QING_YI_SE then
@@ -2023,6 +2019,7 @@ function maajan_table:game_balance()
     local typefans,scores = {},{}
     self:foreach(function(p)
         local hu
+        log.dump(p.hu)
         if p.hu then
             hu = self:calculate_hu(p.hu)
         elseif p.jiao then
@@ -2111,6 +2108,10 @@ function maajan_table:on_game_overed()
             desk_tiles = {},
             huan = nil,
         }
+        v.mo_pai = nil
+        v.mo_pai_count = nil
+        v.chu_pai = nil
+        v.chu_pai_count = nil
 
         v.que = nil
     end)
@@ -2193,8 +2194,6 @@ function maajan_table:ding_zhuang()
         if l.hu and r.hu then return l.hu.time < r.hu.time end
         return false
     end)
-
-    log.dump(ps)
 
     self.zhuang = ps[1].chair_id
 end
