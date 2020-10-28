@@ -1899,7 +1899,10 @@ function maajan_table:calculate_hu(hu)
     local play_opt = room_private_conf and room_private_conf.play and room_private_conf.play.option or "xuezhan"
     
     local da_dui_zi_fan = self.rule.play.da_dui_zi_fan_2 and 2 or HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
-    local qing_yi_se_fan = play_opt == "er_ren_yi_fang" and (self.rule.play.qing_yi_se_fan or 0) or HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
+    local qing_yi_se_fan = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
+    if play_opt == "er_ren_yi_fang" then
+        qing_yi_se_fan = self.rule.play.qing_yi_se_fan or 0
+    end
 
     for _,t in pairs(types) do
         if t.type == HU_TYPE.QING_YI_SE then
