@@ -11,7 +11,7 @@ function on_cs_zhajinhua_add_score(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:add_score(player, msg)
+		tb:lockcall(tb.add_score,player, msg)
 	else
 		log.error("guid[%d] add_score", player.guid)
 	end
@@ -22,7 +22,7 @@ function on_cs_zhajinhua_follow_bet(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:follow(player)
+		tb:lockcall(tb.follow,player)
 	else
 		log.error("guid[%d] add_score", player.guid)
 	end
@@ -33,7 +33,7 @@ function on_cs_zhajinhua_all_in(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:all_in(player)
+		tb:lockcall(tb.all_in,player)
 	else
 		log.error("guid[%d] add_score", player.guid)
 	end
@@ -45,7 +45,7 @@ function on_cs_zhajinhua_give_up(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:give_up(player)
+		tb:lockcall(tb.give_up,player)
 	else
 		log.error("guid[%d] give_up", player.guid)
 	end
@@ -57,7 +57,7 @@ function on_cs_zhajinhua_look_card(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:look_card(player)
+		tb:lockcall(tb.look_card,player)
 	else
 		log.error("guid[%d] look_card", player.guid)
 	end
@@ -69,7 +69,7 @@ function on_cs_zhajinhua_compare_card(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:compare(player, msg)
+		tb:lockcall(tb.compare,player, msg)
 	else
 		log.error("guid[%d] compare_card", player.guid)
 	end
@@ -81,7 +81,7 @@ function on_cs_zhajinhua_show_cards(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:show_cards_to_all(player,msg)
+		tb:lockcall(tb.show_cards_to_all,player,msg)
 	else
 		log.error("guid[%d] on_cs_zhajinhua_show_cards", player.guid)
 	end
@@ -92,7 +92,7 @@ function on_CS_ZhaJinHuaLastRecord(msg,guid)
 	local player = base_players[guid]
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:get_last_record(player,msg)
+		tb:lockcall(tb.get_last_record,player,msg)
 	else
 		log.error("guid[%d] on_CS_ZhaJinHuaEnd", player.guid)
 	end
