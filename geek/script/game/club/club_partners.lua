@@ -8,11 +8,6 @@ local club_partners = setmetatable({},{
     __index = function(_,club_id)
         return setmetatable({},{
             __index = function(_,guid)
-                local role = club_role[club_id][guid]
-                if role ~= enum.CRT_PARTNER and role ~= enum.CRT_BOSS then
-                    return nil
-                end
-
                 local cp = setmetatable({
                     club_id = club_id,
                     guid = guid,
