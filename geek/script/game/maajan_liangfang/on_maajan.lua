@@ -14,7 +14,7 @@ function on_cs_act_win(msg,guid)
 	end
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_win(player, msg)
+		tb:lockcall(function() tb:on_cs_act_win(player, msg) end)
 	end
 end
 
@@ -27,7 +27,7 @@ function on_cs_act_double(msg,guid)
 	end
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_double(player, msg)
+		tb:lockcall(function() tb:on_cs_act_double(player, msg) end)
 	end
 end
 
@@ -41,7 +41,7 @@ function on_cs_act_discard(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_discard(player, msg)
+		tb:lockcall(function() tb:on_cs_act_discard(player, msg) end)
 	end
 end
 
@@ -55,7 +55,7 @@ function on_cs_act_peng(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_peng(player, msg)
+		tb:lockcall(function() tb:on_cs_act_peng(player, msg) end)
 	end
 end
 
@@ -69,7 +69,7 @@ function on_cs_act_gang(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_gang(player, msg)
+		tb:lockcall(function() tb:on_cs_act_gang(player, msg) end)
 	end
 end
 
@@ -83,7 +83,7 @@ function on_cs_act_pass(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_pass(player, msg)
+		tb:lockcall(function() tb:on_cs_act_pass(player, msg) end)
 	end
 end
 
@@ -97,7 +97,7 @@ function on_cs_act_chi(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_chi(player, msg)
+		tb:lockcall(function() tb:on_cs_act_chi(player, msg) end)
 	end
 end
 
@@ -111,7 +111,7 @@ function on_cs_act_trustee(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_trustee(player, msg)
+		tb:lockcall(function() tb:on_cs_act_trustee(player, msg) end)
 	end
 end
 
@@ -125,7 +125,7 @@ function on_cs_act_baoting(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_act_baoting(player, msg)
+		tb:lockcall(function() tb:on_cs_act_baoting(player, msg) end)
 	end
 end
 
@@ -139,6 +139,6 @@ function on_cs_do_action(msg,guid)
 
 	local tb = g_room:find_table_by_player(player)
 	if tb then
-		tb:on_cs_do_action(player, msg)
+		tb:lockcall(function() tb:on_cs_do_action(player, msg) end)
 	end
 end
