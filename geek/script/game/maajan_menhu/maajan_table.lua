@@ -401,6 +401,7 @@ function maajan_table:wait_chu_pai()
     self:update_state(FSM_S.WAIT_CHU_PAI)
     self:broadcast_desk_state()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    self:send_ting_tips(self:chu_pai_player())
 end
 
 function maajan_table:send_action_waiting(action)
@@ -2678,6 +2679,8 @@ function maajan_table:on_reconnect_wait_chu_pai(player)
             self:send_action_waiting(player_actions)
         end
     end
+
+    self:send_ting_tips(player)
 end
 
 maajan_table.on_reconnect_check_ting = maajan_table.on_reconnect_wait_chu_pai
@@ -2786,6 +2789,8 @@ function maajan_table:on_reconnect_action_after_mo_pai(player)
             self:send_action_waiting(player_actions)
         end
     end
+
+    self:send_ting_tips(player)
 end
 
 function maajan_table:on_reconnect_qiang_gang_hu(player)
@@ -2940,6 +2945,72 @@ function maajan_table:max_hu_score(hu_types)
     table.sort(typescores,function(l,r) return l.score > r.score end)
 
     return typescores[1]
+end
+
+
+function maajan_table:send_ting_tips(p)
+    local hu_tips = self.rule and self.rule.play.hu_tips or nil
+    if not hu_tips or p.trustee then return end
+
+    local ting_tiles = self:ting_full(p)
+    log.dump(ting_tiles)
+    if table.nums(ting_tiles) > 0 then
+        local discard_tings = table.series(ting_tiles,function(tiles,discard)
+            return { 
+                discard = discard, 
+                tiles_info = table.series(tiles,function(_,tile) 
+                    return {tile = tile}
+                end),
+            }
+        end)
+
+        log.dump(discard_tings)
+
+        send2client_pb(p,"SC_TingTips",{
+            ting = discard_tings
+        })
+
+        return true
+    end
+end
+
+function maajan_table:ting_full(p)
+    local ting_tiles = mj_util.is_ting_full(p.pai)
+    return ting_tiles
+end
+
+function maajan_table:ting(p)
+    local ting_tiles = mj_util.is_ting(p.pai) or {}
+    return ting_tiles
+end
+
+function maajan_table:on_cs_get_ting_tiles_info(player)
+    local hu_tips = self.rule and self.rule.play.hu_tips or nil
+    if not hu_tips then 
+        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+            result = enum.ERROR_INVALIDE_OPERATION,
+        })
+        return
+    end
+
+    if player.hu then 
+        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+            result = enum.ERROR_INVALIDE_OPERATION,
+        })
+        return
+    end
+
+    local ting_tiles = self:ting(player)
+    local pai = clone(player.pai)
+    local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
+        return {tile = tile} 
+    end)
+
+    log.dump(hu_tile_fans)
+
+    send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        tiles_info = hu_tile_fans,
+    })
 end
 
 function maajan_table:global_status_info()
