@@ -10,6 +10,9 @@ local cards_util = require "game.zhajinhua.base.cards_util"
 
 require "data.zhajinhua_data"
 
+local table = table
+local string = string
+
 local base_table = require "game.lobby.base_table"
 
 
@@ -282,7 +285,7 @@ function zhajinhua_table:get_men_turn_count()
 end
 
 function zhajinhua_table:is_check_money_limit()
-	local club = self.conf.club
+	local club = self.conf and self.conf.club or nil
 	if not club or club.type ~= enum.CT_UNION then
 		return
 	end
@@ -360,6 +363,9 @@ function zhajinhua_table:on_process_start(player_count)
 end
 
 function zhajinhua_table:on_process_over(reason)
+	self:cancel_clock_timer()
+	self:cancel_action_timer()
+	
 	self.status = nil
 	self:broadcast2client("SC_ZhaJinHuaFinalOver",{
 		balances = table.series(self.players,function(p)
@@ -1491,21 +1497,6 @@ function zhajinhua_table:get_player_money(player)
 	return player.remain_money
 end
 
-function zhajinhua_table:set_trusteeship(player,flag)
-	player.isTrusteeship = not player.isTrusteeship
-	log.info("chair_id:"..player.chair_id)
-	if player.isTrusteeship then
-		log.info("**************isTrusteeship:true")
-		if flag == true then
-			log.info("**************flag:true")
-			player.finishOutGame = true
-		end
-	else
-		log.info("**************isTrusteeship::false")
-		player.finishOutGame = false
-	end
-end
-
 function zhajinhua_table:is_compare_card()
 	return self.is_compare_card_flag
 end
@@ -1741,6 +1732,30 @@ function zhajinhua_table:check_black_user()
 	log.info("----------------------------------------------------------------------------------------------------------")
 	log.info(self.players[max_chair_id].guid,"===>",self.players[swap_chair_id].guid)
 	log.info("----------------------------------------------------------------------------------------------------------")
+end
+
+function zhajinhua_table:auto_ready(seconds)
+	table.foreach(self.gamers,function(p)
+		if p.trustee then 
+			self:calllater(math.random(2,3),function()
+				if not self.ready_list[p.chair_id] then
+					self:ready(p)
+				end
+			end)
+		end
+	end)
+
+	self:begin_ready_timer(seconds,function()
+		self:cancel_ready_timer()
+		table.foreach(self.gamers,function(p)
+			if not self.ready_list[p.chair_id] then
+				self:ready(p)
+				if not p.trustee then
+					self:set_trusteeship(p,true)
+				end
+			end
+		end)
+	end)
 end
 
 return zhajinhua_table
