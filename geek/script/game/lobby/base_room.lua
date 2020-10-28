@@ -288,11 +288,7 @@ function base_room:force_dismiss_table(table_id,reason)
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	tb:lockcall(function()
-		for _,p in pairs(tb.players) do
-			p:forced_exit()
-		end
-	end)
+	tb:force_dismiss(enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
 	
 	return enum.ERROR_NONE
 end
