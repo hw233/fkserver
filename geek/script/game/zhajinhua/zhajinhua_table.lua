@@ -87,15 +87,7 @@ function zhajinhua_table:on_started(player_count)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
-	self.gamelog = {
-        winner = nil,
-        banker = nil,
-        actions = {},
-        players = {},
-		balance = {},
-		rule = self.rule,
-		cur_round = self.cur_round,
-    }
+
 
 	for i,_ in pairs(self.gamers)  do
 		self.show_cards_to[i] = {}
@@ -108,29 +100,37 @@ function zhajinhua_table:on_started(player_count)
 
 	self.cur_chair = self.banker
 
+	self.gamelog = {
+        winner = nil,
+        banker = nil,
+        actions = {},
+		balance = {},
+		rule = self.rule,
+		cur_round = self.cur_round,
+		banker = self.banker,
+		players = table.series(self.players,function(v,i) 
+			return {
+				chair_id = i,
+				guid = v.guid,
+				head_url = v.icon,
+				nickname = v.nickname,
+			}
+		end)
+	}
+	
 	self.winner = nil
-
-	self.gamelog.banker = self.banker
 
 	for i,v in pairs(self.gamers) do
 		v.status = PLAYER_STATUS.WAIT
-		v.all_in = nil
-		v.death = nil
-		v.is_look_cards = nil
 		v.remain_money = self.old_moneies[v.guid]
 		v.bet_score = 0
 		v.bet_money = 0
 		v.bet_scores = {}
+		v.all_in = nil
+		v.death = nil
+		v.is_look_cards = nil
+		
 		v.cards = nil
-
-		self.gamelog.players[i] = {
-			chair_id = i,
-			guid = v.guid,
-			head_url = v.icon,
-			nickname = v.nickname,
-			total_money = v.total_money,
-			total_score = v.total_score,
-		}
 
 		self.show_cards_to[i][i] = true
 	end
@@ -910,6 +910,13 @@ function zhajinhua_table:follow(player)
 
 	self:player_bet(player,score)
 
+	table.insert(self.gamelog.actions, {
+		action = "follow",
+		chair_id = player.chair_id,
+		turn = self.bet_round,
+		score = score,
+	})
+
 	if not is_all_in then
 		self:broadcast2client("SC_ZhaJinHuaFollowBet",{
 			result = enum.ERROR_NONE,
@@ -1349,14 +1356,22 @@ function zhajinhua_table:game_balance(winner)
 
 	log.dump(moneies)
 
+
+
 	table.foreach(self.gamers,function(p,chair)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.total_money = (p.total_money or 0) + moneies[chair]
-		local log_player = self.gamelog.players[chair]
-		log_player.round_score = scores[chair]
-		log_player.round_money = moneies[chair]
-		log_player.total_money = p.total_money
-		log_player.total_score = p.total_score
+	end)
+
+	self.gamelog.balance = table.series(self.gamers,function(v,i) 
+		return {
+			chair_id = i,
+			round_score = scores[i],
+			round_money = moneies[i],
+			total_money = v.total_money,
+			total_score = v.total_score,
+			cards = v.cards,
+		}
 	end)
 
 	self.gamelog.all_score = self.all_score
@@ -1393,6 +1408,8 @@ function zhajinhua_table:on_game_overed()
 
 	self:clear_ready()
 	print("self.chair_count ", self.chair_count)
+
+
 
 	self.desk_scores = nil
 	self.all_score = 0
