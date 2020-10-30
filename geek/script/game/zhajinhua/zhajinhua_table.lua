@@ -114,6 +114,7 @@ function zhajinhua_table:on_started(player_count)
 				guid = v.guid,
 				head_url = v.icon,
 				nickname = v.nickname,
+				sex = v.sex,
 			}
 		end)
 	}
