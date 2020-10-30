@@ -142,3 +142,17 @@ function on_cs_do_action(msg,guid)
 		tb:lockcall(function() tb:on_cs_do_action(player, msg) end)
 	end
 end
+
+function on_cs_get_ting_tiles_info(msg,guid)
+	log.info ("test .................. on_cs_get_ting_tiles_info,guid:%s",guid)
+	local player = base_players[guid]
+	if not player then
+		log.error("on_cs_get_ting_tiles_info no player,guid:%s",guid)
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:lockcall(function() tb:on_cs_get_ting_tiles_info(player, msg) end)
+	end
+end
