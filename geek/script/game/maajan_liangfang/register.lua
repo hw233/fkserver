@@ -16,3 +16,4 @@ register_dispatcher("CS_Maajan_Act_Trustee",on_cs_act_trustee)--托管
 register_dispatcher("CS_Maajan_Act_BaoTing",on_cs_act_baoting)--报听
 register_dispatcher("CS_Maajan_Do_Action",on_cs_do_action)
 register_dispatcher("CS_Maajan_Action_Discard",on_cs_act_discard)
+register_dispatcher("CS_MaajanGetTingTilesInfo",on_cs_get_ting_tiles_info)
