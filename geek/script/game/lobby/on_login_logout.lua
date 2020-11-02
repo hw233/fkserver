@@ -1337,7 +1337,7 @@ function on_cs_join_private_room(msg,guid)
 		} or nil,
 	})
 
-	tb:on_player_sit_downed()
+	tb:on_player_sit_downed(player)
 end
 
 
