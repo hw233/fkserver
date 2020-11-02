@@ -185,3 +185,10 @@ message NOTICE{
 message ROUND_INFO{
     string round_id = 1;
 }
+
+enum EXT_ROUND_STATUS{
+	ERS_NONE = 0;
+	ERS_FREE = 1;
+	ERS_GAMING = 2;
+	ERS_END = 3;
+}
