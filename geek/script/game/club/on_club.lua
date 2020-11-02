@@ -71,7 +71,7 @@ local club_op = {
     OP_DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_DISMISS_CLUB"),
 }
 
-function on_bs_club_create(owner,name)
+function on_bs_club_create(owner,name,type)
     local guid = owner
 
     local player = base_players[guid]
@@ -84,12 +84,15 @@ function on_bs_club_create(owner,name)
         return enum.ERROR_PLAYER_NO_RIGHT
     end
 
-    local id = club_utils.rand_union_club_id()
-
-    local club = base_club:create(id,name or "","",player,enum.CT_UNION)
-
-    -- 初始送分 金币
-    club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    local id
+    if type == 1 then
+        id = club_utils.rand_union_club_id()
+        local club = base_club:create(id,name or "","",player,enum.CT_UNION)
+        club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    else
+        id = club_utils.rand_group_club_id()
+        base_club:create(id,name or "","",player,enum.CT_DEFAULT)
+    end
 
     return enum.ERROR_NONE,id
 end
