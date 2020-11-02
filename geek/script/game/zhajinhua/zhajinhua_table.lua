@@ -208,15 +208,15 @@ function zhajinhua_table:cancel_clock_timer()
 end
 
 
-function zhajinhua_table:being_action_timer(timeout,fn)
+function zhajinhua_table:begin_action_timer(timeout,fn)
 	if self.auto_action_timer then 
-        log.warning("pdk_table:being_action_timer timer not nil")
+        log.warning("pdk_table:begin_action_timer timer not nil")
         self.auto_action_timer:kill()
     end
 
     self.auto_action_timer = self:new_timer(timeout,fn)
 
-    log.info("pdk_table:being_action_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_action_timer.id,timeout)
+    log.info("pdk_table:begin_action_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_action_timer.id,timeout)
 end
 
 function zhajinhua_table:cancel_action_timer()
