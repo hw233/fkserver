@@ -36,10 +36,10 @@ local auto_dismiss_timeout = 10 * 60
 local auto_kickout_timer = 2 * 60
 
 local EXT_ROUND_STATUS = {
-	NONE = 0,
-	FREE = 1,
-	GAMING = 2,
-	END = 3,
+	NONE = enum.ERS_NONE,
+	FREE = enum.ERS_FREE,
+	GAMING = enum.ERS_GAMING,
+	END = enum.ERS_END,
 }
 
 local dismiss_reason = {
@@ -801,7 +801,7 @@ function base_table:auto_ready(seconds)
 		end
 	end)
 
-	self:begin_ready_timer(seconds,function()
+	self:begin_kickout_no_ready_timer(seconds,function()
 		self:cancel_ready_timer()
 		self:foreach(function(p)
 			if not self.ready_list[p.chair_id] then
