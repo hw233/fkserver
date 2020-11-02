@@ -1445,7 +1445,11 @@ function base_table:player_stand_up(player, reason)
 		reddb:hdel("player:online:guid:"..tostring(player.guid),"chair")
 		onlineguid[player.guid] = nil
 
-		self:check_start()
+		if 	reason == enum.STANDUP_REASON_NORMAL 
+			or reason == enum.STANDUP_REASON_OFFLINE
+			or reason == enum.STANDUP_REASON_NO_READY_TIMEOUT then
+			self:check_start()
+		end
 		return true
 	end
 
@@ -1920,6 +1924,11 @@ function base_table:on_process_over(reason,l)
 	end
 
 	self:clear_trustee_status()
+
+	self:cancel_kickout_no_ready_timer()
+	self:cancel_ready_timer()
+	self:cancel_delay_dismiss()
+	self:cancel_all_delay_kickout()
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
