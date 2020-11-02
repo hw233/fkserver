@@ -245,10 +245,6 @@ function base_room:stand_up_and_exit_room(player,reason)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
-	if tb:is_play(player) then
-		return enum.GAME_SERVER_RESULT_IN_GAME
-	end
-
 	local chair = tb:get_player(player.chair_id)
 	if not chair then
 		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
@@ -260,7 +256,10 @@ function base_room:stand_up_and_exit_room(player,reason)
 
 	local tableid = player.table_id
 	local chairid = player.chair_id
-	tb:lockcall(function() return tb:player_stand_up(player, reason) end)
+	local succ = tb:lockcall(function() return tb:player_stand_up(player, reason) end)
+	if not succ then
+		return enum.GAME_SERVER_RESULT_IN_GAME
+	end
 
 	local roomid = player.room_id
 	self:player_exit_room(player)
