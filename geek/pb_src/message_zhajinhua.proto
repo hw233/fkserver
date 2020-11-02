@@ -227,3 +227,16 @@ message SC_ZhaJinHuaFinalOver{
 	repeated ZhaJinHuaPlayerBalance balances = 1;
 }
 
+message SC_ZhaJinHuaTableGamingInfo{
+	enum MsgID {NIL = 0; ID = 25026;}
+	int32 banker = 1;			// 庄家用户
+	map<int32,ZhaJinHuaPlayerGamingInfo> players = 2;
+	int32 desk_score = 5;              // 总金
+	int32 bet_round = 7;              // 当前回合 最大20
+	repeated int32 desk_chips = 9;
+	int32 round = 10;
+	int32 status = 11;
+	int32 base_score = 12;				//基础底分
+	int32 cur_bet_score = 13;			//当前底分
+}
+

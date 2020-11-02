@@ -87,8 +87,6 @@ function zhajinhua_table:on_started(player_count)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
-
-
 	for i,_ in pairs(self.gamers)  do
 		self.show_cards_to[i] = {}
 		for j = 1,  self.chair_count  do
@@ -258,18 +256,9 @@ function zhajinhua_table:start_player_turn(player)
 			end
 		end
 
-		self:begin_clock_timer(seconds,function() 
-			self:set_trusteeship(player,true)
-
+		self:begin_clock_timer(seconds,function()
 			auto_action(player)
 		end)
-
-		if player.trustee then
-			self:begin_action_timer(math.random(1,2),function()
-				auto_action(player)
-				self:cancel_action_timer()
-			end)
-		end
 	end
 
 	return actions
@@ -368,6 +357,9 @@ function zhajinhua_table:on_process_over(reason)
 	self:cancel_action_timer()
 	
 	self.status = nil
+	self.all_score = nil
+	self.last_score = nil
+
 	self:broadcast2client("SC_ZhaJinHuaFinalOver",{
 		balances = table.series(self.players,function(p)
 			return {
@@ -388,6 +380,7 @@ function zhajinhua_table:on_process_over(reason)
 	self:foreach(function(p) 
 		p.total_money = nil
 		p.total_score = nil
+		p.status = nil
 	end)
 end
 
@@ -520,6 +513,10 @@ end
 
 function zhajinhua_table:check_start(part)
 	log.info("check_start-----------------")
+	if self.status and self.status ~= TABLE_STATUS.FREE then
+		return
+	end
+
 	local min_gamer_count = 2
 
 	if self.rule and self.rule.room.min_gamer_count then
@@ -530,17 +527,10 @@ function zhajinhua_table:check_start(part)
 	local player_count = table.nums(self.players)
 	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
 	if ready_count >= min_gamer_count then
-		if player_count == ready_count and self.status ~= TABLE_STATUS.PLAY then
+		if ready_count == player_count or 
+			(self.cur_round and table.logic_and(self.gamers,function(_,c) return self.ready_list[c] end))
+		then
 			self:start(player_count)
-			return
-		end
-
-		if ready_count >= min_gamer_count and not self.clock_timer then
-			self:begin_clock_timer(10,function()
-				self:cancel_clock_timer()
-				self:check_min_count_start()
-			end)
-			return
 		end
 	end
 end
@@ -937,6 +927,10 @@ function zhajinhua_table:follow(player)
 	self:next_turn()
 end
 
+function zhajinhua_table:cs_follow(player,msg)
+	self:follow(player,msg)
+end
+
 function zhajinhua_table:all_in(player)
 	if not self.gamers[player.chair_id] or
 		not self:check_player_action(player,ACTION.ALL_IN) then
@@ -961,6 +955,10 @@ function zhajinhua_table:all_in(player)
 	})
 
 	self:next_turn()
+end
+
+function zhajinhua_table:cs_all_in(player,msg)
+	self:all_in(player,msg)
 end
 
 -- 加注
@@ -1087,6 +1085,10 @@ function zhajinhua_table:add_score(player,msg)
 	self:next_turn()
 end
 
+function zhajinhua_table:cs_add_score(player,msg)
+	self:add_score(player,msg)
+end
+
 -- 放弃跟注
 function zhajinhua_table:give_up(player)
 	if not self.gamers[player.chair_id] or
@@ -1135,6 +1137,10 @@ function zhajinhua_table:give_up(player)
 	end
 
 	self:next_turn()
+end
+
+function zhajinhua_table:cs_give_up(player,msg)
+	self:give_up(player,msg)
 end
 
 function zhajinhua_table:check_player_action(player_or_chair,action)
@@ -1190,6 +1196,11 @@ function zhajinhua_table:look_card(player)
 
 	self:start_player_turn(player)
 end
+
+function zhajinhua_table:cs_look_card(player,msg)
+	self:look_card(player,msg)
+end
+
 
 -- 终
  -- 比牌
@@ -1273,11 +1284,17 @@ function zhajinhua_table:compare(player, msg)
 
 	if self:is_end() then
 		log.info("game_id[%s]:------------->This Game Is  Over!",self.round_id)
-		self:game_balance()
+		self:calllater(1.5,function() --比牌动画延时
+			self:game_balance()
+		end)
 		return
 	end
 
 	self:next_turn()
+end
+
+function zhajinhua_table:cs_compare(player,msg)
+	self:compare(player,msg)
 end
 
 local deepcopy  = clone
@@ -1357,8 +1374,6 @@ function zhajinhua_table:game_balance(winner)
 
 	log.dump(moneies)
 
-
-
 	table.foreach(self.gamers,function(p,chair)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.total_money = (p.total_money or 0) + moneies[chair]
@@ -1409,8 +1424,6 @@ function zhajinhua_table:on_game_overed()
 
 	self:clear_ready()
 	print("self.chair_count ", self.chair_count)
-
-
 
 	self.desk_scores = nil
 	self.all_score = 0
@@ -1468,17 +1481,8 @@ function zhajinhua_table:compare_player(l, r,with_color,with_each_other)
 	return comp
 end
 
-function base_table:can_stand_up(player,reason)
-	if reason == enum.STANDUP_REASON_DISMISS or
-		reason == enum.STANDUP_REASON_FORCE then
-		return true
-	end
-
-	if reason == enum.STANDUP_REASON_OFFLINE and self.status ~= nil then
-		return false
-	end
-
-	return not self.status and not self.cur_round
+function zhajinhua_table:can_stand_up(player,reason)
+	return base_table.can_stand_up(self,player,reason) or not player.status
 end
 
 --替换玩家cost_money方法，先缓存，稍后一起扣钱
@@ -1752,28 +1756,76 @@ function zhajinhua_table:check_black_user()
 	log.info("----------------------------------------------------------------------------------------------------------")
 end
 
-function zhajinhua_table:auto_ready(seconds)
-	table.foreach(self.gamers,function(p)
-		if p.trustee then 
-			self:calllater(math.random(2,3),function()
-				if not self.ready_list[p.chair_id] then
-					self:ready(p)
-				end
-			end)
-		end
-	end)
 
-	self:begin_ready_timer(seconds,function()
-		self:cancel_ready_timer()
+function zhajinhua_table:check_kickout_no_ready()
+	return
+end
+
+function zhajinhua_table:auto_ready(seconds)
+	self:begin_kickout_no_ready_timer(seconds,function()
+		self:cancel_kickout_no_ready_timer()
 		table.foreach(self.gamers,function(p)
 			if not self.ready_list[p.chair_id] then
 				self:ready(p)
-				if not p.trustee then
-					self:set_trusteeship(p,true)
-				end
 			end
 		end)
 	end)
+end
+
+function zhajinhua_table:can_sit_down(player,chair_id,reconnect)
+	if reconnect then 
+		return enum.ERROR_NONE 
+	end
+
+	if self.players[chair_id] then
+		return enum.ERROR_INTERNAL_UNKOWN
+	end
+
+	local cheat_check = self:check_cheat_control(player,reconnect)
+	if cheat_check ~= enum.ERROR_NONE then
+		return cheat_check
+	end
+
+	return enum.ERROR_NONE
+end
+
+function zhajinhua_table:is_play(player)
+	if player then
+		return player.status
+	end
+
+	return self.status
+end
+
+function zhajinhua_table:on_player_sit_downed(player,reconnect)
+	if not reconnect then
+		self:check_kickout_no_ready()
+		if self:is_play() then
+			send2client_pb(player, "SC_ZhaJinHuaTableGamingInfo",{
+				players = table.map(self.players,function(p,chair)
+					return chair,{
+						status = p.status or PLAYER_STATUS.FREE,
+						cards = (p == player and p.is_look_cards) and p.cards or nil,
+						total_money = p.total_money,
+						total_score = p.total_score,
+						bet_score = p.bet_score,
+						bet_chips = p.bet_scores,
+						is_look_cards = p.is_look_cards,
+					}
+				end),
+				status = self.status,
+				banker = self.banker,
+				bet_round = self.bet_round,
+				desk_chips = self.desk_scores,
+				round = self.cur_round,
+				desk_score = self.all_score,
+				base_score = self.base_score,
+				cur_bet_score = self.last_score,
+			})	
+		end
+	else
+		self:sync_kickout_no_ready_timer(player)
+	end
 end
 
 return zhajinhua_table
