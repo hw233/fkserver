@@ -683,10 +683,10 @@ function base_table:get_trustee_conf()
 
 	local trustee = self.rule and self.rule.trustee or nil
 	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
-		local trstee_conf = self.room_.conf.private_conf.trustee
+		local trustee_conf = self.room_.conf.private_conf.trustee
 		if not trustee_conf then return end
-	    local seconds = trstee_conf.second_opt[trustee.second_opt + 1]
-	    local type = trstee_conf.type_opt[trustee.type_opt + 1]
+	    local seconds = trustee_conf.second_opt[trustee.second_opt + 1]
+	    local type = trustee_conf.type_opt[trustee.type_opt + 1]
 	    return type,seconds
 	end
     
@@ -790,6 +790,7 @@ function base_table:can_dismiss_by_trustee()
 end
 
 function base_table:auto_ready(seconds)
+	log.info("begin auto_ready %s,%s",self.private_id,seconds)
 	self:foreach(function(p)
 		if p.trustee then 
 			self:calllater(math.random(2,3),function()
