@@ -363,8 +363,6 @@ function zhajinhua_table:on_process_over(reason)
 	self.all_score = nil
 	self.last_score = nil
 	self.all_scores = nil
-	self.banker = nil
-
 	self.cur_chair = nil
 	self.bet_round = nil -- 当前回合
 	self.round_turn_count = nil
@@ -373,6 +371,8 @@ function zhajinhua_table:on_process_over(reason)
 	self.status = nil
 	self.banker = nil
 	self.desk_scores = nil
+	self.gamers = {}
+	self.winner = nil
 
 	self:broadcast2client("SC_ZhaJinHuaFinalOver",{
 		balances = table.series(self.players,function(p)
@@ -510,19 +510,14 @@ function zhajinhua_table:next_turn(chair)
 	end
 end
 
-
-function zhajinhua_table:check_min_count_start()
+function zhajinhua_table:get_min_gamer_count()
 	local min_gamer_count = 2
-
 	if self.rule and self.rule.room.min_gamer_count then
 		local private_room_conf = self:room_private_conf()
 		min_gamer_count = private_room_conf.min_gamer_count_option[self.rule.room.min_gamer_count + 1]
 	end
 
-	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
-	if ready_count >= min_gamer_count and self.status ~= TABLE_STATUS.PLAY then
-		self:start(ready_count)
-	end
+	return min_gamer_count
 end
 
 function zhajinhua_table:check_start(part)
@@ -531,23 +526,16 @@ function zhajinhua_table:check_start(part)
 		return
 	end
 
-	local min_gamer_count = 2
-
-	if self.rule and self.rule.room.min_gamer_count then
-		local private_room_conf = self:room_private_conf()
-		min_gamer_count = private_room_conf.min_gamer_count_option[self.rule.room.min_gamer_count + 1]
-	end
-
+	local min_gamer_count = self:get_min_gamer_count()
 	local player_count = table.nums(self.players)
 	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
 	if ready_count >= min_gamer_count then
-		if ready_count == player_count or 
-			(self.cur_round and table.logic_and(self.gamers,function(_,c) return self.ready_list[c] end))
-		then
+		if ready_count == player_count then
 			self:start(player_count)
 		elseif not self.cur_round and ready_count < player_count then
 			local _,seconds = self:get_trustee_conf()
 			self:begin_kickout_no_ready_timer(seconds,function()
+				self:cancel_kickout_no_ready_timer()
 				self:start(player_count)
 			end)
 		end
@@ -1368,11 +1356,12 @@ end
 -- 检查结束
 function zhajinhua_table:game_balance(winner)
 	if not winner then
-		local winners = table.values(table.select(self.gamers,function(p) return not p.death end))
+		local winners = table.select(self.gamers,function(p) return not p.death end,true)
 		winner = winners[1]
 	end
-	
+
 	self.winner = winner
+
 	log.info("game_id[%s]: game_balance---->Game is Over !!",self.round_id)
 	self.status = TABLE_STATUS.FREE
 
@@ -1389,7 +1378,9 @@ function zhajinhua_table:game_balance(winner)
 
 	log.dump(scores)
 	
-	local moneies = self:balance(table.map(scores,function(s,chair) return chair,self:calc_score_money(s) end),enum.LOG_MONEY_OPT_TYPE_ZHAJINHUA)
+	local moneies = self:balance(table.map(scores,function(s,chair) 
+		return chair,self:calc_score_money(s) end
+	),enum.LOG_MONEY_OPT_TYPE_ZHAJINHUA)
 
 	log.dump(moneies)
 
@@ -1428,7 +1419,7 @@ function zhajinhua_table:game_balance(winner)
 		end)
 	})
 
-	self.last_record = 0
+	self.last_record = nil
 
 	self:save_game_log(self.gamelog)
 
@@ -1450,7 +1441,7 @@ function zhajinhua_table:on_game_overed()
 	self.last_score = 0
 	self.bet_round = nil
 	self.status = TABLE_STATUS.FREE
-	self:foreach(function(p) 
+	table.foreach(self.gamers,function(p) 
 		p.status = PLAYER_STATUS.FREE
 		p.all_in = nil
 		p.death = nil
@@ -1502,7 +1493,17 @@ function zhajinhua_table:compare_player(l, r,with_color,with_each_other)
 end
 
 function zhajinhua_table:can_stand_up(player,reason)
-	return base_table.can_stand_up(self,player,reason) or not player.status
+	if  reason == enum.STANDUP_REASON_FORCE or 
+		reason == enum.STANDUP_REASON_DISMISS 
+	then
+		return true
+	end
+
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		return false
+	end
+
+	return not player.status or player.status == PLAYER_STATUS.WATCHER
 end
 
 --替换玩家cost_money方法，先缓存，稍后一起扣钱
@@ -1789,6 +1790,15 @@ function zhajinhua_table:auto_ready(seconds)
 				self:ready(p)
 			end
 		end)
+
+		local min_gamer_count = self:get_min_gamer_count()
+		local player_count = table.nums(self.players)
+		local ready_count = table.sum(self.players,function(_,chair) 
+			return self.ready_list[chair] and 1 or 0 
+		end)
+		if ready_count < player_count and ready_count >= min_gamer_count then
+			self:start(player_count)
+		end
 	end)
 end
 
