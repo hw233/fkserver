@@ -123,9 +123,9 @@ local function single_full_compare_vals(lvals,rvals)
 		return -1
 	end
 
-	if lvals[1][2] > lvals[1][2] then 
+	if lvals[1][2] > rvals[1][2] then 
 		return 1 
-	elseif lvals[1][2] < lvals[1][2] then
+	elseif lvals[1][2] < rvals[1][2] then
 		return -1
 	end
 
@@ -207,13 +207,13 @@ function utils.compare(left,right,with_color)
 	return comp > 0
 end
 
--- local lt = utils.get_cards_type({7,22,6})
--- log.dump(lt)
+local lt = utils.get_cards_type({14,30,6})
+log.dump(lt)
 
--- local rt = utils.get_cards_type({14,5,42})
--- log.dump(rt)
+local rt = utils.get_cards_type({34,13,3})
+log.dump(rt)
 
--- local comp = utils.compare(lt,rt,true)
--- log.dump(comp)
+local comp = utils.compare(lt,rt,true)
+log.dump(comp)
 
 return utils
