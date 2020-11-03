@@ -1976,33 +1976,33 @@ function base_table:start(player_count)
 
 	self:on_pre_start(player_count)
 
-	local ret = false
-	if self.config_id ~= self.room_.config_id then
-		log.info ("-------------configid:",self.config_id ,self.room_.config_id)
-		log.info (self.room_.tax_show_, self.room_.tax_open_ , self.room_.tax_)
-		self.tax_show_ = self.room_.tax_show_ -- 是否显示税收信息
-		self.tax_open_ = self.room_.tax_open_ -- 是否开启税收
-		self.tax_ = self.room_.tax_
-		self.room_limit = self.room_.room_limit -- 房间分限制
-		self.cell_score = self.room_.cell_score -- 底注
-		self.game_switch_is_open = self.room_.game_switch_is_open
+	-- local ret = false
+	-- if self.config_id ~= self.room_.config_id then
+	-- 	log.info ("-------------configid:",self.config_id ,self.room_.config_id)
+	-- 	log.info (self.room_.tax_show_, self.room_.tax_open_ , self.room_.tax_)
+	-- 	self.tax_show_ = self.room_.tax_show_ -- 是否显示税收信息
+	-- 	self.tax_open_ = self.room_.tax_open_ -- 是否开启税收
+	-- 	self.tax_ = self.room_.tax_
+	-- 	self.room_limit = self.room_.room_limit -- 房间分限制
+	-- 	self.cell_score = self.room_.cell_score -- 底注
+	-- 	self.game_switch_is_open = self.room_.game_switch_is_open
 
-		if self.tax_show_ == 1 then
-			self.notify_msg.flag = 3
-		else
-			self.notify_msg.flag = 4
-		end
+	-- 	if self.tax_show_ == 1 then
+	-- 		self.notify_msg.flag = 3
+	-- 	else
+	-- 		self.notify_msg.flag = 4
+	-- 	end
 
-		self.config_id = self.room_.config_id
+	-- 	self.config_id = self.room_.config_id
 
-		ret = true
-		log.info ("self.room_.room_cfg --------" ,self.room_.room_cfg )
-		if self.room_.room_cfg ~= nil then
-			self:load_lua_cfg()
-		end
-	end
+	-- 	ret = true
+	-- 	log.info ("self.room_.room_cfg --------" ,self.room_.room_cfg )
+	-- 	if self.room_.room_cfg ~= nil then
+	-- 		self:load_lua_cfg()
+	-- 	end
+	-- end
 
-	self:broadcast2client("SC_ShowTax", self.notify_msg)
+	-- self:broadcast2client("SC_ShowTax", self.notify_msg)
 
 	self:on_started(player_count)
 	return ret
