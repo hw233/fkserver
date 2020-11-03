@@ -91,11 +91,10 @@ end
 function on_sd_log_ext_game_round_player_join(msg)
     local guid = msg.guid
     local round = msg.ext_round
-    local table_id = msg.table_id
-    local club = msg.club
-    local ret = dbopt.log:query([[
-            INSERT INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',unix_timestamp())
-        ]],guid,round)
+    local ret = dbopt.log:query(
+        [[INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',unix_timestamp());]],
+        guid,round
+    )
     if ret.errno then
         log.error("INSERT INTO t_log_player_round error:%s:%s",ret.errno,ret.err)
         return
