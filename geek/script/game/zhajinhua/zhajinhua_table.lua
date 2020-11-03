@@ -8,7 +8,6 @@ local enum = require "pb_enums"
 local card_dealer = require "card_dealer"
 local cards_util = require "game.zhajinhua.base.cards_util"
 local channel = require "channel"
-
 require "data.zhajinhua_data"
 
 local table = table
@@ -16,6 +15,7 @@ local string = string
 
 local base_table = require "game.lobby.base_table"
 
+local dismiss_timeout = 60
 
 local CARDS_TYPE = define.CARDS_TYPE
 local TABLE_STATUS = define.TABLE_STATUS
@@ -67,6 +67,68 @@ function zhajinhua_table:player_money(player)
 	local p = type(p) == "table" and player or self.players[player]
 	return self.old_moneies[p.guid]
 end
+
+
+function zhajinhua_table:request_dismiss(player)
+	local timer = self:new_timer(dismiss_timeout,function()
+		table.foreach(self.gamers or {},function(p)
+			if not self.dismiss_request then
+				return
+			end
+
+			if self.dismiss_request.commissions[p.chair_id] == nil then
+				self:commit_dismiss(p,true)
+			end
+		end)
+	end)
+
+	if self.dismiss_request then
+		send2client_pb(player.guid,"SC_DismissTableReq",{
+			result = enum.ERROR_OPERATION_REPEATED
+		})
+		return
+	end
+
+	self.dismiss_request = {
+		commissions = {},
+		requester = player,
+		datetime = os.time(),
+		timer = timer,
+	}
+
+	self.dismiss_request.commissions[player.chair_id] = true
+
+	broadcast2client(self.gamers,"SC_DismissTableReq",{
+		result = enum.ERROR_NONE,
+		request_guid = player.guid,
+		request_chair_id = player.chair_id,
+		datetime = os.time(),
+		timeout = dismiss_timeout,
+	})
+
+	broadcast2client(self.gamers,"SC_DismissTableCommit",{
+		result = enum.ERROR_NONE,
+		chair_id = player.chair_id,
+		guid = player.guid,
+		agree = true,
+	})
+
+	return enum.ERROR_NONE
+end
+
+function zhajinhua_table:check_dismiss_commit(agrees)
+	local all_count = table.nums(self.gamers)
+    local done_count = table.nums(agrees)
+    local agree_count_at_least = self.rule.room.dismiss_all_agree and all_count or math.floor(all_count / 2) + 1
+    local refuse_done_count = all_count - agree_count_at_least
+    local agree_count = table.sum(agrees,function(agree) return agree and 1 or 0 end)
+    local refuse_count = done_count - agree_count
+    local agreed = agree_count >= agree_count_at_least
+    local refused = refuse_count > refuse_done_count
+    local done = agreed or refused or done_count >= all_count
+	return done,agreed
+end
+
 
 function zhajinhua_table:on_started(player_count)
 	base_table.on_started(self,player_count)
