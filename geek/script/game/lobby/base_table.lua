@@ -801,7 +801,7 @@ function base_table:auto_ready(seconds)
 		end
 	end)
 
-	self:begin_kickout_no_ready_timer(seconds,function()
+	self:begin_ready_timer(seconds,function()
 		self:cancel_ready_timer()
 		self:foreach(function(p)
 			if not self.ready_list[p.chair_id] then
