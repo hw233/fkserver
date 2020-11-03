@@ -2041,22 +2041,7 @@ end
 function on_cs_game_server_cfg(msg,guid)
 	local player = base_players[guid]
 	if player then
-		local channel_id = player.channel_id
-		channel_id = channel_id and channel_id ~= "" and channel_id or "default"
-
-		local promoter = player.promoter
-		promoter = promoter and promoter ~= 0 and promoter or nil
-
-		local conf_games = runtime_conf.get_game_conf(channel_id,promoter)
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			send2client_pb(guid,"SC_GameServerCfg",{
-				game_sever_info  = conf_games,
-			})
-			return true
-		end
-
-		conf_games = runtime_conf.get_game_conf("default")
+		local conf_games = runtime_conf.get_game_conf(player.channel_id,player.promoter)
 		if conf_games and table.nums(conf_games) > 0 then
 			log.dump(conf_games)
 			send2client_pb(guid,"SC_GameServerCfg",{

@@ -55,12 +55,27 @@ local club_games = setmetatable({},{
 })
 
 local function get_game_conf(channel,promoter,club_id)
-    local channel_key = channel and string.format("runtime_conf:channel_game:%s",channel) or nil
-    local promoter_key = promoter and string.format("runtime_conf:promoter_game:%s",promoter) or nil
-    local club_key = club_id and string.format("runtime_conf:club_game:%s",club_id) or nil
-    local keys = table.values({channel_key,promoter_key,club_key})
-    local game_ids = reddb:sinter(table.unpack(keys))
-    return table.series(game_ids,function(gid) return tonumber(gid) end)
+    local club_key = (club_id and club_id ~= 0) and string.format("runtime_conf:club_game:%s",club_id) or nil
+    if club_key then
+        local ids = table.keys(reddb:smembers(club_key))
+        if #ids > 0 then
+            return ids
+        end
+    end
+
+    local promoter_key = (promoter and promoter ~= 0) and string.format("runtime_conf:promoter_game:%s",promoter) or nil
+    if promoter_key then
+        local ids = table.keys(reddb:smembers(promoter_key))
+        if #ids > 0 then
+            return ids
+        end
+    end
+
+    local channel_key = string.format("runtime_conf:channel_game:%s",(channel and channel ~= "") and channel or "default")
+    local ids = table.keys(reddb:smembers(channel_key))
+    if #ids > 0 then
+        return ids
+    end
 end
 
 return {
@@ -70,5 +85,6 @@ return {
     global = global,
     channel_game = channel_games,
     prmoter_game = promoter_games,
+    club_game = club_games,
     get_game_conf = get_game_conf,
 }

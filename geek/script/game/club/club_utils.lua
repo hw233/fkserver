@@ -57,27 +57,15 @@ end
 
 function utils.get_game_list(guid,club_id)
     local player = base_players[guid]
-	if player then
-		local channel_id = player.channel_id
-		channel_id = channel_id and channel_id ~= "" and channel_id or "default"
-
-		local promoter = player.promoter
-        promoter = promoter and promoter ~= 0 and promoter or nil
-
-		local conf_games = runtime_conf.get_game_conf(channel_id,promoter)
-		if conf_games and table.nums(conf_games) > 0 then
+    if player then
+		local conf_games = runtime_conf.get_game_conf(player.channel_id,player.promoter,club_id)
+		if conf_games and #conf_games > 0 then
 			log.dump(conf_games)
 			return conf_games
-		end
-
-		conf_games = runtime_conf.get_game_conf("default")
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			return conf_games
-		end
-
+        end
+        
 		conf_games = utils.all_game_ids()
-		if conf_games and table.nums(conf_games) > 0 then
+		if conf_games and #conf_games > 0 then
 			log.dump(conf_games)
 			return conf_games
 		end
