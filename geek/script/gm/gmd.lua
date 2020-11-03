@@ -11,6 +11,7 @@ local club_money_type = require "game.club.club_money_type"
 local log = require "log"
 local player_money = require "game.lobby.player_money"
 local club_money = require "game.club.club_money"
+require "functions"
 
 
 local reddb = redisopt.default
@@ -522,6 +523,81 @@ function gmd.update_player(data)
 
     return {
         errcode = error.SUCCESS
+    }
+end
+
+function gmd.club_game(data)
+    local club_id = tonumber(data.club_id) or nil
+    if not club_id or not base_clubs[club_id] then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "club not exists!",
+        }
+    end
+
+    local gameids = data.gameids
+
+    local key = string.format("runtime_conf:club_game:%s",club_id)
+    if gameids then
+        gameids = string.split(gameids,"[^,]+")
+        reddb:sadd(key,table.unpack(gameids))
+    else
+        gameids = table.keys(reddb:smembers(key))
+    end
+
+    return {
+        errcode = error.SUCCESS,
+        gameids = gameids,
+    }
+end
+
+function gmd.channel_game(data)
+    local channel = data.channel
+    if not channel or channel == "" then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "channel not exists!",
+        }
+    end
+
+    local gameids = data.gameids
+
+    local key = string.format("runtime_conf:channel_game:%s",channel)
+    if gameids then
+        gameids = string.split(gameids,"[^,]+")
+        reddb:sadd(key,table.unpack(gameids))
+    else
+        gameids = table.keys(reddb:smembers(key))
+    end
+
+    return {
+        errcode = error.SUCCESS,
+        gameids = gameids,
+    }
+end
+
+function gmd.promoter_game(data)
+    local promoter = tonumber(data.promoter) or nil
+    if not promoter or not base_players[promoter] then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "promoter not exists!",
+        }
+    end
+
+    local gameids = data.gameids
+
+    local key = string.format("runtime_conf:promoter_game:%s",promoter)
+    if gameids then
+        gameids = string.split(gameids,"[^,]+")
+        reddb:sadd(key,table.unpack(gameids))
+    else
+        gameids = table.keys(reddb:smembers(key))
+    end
+
+    return {
+        errcode = error.SUCCESS,
+        gameids = gameids,
     }
 end
 
