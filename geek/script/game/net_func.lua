@@ -55,7 +55,14 @@ function broadcast_platform_marquee(platform_id,first_game_type_,second_game_typ
 end
 
 
-function send2client_pb(player_or_guid, msgname, msg)
-	local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
+function send2client_pb(player, msgname, msg)
+	local guid = type(player) == "table" and player.guid or player
 	netguidopt.send(guid,msgname,msg)
+end
+
+function broadcast2client(guids,msgname,msg)
+	local uniform_guids = table.series(guids,function(p)
+		return type(p) == "table" and p.guid or guid
+	end)
+	netguidopt.broadcast(uniform_guids,msgname,msg)
 end
