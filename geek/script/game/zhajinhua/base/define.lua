@@ -20,6 +20,7 @@ local TABLE_STATUS = {
 }
 
 local PLAYER_STATUS = {
+	WATCHER = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_WATHER"),	   --旁观
     FREE = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_FREE"),		   --空闲
     READY = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_READY"),         -- 准备
     WAIT = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_WAIT"),           -- 等待下注

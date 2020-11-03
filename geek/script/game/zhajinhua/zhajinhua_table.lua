@@ -7,6 +7,7 @@ local timer_manager = require "game.timer_manager"
 local enum = require "pb_enums"
 local card_dealer = require "card_dealer"
 local cards_util = require "game.zhajinhua.base.cards_util"
+local channel = require "channel"
 
 require "data.zhajinhua_data"
 
@@ -86,6 +87,7 @@ function zhajinhua_table:on_started(player_count)
 
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
+	self:cancel_kickout_no_ready_timer()
 
 	for i,_ in pairs(self.gamers)  do
 		self.show_cards_to[i] = {}
@@ -245,12 +247,12 @@ function zhajinhua_table:start_player_turn(player)
 	local trustee_type,seconds = self:get_trustee_conf()
 	if trustee_type then
 		local function auto_action(p)
-			if actions[ACTION.DROP] then
+			if (actions[ACTION.DROP] and self.rule.play.trustee_drop) or not actions[ACTION.FOLLOW] then
 				self:give_up(p)
 				return
 			end
 
-			if actions[ACTION.FOLLOW] then
+			if (actions[ACTION.FOLLOW] and self.rule.play.trustee_follow) or not actions[ACTION.DROP] then
 				self:follow(p)
 				return
 			end
@@ -355,10 +357,22 @@ end
 function zhajinhua_table:on_process_over(reason)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
+	self:cancel_kickout_no_ready_timer()
 	
 	self.status = nil
 	self.all_score = nil
 	self.last_score = nil
+	self.all_scores = nil
+	self.banker = nil
+
+	self.cur_chair = nil
+	self.bet_round = nil -- 当前回合
+	self.round_turn_count = nil
+    self.gamers = nil
+	self.show_cards_to = nil
+	self.status = nil
+	self.banker = nil
+	self.desk_scores = nil
 
 	self:broadcast2client("SC_ZhaJinHuaFinalOver",{
 		balances = table.series(self.players,function(p)
@@ -531,6 +545,11 @@ function zhajinhua_table:check_start(part)
 			(self.cur_round and table.logic_and(self.gamers,function(_,c) return self.ready_list[c] end))
 		then
 			self:start(player_count)
+		elseif not self.cur_round and ready_count < player_count then
+			local _,seconds = self:get_trustee_conf()
+			self:begin_kickout_no_ready_timer(seconds,function()
+				self:start(player_count)
+			end)
 		end
 	end
 end
@@ -546,7 +565,7 @@ function zhajinhua_table:reconnect(player)
 	send2client_pb(player, "SC_ZhaJinHuaReconnect",{
 		players = table.map(self.players,function(p,chair)
 			return chair,{
-				status = p.status or PLAYER_STATUS.FREE,
+				status = p.status or PLAYER_STATUS.WATCHER,
 				cards = (p == player and p.is_look_cards) and p.cards or nil,
 				total_money = p.total_money,
 				total_score = p.total_score,
@@ -648,7 +667,7 @@ function zhajinhua_table:handle_cards()
 			cardtype = CARDS_TYPE.DOUBLE
 		end
 		ct_type[i] = cardtype
-		--print("--------------ct_type:", i, ct_type[i])
+		--log.info("--------------ct_type:", i, ct_type[i])
 	end
 
 	local k = #self.cards
@@ -1421,9 +1440,10 @@ function zhajinhua_table:on_game_overed()
 	log.info("game end ID =%s   guid=%s   timeis:%s", self.round_id, self.log_guid, os.date("%y%m%d%H%M%S"))
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
+	self:cancel_kickout_no_ready_timer()
 
 	self:clear_ready()
-	print("self.chair_count ", self.chair_count)
+	log.info("self.chair_count %s", self.chair_count)
 
 	self.desk_scores = nil
 	self.all_score = 0
@@ -1692,7 +1712,7 @@ function zhajinhua_table:check_compare_cards(player)
 			end
 			notify.cur_chair_id = self.cur_chair
 			self:broadcast2client("SC_ZhaJinHuaAllComCards", notify)
-			print("check_compare_cards =====> lose")
+			log.info("check_compare_cards =====> lose")
 		end
 		return true
 	end
@@ -1804,7 +1824,7 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 			send2client_pb(player, "SC_ZhaJinHuaTableGamingInfo",{
 				players = table.map(self.players,function(p,chair)
 					return chair,{
-						status = p.status or PLAYER_STATUS.FREE,
+						status = p.status or PLAYER_STATUS.WATCHER,
 						cards = (p == player and p.is_look_cards) and p.cards or nil,
 						total_money = p.total_money,
 						total_score = p.total_score,
@@ -1821,11 +1841,18 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 				desk_score = self.all_score,
 				base_score = self.base_score,
 				cur_bet_score = self.last_score,
-			})	
+			})
 		end
-	else
-		self:sync_kickout_no_ready_timer(player)
+
+		if self.cur_round then
+			channel.publish("db.?","msg","SD_LogExtGameRoundPlayerJoin",{
+				guid = player.guid,
+				ext_round = self.ext_round_id,
+			})
+		end
 	end
+
+	self:sync_kickout_no_ready_timer(player)
 end
 
 return zhajinhua_table

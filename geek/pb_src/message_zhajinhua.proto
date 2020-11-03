@@ -28,15 +28,16 @@ enum ZHAJINHUA_ACTION{
 }
 
 enum ZHAJINHUA_PLAYER_STATUS{
-    PS_FREE = 0;           //空闲
-    PS_READY = 1;          //准备
-    PS_WAIT = 2;          //等待下注
-    PS_CONTROL = 3;        //准备操作
-    PS_LOOK = 4;           //看牌
-    PS_COMPARE = 5;        //比牌
-    PS_DROP = 6;           //弃牌
-    PS_LOSE = 7;           //淘汰
-    PS_EXIT = 8;           //离开
+	PS_WATCHER = 0;			//旁观
+	PS_FREE = 1;			//空闲
+	PS_READY = 2;         //准备
+	PS_WAIT = 3;          //等待下注
+	PS_CONTROL = 4;        //准备操作
+	PS_LOOK = 5;           //看牌
+	PS_COMPARE = 6;        //比牌
+	PS_DROP = 7;           //弃牌
+	PS_LOSE = 8;           //淘汰
+	PS_EXIT = 9;           //离开
 }
 
 enum ZHAJINHUA_TABLE_STATUS {
