@@ -357,13 +357,13 @@ end
 
 function zhajinhua_table:get_player_actions(player_or_chair)
 	local player = type(player_or_chair) == "number" and self.players[player_or_chair] or player_or_chair
-	local last_score = player.is_look_cards and self.last_score * 2 or self.last_score
-	local is_money_leak = self:check_player_money_leak(player,last_score)
+	local score = player.is_look_cards and self.last_score * 2 or self.last_score
+	local is_money_leak = self:check_player_money_leak(player,score)
 	local men_turn_count = self:get_men_turn_count()
 	local play = self.rule and self.rule.play
 	local can_add_score_in_men_turns = (play and play.can_add_score_in_men_turns) or (self.bet_round and self.bet_round > men_turn_count)
 	return {
-		[ACTION.ADD_SCORE] = not is_money_leak and last_score < self.max_score and can_add_score_in_men_turns,
+		[ACTION.ADD_SCORE] = not is_money_leak and self.last_score < self.max_score and can_add_score_in_men_turns,
 		[ACTION.LOOK_CARDS] = not player.is_look_cards and self.bet_round > men_turn_count,
 		[ACTION.DROP] = self.bet_round and self.bet_round > men_turn_count,
 		[ACTION.ALL_IN] = is_money_leak and not player.all_in,
@@ -1110,6 +1110,8 @@ function zhajinhua_table:add_score(player,msg)
 		return
 	end
 
+	self.last_score = score
+
 	local score_add = player.is_look_cards and score * 2 or score
 	log.info("game_id[%s]: player guid[%d]----->score[%d],money[%d].",self.round_id,player.guid,score, score_add)
 
@@ -1120,7 +1122,6 @@ function zhajinhua_table:add_score(player,msg)
 
 	self:fake_cost_money(player,score_add)
 	self:player_bet(player,score_add)
-	self.last_score = score
 	
 	--日志处理
 	table.insert(self.gamelog.actions,{
