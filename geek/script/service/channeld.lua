@@ -234,7 +234,7 @@ local function get_node(id)
 
     log.warning("channeld get node %s,got nil node,waiting...",id)
     local cos = waiting[id] or {}
-    table.insert(cos,coroutine.running())
+    cos[#cos + 1] = coroutine.running()
     waiting[id] = cos
     skynet.wait()
 
