@@ -506,8 +506,8 @@ end
 
 
 function zhajinhua_table:get_max_round()
-	local round_opt = self.rule and self.rule.play and self.rule.play.max_turn_option or 0
-	local round = self:room_private_conf().max_turn_option[round_opt] or 8
+	local round_opt = (self.rule and self.rule.play) and self.rule.play.max_turn_option or 0
+	local round = self:room_private_conf().max_turn_option[round_opt + 1] or 8
 	return round
 end
 
