@@ -152,6 +152,10 @@ function base_room:get_ready_mode()
 	return self.ready_mode
 end
 
+function base_room:get_private_fee(rule)
+	return self.conf.private_conf.fee[(rule.round.option or 0) + 1]
+end
+
 -- 得到房间分限制
 function base_room:get_room_limit()
 	return self.room_limit

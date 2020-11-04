@@ -1745,6 +1745,10 @@ function base_table:get_money_id()
 	return club and club_money_type[club.id] or -1
 end
 
+function base_table:get_private_fee(rule)
+	return self.room_:get_private_fee(rule)
+end
+
 function base_table:cost_private_fee()
 	if not self.private_id then
 		return
@@ -1764,7 +1768,7 @@ function base_table:cost_private_fee()
 		return true
 	end
 
-	local money = self.room_.conf.private_conf.fee[(rule.round.option or 0) + 1]
+	local money = self:get_private_fee(rule)
 	local pay = rule.pay
 	if pay.option == enum.PAY_OPTION_AA then
 		local money_each = money
