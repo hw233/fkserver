@@ -540,6 +540,7 @@ function gmd.club_game(data)
     local key = string.format("runtime_conf:club_game:%s",club_id)
     if gameids then
         gameids = string.split(gameids,"[^,]+")
+        reddb:del(key)
         reddb:sadd(key,table.unpack(gameids))
     else
         gameids = table.keys(reddb:smembers(key))
@@ -565,6 +566,7 @@ function gmd.channel_game(data)
     local key = string.format("runtime_conf:channel_game:%s",channel)
     if gameids then
         gameids = string.split(gameids,"[^,]+")
+        reddb:del(key)
         reddb:sadd(key,table.unpack(gameids))
     else
         gameids = table.keys(reddb:smembers(key))
@@ -590,6 +592,7 @@ function gmd.promoter_game(data)
     local key = string.format("runtime_conf:promoter_game:%s",promoter)
     if gameids then
         gameids = string.split(gameids,"[^,]+")
+        reddb:del(key)
         reddb:sadd(key,table.unpack(gameids))
     else
         gameids = table.keys(reddb:smembers(key))
