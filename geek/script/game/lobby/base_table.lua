@@ -211,7 +211,7 @@ end
 function base_table:begin_clock(timeout,player,total_time)
 	if player then 
 		send2client_pb(player,"SC_TimeOutNotify",{
-			left_time = math.ceil(timeout),
+			left_time = math.floor(timeout + 0.0000001),
 			total_time = total_time and math.floor(total_time) or nil,
 		})
 		return
