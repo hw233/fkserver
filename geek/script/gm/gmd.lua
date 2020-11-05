@@ -157,6 +157,30 @@ function gmd.create_club(data)
     }
 end
 
+function gmd.edit_club(data)
+    local club_id = tonumber(data.club_id) or nil
+    local club = base_clubs[club_id]
+    if not club then
+        return {
+            errcode = enum.PARAMETER_ERROR,
+        }
+    end
+
+    reddb:hmset(string.format("club:info:%s",club_id),{
+        name = data.name or ""
+    })
+
+    channel.publish("db.?","msg","SD_EditClubInfo",{
+        club = club_id,
+        name = data.name or "",
+    })
+    
+    return {
+        errcode = error.SUCCESS,
+        club_id = club_id,
+    }
+end
+
 function gmd.create_club_with_gourp(data)
     local group_id = data.group_id
     if not group_id or group_id == 0 then
@@ -606,6 +630,7 @@ end
 
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
+gmd["club/edit"] = gmd.edit_club
 gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove
