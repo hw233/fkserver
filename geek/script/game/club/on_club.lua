@@ -651,7 +651,7 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min)
 
     local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
-    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday,2)
+    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday)
 
     logs = table.group(logs,function(c) return c.guid end)
 
@@ -2735,7 +2735,7 @@ function on_cs_search_club_player(msg,guid)
     local money_id = club_money_type[club_id]
 
     local today = math.floor(os.time() / 86400) * 86400
-    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today,1)
+    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today)
 
     logs = table.group(logs,function(c) return c.guid end)
 

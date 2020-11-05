@@ -279,12 +279,10 @@ function on_sd_request_share_param(sid)
     return res[1]
 end
 
-function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
+function on_sd_query_player_statistics(guids,club,getter,start_date)
     if not guids or #guids == 0 then
         return {}
     end
-
-    limit = limit or 2
 
     start_date =  start_date or (math.floor(os.time() / 86400) - 1) * 86400
 
@@ -297,7 +295,7 @@ function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
                 SELECT guid,club,count,date FROM t_log_team_daily_play_count
                 WHERE guid in (%s) AND club = %s
             ) cou
-        JOIN 
+        LEFT JOIN 
             (
                 SELECT son guid,club,SUM(commission) commission,date 
                 FROM t_log_player_daily_commission_contribute
@@ -307,7 +305,6 @@ function on_sd_query_player_statistics(guids,club,getter,start_date,limit)
         ON cou.guid = com.guid AND cou.club = com.club AND cou.date = com.date
         WHERE cou.date >= %s
         ORDER BY cou.date DESC
-        LIMIT %s
     ]],where_sql,club,where_sql,club,getter,start_date,limit)
 
     return logs
