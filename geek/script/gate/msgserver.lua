@@ -24,10 +24,8 @@ function server.logout(guid)
 end
 
 function server.close(fd)
-	local c = connection[fd]
 	connection[fd] = nil
 	gateserver.closeclient(fd)
-	c.fd = nil
 end
 
 function server.login(fd,guid,conf)
@@ -41,8 +39,8 @@ function server.login(fd,guid,conf)
 		index = 0,
 		guid = guid,
 		fd = fd,
-		ip = c.ip,
-		port = c.port,
+		ip = c and c.ip or nil,
+		port = c and c.port or nil,
 	}
 end
 
