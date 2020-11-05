@@ -158,13 +158,11 @@ function zhajinhua_table:on_started(player_count)
 		end
 	end
 
-	self:ding_zhuang()
-
-	self.cur_chair = self.banker
+	self.banker = self:ding_zhuang(self.winner)
+	self.winner = nil
 
 	self.gamelog = {
         winner = nil,
-        banker = nil,
         actions = {},
 		balance = {},
 		rule = self.rule,
@@ -180,8 +178,6 @@ function zhajinhua_table:on_started(player_count)
 			}
 		end)
 	}
-	
-	self.winner = nil
 
 	for i,v in pairs(self.gamers) do
 		v.status = PLAYER_STATUS.WAIT
@@ -222,7 +218,7 @@ function zhajinhua_table:on_started(player_count)
 
 	self.status = TABLE_STATUS.PLAY
 	self:broadcast2client("SC_ZhaJinHuaStart", {
-		banker = self.cur_chair,
+		banker = self.banker,
 		all_chairs = table.series(self.gamers,function(_,i) return i end),
 		all_guids = table.series(self.gamers,function(p) return p.guid end),
 		cur_round = self.cur_round,
@@ -234,7 +230,7 @@ function zhajinhua_table:on_started(player_count)
 		os.date("%y%m%d%H%M%S"))
 
 	self:deal_cards()
-	self:first_turn()
+	self:first_turn(self.banker)
 end
 
 function zhajinhua_table:cur_player()
@@ -399,13 +395,8 @@ function zhajinhua_table:deal_cards()
 	end)
 end
 
-function zhajinhua_table:ding_zhuang()
-	if not self.cur_round or self.cur_round == 1 then
-		self.banker = self.conf.owner.chair_id
-		return
-	end
-
-	self.banker = self.winner.chair_id
+function zhajinhua_table:ding_zhuang(winner)
+	return winner and winner.chair_id or self.conf.owner.chair_id
 end
 
 function zhajinhua_table:on_process_start(player_count)
@@ -542,11 +533,11 @@ function zhajinhua_table:next_round()
 	end
 end
 
-function zhajinhua_table:first_turn()
-	local c = 1
+function zhajinhua_table:first_turn(banker_chair)
+	local c = banker_chair
 	local p
 	repeat
-		c = c % self.chair_count + 1
+		c = (c % self.chair_count) + 1
 		p = self.gamers[c]
 	until (p and not p.death and not p.all_in)
 	self.cur_chair = c
