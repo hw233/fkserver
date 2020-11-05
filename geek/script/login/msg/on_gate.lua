@@ -110,6 +110,17 @@ local function reg_account(msg)
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,info
     end
 
+    local channel_id = (msg.channel_id and msg.channel_id ~= "") and msg.channel_id or nil
+    local promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil
+    repeat
+        local param = util.request_share_params(msg.sid)
+        log.dump(param)
+        if not param then break end
+
+        channel_id = param.channel_id or channel_id
+        promoter = tonumber(param.promoter) or promoter
+    until true
+
     guid = tonumber(random_guid())
     local info = {
         guid = guid,
@@ -129,8 +140,8 @@ local function reg_account(msg)
         role = 0,
         ip = msg.ip,
         union_id = msg.union_id,
-        promoter = (msg.promoter and msg.promoter ~= 0) and msg.promoter or nil,
-        channel_id = (msg.channel_id and msg.channel_id ~= 0) and msg.channel_id or nil,
+        promoter = promoter,
+        channel_id = channel_id,
     }
 
     local phone = msg.phone
@@ -250,6 +261,7 @@ function on_cl_auth(msg)
         promoter = msg.promoter,
         channel_id = msg.channel_id,
         union_id = auth.unionid,
+        sid = msg.sid,
     })
 end
 

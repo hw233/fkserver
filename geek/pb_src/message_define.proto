@@ -34,6 +34,7 @@ message CL_Auth{
 	string version = 5;
 	int64  promoter = 6;
 	string channel_id = 7;
+	string sid = 8;
 }
 
 message LC_Auth{

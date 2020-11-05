@@ -862,19 +862,8 @@ local function on_cs_club_exit(msg,guid)
 end
 
 local function on_cs_club_agree_join_club_with_share_id(msg,guid)
-    local base64sid = url.unescape(msg.sid)
-    local sid = crypt.base64decode(base64sid)
-    local sharerance = channel.call("db.?","msg","SD_RequestShareParam",sid)
-    if not sharerance then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_OPERATION_INVALID,
-            op = msg.op,
-        })
-        return
-    end
-
-    local param = json.decode(sharerance.param)
-    if param.type ~= "joinclub" or not param.club or not param.guid then
+    local param = util.request_share_params(msg.sid)
+    if not param or param.type ~= "joinclub" or not param.club or not param.guid then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_OPERATION_INVALID,
             op = msg.op,

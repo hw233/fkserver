@@ -3,6 +3,8 @@ local httpc = require "http.httpc"
 local log = require "log"
 local md5 = require "md5.core"
 local crypt = require "skynet.crypt"
+local channel = require "channel"
+local url = require "url"
 
 require "functions"
 
@@ -49,6 +51,22 @@ end
 
 function util.md5(s)
     return md5(s)
+end
+
+function util.request_share_params(sid)
+    if not sid or sid == "" then 
+        return
+    end
+
+    sid = crypt.base64decode(url.unescape(sid))    
+    local sharerance = channel.call("db.?","msg","SD_RequestShareParam",sid)
+    log.dump(sharerance)
+    if not sharerance or not sharerance.param or sharerance.param == "" then 
+        return
+    end
+
+    local _,param = pcall(json.decode,sharerance.param)
+    return param
 end
 
 return util
