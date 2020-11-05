@@ -15,8 +15,9 @@ end
 local base_notices =setmetatable({},{
 	__index = function(t, id)
 		if id == "*" then
-			for _, nid in pairs(reddb:keys("notice:*") or {}) do
-				t[id] = load_notice(nid)
+			for _, nkey in pairs(reddb:keys("notice:info:*") or {}) do
+				local nid = string.match(nkey,"notice:info:(.+)")
+				t[nid] = load_notice(nid)
 			end
 			return t
 		end

@@ -11,6 +11,8 @@ local club_money_type = require "game.club.club_money_type"
 local log = require "log"
 local player_money = require "game.lobby.player_money"
 local club_money = require "game.club.club_money"
+local club_notice = require "game.notice.club_notice"
+local base_notices = require "game.notice.base_notices"
 require "functions"
 
 
@@ -628,6 +630,172 @@ function gmd.promoter_game(data)
     }
 end
 
+function gmd.publish_notice(data)
+    local type = tonumber(data.type) or enum.NT_NIL
+    local where = tonumber(data.where) or enum.NW_GLOBAL
+    local content = data.content
+    local club_id = tonumber(data.club_id)
+    local ttl = tonumber(data.ttl)
+    local expireat = tonumber(data.expireat)
+
+    if where == enum.NW_CLUB then
+        if not club_id or club_id == 0 then
+            return {
+                errcode = error.PARAMETER_ERROR,
+                errstr = "invalid club_id.",
+            }
+        end
+
+        if not base_clubs[club_id] then
+            return {
+                errcode = error.PARAMETER_ERROR,
+                errstr = "club not exists.",
+            }
+        end
+    end
+
+    if not content or content == "" then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid content.",
+        }
+    end
+
+    if ttl and ttl == 0 then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid ttl.",
+        }
+    end
+
+    if expireat and expireat <= os.time() then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid expireat.",
+        }
+    end
+
+    local id = channel.call("game.?","msg","BS_PublishNotice",{
+        content = content,
+        club_id = club_id,
+        ttl = ttl,
+        where = where,
+        type = type,
+        expireat = expireat,
+        create_time = os.time(),
+        update_time = os.time(),
+    })
+
+    channel.publish("game.?","msg","BS_ReloadNotice")
+
+    return {
+        errcode = error.SUCCESS,
+        id = id,
+    }
+end
+
+function gmd.edit_notice(data)
+    local type = tonumber(data.type) or enum.NT_NIL
+    local where = tonumber(data.where) or enum.NW_GLOBAL
+    local content = data.content
+    local club_id = tonumber(data.club_id)
+    local ttl = tonumber(data.ttl)
+    local id = data.id
+
+    if not id or id == "" then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "notice id not exists."
+        }
+    end
+
+    if where == enum.NW_CLUB then
+        if not club_id or club_id == 0 then
+            return {
+                errcode = error.PARAMETER_ERROR,
+                errstr = "invalid club_id.",
+            }
+        end
+
+        if not base_clubs[club_id] then
+            return {
+                errcode = error.PARAMETER_ERROR,
+                errstr = "club not exists.",
+            }
+        end
+    end
+
+    if not content or content == "" then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid content.",
+        }
+    end
+
+    if ttl and ttl == 0 then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid ttl.",
+        }
+    end
+
+    if expireat and expireat <= os.time() then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "invalid expireat.",
+        }
+    end
+
+    channel.call("game.?","msg","BS_EditNotice",{
+        id = id,
+        content = content,
+        club_id = club_id,
+        ttl = ttl,
+        where = where,
+        type = type,
+        expireat = tonumber(data.expireat),
+        update_time = os.time(),
+    })
+
+    local ret = channel.publish("game.?","msg","BS_ReloadNotice")
+
+    return {
+        errcode = ret and error.SUCCESS or error.PARAMETER_ERROR,
+        id = id,
+    }
+end
+
+function gmd.notices(data)
+    local club_id = tonumber(data.club_id)
+    if club_id and not base_clubs[club_id] then
+        return {
+            errcode = error.PARAMETER_ERROR,
+        }
+    end
+
+    local id = tonumber(data.id)
+    if id then
+        return {
+            errcode = error.SUCCESS,
+            notices = {base_notices[id]},
+        }
+    end
+
+    if club_id then
+        local notice_ids = club_notice[club_id]
+        local notices = table.series(notice_ids,function(_,nid) return base_notices[nid] end)
+        return {
+            errcode = error.SUCCESS,
+            notices = notices,
+        }
+    end
+
+    return {
+        errcode = error.SUCCESS,
+        notices = table.values(base_notices["*"]),
+    }
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
@@ -636,5 +804,7 @@ gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove
 gmd["online/player"] = gmd.online_player
 gmd["player/update"] = gmd.update_player
+gmd['notice/publish'] = gmd.publish_notice
+gmd['notice/edit'] = gmd.edit_notice
 
 return gmd

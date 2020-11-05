@@ -162,3 +162,103 @@ function on_cs_del_notice(msg,guid)
 		result = enum.ERROR_NONE
 	})
 end
+
+
+function on_bs_reload_notice(msg)
+	for id,_ in paris(base_notices) do
+		base_notices[id] = nil
+	end
+end
+
+function on_bs_publish_notice(msg)
+	local content = msg.content
+	if not content or content == "" then
+		return
+	end
+
+	local club_id = msg.club_id
+	if club_id and club_id ~= 0 and not base_clubs[club_id] then
+		return
+	end
+
+	local id = new_notice_id()
+
+	local notice = {
+		id = id,
+		create_time = os.time(),
+		expiration = os.time() + msg.ttl or mail_expaired_seconds,
+		status = 0,
+		where = msg.where,
+		type = msg.type,
+		club_id = msg.club_id,
+		content = msg.content,
+	}
+
+	local ttl = msg.ttl
+	local expireat = msg.expireat
+	reddb:hmset("notice:info:" .. id, notice)
+	if ttl and ttl > 0 then
+		reddb:expire("notice:info:" .. id,ttl)
+	elseif expireat and expireat > os.time() then
+		reddb:expireat("notice:info:" .. id,expireat)
+	end
+
+	if club_id and club_id ~= 0 then
+		reddb:sadd(string.format("club:notice:%d", club_id), id)
+		if ttl and ttl >0 then
+			reddb:expire(string.format("club:notice:%d", club_id),ttl)
+		elseif expireat and expireat > os.time() then
+			reddb:expireat(string.format("club:notice:%d", club_id),expireat)
+		end
+	end
+
+	return id
+end
+
+function on_bs_edit_notice(msg)
+	local content = msg.content
+	if not content or content == "" then
+		return
+	end
+
+	local id = msg.id
+	if not id or id == "" then
+		return
+	end
+
+	local club_id = msg.club_id
+	if club_id and club_id ~= 0 and not base_clubs[club_id] then
+		return
+	end
+
+	local notice = {
+		id = id,
+		create_time = os.time(),
+		expiration = os.time() + msg.ttl or mail_expaired_seconds,
+		status = 0,
+		where = msg.where,
+		type = msg.type,
+		club_id = msg.club_id,
+		content = msg.content,
+	}
+
+	local ttl = msg.ttl
+	local expireat = msg.expireat
+	reddb:hmset("notice:info:" .. id, notice)
+	if ttl and ttl > 0 then
+		reddb:expire("notice:info:" .. id,ttl)
+	elseif expireat and expireat > os.time() then
+		reddb:expireat("notice:info:" .. id,expireat)
+	end
+
+	if club_id and club_id ~= 0 then
+		reddb:sadd(string.format("club:notice:%d", club_id), id)
+		if ttl and ttl >0 then
+			reddb:expire(string.format("club:notice:%d", club_id),ttl)
+		elseif expireat and expireat > os.time() then
+			reddb:expireat(string.format("club:notice:%d", club_id),expireat)
+		end
+	end
+
+	return id
+end

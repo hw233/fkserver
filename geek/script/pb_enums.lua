@@ -283,6 +283,15 @@ local enums = {
     ERS_FREE = pb.enum("EXT_ROUND_STATUS","ERS_FREE"),
     ERS_GAMING = pb.enum("EXT_ROUND_STATUS","ERS_GAMING"),
     ERS_END = pb.enum("EXT_ROUND_STATUS","ERS_END"),
+
+    NW_NIL = pb.enum("NOTICE_WHERE","NW_NIL"),
+    NW_GLOBAL = pb.enum("NOTICE_WHERE","GLOBAL"),
+    NW_HALL = pb.enum("NOTICE_WHERE","HALL"),
+    NW_CLUB = pb.enum("NOTICE_WHERE","CLUB"),
+    NW_CLUB = pb.enum("NOTICE_WHERE","GAME"),
+
+    NT_NIL = pb.enum("NOTICE_TYPE","NT_NIL"),
+
 }
 
 return enums
