@@ -72,7 +72,7 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.room_cfg = conf.room_cfg
 	self.game_switch_is_open = conf.game_switch_is_open
 
-	log.info("base_room:init:self.game_switch_is_open = [%s]~~~~~~~~~~~~~~~~~:",self.game_switch_is_open)
+	-- log.info("base_room:init:self.game_switch_is_open = [%s]~~~~~~~~~~~~~~~~~:",self.game_switch_is_open)
 
 	for i = 1, table_count do
 		local t = self:create_table()
