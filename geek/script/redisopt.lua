@@ -134,6 +134,10 @@ local function key_args(self,...)
 	return key,args
 end
 
+local function do_command(db,cmd,...)
+	return skynet.call(redisd,"lua","command",db,cmd,...)
+end
+
 local function batch_field_commander(cmd,ret_formater,arg_formater,encoder,decoder)
 	ret_formater = ret_formater or raw_ret_formater
 	arg_formater = arg_formater or list_arg_formater
@@ -146,7 +150,7 @@ local function batch_field_commander(cmd,ret_formater,arg_formater,encoder,decod
 
 		args = encoder(args,key)
 		
-		local vals = skynet.call(redisd,"lua","command",db,cmd,key,arg_formater(args))
+		local vals = do_command(db,cmd,key,arg_formater(args))
 
 		vals = ret_formater(vals)
 
@@ -166,7 +170,7 @@ local function batch_key_commander(cmd,ret_formater,arg_formater,encoder,decoder
 
 		local db = rawget(self,"__db")
 
-		local vals = skynet.call(redisd,"lua","command",db,cmd,arg_formater(args))
+		local vals = do_command(db,cmd,arg_formater(args))
 		vals = decoder(ret_formater(vals),args)
 
 		return vals
@@ -185,7 +189,7 @@ local function field_commander(cmd,ret_formater,arg_formater,encoder,decoder)
 		
 		local db = rawget(self,"__db")
 
-		local vals = skynet.call(redisd,"lua","command",db,cmd,key,arg_formater(encoder(args,key)))
+		local vals = do_command(db,cmd,key,arg_formater(encoder(args,key)))
 
 		vals = ret_formater(vals)
 
@@ -205,7 +209,7 @@ local function commander(cmd,ret_formater,arg_formater,encoder,decoder)
 		
 		local db = rawget(self,"__db")
 
-		local vals = skynet.call(redisd,"lua","command",db,cmd,key,arg_formater(encoder(args,key)))
+		local vals = do_command(db,cmd,key,arg_formater(encoder(args,key)))
 
 		vals = ret_formater(vals)
 
@@ -238,7 +242,7 @@ local command = {
 setmetatable(command, {
 	__index = function(t,cmd)
 		local f = function(t,key,...)
-			local v = skynet.call(redisd,"lua","command",t.__db,cmd,key,...)
+			local v = do_command(t.__db,cmd,key,...)
 			return v
 		end
 		t[cmd] = f
@@ -269,7 +273,7 @@ local key_command = {
 setmetatable(key_command, {
 	__index = function(t,cmd)
 		local f = function(t,...)
-			local v = skynet.call(redisd,"lua","command",t.__db,cmd,t.__key,...)
+			local v = do_command(t.__db,cmd,t.__key,...)
 			return v
 		end
 		t[cmd] = f
