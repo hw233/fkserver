@@ -16,7 +16,7 @@ function channel.call(id,proto,cmd,...)
     local rets = {skynet.call(channeld,"lua","call",id,proto,cmd,...)}
     local deltatime = skynet.time() - now
     if deltatime > max_ttl then
-        log.warnging("channel.call %s,%s,%s time > max_ttl %s",id,proto,cmd,deltatime)
+        log.warning("channel.call %s,%s,%s time > max_ttl %s",id,proto,cmd,deltatime)
     end
     return table.unpack(rets)
 end
