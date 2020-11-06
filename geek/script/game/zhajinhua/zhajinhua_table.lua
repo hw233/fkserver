@@ -586,11 +586,13 @@ function zhajinhua_table:check_start(part)
 		if ready_count == player_count then
 			self:start(player_count)
 		elseif not self.cur_round and ready_count < player_count then
-			local _,seconds = self:get_trustee_conf()
-			self:begin_kickout_no_ready_timer(seconds,function()
-				self:cancel_kickout_no_ready_timer()
-				self:start(player_count)
-			end)
+			local trustee,seconds = self:get_trustee_conf()
+			if trustee then
+				self:begin_kickout_no_ready_timer(seconds,function()
+					self:cancel_kickout_no_ready_timer()
+					self:start(player_count)
+				end)
+			end
 		end
 	end
 end
