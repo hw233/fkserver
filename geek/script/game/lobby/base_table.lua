@@ -1412,7 +1412,7 @@ function base_table:player_stand_up(player, reason)
 		local chairid = player.chair_id
 		local p = self.players[chairid]
 		local list_guid = p and p.guid or -1
-		log.info("set guid[%s] table_id[%s] players[%d] is false [ player_list is %s , player_list.guid [%s]]",
+		log.info("set guid[%s] table_id[%s] players[%s] is false [ player_list is %s , player_list.guid [%s]]",
 			player.guid,player.table_id,chairid , self.players[chairid], list_guid)
 		self.player_count = self.player_count - 1
 		if self:is_ready(chairid) then
