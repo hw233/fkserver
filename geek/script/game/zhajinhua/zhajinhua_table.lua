@@ -268,17 +268,17 @@ end
 
 function zhajinhua_table:begin_action_timer(timeout,fn)
 	if self.auto_action_timer then 
-        log.warning("pdk_table:begin_action_timer timer not nil")
+        log.warning("zhajinhua_table:begin_action_timer timer not nil")
         self.auto_action_timer:kill()
     end
 
     self.auto_action_timer = self:new_timer(timeout,fn)
 
-    log.info("pdk_table:begin_action_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_action_timer.id,timeout)
+    log.info("zhajinhua_table:begin_action_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.auto_action_timer.id,timeout)
 end
 
 function zhajinhua_table:cancel_action_timer()
-	log.info("pdk_table:cancel_action_timer table_id:%s,timer:%s",self.table_id_,self.auto_action_timer and self.auto_action_timer.id or nil)
+	log.info("zhajinhua_table:cancel_action_timer table_id:%s,timer:%s",self.table_id_,self.auto_action_timer and self.auto_action_timer.id or nil)
 	if self.auto_action_timer then
 		self.auto_action_timer:kill()
 		self.auto_action_timer = nil
@@ -539,7 +539,7 @@ function zhajinhua_table:first_turn(banker_chair)
 	repeat
 		c = (c % self.chair_count) + 1
 		p = self.gamers[c]
-	until (p and not p.death and not p.all_in)
+	until (p and c ~= banker_chair and not p.death and not p.all_in)
 	self.cur_chair = c
 	log.info("---------------------------------first_turn end,turn:%s",c )
 	self:start_player_turn(c)
@@ -547,15 +547,24 @@ end
 
 -- 下一个
 function zhajinhua_table:next_turn(chair)
-	log.info("---------------------------------next_turn %s", #self.ready_list)
-	local c = chair or self.cur_chair
+	log.info("---------------------------------next_turn %s", table.nums(self.gamers))
+	chair = chair or self.cur_chair
+	local c = chair
 	local p
 	repeat
-		c = c % self.chair_count + 1
+		c = (c % self.chair_count) + 1
 		p = self.gamers[c]
-	until (p and not p.death and not p.all_in)
+	until (p and c ~= chair and not p.death and not p.all_in)
+	
+	if c == chair then
+		log.error("zhajinhua_table:next_turn got same next chair %s,%s",c,chair)
+		return
+	end
+
 	self.cur_chair = c
+
 	log.info("---------------------------------next_turn end,turn:%s",self.cur_chair )
+
 	self.round_turn_count = (self.round_turn_count or 0) + 1
 	local go_next = self:next_round()
 	if go_next then
@@ -1016,6 +1025,13 @@ function zhajinhua_table:all_in(player)
 		is_win = is_win,
 	})
 
+	if self:is_end() then
+		self:calllater(1.5,function() 
+			self:game_balance()
+		end)
+		return
+	end
+
 	self:next_turn()
 end
 
@@ -1133,17 +1149,17 @@ function zhajinhua_table:add_score(player,msg)
 
 	--处理全押
 	
-	local cur_player = self:cur_player()
-	if is_all_in then
-		log.info("game_id[%s]:player guid[%d]--------->all score money score[%d]", self.round_id,player.guid,score_add)
-		player.all_in = true
+	-- local cur_player = self:cur_player()
+	-- if is_all_in then
+	-- 	log.info("game_id[%s]:player guid[%d]--------->all score money score[%d]", self.round_id,player.guid,score_add)
+	-- 	player.all_in = true
 
-		if cur_player.all_in then
-			self:compare(self.players[self.cur_chair], player.chair_id, true, true)
-		end
+	-- 	if cur_player.all_in then
+	-- 		self:compare(self.players[self.cur_chair], player.chair_id, true, true)
+	-- 	end
 
-		self.ball_begin = true
-	end
+	-- 	self.ball_begin = true
+	-- end
 
 	self:next_turn()
 end
@@ -1411,6 +1427,9 @@ end
 
 -- 检查结束
 function zhajinhua_table:game_balance(winner)
+	self:cancel_clock_timer()
+	self:cancel_action_timer()
+	
 	if not winner then
 		local winners = table.select(self.gamers,function(p) return not p.death end,true)
 		winner = winners[1]
@@ -1479,7 +1498,6 @@ function zhajinhua_table:game_balance(winner)
 
 	self:save_game_log(self.gamelog)
 
-	self:check_single_game_is_maintain()
 	self:game_over()
 end
 
