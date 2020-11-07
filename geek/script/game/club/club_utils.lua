@@ -45,7 +45,10 @@ function utils.level(club,level)
     if not club then return level end
     club = type(club) == "table" and club or base_clubs[club]
     local parent = utils.parent(club)
-    return parent and utils.level(parent,level) or level
+    if parent then
+        return utils.level(parent,level)
+    end
+    return level
 end
 
 function utils.all_game_ids()
