@@ -33,7 +33,11 @@ function utils.root(club)
     if not club then return end
     club = type(club) == "table" and club or base_clubs[club]
     local parent = utils.parent(club)
-    return (parent and utils.root(parent) or club)
+    if parent then
+        return utils.root(parent)
+    end
+
+    return club
 end
 
 function utils.level(club,level)
