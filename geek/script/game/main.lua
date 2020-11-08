@@ -121,7 +121,7 @@ function CMD.start(conf)
 	
 	on_tick()
 
-	timer.timeout(60 * 5,clean_private_table)
+	-- timer.timeout(60 * 5,clean_private_table)
 end
 
 function CMD.afk(guid,offline)
