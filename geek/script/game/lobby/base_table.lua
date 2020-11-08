@@ -1965,6 +1965,7 @@ end
 
 -- 开始游戏
 function base_table:start(player_count)
+	player_count = player_count or table.nums(self.players)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
 	self:cancel_delay_dismiss()
 	self:cancel_all_delay_kickout()
