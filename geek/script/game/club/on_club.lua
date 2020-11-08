@@ -2714,10 +2714,11 @@ function on_cs_search_club_player(msg,guid)
         table.unionto(mems,scanner[2])
     until cursor == "0"
 
-    local function match_partner(club,parnter,guid)
+    mems = table.series(mems,function(m) return tonumber(m) end)
+    local function match_partner(club,partner,guid)
         local uid = guid
         repeat 
-            local uid = club_member_partner[club_id][uid]
+            uid = club_member_partner[club][uid]
             if uid == partner then return true end
         until not uid
     end
@@ -2725,7 +2726,7 @@ function on_cs_search_club_player(msg,guid)
     mems = table.series(mems,function(m)
         if  partner_id and 
             partner_id ~= 0 and 
-            not match_partner(club_id,partner_id,guid) then
+            not match_partner(club_id,partner_id,m) then
             return
         end
 
