@@ -588,29 +588,49 @@ function zhajinhua_table:get_min_gamer_count()
 	return min_gamer_count
 end
 
+function zhajinhua_table:begin_start_ticker()
+	local trustee,seconds = self:get_trustee_conf()
+	if trustee then
+		self:begin_kickout_no_ready_timer(seconds,function()
+			self:cancel_kickout_no_ready_timer()
+			self:start()
+		end)
+	end
+end
+
+function zhajinhua_table:stop_start_ticker()
+	self:cancel_kickout_no_ready_timer()
+end
+
 function zhajinhua_table:check_start(part)
 	log.info("check_start-----------------")
-	if self.status and self.status ~= TABLE_STATUS.FREE then
+	if self:is_play() then
 		return
 	end
 
 	local min_gamer_count = self:get_min_gamer_count()
 	local player_count = table.nums(self.players)
 	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
-	if ready_count >= min_gamer_count then
-		if ready_count == player_count then
-			self:start(player_count)
-		elseif not self.cur_round and ready_count < player_count then
-			local trustee,seconds = self:get_trustee_conf()
-			if trustee then
-				self:begin_kickout_no_ready_timer(seconds,function()
-					self:cancel_kickout_no_ready_timer()
-					self:start(player_count)
-				end)
+
+	if not self.cur_round then
+		if ready_count >= min_gamer_count then
+			if ready_count == player_count then
+				self:start(player_count)
+			else
+				self:begin_start_ticker()
 			end
+		else
+			self:stop_start_ticker()
 		end
-	elseif not self.cur_round then
-		self:cancel_kickout_no_ready_timer()
+		return
+	end
+
+	local is_all_gamer_ready = table.logic_and(self.gamers,function(_,c) 
+		return self.ready_list[c] and true or false 
+	end)
+	local gamer_count = table.nums(self.gamers)
+	if is_all_gamer_ready and ready_count >= gamer_count then
+		self:start(player_count)
 	end
 end
 
@@ -1872,15 +1892,6 @@ function zhajinhua_table:auto_ready(seconds)
 				self:ready(p)
 			end
 		end)
-
-		local min_gamer_count = self:get_min_gamer_count()
-		local player_count = table.nums(self.players)
-		local ready_count = table.sum(self.players,function(_,chair) 
-			return self.ready_list[chair] and 1 or 0 
-		end)
-		if ready_count < player_count and ready_count >= min_gamer_count then
-			self:start(player_count)
-		end
 	end)
 end
 
@@ -1906,7 +1917,7 @@ function zhajinhua_table:is_play(player)
 		return player.status
 	end
 
-	return self.status
+	return self.status and self.status ~= TABLE_STATUS.FREE
 end
 
 function zhajinhua_table:on_player_sit_downed(player,reconnect)
