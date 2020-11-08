@@ -609,6 +609,8 @@ function zhajinhua_table:check_start(part)
 				end)
 			end
 		end
+	elseif not self.cur_round then
+		self:cancel_kickout_no_ready_timer()
 	end
 end
 
