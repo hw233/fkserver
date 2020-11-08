@@ -1262,12 +1262,14 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
-    local money_id = club_money_type[club_id]
-    if player_money[target_guid][money_id] > 0 then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_MORE_MAX_LIMIT
-        })
-        return
+    if club.type == enum.CT_UNION then
+        local money_id = club_money_type[club_id]
+        if player_money[target_guid][money_id] > 0 then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_MORE_MAX_LIMIT
+            })
+            return
+        end
     end
 
     local partner_id = club_member_partner[club_id][target_guid]
