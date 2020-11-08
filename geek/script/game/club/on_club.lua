@@ -1254,14 +1254,14 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
-    local club_ids = player_club[target_guid][enum.CT_UNION]
-    for cid,_ in pairs(club_ids) do
-        local c = base_clubs[cid]
-        if c and c.parent == club_id and c.owner == target_guid then
-            on_cs_club_kickout_club_boss(msg,guid)
-            return
-        end
-    end
+    -- local club_ids = player_club[target_guid][enum.CT_UNION]
+    -- for cid,_ in pairs(club_ids) do
+    --     local c = base_clubs[cid]
+    --     if c and c.parent == club_id and c.owner == target_guid then
+    --         on_cs_club_kickout_club_boss(msg,guid)
+    --         return
+    --     end
+    -- end
 
     local os = onlineguid[target_guid]
     if os and os.table then
@@ -1279,11 +1279,11 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
-    club:exit(target_guid)
-
     local partner_id = club_member_partner[club_id][target_guid]
     local partner = club_partners[club_id][partner_id]
     partner:exit(target_guid)
+
+    club:exit(target_guid)
 
     channel.publish("db.?","msg","SD_LogClubActionMsg",{
         club = club_id,
