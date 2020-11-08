@@ -534,12 +534,18 @@ function zhajinhua_table:next_round()
 end
 
 function zhajinhua_table:first_turn(banker_chair)
+	local reamin = table.sum(self.gamers,function(p) return (not p.death and not p.all_in) and 1 or 0 end)
+	log.info("---------------------------------first_turn %s", reamin)
 	local c = banker_chair
 	local p
 	repeat
 		c = (c % self.chair_count) + 1
+		if c == banker_chair then
+			log.error("zhajinhua_table:first_turn got same next chair %s,%s",c,banker_chair)
+			return
+		end
 		p = self.gamers[c]
-	until (p and c ~= banker_chair and not p.death and not p.all_in)
+	until (p and not p.death and not p.all_in)
 	self.cur_chair = c
 	log.info("---------------------------------first_turn end,turn:%s",c )
 	self:start_player_turn(c)
@@ -547,19 +553,19 @@ end
 
 -- 下一个
 function zhajinhua_table:next_turn(chair)
-	log.info("---------------------------------next_turn %s", table.nums(self.gamers))
+	local reamin = table.sum(self.gamers,function(p) return (not p.death and not p.all_in) and 1 or 0 end)
+	log.info("---------------------------------next_turn %s", reamin)
 	chair = chair or self.cur_chair
 	local c = chair
 	local p
 	repeat
 		c = (c % self.chair_count) + 1
+		if c == chair then 
+			log.error("zhajinhua_table:next_turn got same next chair %s,%s",c,chair)
+			return
+		end
 		p = self.gamers[c]
-	until (p and c ~= chair and not p.death and not p.all_in)
-	
-	if c == chair then
-		log.error("zhajinhua_table:next_turn got same next chair %s,%s",c,chair)
-		return
-	end
+	until (p and not p.death and not p.all_in)
 
 	self.cur_chair = c
 
