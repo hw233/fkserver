@@ -32,8 +32,8 @@ local queue = require "skynet.queue"
 local game_util = require "game.util"
 
 local dismiss_timeout = 60
-local auto_dismiss_timeout = 10 * 60
-local auto_kickout_timer = 2 * 60
+local auto_dismiss_timeout = 2 * 60
+local auto_kickout_timer = 1 * 60
 
 local EXT_ROUND_STATUS = {
 	NONE = enum.ERS_NONE,
@@ -51,6 +51,7 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_DISMISS_TRUSTEE] = enum.DISMISS_REASON_TRUSTEE_AUTO,
 	[enum.STANDUP_REASON_BANKRUPCY] = enum.DISMISS_REASON_BANKRUPCY,
 	[enum.STANDUP_REASON_TABLE_TIMEOUT] = enum.DISMISS_REASON_TIMEOUT,
+	[enum.STANDUP_REASON_MAINTAIN] = enum.DISMISS_REASON_MAINTAIN,
 }
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
@@ -831,7 +832,11 @@ function base_table:on_game_overed()
 		self:on_final_game_overed()
 		self:kickout_players_when_ext_round_over()
 		if self.private_id then
-			self:delay_normal_dismiss()
+			if not game_util.is_in_maintain() then
+				self:delay_normal_dismiss()
+			else
+				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)
+			end
 		end
 		return
 	end

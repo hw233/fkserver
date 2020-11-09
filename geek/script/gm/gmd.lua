@@ -796,6 +796,49 @@ function gmd.notices(data)
     }
 end
 
+
+function gmd.set_maintain_switch(data) 
+    local gametype = tonumber(data.gametype)
+
+    local switch = data.switch
+
+    if gametype then
+        if switch then
+            reddb:set(string.format("runtime_conf:game_maintain_switch:%s",gametype),switch)
+        else
+            reddb:del(string.format("runtime_conf:game_maintain_switch:%s",gametype))
+        end
+    else
+        if switch then
+            reddb:set("runtime_conf:global:maintain_switch",switch)
+        else
+            reddb:del("runtime_conf:global:maintain_switch")
+        end
+
+        channel.publish("gate.*","lua","maintain",(switch and switch == "true") and true or nil)
+    end
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.maintain_switch(data) 
+    local gametype = tonumber(data.gametype)
+
+    local switch
+    if gametype then
+        switch = reddb:get(string.format("runtime_conf:game_maintain_switch:%s",gametype))
+    else
+        switch = reddb:get("runtime_conf:global:maintain_switch")
+    end
+
+    return {
+        errcode = error.SUCCESS,
+        switch = switch,
+    }
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club

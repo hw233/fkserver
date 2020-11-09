@@ -12,6 +12,7 @@ local sconf
 local gateid
 local gateconf
 protocol = nil
+local gated = ".gated"
 
 local MSG = {}
 
@@ -46,15 +47,27 @@ function CMD.start(conf)
     end
 
     local loginservice = skynet.newservice("gate.logind",gateid,protocol)
-    local gate = skynet.newservice("gate.gated",loginservice,gateid,protocol)
-    skynet.call(gate,"lua","open",{
+    gated = skynet.newservice("gate.gated",loginservice,gateid,protocol)
+    skynet.call(gated,"lua","open",{
         host = host,
         port = port,
     })
+
+    local is_maintain = channel.call("config.?","msg","maintain")
+    log.dump(is_maintain)
+    skynet.call(loginservice,"lua","maintain",is_maintain)
 end
 
 function CMD.forward(who,proto,...)
     channel.publish(who,proto,...)
+end
+
+function CMD.kickout(guid)
+    skynet.send(gated,"lua","kickout",guid)
+end
+
+function CMD.maintain(switch)
+    skynet.send(gated,"lua","maintain",switch)
 end
 
 local CONTROL = {}

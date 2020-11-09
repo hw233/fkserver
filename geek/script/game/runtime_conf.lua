@@ -78,6 +78,12 @@ local function get_game_conf(channel,promoter,club_id)
     end
 end
 
+local function is_in_maintain(gametype)
+    local key = gametype and string.format("runtime_conf:game_maintain_switch:%s",gametype) or "runtime_conf:global:maintain_switch"
+    local v = reddb:get(key)
+    return (v and v == "true") and true or nil
+end
+
 return {
     private_fee_switch = private_fee_switch,
     private_fee_club_switch = private_fee_club_switch,
@@ -87,4 +93,5 @@ return {
     prmoter_game = promoter_games,
     club_game = club_games,
     get_game_conf = get_game_conf,
+    is_in_maintain = is_in_maintain,
 }

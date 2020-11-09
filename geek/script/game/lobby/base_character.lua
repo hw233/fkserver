@@ -158,8 +158,8 @@ function base_character:forced_exit(reason)
 	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
 end
 
-function base_character:forced_logout()
-	logout(self.guid)
+function base_character:kickout()
+	kickout(self.guid)
 end
 
 return base_character

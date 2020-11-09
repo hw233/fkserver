@@ -5,6 +5,9 @@ local md5 = require "md5.core"
 local crypt = require "skynet.crypt"
 local channel = require "channel"
 local url = require "url"
+local redisopt = require "redisopt"
+
+local reddb  = redisopt.default
 
 require "functions"
 
@@ -67,6 +70,11 @@ function util.request_share_params(sid)
 
     local _,param = pcall(json.decode,sharerance.param)
     return param
+end
+
+function util.is_in_maintain()
+    local v = reddb:get("runtime_conf:global:maintain_switch")
+    return (v and v == "true") and true or nil
 end
 
 return util

@@ -269,9 +269,6 @@ function logout(guid,offline)
 		return result
 	end
 
-	-- local old_online_award_time = player.online_award_time
-	-- player.online_award_time = player.online_award_time + player.logout_time - player.online_award_start_time
-
 	if old_online_award_time ~= player.online_award_time then
 		--player.flag_base_info = true
 	end
@@ -315,6 +312,13 @@ end
 
 function on_cs_logout(msg,guid)
 	return logout(guid)
+end
+
+function kickout(guid)
+	local os = onlineguid[guid]
+	local gate = os.gate
+	logout(guid)
+	channel.call("gate."..tostring(gate),"lua","kickout",guid)
 end
 
 -- 跨天了
@@ -1033,6 +1037,21 @@ function on_cs_create_private_room(msg,guid)
 		return
 	end
 
+	if game_util.is_global_in_maintain() then
+		onlineguid.send(guid,"SC_CreateRoom",{
+			result = enum.LOGIN_RESULT_MAINTAIN,
+		})
+		player:kickout()
+		return
+	end
+
+	if game_util.is_game_in_maintain() then
+		onlineguid.send(guid,"SC_CreateRoom",{
+			result = enum.GAME_SERVER_RESULT_MAINTAIN,
+		})
+		return
+	end
+
 	log.dump(rule)
 
 	local result,round,chair_count,pay_option,_ = check_rule(rule)
@@ -1250,6 +1269,21 @@ function on_cs_join_private_room(msg,guid)
 
 	if reconnect and reconnect ~= 0 then
 		on_cs_reconnect(guid)
+		return
+	end
+
+	if game_util.is_global_in_maintain() then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.LOGIN_RESULT_MAINTAIN,
+		})
+		player:kickout()
+		return
+	end
+
+	if game_util.is_game_in_maintain() then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.GAME_SERVER_RESULT_MAINTAIN,
+		})
 		return
 	end
 

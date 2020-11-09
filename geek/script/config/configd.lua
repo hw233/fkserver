@@ -8,6 +8,7 @@ local json = require "cjson"
 require "functions"
 local redisopt = require "redisopt"
 local enum = require "pb_enums"
+local util = require "util"
 
 local reddb = redisopt.default
 
@@ -379,6 +380,10 @@ function MSG.RequestPlatformAllCashSwitchIndex(msg)
         all_cash_switch_str = cash_maintain_cmd,
         update_flag = update_flag,
     }
+end
+
+function MSG.maintain()
+    return util.is_in_maintain()
 end
 
 local sconf

@@ -26,6 +26,7 @@ local sms = {}
 local sms_time_limit
 local gate
 local serviceid
+local is_maintain
 
 
 local function check_login_session(fd)
@@ -43,6 +44,10 @@ end
 function CMD.register_gate(g)
     assert(g)
     gate = g
+end
+
+function CMD.maintain(switch)
+    is_maintain = switch
 end
 
 local MSG = {}
@@ -221,6 +226,13 @@ local function login_by_account(msg,session)
 end
 
 function MSG.CL_Auth(msg,session)
+    if is_maintain then
+        netmsgopt.send(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_MAINTAIN,
+        })
+        return
+    end
+
     local fd = session.fd
     if logining[fd] then
         netmsgopt.send(fd,"LC_Auth",{
@@ -269,6 +281,14 @@ end
 function MSG.CL_Login(msg,session)
     log.dump(msg)
     local fd = session.fd
+
+    if is_maintain then
+        netmsgopt.send(fd,"LC_Login",{
+            result = enum.LOGIN_RESULT_MAINTAIN,
+        })
+        return
+    end
+    
     if logining[fd] then
         netmsgopt.send(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_LOGIN_QUQUE,

@@ -215,5 +215,7 @@ tree.runtime_conf.promoter_game["%S+"] = "set"
 tree.runtime_conf.promoter_game["%S+"]["%d+"] = "number"
 tree.runtime_conf.club_game["%S+"] = "set"
 tree.runtime_conf.club_game["%S+"]["%d+"] = "number"
+tree.runtime_conf.game_maintain_switch["%d+"] = "bool"
+tree.runtime_conf.global.maintain_switch = "bool"
 
 return tree

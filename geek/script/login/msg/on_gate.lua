@@ -231,6 +231,10 @@ local function wx_auth(msg)
 end
 
 function on_cl_auth(msg)
+    if util.is_in_maintain() then
+        return enum.LOGIN_RESULT_MAINTAIN
+    end
+
     local do_auth = wx_auth
     if not do_auth then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
@@ -549,7 +553,7 @@ function on_cl_login(msg,gate,session_id)
     info = clone(info)
 
     -- 重连判断
-    local onlineinfo = reddb:hgetall(string.format("player:online:guid:%s",info.guid))
+    local onlineinfo = onlineguid[info.guid]
     local game_id = tonumber(onlineinfo.server)
     local first_game_type = tonumber(onlineinfo.first_game_type)
     if game_id  and tonumber(first_game_type) ~= 1 then
@@ -566,6 +570,12 @@ function on_cl_login(msg,gate,session_id)
         log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s",
             account, game_id, info.session_id, info.gate_id)
         return info,game_id
+    end
+
+    if util.is_in_maintain() then
+        return {
+            result = enum.LOGIN_RESULT_MAINTAIN
+        }
     end
 
     -- 找一个默认大厅服务器
