@@ -835,9 +835,5 @@ function base_player:force_stand_up(reason)
 	return true
 end
 
-function base_player:force_exit_room(reason)
-	g_room:player_exit_room(self)
-end
-
 
 return base_player
