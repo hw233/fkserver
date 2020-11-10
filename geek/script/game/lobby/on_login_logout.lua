@@ -179,35 +179,7 @@ function on_ls_login_notify(guid,reconnect)
 	
 	log.info("login step game->LC_Login,account=%s", player.account)
 
-	-- 定时存档
-	local guid = player.guid
-	local function save_db_timer()
-		local p = base_players[guid]
-		if not p then
-			return
-		end
-
-		if p ~= player then
-			return
-		end
-
-		p:save()
-
-		timer.add_timer(def_save_db_time, save_db_timer)
-	end
-	save_db_timer()
-
-	reddb:hmset("player:online:guid:"..tostring(player.guid),{
-		first_game_type = def_first_game_type,
-		second_game_type = def_second_game_type,
-		server = def_game_id,
-	})
-
-	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
-	reddb:incr("player:online:count")
-
-	onlineguid[player.guid] = nil
+	g_room:login_server(player)
 
 	log.info("test .................. on_les_login_notify %s", player.h_bank_password)
 end
@@ -262,47 +234,12 @@ function logout(guid,offline)
 		return
 	end
 
-	player.logout_time = os.time()
-	local result = g_room:exit_server(player,offline,offline and enum.STANDUP_REASON_OFFLINE or nil)
-	if result ~= enum.ERROR_NONE then
-		log.info("logout offlined...")
-		return result
+	-- online很重要,被动踢出房间时,用以判断是否直接退出服务器
+	if offline then
+		player.online = nil
 	end
 
-	if old_online_award_time ~= player.online_award_time then
-		--player.flag_base_info = true
-	end
-	
-	log.info("set player.online = false")
-	player.online = nil
-	player:save()
-	
-	--- 把下面这段提出来，有还没有请求base_info客户端就退出，导致现在玩家数据没有清理
-	-- 给db退出消息
-	channel.publish("db.?","msg","S_Logout", {
-		account = player.account,
-		guid = guid,
-		login_time = player.login_time,
-		logout_time = os.time(),
-		phone = player.phone,
-		phone_type = player.phone_type,
-		version = player.version,
-		channel_id = player.channel_id,
-		package_name = player.package_name,
-		imei = player.imei,
-		ip = player.ip,
-	})
-
-	reddb:del("player:online:guid:"..tostring(player.guid))
-	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
-	reddb:decr("player:online:count")
-
-	-- 删除玩家
-	base_players[guid] = nil
-	onlineguid[guid] = nil
-
-	return result
+	return g_room:exit_server(player,offline)
 end
 
 function on_s_logout(msg)
@@ -814,6 +751,7 @@ end
 function on_ss_change_game(guid)
 	local player = base_players[guid]
 	player.online = true
+	player.inactive = nil
 	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s",
 		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
 		player.bank_name,player.bank_province,player.bank_city,player.bank_branch)
@@ -832,28 +770,9 @@ function on_ss_change_game(guid)
 	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 
-	-----------
 	onlineguid[player.guid] = nil
 	onlineguid.control(player,"goserver",def_game_id)
 	onlineguid[player.guid] = nil
-	
-	-- 定时存档
-	local guid = player.guid
-	local function save_db_timer()
-		local p = base_players[guid]
-		if not p then
-			return
-		end
-
-		if p ~= player then
-			return
-		end
-
-		p:save()
-
-		timer.add_timer(def_save_db_time, save_db_timer)
-	end
-	save_db_timer()
 
 	log.info("change step login notify,account=%s", player.account)
 end
@@ -1020,8 +939,7 @@ function on_cs_create_private_room(msg,guid)
 		end
 	end
 	
-	local room_cfg = serviceconf[def_game_id].conf
-	if room_cfg.first_game_type ~= game_type then
+	if def_first_game_type ~= game_type then
 		local room_id = common.find_best_room(game_type)
 		if not room_id then
 			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
@@ -1237,29 +1155,18 @@ function on_cs_join_private_room(msg,guid)
 		return
 	end
 
-	local game_type = private_table.game_type
-	if not game_type then
+	local room_id = private_table.room_id
+	if not room_id then
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.ERROR_TABLE_NOT_EXISTS,
 		})
 		return
 	end
 
-	local room_cfg = serviceconf[def_game_id].conf
-	if room_cfg.first_game_type ~= game_type then
+	if def_game_id ~= room_id then
 		onlineguid[guid] = nil
-		local room_id = common.find_best_room(game_type)
-		if not room_id then 
-			onlineguid.send(guid,"SC_JoinRoom",{
-				result = enum.ERROR_TABLE_NOT_EXISTS,
-			})
-			return 
-		end
 
-		log.info("ss_changegame to %s,%s",guid,room_id)
-		channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
-		reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-		reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+		common.switch_room(guid,room_id)
 		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid)
 		base_players[guid] = nil
 		return
