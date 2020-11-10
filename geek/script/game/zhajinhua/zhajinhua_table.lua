@@ -16,6 +16,7 @@ local string = string
 local base_table = require "game.lobby.base_table"
 
 local dismiss_timeout = 60
+local compare_anim_timeout = 2
 
 local CARDS_TYPE = define.CARDS_TYPE
 local TABLE_STATUS = define.TABLE_STATUS
@@ -1391,13 +1392,15 @@ function zhajinhua_table:compare(player, msg)
 
 	if self:is_end() then
 		log.info("game_id[%s]:------------->This Game Is  Over!",self.round_id)
-		self:calllater(1.5,function() --比牌动画延时
+		self:calllater(compare_anim_timeout,function() --比牌动画延时
 			self:game_balance()
 		end)
 		return
 	end
 
-	self:next_turn()
+	self:calllater(compare_anim_timeout,function()
+		self:next_turn()
+	end)
 end
 
 function zhajinhua_table:cs_compare(player,msg)
