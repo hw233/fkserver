@@ -61,7 +61,15 @@ function util.request_share_params(sid)
         return
     end
 
-    sid = crypt.base64decode(url.unescape(sid))    
+    local ok
+    ok,sid = pcall(function() 
+        return crypt.base64decode(url.unescape(sid))
+    end)
+
+    if not ok then
+        return
+    end
+
     local sharerance = channel.call("db.?","msg","SD_RequestShareParam",sid)
     log.dump(sharerance)
     if not sharerance or not sharerance.param or sharerance.param == "" then 
