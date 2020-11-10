@@ -50,7 +50,7 @@ function onlineguid.control(player_or_guid,msgname,msg)
 
     log.info("onlineguid.control %s %s %s",guid,msgname,msg)
 
-    channel.publish("gate."..s.gate,"client",guid,"lua",msgname,msg)
+    channel.call("gate."..s.gate,"client",guid,"lua",msgname,msg)
 end
 
 function onlineguid.broadcast(guids,msgname,msg)
