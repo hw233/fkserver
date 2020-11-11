@@ -778,6 +778,12 @@ local function on_cs_club_administrator(msg,guid)
 
         reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_ADMIN)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_ADMIN - enum.CRT_PLAYER,target_guid)
+
+        channel.publish("db.?","msg","SD_SetClubRole",{
+            guid = target_guid,
+            club_id = club_id,
+            role = enum.CRT_ADMIN
+        })
         res.result = enum.ERROR_NONE
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
@@ -799,6 +805,12 @@ local function on_cs_club_administrator(msg,guid)
 
         reddb:hdel(string.format("club:role:%d",club_id),target_guid)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PLAYER - enum.CRT_ADMIN,target_guid)
+
+        channel.publish("db.?","msg","SD_SetClubRole",{
+            guid = target_guid,
+            club_id = club_id,
+        })
+
         res.result = enum.ERROR_NONE
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return

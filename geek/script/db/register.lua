@@ -126,3 +126,4 @@ register_dispatcher("SD_LogExtGameRoundPlayerJoin",on_sd_log_ext_game_round_play
 register_dispatcher("SD_EditClubInfo",on_sd_edit_club_info)
 register_dispatcher("SD_QueryPlayerStatistics",on_sd_query_player_statistics)
 register_dispatcher("SD_LogClubActionMsg",on_sd_log_club_action_msg)
+register_dispatcher("SD_SetClubRole",on_sd_set_club_role)

@@ -337,3 +337,28 @@ function on_sd_edit_club_info(msg)
 
     return true
 end
+
+function on_sd_set_club_role(msg)
+    local club_id = msg.club_id
+    local guid = msg.guid
+    local role = msg.role
+
+    if not club_id or not guid then
+        return
+    end
+
+    if not role then
+        local r = dbopt.game:query("DELETE FROM t_club_role WHERE club = %s AND guid = %s",club_id,guid)
+        if r.errno then
+            log.error("on_sd_set_club_role DELETE FROM t_club_role errno:%d,errstr:%s",r.errno,r.err)
+        end
+        return
+    end
+
+    local r = dbopt.game:query("INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,%s) ON DUPLICATE KEY UPDATE role = %s;",club_id,guid,role,role)
+    if r.errno then
+        if r.errno then
+            log.error("on_sd_set_club_role INSERT INTO t_club_role errno:%d,errstr:%s",r.errno,r.err)
+        end
+    end
+end
