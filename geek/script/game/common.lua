@@ -3,6 +3,7 @@ local channel = require "channel"
 local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
 local base_players = require "game.lobby.base_players"
+local log = require "log"
 
 local reddb  = redisopt.default
 
