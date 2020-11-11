@@ -253,7 +253,7 @@ function on_cs_logout(msg,guid)
 	local palyer = base_players[guid]
 	if not player then
 		log.warning("on_cs_logout got nil player.")
-		return
+		return enum.ERROR_PLAYER_NOT_EXIST
 	end
 	return g_room:kickout_server(player,enum.STANDUP_REASON_NORMAL)
 end
