@@ -746,17 +746,6 @@ function land_table:on_process_over(reason)
     })
 end
 
--- 检查是否可取消准备
-function land_table:can_stand_up(player, reason)
-    log.info("land_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.SETAND_REASON_OFFLINE then
-        return true
-    end
-
-    return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round
-end
-
 function land_table:load_lua_cfg()
 	
 end
@@ -999,7 +988,7 @@ function  land_table:reconnect(player)
 	base_table.reconnect(self,player)
 end
 
-function  land_table:is_play( ... )
+function  land_table:is_play()
 	log.info("land_table:is_play : [%s]",self.status)
 	return  self.status and self.status ~= TABLE_STATUS.FREE and self.status ~= TABLE_STATUS.END
 end

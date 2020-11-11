@@ -1919,17 +1919,6 @@ function maajan_table:notify_offline(player)
     end
 end
 
--- 检查是否可取消准备
-function maajan_table:can_stand_up(player, reason)
-    log.info("maajan_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.SETAND_REASON_OFFLINE then
-        return true
-    end
-
-    return not self.cur_state_FSM or not self:is_play()
-end
-
 function maajan_table:is_play(...)
 	return self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE
 end

@@ -462,17 +462,6 @@ function pdk_table:on_process_over(reason)
     })
 end
 
--- 检查是否可取消准备
-function pdk_table:can_stand_up(player, reason)
-    log.info("pdk_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.SETAND_REASON_OFFLINE then
-        return true
-    end
-
-    return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round
-end
-
 function pdk_table:load_lua_cfg()
 	
 end

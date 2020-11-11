@@ -1597,15 +1597,6 @@ function zhajinhua_table:compare_player(l, r,with_color,with_each_other)
 	return comp
 end
 
-function zhajinhua_table:can_stand_up(player,reason)
-	if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.SETAND_REASON_OFFLINE then
-        return true
-    end
-
-	return not player.status or player.status == PLAYER_STATUS.WATCHER
-end
-
 --替换玩家cost_money方法，先缓存，稍后一起扣钱
 function zhajinhua_table:fake_cost_money(player,score)
 	local money = self:calc_score_money(score)
@@ -1912,10 +1903,20 @@ end
 
 function zhajinhua_table:is_play(player)
 	if player then
-		return player.status
+		return player.status and player.status ~= PLAYER_STATUS.WATCHER
 	end
 
 	return self.status and self.status ~= TABLE_STATUS.FREE
+end
+
+function zhajinhua_table:can_stand_up(player,reason)
+	log.info("zhajinhua_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
+    if reason ~= enum.STANDUP_REASON_NORMAL and
+        reason ~= enum.STANDUP_REASON_OFFLINE then
+        return true
+    end
+
+    return not self:is_play(player)
 end
 
 function zhajinhua_table:on_player_sit_downed(player,reconnect)

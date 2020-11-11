@@ -1674,7 +1674,13 @@ function base_table:check_ready(player)
 end
 
 function base_table:can_stand_up(player,reason)
-	return true
+	log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
+    if reason ~= enum.STANDUP_REASON_NORMAL and
+        reason ~= enum.STANDUP_REASON_OFFLINE then
+        return true
+    end
+
+    return not self:is_play(player) and not self.cur_round
 end
 
 -- 检查开始
