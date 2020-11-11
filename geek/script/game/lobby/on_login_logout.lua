@@ -248,6 +248,7 @@ function on_s_logout(msg)
 end
 
 function on_cs_logout(msg,guid)
+	guid = tonumber(guid)
 	log.info("on_cs_logout %s",guid)
 	local palyer = base_players[guid]
 	if not player then
@@ -258,6 +259,7 @@ function on_cs_logout(msg,guid)
 end
 
 function kickout(guid,reason)
+	log.info("kickout %s",guid)
 	local player = base_players[guid]
 	if not player then
 		log.warning("kickout got nil player,%s",guid)
