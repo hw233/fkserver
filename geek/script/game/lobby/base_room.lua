@@ -883,15 +883,13 @@ function base_room:player_exit_room(player)
 			return
 		end
 		common.switch_room(guid,lobby_id)
+		self.cur_player_count_ = self.cur_player_count_ - 1
+		base_players[guid] = nil
+		onlineguid[guid] = nil
+		self.players[guid] = nil
 	else
 		self:player_logout_server(player)
 	end
-
-	self.players[guid] = nil
-	self.cur_player_count_ = self.cur_player_count_ - 1
-
-	base_players[guid] = nil
-	onlineguid[guid] = nil
 end
 
 function base_room:player_kickout_room(player)
@@ -904,15 +902,14 @@ function base_room:player_kickout_room(player)
 			return
 		end
 		common.switch_room(guid,lobby_id)
+		self.cur_player_count_ = self.cur_player_count_ - 1
+		self.players[guid] = nil
+
+		base_players[guid] = nil
+		onlineguid[guid] = nil
 	else
 		self:player_kickout_server(player)
 	end
-
-	self.players[guid] = nil
-	self.cur_player_count_ = self.cur_player_count_ - 1
-
-	base_players[guid] = nil
-	onlineguid[guid] = nil
 end
 
 function base_room:player_login_server(player)
@@ -927,7 +924,8 @@ function base_room:player_login_server(player)
 	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	reddb:incr("player:online:count")
 
-	onlineguid[player.guid] = nil
+	self.cur_player_count_ = self.cur_player_count_ + 1
+	self.players[guid] = player
 end
 
 function base_room:player_logout_server(player)
