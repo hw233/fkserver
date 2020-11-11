@@ -1598,15 +1598,10 @@ function zhajinhua_table:compare_player(l, r,with_color,with_each_other)
 end
 
 function zhajinhua_table:can_stand_up(player,reason)
-	if  reason == enum.STANDUP_REASON_FORCE or 
-		reason == enum.STANDUP_REASON_DISMISS 
-	then
-		return true
-	end
-
-	if reason == enum.STANDUP_REASON_OFFLINE then
-		return false
-	end
+	if reason ~= enum.STANDUP_REASON_NORMAL and
+        reason ~= enum.SETAND_REASON_OFFLINE then
+        return true
+    end
 
 	return not player.status or player.status == PLAYER_STATUS.WATCHER
 end

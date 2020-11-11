@@ -2220,16 +2220,12 @@ end
 -- 检查是否可取消准备
 function maajan_table:can_stand_up(player, reason)
     log.info("maajan_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason == enum.STANDUP_REASON_DISMISS or
-        reason == enum.STANDUP_REASON_FORCE then
+    if reason ~= enum.STANDUP_REASON_NORMAL and
+        reason ~= enum.SETAND_REASON_OFFLINE then
         return true
     end
 
-    if reason == enum.STANDUP_REASON_OFFLINE and self.cur_state_FSM ~= nil then
-        return false
-    end
-
-    return not self.cur_state_FSM
+    return not self.cur_state_FSM or not self.cur_state_FSM
 end
 
 function maajan_table:is_play(...)

@@ -749,13 +749,9 @@ end
 -- 检查是否可取消准备
 function land_table:can_stand_up(player, reason)
     log.info("land_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason == enum.STANDUP_REASON_DISMISS or
-        reason == enum.STANDUP_REASON_FORCE then
+    if reason ~= enum.STANDUP_REASON_NORMAL and
+        reason ~= enum.SETAND_REASON_OFFLINE then
         return true
-	end
-	
-	if reason == enum.STANDUP_REASON_OFFLINE and self.status ~= nil then
-        return false
     end
 
     return (not self.status or self.status == TABLE_STATUS.FREE) and not self.cur_round
