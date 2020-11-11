@@ -358,14 +358,13 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		club = club,
 	})
 
-	self:player_enter_room(player)
-	
 	local result = tb:lockcall(function() return tb:player_sit_down(player, chair_id) end)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		tb:private_clear()
-		self:player_exit_room(player)
 		return result
 	end
+
+	self:player_enter_room(player)
 
 	reddb:hmset("table:info:"..tostring(global_tid),{
 		room_id = def_game_id,
