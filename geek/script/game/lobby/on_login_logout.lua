@@ -248,7 +248,13 @@ function on_s_logout(msg)
 end
 
 function on_cs_logout(msg,guid)
-	return logout(guid)
+	log.info("on_cs_logout %s",guid)
+	local palyer = base_players[guid]
+	if not player then
+		log.warning("on_cs_logout got nil player.")
+		return
+	end
+	return g_room:kickout_server(player,enum.STANDUP_REASON_NORMAL)
 end
 
 function kickout(guid,reason)
