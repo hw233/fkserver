@@ -961,7 +961,7 @@ function on_cs_create_private_room(msg,guid)
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
 		})
-		player:kickout()
+		player:kickout(enum.STANDUP_REASON_MAINTAIN)
 		return
 	end
 
@@ -1185,7 +1185,7 @@ function on_cs_join_private_room(msg,guid)
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
 		})
-		player:kickout()
+		player:kickout(enum.STANDUP_REASON_MAINTAIN)
 		return
 	end
 
