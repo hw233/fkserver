@@ -179,7 +179,7 @@ function on_ls_login_notify(guid,reconnect)
 	
 	log.info("login step game->LC_Login,account=%s", player.account)
 
-	g_room:login_server(player)
+	g_room:player_login_server(player)
 
 	log.info("test .................. on_les_login_notify %s", player.h_bank_password)
 end
@@ -251,11 +251,13 @@ function on_cs_logout(msg,guid)
 	return logout(guid)
 end
 
-function kickout(guid)
-	local os = onlineguid[guid]
-	local gate = os.gate
-	logout(guid)
-	channel.call("gate."..tostring(gate),"lua","kickout",guid)
+function kickout(guid,reason)
+	local player = base_players[guid]
+	if not player then
+		log.warning("kickout got nil player,%s",guid)
+		return
+	end
+	g_room:kickout_server(player,reason)
 end
 
 -- 跨天了

@@ -152,14 +152,18 @@ function base_character:forced_exit(reason)
 		return
 	end
 	
-	g_room:player_exit_room(self)
+	self:kickout_room(reason)
 
 	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.ERROR_NONE,reason)
 	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
 end
 
-function base_character:kickout()
-	kickout(self.guid)
+function base_character:kickout(reason)
+	g_room:kickout_server(self,reason)
+end
+
+function base_character:kickout_room(reason)
+	g_room:kickout_room(self,reason)
 end
 
 return base_character

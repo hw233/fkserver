@@ -33,7 +33,7 @@ local game_util = require "game.util"
 
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 2 * 60
-local auto_kickout_timer = 1 * 60
+local auto_kickout_timer = 2 * 60
 
 local EXT_ROUND_STATUS = {
 	NONE = enum.ERS_NONE,
@@ -1402,6 +1402,7 @@ end
 function base_table:player_stand_up(player, reason)
 	log.info("base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s,offline:%s",
 			player.guid,player.table_id,player.chair_id,reason,reason == enum.STANDUP_REASON_OFFLINE)
+	
 	if self:can_stand_up(player, reason) then
 		local player_count = table.nums(self.players)
 		-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
@@ -1410,7 +1411,7 @@ function base_table:player_stand_up(player, reason)
 			reason == enum.STANDUP_REASON_OFFLINE 
 		then
 			self:notify_online(player,false)
-			self:delay_kickout(player,reason)
+			self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
 			return
 		end
 		log.info("base_table:player_stand_up success")
@@ -1673,18 +1674,7 @@ function base_table:check_ready(player)
 end
 
 function base_table:can_stand_up(player,reason)
-	if  reason == enum.STANDUP_REASON_FORCE or 
-		reason == enum.STANDUP_REASON_DISMISS then
-		--掉线 用于结算
-		log.info("set Dropped true")
-		return true
-	end
-
-	if reason == enum.STANDUP_REASON_OFFLINE then
-		return false
-	end
-
-	return self.room_:get_ready_mode() ~= enum.GAME_READY_MODE_NONE
+	return true
 end
 
 -- 检查开始

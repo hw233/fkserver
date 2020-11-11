@@ -631,6 +631,93 @@ function base_room:is_play(player)
 	return false
 end
 
+function base_room:kickout_room(player,reason)
+	local guid = player.guid
+	local table_id = player.table_id
+	local chair_id = player.chair_id
+	log.info("base_room:kickout_room guid[%d],offline:%s",guid,offline)
+	if not table_id or not chair_id then
+		log.warning("base_room:kickout_room,player:%s table_id or chair_id is nil,exit.",guid)
+		self:player_kickout_room(player)
+		return enum.GAME_SERVER_RESULT_SUCCESS
+	end
+
+	local tb = self:find_table_by_player(player)
+	if not tb then
+		log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	reason = reason or enum.STANDUP_REASON_NORMAL
+	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,reason) end)
+	log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,can_exit,reason)
+	if not can_exit then
+		return enum.GAME_SERVER_RESULT_IN_GAME
+	end
+
+	self:player_kickout_room(player)
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
+end
+
+function base_room:kickout_server(player,reason)
+	local guid = player.guid
+	local table_id = player.table_id
+	local chair_id = player.chair_id
+	log.info("base_room:kickout_room guid[%d],offline:%s",guid,offline)
+	if not table_id or not chair_id then
+		log.warning("base_room:kickout_room,player:%s table_id or chair_id is nil,exit.",guid)
+		self:player_kickout_server(player)
+		return enum.GAME_SERVER_RESULT_SUCCESS
+	end
+
+	local tb = self:find_table_by_player(player)
+	if not tb then
+		log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	reason = reason or enum.STANDUP_REASON_NORMAL
+	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,reason) end)
+	log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,can_exit,reason)
+	if not can_exit then
+		return enum.GAME_SERVER_RESULT_IN_GAME
+	end
+
+	self:player_kickout_server(player)
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
+end
+
+function base_room:exit_room(player,reason)
+	local guid = player.guid
+	local table_id = player.table_id
+	local chair_id = player.chair_id
+	log.info("base_room:exit_room guid[%d],offline:%s",guid,offline)
+	if not table_id or not chair_id then
+		log.warning("base_room:exit_room,player:%s table_id or chair_id is nil,exit.",guid)
+		self:player_exit_room(player)
+		return enum.GAME_SERVER_RESULT_SUCCESS
+	end
+
+	local tb = self:find_table_by_player(player)
+	if not tb then
+		log.warning("base_room:exit_room not found table:%s,guid:%s",table_id,guid)
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	reason = reason or enum.STANDUP_REASON_NORMAL
+	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,reason) end)
+	log.info("base_room:exit_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,can_exit,reason)
+	if not can_exit then
+		return enum.GAME_SERVER_RESULT_IN_GAME
+	end
+
+	self:player_exit_room(player)
+
+	return enum.GAME_SERVER_RESULT_SUCCESS
+end
+
 -- 退出服务器
 function base_room:exit_server(player,offline)
 	local guid = player.guid
@@ -657,7 +744,7 @@ function base_room:exit_server(player,offline)
 	end
 
 	if offline then
-		self:logout_server(player)
+		self:player_logout_server(player)
 	else
 		self:player_exit_room(player)
 	end
@@ -786,7 +873,7 @@ function base_room:player_enter_room(player)
 end
 
 -- 玩家退出房间
-function base_room:player_exit_room(player,offline)
+function base_room:player_exit_room(player)
 	local guid = player.guid
 	log.info("base_room:player_exit_room, guid %s, room_id %s",guid,def_game_id)
 	if player.online then
@@ -797,7 +884,7 @@ function base_room:player_exit_room(player,offline)
 		end
 		common.switch_room(guid,lobby_id)
 	else
-		self:logout_server(player)
+		self:player_logout_server(player)
 	end
 
 	self.players[guid] = nil
@@ -807,7 +894,28 @@ function base_room:player_exit_room(player,offline)
 	onlineguid[guid] = nil
 end
 
-function base_room:login_server(player)
+function base_room:player_kickout_room(player)
+	local guid = player.guid
+	log.info("base_room:player_kickout_room, guid %s, room_id %s",guid,def_game_id)
+	if player.online then
+		local lobby_id = common.find_best_room(1)
+		if not lobby_id then
+			log.error("base_room:player_kickout_room can not find default lobby.")
+			return
+		end
+		common.switch_room(guid,lobby_id)
+	else
+		self:player_kickout_server(player)
+	end
+
+	self.players[guid] = nil
+	self.cur_player_count_ = self.cur_player_count_ - 1
+
+	base_players[guid] = nil
+	onlineguid[guid] = nil
+end
+
+function base_room:player_login_server(player)
 	local guid = player.guid
 	reddb:hmset("player:online:guid:"..tostring(guid),{
 		first_game_type = def_first_game_type,
@@ -822,14 +930,14 @@ function base_room:login_server(player)
 	onlineguid[player.guid] = nil
 end
 
-function base_room:logout_server(player)
+function base_room:player_logout_server(player)
 	local guid = player.guid
-	log.info("base_room:player_exit_game, guid %s, room_id %s",guid,def_game_id)
+	log.info("base_room:player_logout_server, guid %s, room_id %s",guid,def_game_id)
 	
 	self.players[guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
 
-	reddb:del("player:online:guid:"..tostring(player.guid))
+	reddb:del("player:online:guid:"..tostring(guid))
 	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
 	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
 	reddb:decr("player:online:count")
@@ -850,6 +958,21 @@ function base_room:logout_server(player)
 
 	base_players[guid] = nil
 	onlineguid[guid] = nil
+end
+
+function base_room:player_kickout_server(player)
+	local guid = player.guid
+	log.info("base_room:player_kickout_server, guid %s, room_id %s",guid,def_game_id)
+
+	local os = onlineguid[guid]
+
+	self:player_logout_server(player)
+
+	if os and os.gate then
+		channel.call("gate."..tostring(os.gate),"lua","kickout",guid)
+	else
+		log.warning("base_room:player_kickout_server got nil gate server,maybe offlined.")
+	end
 end
 
 function base_room:get_suitable_table(player,bool_change_table)

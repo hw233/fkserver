@@ -14,6 +14,9 @@ local connection = {}
 
 function server.logout(guid)
 	local u = user_online[guid]
+	
+	if u then return end
+
 	user_online[guid] = nil
 	local c = connection[u.fd]
 	if c then
