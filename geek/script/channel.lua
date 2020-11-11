@@ -3,7 +3,7 @@ local log = require "log"
 
 local channeld = ".channeld"
 
-local max_ttl = 3
+local max_ttl = 5
 
 local channel = {}
 
