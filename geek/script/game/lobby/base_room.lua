@@ -358,6 +358,15 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		club = club,
 	})
 
+	self:player_enter_room(player)
+	
+	local result = tb:lockcall(function() return tb:player_sit_down(player, chair_id) end)
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		tb:private_clear()
+		self:player_exit_room(player)
+		return result
+	end
+
 	reddb:hmset("table:info:"..tostring(global_tid),{
 		room_id = def_game_id,
 		table_id = global_tid,
@@ -367,19 +376,6 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		game_type = def_first_game_type,
 		create_time = os.time(),
 	})
-
-	reddb:sadd("player:table:"..tostring(player.guid),global_tid)
-
-	self:player_enter_room(player)
-	
-	local result = tb:lockcall(function() return tb:player_sit_down(player, chair_id) end)
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		tb:private_clear()
-		reddb:del("table:info:"..tostring(global_tid))
-		reddb:srem("player:table:"..tostring(player.guid),global_tid)
-		self:player_exit_room(player)
-		return result
-	end
 
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
 
