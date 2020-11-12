@@ -121,7 +121,7 @@ function timer_manager:tick()
         if timer and not timer.paused then
 			timer.remainder = timer.remainder - delta
             if timer.remainder <= 0 then 
-				timer.callback() 
+				skynet.fork(timer.callback) 
 				if timer.repeated then  timer.remainder = timer.interval
 				else  
 					if timer.name then self.named_timers[timer.name] = nil end
