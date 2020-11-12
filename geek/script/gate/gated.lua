@@ -13,6 +13,8 @@ require "functions"
 
 LOG_NAME = "gate"
 
+netmsgopt.protocol(protocol)
+
 local server = {}
 local onlineguid = {}
 local fdsession = {}
