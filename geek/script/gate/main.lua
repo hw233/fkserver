@@ -70,6 +70,10 @@ function CMD.maintain(switch)
     skynet.send(gated,"lua","maintain",switch)
 end
 
+function CMD.sc_logout(fd,...)
+    skynet.send(gated,"lua","sc_logout",fd,...)
+end
+
 local CONTROL = {}
 
 function CONTROL.forward(who,...)

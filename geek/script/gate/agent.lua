@@ -78,14 +78,7 @@ end
 local MSG = {}
 
 function MSG.CS_Logout(msg)
-    local result = channel.call("service."..tostring(inserverid),"msg","CS_Logout",msg,guid)
-    netmsgopt.send(fd,"SC_Logout",{
-        result = result,
-    })
-
-    if result == enum.ERROR_NONE then
-        logout(guid)
-    end
+    channel.publish("service."..tostring(inserverid),"msg","CS_Logout",guid,fd)
 end
 
 function MSG.C_RequestPublicKey(msg)

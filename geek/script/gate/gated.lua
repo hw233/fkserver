@@ -70,6 +70,10 @@ function server.maintain(switch)
     skynet.call(loginservice,"lua","maintain",switch)
 end
 
+function server.sc_logout(fd,...)
+    netmsgopt.send(fd,"SC_Logout",...)
+end
+
 function server.disconnect_handler(c)
 	local u = onlineguid[c.guid]
 	if u then
