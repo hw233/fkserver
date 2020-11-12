@@ -184,9 +184,13 @@ function utils.compare(left,right,with_color)
 		comp = -1
 		if lvals[2][1] > rvals[2][1] then comp = 1 end
 		if lvals[2][1] == rvals[2][1] then
-			if lvals[1][1] > rvals[1][1] then comp = 1 end
-			if lvals[1][1] < rvals[1][1] then comp = -1 end
-			comp = 0
+			if 
+				lvals[1][1] > rvals[1][1] then comp = 1
+			elseif 
+				lvals[1][1] < rvals[1][1] then comp = -1 
+			else 
+				comp = 0
+			end
 		end
 		if comp == 0 then
 			if with_color then 
@@ -207,10 +211,10 @@ function utils.compare(left,right,with_color)
 	return comp > 0
 end
 
--- local lt = utils.get_cards_type({14,30,6})
+-- local lt = utils.get_cards_type({12,32,2})
 -- log.dump(lt)
 
--- local rt = utils.get_cards_type({34,13,3})
+-- local rt = utils.get_cards_type({52,72,8})
 -- log.dump(rt)
 
 -- local comp = utils.compare(lt,rt,true)
