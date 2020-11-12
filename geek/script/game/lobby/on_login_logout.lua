@@ -250,7 +250,7 @@ end
 function on_cs_logout(msg,guid)
 	guid = tonumber(guid)
 	log.info("on_cs_logout %s",guid)
-	local palyer = base_players[guid]
+	local player = base_players[guid]
 	if not player then
 		log.warning("on_cs_logout got nil player.")
 		return enum.ERROR_PLAYER_NOT_EXIST
