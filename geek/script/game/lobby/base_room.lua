@@ -74,14 +74,14 @@ function base_room:init(conf,chair_count,ready_mode)
 
 	-- log.info("base_room:init:self.game_switch_is_open = [%s]~~~~~~~~~~~~~~~~~:",self.game_switch_is_open)
 
-	for i = 1, table_count do
-		local t = self:create_table()
-		t:init(self, i, chair_count)
-		if self.room_cfg ~= nil then
-			t:load_lua_cfg()
-		end
-		self.tables[i] = t
-	end
+	-- for i = 1, table_count do
+	-- 	local t = self:create_table()
+	-- 	t:init(self, i, chair_count)
+	-- 	if self.room_cfg ~= nil then
+	-- 		t:load_lua_cfg()
+	-- 	end
+	-- 	self.tables[i] = t
+	-- end
 
 	self.players = {}
 	self.cur_player_count_ = 0 -- 当前玩家人数
@@ -323,6 +323,17 @@ function base_room:find_empty_table()
 	return nil,nil
 end
 
+function base_room:new_table(id,chair_count)
+	local t = self:create_table()
+	t:init(self, id, chair_count)
+	self.tables[id] = t
+	return t
+end
+
+function base_room:del_table(id)
+	self.tables[id] = nil
+end
+
 -- 创建私人房间
 function base_room:create_private_table(player,chair_count,round, rule,club)
 	if player.table_id or player.chair_id then
@@ -330,22 +341,25 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
-	if self.cur_player_count_ >= self.player_count_limit then
-		log.warning("room player is full,%s,%d",def_game_name,def_game_id)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-	end
+	-- if self.cur_player_count_ >= self.player_count_limit then
+	-- 	log.warning("room player is full,%s,%d",def_game_name,def_game_id)
+	-- 	return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
+	-- end
 
-	local tb,table_id = self:find_empty_table()
-	if not tb then
-		log.info("create private table:%s,%d no found table",def_game_name,def_game_id,player.guid)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
+	-- local tb,table_id = self:find_empty_table()
+	-- if not tb then
+	-- 	log.info("create private table:%s,%d no found table",def_game_name,def_game_id,player.guid)
+	-- 	return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	-- end
 
 	local global_tid = math.random(100000,999999)
 	for _ = 1,1000 do
 		if not base_private_table[global_tid] then break end
 		global_tid = math.random(100000,999999)
 	end
+
+	local table_id = global_tid
+	local tb = self:new_table(table_id,chair_count)
 
 	local chair_id = 1
 	tb:private_init(global_tid,rule,{
@@ -412,10 +426,10 @@ function base_room:join_private_table(player,private_table,chair_count)
 	-- 	return enum.GAME_SERVER_RESULT_ROOM_LIMIT
 	-- end
 
-	if self.cur_player_count_ > self.player_count_limit then
-		log.warning("join private table,room is full,%s:%d",def_game_name,def_game_id)
-		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	end
+	-- if self.cur_player_count_ > self.player_count_limit then
+	-- 	log.warning("join private table,room is full,%s:%d",def_game_name,def_game_id)
+	-- 	return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+	-- end
 
 	local chair_id = tb:get_free_chair_id()
 	if not chair_id then

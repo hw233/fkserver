@@ -1162,7 +1162,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 
 	onlineguid[player.guid] = nil
 
-	return enum.LOGIN_RESULT_SUCCESS
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 
@@ -1232,10 +1232,13 @@ function base_table:do_dismiss(reason)
 	end
 
 	base_private_table[self.private_id] = nil
+
+	self.room_:del_table(self.private_id)
 	
-	self:clear()
 	self:on_private_dismissed()
 
+	self:clear()
+	
 	self.private_id = nil
 	self.conf = nil
 	self.cur_round = nil
