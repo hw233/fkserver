@@ -18,7 +18,7 @@ function server.logout(guid)
 	if not u then return end
 
 	user_online[guid] = nil
-	
+
 	if not u.fd then return end
 
 	local c = connection[u.fd]
@@ -30,7 +30,13 @@ function server.logout(guid)
 end
 
 function server.close(fd)
+	local u = connection[fd]
 	connection[fd] = nil
+	
+	if u then
+		u.fd = nil
+	end
+
 	gateserver.closeclient(fd)
 end
 
