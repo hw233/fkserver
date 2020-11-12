@@ -18,6 +18,9 @@ function server.logout(guid)
 	if not u then return end
 
 	user_online[guid] = nil
+	
+	if not u.fd then return end
+
 	local c = connection[u.fd]
 	if c then
 		c.guid = nil
