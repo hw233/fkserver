@@ -42,16 +42,12 @@ function server.login(fd,guid,inserverid,conf)
 	skynet.call(agent, "lua", "login", u)
     onlineguid[guid] = u
     fdsession[fd] = u
-
-	msgserver.login(fd,guid,conf)
-	return
 end
 
 function server.logout(guid)
 	local u = onlineguid[guid]
     if u then
         log.warning("%s logout",guid)
-		msgserver.logout(guid)
         pcall(skynet.call,loginservice, "lua", "logout",u.fd)
         onlineguid[guid] = nil
         fdsession[u.fd] = nil
@@ -65,7 +61,6 @@ function server.kickout(guid)
         fdsession[u.fd] = nil
     end
     onlineguid[guid] = nil
-    msgserver.logout(guid)
 end
 
 function server.maintain(switch)
@@ -86,27 +81,27 @@ function server.disconnect_handler(c)
 end
 
 function server.request_handler(msgstr,session)
-    -- log.info("request session.fd:%s",tostring(session.fd)
-    if not session or not session.fd then
+    local fd = session and session.fd or nil
+    if not session or not fd then
         log.error("request_handler but no connection")
         return
     end
 
-    local guid = msgserver.guid(session.fd)
-    if not guid then
-        log.error("request_handler but not login,session:%d,%s:%d",session.fd,session.ip,session.port)
-        return
-    end
-
-    local u = onlineguid[guid]
+    local u = fdsession[fd]
     if not u then
-        log.error("request_handler but not login,session:%d,%s:%d",session.fd,session.ip,session.port)
+        skynet.send(loginservice,"client",msgstr,session)
         return
     end
 
-    u.last_live_time = os.time()
+    local guid = u.guid
+    if not guid or not u.agent then
+        log.error("request_handler but not login,session:%d,%s:%d",session.fd,session.ip,session.port)
+        return
+    end
 
     skynet.send(u.agent,"client",msgstr)
+
+    u.last_live_time = os.time()
 end
 
 local function guid_monitor()
@@ -122,7 +117,6 @@ end
 
 skynet.init(function()
     skynet.call(loginservice,"lua","register_gate",skynet.self())
-    msgserver.register_logind(loginservice)
 end)
 
 skynet.start(function()
