@@ -773,7 +773,7 @@ function gmd.notices(data)
         }
     end
 
-    local id = tonumber(data.id)
+    local id = data.id
     if id then
         return {
             errcode = error.SUCCESS,
