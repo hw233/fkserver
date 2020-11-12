@@ -45,4 +45,21 @@ function common.switch_room(guid,room_id)
 	base_players[guid] = nil
 end
 
+function common.switch_to_lobby(guid)
+	local room_id = common.find_best_room(1)
+	if not room_id then
+		log.error("common.switch_to_lobby can not find lobby.")
+		return
+	end
+
+	if room_id == def_game_id then return end
+
+	log.info("%s switch_to_lobby from %s to %s",guid,def_game_id,room_id)
+	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
+	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
+	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	onlineguid[guid] = nil
+	base_players[guid] = nil
+end
+
 return common
