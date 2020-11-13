@@ -673,22 +673,22 @@ function base_room:kickout_server(player,reason)
 	local guid = player.guid
 	local table_id = player.table_id
 	local chair_id = player.chair_id
-	log.info("base_room:kickout_room guid[%d],offline:%s",guid,offline)
+	log.info("base_room:kickout_server guid[%d],offline:%s",guid,offline)
 	if not table_id or not chair_id then
-		log.warning("base_room:kickout_room,player:%s table_id or chair_id is nil,exit.",guid)
+		log.warning("base_room:kickout_server,player:%s table_id or chair_id is nil,exit.",guid)
 		self:player_kickout_server(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
 
 	local tb = self:find_table_by_player(player)
 	if not tb then
-		log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
+		log.warning("base_room:kickout_server not found table:%s,guid:%s",table_id,guid)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
 	reason = reason or enum.STANDUP_REASON_NORMAL
 	local can_exit = tb:lockcall(function() return tb:player_stand_up(player,reason) end)
-	log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,can_exit,reason)
+	log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,can_exit,reason)
 	if not can_exit then
 		return enum.GAME_SERVER_RESULT_IN_GAME
 	end
