@@ -10,7 +10,6 @@ setmetatable(player_club,{
         local tps = setmetatable({},{
             __index = function(tb,tp)
                 local clubs = reddb:smembers(string.format("player:club:%d:%d",guid,tp))
-                log.dump(clubs)
                 return clubs
             end
         })
