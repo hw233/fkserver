@@ -2,6 +2,7 @@
 local dbopt =  require "dbopt"
 local log = require "log"
 local enum = require "pb_enums"
+local json = require "json"
 
 function on_sd_create_club(msg)
     log.dump(msg)
@@ -214,7 +215,7 @@ function on_sd_create_club_template(msg)
     local res = dbopt.game:query([[
         INSERT INTO t_template(id,club,rule,description,game_id,created_time,status)
         VALUES(%d,%d,'%s','%s',%d,%d,0);
-        ]],msg.id,msg.club_id,msg.rule,msg.description,msg.game_id,os.time())
+        ]],msg.id,msg.club_id,json.encode(msg.rule),msg.description,msg.game_id,os.time())
     if res.errno then
         log.error("on_sd_create_club_template INSERT template errno:%d,errstr:%s",res.errno,res.err)
     end
@@ -232,7 +233,7 @@ function on_sd_edit_club_template(msg)
     local res = dbopt.game:query([[
         UPDATE t_template SET club = %d,rule = '%s',description = '%s',game_id = %d
         WHERE id = %d;
-        ]],msg.club_id,msg.rule,msg.description,msg.game_id,msg.id)
+        ]],msg.club_id,json.encode(msg.rule),msg.description,msg.game_id,msg.id)
     if res.errno then
         log.error("on_sd_edit_club_template UPDATE template errno:%d,errstr:%s",res.errno,res.err)
     end
