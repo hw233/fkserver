@@ -45,7 +45,7 @@ log_create_table_sql = [
             count INT(4) NOT NULL,
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
-            UNIQUE(guid,club,date)
+            UNIQUE(guid,club,date,game_id)
         )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
     """,
     """
@@ -66,10 +66,11 @@ log_create_table_sql = [
             id INT(8) NOT NULL AUTO_INCREMENT,
             guid INT(4) NOT NULL,
             club INT(8),
+            game_id INT(4) NOT NULL,
             count INT(4) NOT NULL,
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
-            UNIQUE(guid,club,date)
+            UNIQUE(guid,club,date,game_id)
         )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
     """,
     """
@@ -81,7 +82,19 @@ log_create_table_sql = [
             money INT(4) NOT NULL,
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
-            UNIQUE(guid,club,date)
+            UNIQUE(guid,club,date,game_id)
+        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+    """,
+    """
+        CREATE TABLE IF NOT EXISTS t_log_player_daily_big_win_count(
+            id INT(8) NOT NULL AUTO_INCREMENT,
+            guid INT(4) NOT NULL,
+            club INT(8),
+            game_id INT(4) NOT NULL,
+            count INT(4) NOT NULL,
+            date INT(8) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE(guid,club,date,game_id)
         )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
     """
 ]
@@ -119,19 +132,24 @@ def create_table():
 
     pass
 
-def pd_replace_into_sql(table,conn,keys,datas):
-    def value_sql(row):
-        return "({})".format(",".join(str(i) if not isinstance(i,str) else "'{}'".format(i) for i in row))
+def pd_insert_or_update(dup_update_name):
+    def insert_into(table,conn,keys,datas):
+        def value_sql(row):
+            return "({})".format(",".join(str(i) if not isinstance(i,str) else "'{}'".format(i) for i in row))
         pass
 
-    sql = "REPLACE INTO {}({}) VALUES{}".format(
-            '{}.{}'.format(table.schema, table.name) if table.schema else table.name,
-            ", ".join(keys),
-            ", ".join(value_sql(r) for r in datas)
-        )
+        sql = "INSERT INTO {}({}) VALUES{} ON DUPLICATE KEY UPDATE {} = VALUES({})".format(
+                '{}.{}'.format(table.schema, table.name) if table.schema else table.name,
+                ", ".join(keys),
+                ", ".join(value_sql(r) for r in datas),
+                dup_update_name,
+                dup_update_name
+            )
 
-    conn.execute(sql)
-    pass
+        conn.execute(sql)
+        pass
+
+    return insert_into
 
 
 def player_play_count():
@@ -205,7 +223,7 @@ def team_play_count():
 
     play_counts.to_sql(
             't_log_team_daily_play_count',db_engine,schema = 'log',if_exists='append',
-            index=False,chunksize=200,method=pd_replace_into_sql
+            index=False,chunksize=1000,method=pd_insert_or_update('count')
         )
 
     pass
@@ -232,7 +250,7 @@ def club_team_player_count(cms):
 def team_player_count():
     members = pd.read_sql_query('SELECT club,guid,partner FROM game.t_partner_member;',db_engine)
     counts = members.groupby('club').apply(club_team_player_count).reset_index(drop=True)
-    counts.to_sql('t_team_player_count',db_engine,schema='game',if_exists='append',index=False,chunksize=200,method=pd_replace_into_sql)
+    counts.to_sql('t_team_player_count',db_engine,schema='game',if_exists='append',index=False,chunksize=1000,method=pd_insert_or_update('count'))
     pass
 
 def club_team_money(cpms):
@@ -266,7 +284,7 @@ def team_money():
         ON mt.money_id = pm.money_id AND pm.guid = m.guid
     ''',db_engine)
     cpms = moneies.groupby('club').apply(club_team_money).reset_index(drop=True)
-    cpms.to_sql('t_team_money',db_engine,schema='game',if_exists='append',index=False,chunksize=200,method=pd_replace_into_sql)
+    cpms.to_sql('t_team_money',db_engine,schema='game',if_exists='append',index=False,chunksize=1000,method=pd_insert_or_update('money'))
     pass
 
 
@@ -305,10 +323,33 @@ def player_daily_win_lose():
     db_engine.execute(sql)
     pass
 
+def player_daily_big_win_count():
+    today = math.floor(time.time() / day_seconds)
+    sql = """
+        SELECT guid,r.club,r.game_id,r.round,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 date FROM 
+			t_log_money m
+        LEFT JOIN
+                log.t_log_game g
+        ON m.reason_ext = g.round_id AND m.money_id != 0
+        LEFT JOIN
+                log.t_log_round r
+        ON g.ext_round_id = r.round
+        WHERE g.created_time > {} AND g.created_time <= {}
+        GROUP BY r.club,r.game_id,m.guid,r.round,g.created_time div 86400 * 86400;
+    """.format(today * day_seconds,(today + 1) * day_seconds)
+    data = pd.read_sql_query(sql,db_engine)
+    bigwins = data.groupby('round').max('money').reset_index()
+    bigwins = bigwins.groupby(['club','guid','game_id','date']).count().reset_index()
+    bigwins.rename(columns = {"round":"count"},inplace=True)
+    bigwins[['club','guid','game_id','count','date']].to_sql(
+        't_log_player_daily_big_win_count',db_engine,schema = 'log',if_exists='append',
+        index=False,chunksize=1000,method=pd_insert_or_update('count')
+    )
+    pass
+
 create_table()
-# team_player_count()
-# team_money()
 player_play_count()
+player_daily_big_win_count()
 player_daily_win_lose()
 team_play_count()
 player_commission_contribute()
