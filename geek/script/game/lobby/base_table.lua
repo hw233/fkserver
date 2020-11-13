@@ -1333,6 +1333,14 @@ function base_table:normal_dismiss()
 	self:do_dismiss(enum.DISMISS_REASON_NORMAL)
 end
 
+function base_table:game_end_dismiss()
+	self:notify_dismiss(enum.DISMISS_REASON_NORMAL)
+	self:foreach(function(p)
+		p:forced_exit(enum.STANDUP_REASON_ROUND_END)
+	end)
+	self:do_dismiss(enum.DISMISS_REASON_NORMAL)
+end
+
 function base_table:delay_normal_dismiss()
 	self.dismiss_timer = self:new_timer(auto_dismiss_timeout,function()
 		log.info("base_table:delay_normal_dismiss timeout %s",self.private_id)
