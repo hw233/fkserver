@@ -41,6 +41,7 @@ log_create_table_sql = [
             id INT(8) NOT NULL AUTO_INCREMENT,
             guid INT(4) NOT NULL,
             club INT(8),
+            game_id INT(4) NOT NULL,
             count INT(4) NOT NULL,
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
@@ -66,6 +67,18 @@ log_create_table_sql = [
             guid INT(4) NOT NULL,
             club INT(8),
             count INT(4) NOT NULL,
+            date INT(8) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE(guid,club,date)
+        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+    """,
+    """
+        CREATE TABLE IF NOT EXISTS t_log_player_daily_win_lose(
+            id INT(8) NOT NULL AUTO_INCREMENT,
+            guid INT(4) NOT NULL,
+            club INT(8),
+            game_id INT(4) NOT NULL,
+            money INT(4) NOT NULL,
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club,date)
@@ -124,14 +137,15 @@ def pd_replace_into_sql(table,conn,keys,datas):
 def player_play_count():
     today = math.floor(time.time() / day_seconds)
     sql = """
-        REPLACE INTO t_log_player_daily_play_count(guid,club,count,date)
-        SELECT pr.guid,r.club,COUNT(DISTINCT(r.round)) count,pr.create_time div 86400 * 86400 date FROM 
+        INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
+        SELECT pr.guid,r.club,r.game_id,COUNT(DISTINCT(r.round)) count,pr.create_time div 86400 * 86400 date FROM 
             log.t_log_player_round pr
         LEFT JOIN
             log.t_log_round r
         ON pr.round = r.round
         WHERE pr.create_time > {} AND pr.create_time <= {}
-        GROUP BY r.club,pr.guid,pr.create_time div 86400 * 86400;
+        GROUP BY r.club,r.game_id,pr.guid,pr.create_time div 86400 * 86400
+        ON DUPLICATE KEY UPDATE count = VALUES(count);
     """.format(today * day_seconds,(today + 1) * day_seconds)
     db_engine.execute("USE log;")
     db_engine.execute(sql)
@@ -260,18 +274,41 @@ def player_commission_contribute():
     today = math.floor(time.time() / day_seconds)
     
     db_engine.execute('''
-        REPLACE INTO log.t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
+        INSERT INTO log.t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
         SELECT parent,son,SUM(commission) commission,template,club,create_time div 86400 * 86400 date 
         FROM log.t_log_player_commission_contribute
         WHERE create_time > {} AND create_time <= {}
-        GROUP BY parent,son,template,club,create_time div 86400 * 86400;
+        GROUP BY parent,son,template,club,create_time div 86400 * 86400
+        ON DUPLICATE KEY UPDATE commission = VALUES(commission);
     '''.format(today * day_seconds,(today + 1) * day_seconds))
 
+    pass
+
+
+def player_daily_win_lose():
+    today = math.floor(time.time() / day_seconds)
+    sql = """
+        INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
+        SELECT guid,r.club,r.game_id,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 date FROM 
+			t_log_money m
+        LEFT JOIN
+                log.t_log_game g
+        ON m.reason_ext = g.round_id AND m.money_id != 0
+        LEFT JOIN
+                log.t_log_round r
+        ON g.ext_round_id = r.round
+        WHERE g.created_time > {} AND g.created_time <= {}
+        GROUP BY r.club,r.game_id,m.guid,g.created_time div 86400 * 86400
+        ON DUPLICATE KEY UPDATE money = VALUES(money);
+    """.format(today * day_seconds,(today + 1) * day_seconds)
+    db_engine.execute("USE log;")
+    db_engine.execute(sql)
     pass
 
 create_table()
 # team_player_count()
 # team_money()
 player_play_count()
+player_daily_win_lose()
 team_play_count()
 player_commission_contribute()
