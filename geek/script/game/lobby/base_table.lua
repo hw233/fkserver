@@ -52,6 +52,7 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_BANKRUPCY] = enum.DISMISS_REASON_BANKRUPCY,
 	[enum.STANDUP_REASON_TABLE_TIMEOUT] = enum.DISMISS_REASON_TIMEOUT,
 	[enum.STANDUP_REASON_MAINTAIN] = enum.DISMISS_REASON_MAINTAIN,
+	[enum.STANDUP_REASON_ROUND_END] = enum.DISMISS_REASON_ROUND_END,
 }
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
@@ -833,7 +834,7 @@ function base_table:on_game_overed()
 		self:kickout_players_when_ext_round_over()
 		if self.private_id then
 			if not game_util.is_in_maintain() then
-				self:delay_normal_dismiss()
+				self:delay_normal_dismiss(enum.STANDUP_REASON_ROUND_END)
 			else
 				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)
 			end
@@ -1325,26 +1326,19 @@ function base_table:interrupt_dismiss(reason)
 	self:do_dismiss(dreason)
 end
 
-function base_table:normal_dismiss()
-	self:notify_dismiss(enum.DISMISS_REASON_NORMAL)
+function base_table:normal_dismiss(reason)
+	local tb_dismiss_reason = dismiss_reason[reason]
+	self:notify_dismiss(tb_dismiss_reason)
 	self:foreach(function(p)
-		p:forced_exit(enum.STANDUP_REASON_NORMAL)
+		p:forced_exit(reason)
 	end)
-	self:do_dismiss(enum.DISMISS_REASON_NORMAL)
+	self:do_dismiss(tb_dismiss_reason)
 end
 
-function base_table:game_end_dismiss()
-	self:notify_dismiss(enum.DISMISS_REASON_NORMAL)
-	self:foreach(function(p)
-		p:forced_exit(enum.STANDUP_REASON_ROUND_END)
-	end)
-	self:do_dismiss(enum.DISMISS_REASON_NORMAL)
-end
-
-function base_table:delay_normal_dismiss()
+function base_table:delay_normal_dismiss(reason)
 	self.dismiss_timer = self:new_timer(auto_dismiss_timeout,function()
 		log.info("base_table:delay_normal_dismiss timeout %s",self.private_id)
-		self:normal_dismiss()
+		self:normal_dismiss(reason)
 	end)
 	log.info("base_table:delay_normal_dismiss %s",self.dismiss_timer.id)
 end
