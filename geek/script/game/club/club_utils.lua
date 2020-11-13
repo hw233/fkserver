@@ -67,13 +67,11 @@ function utils.get_game_list(guid,club_id)
     if player then
 		local conf_games = runtime_conf.get_game_conf(player.channel_id,player.promoter,club_id)
 		if conf_games and #conf_games > 0 then
-			log.dump(conf_games)
 			return conf_games
         end
         
 		conf_games = utils.all_game_ids()
 		if conf_games and #conf_games > 0 then
-			log.dump(conf_games)
 			return conf_games
 		end
 	end
