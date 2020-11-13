@@ -134,7 +134,6 @@ end
 
 -- 强制踢出房间
 function base_character:forced_exit(reason)
-	log.dump(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
 	log.info("force exit,guid:%s,chair_id:%s,reason:%s",self.guid,self.chair_id,reason)
 	local tb = g_room:find_table_by_player(self)
