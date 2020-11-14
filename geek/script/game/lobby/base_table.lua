@@ -1718,7 +1718,7 @@ end
 -- 检查开始
 function base_table:check_start(part)
 	local ready_mode = self.room_:get_ready_mode()
-	log.info("ready_mode %s,%s",ready_mode,part)
+	log.info("check_start %s ready_mode %s,%s",self.table_id_,ready_mode,part)
 	if ready_mode == enum.GAME_READY_MODE_PART then
 		local n = table.nums(self.ready_list)
 		if n >= 2 then
