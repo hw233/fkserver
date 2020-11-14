@@ -66,7 +66,9 @@ function server.kickout(guid)
     if u then
         pcall(skynet.call, u.agent, "lua", "kickout")
         fdsession[u.fd] = nil
-        msgserver.close(u.fd)
+        netmsgopt.send(u.fd,"SC_Logout",{
+            result = 0,
+        })
     end
     onlineguid[guid] = nil
 end
