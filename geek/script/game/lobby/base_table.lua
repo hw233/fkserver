@@ -1203,52 +1203,54 @@ function base_table:notify_dismiss(reason)
 end
 
 function base_table:do_dismiss(reason)
-	log.info("base_table:dismiss %s",self.private_id)
-	if not self.conf or not self.private_id then
-		log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
-		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	end
+	return self:lockcall(function()
+		log.info("base_table:dismiss %s",self.private_id)
+		if not self.conf or not self.private_id then
+			log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
+			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+		end
 
-	if not self:can_dismiss() then
-		return enum.ERROR_OPERATION_INVALID
-	end
+		if not self:can_dismiss() then
+			return enum.ERROR_OPERATION_INVALID
+		end
 
-	self:cancel_delay_dismiss()
-	self:cancel_ready_timer()
-	self:cancel_all_delay_kickout()
-	self:on_private_pre_dismiss()
+		self:cancel_delay_dismiss()
+		self:cancel_ready_timer()
+		self:cancel_all_delay_kickout()
+		self:on_private_pre_dismiss()
 
-	self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
+		self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
 
-	log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
-	local private_table_conf = base_private_table[self.private_id]
-	local club_id = private_table_conf.club_id
-	local private_table_id = private_table_conf.table_id
-	local private_table_owner = private_table_conf.owner
-	reddb:del("table:info:"..private_table_id)
-	reddb:del("player:table:"..private_table_owner)
-	reddb:del("table:player:"..private_table_id)
-	
-	if club_id then
-		reddb:srem("club:table:"..club_id,private_table_id)
-		club_table[club_id][private_table_id] = nil
-	end
+		log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
+		local private_table_conf = base_private_table[self.private_id]
+		local club_id = private_table_conf.club_id
+		local private_table_id = private_table_conf.table_id
+		local private_table_owner = private_table_conf.owner
+		reddb:del("table:info:"..private_table_id)
+		reddb:del("player:table:"..private_table_owner)
+		reddb:del("table:player:"..private_table_id)
+		
+		if club_id then
+			reddb:srem("club:table:"..club_id,private_table_id)
+			club_table[club_id][private_table_id] = nil
+		end
 
-	base_private_table[self.private_id] = nil
+		base_private_table[self.private_id] = nil
 
-	self.room_:del_table(self.private_id)
-	
-	self:on_private_dismissed()
+		self.room_:del_table(self.private_id)
+		
+		self:on_private_dismissed()
 
-	self:clear()
-	
-	self.private_id = nil
-	self.conf = nil
-	self.cur_round = nil
-	self.start_count = self.chair_count
-	self.ext_round_status = nil
+		self:clear()
+		
+		self.private_id = nil
+		self.conf = nil
+		self.cur_round = nil
+		self.start_count = self.chair_count
+		self.ext_round_status = nil
 
-	return enum.GAME_SERVER_RESULT_SUCCESS
+		return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
 end
 
 function base_table:transfer_owner()
