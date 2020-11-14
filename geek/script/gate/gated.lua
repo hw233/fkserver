@@ -15,10 +15,17 @@ LOG_NAME = "gate"
 
 netmsgopt.protocol(protocol)
 
-local server = {}
 local onlineguid = {}
 local fdsession = {}
 local heartbeat_check_time = 8
+
+local LOGIN_HANDLE = {
+    CL_Auth = true,
+    CL_Login = true,
+}
+
+
+local server = {}
 
 function server.login(fd,guid,inserverid,conf)
     local s = onlineguid[guid] or fdsession[fd]
@@ -59,6 +66,7 @@ function server.kickout(guid)
     if u then
         pcall(skynet.call, u.agent, "lua", "kickout")
         fdsession[u.fd] = nil
+        msgserver.close(u.fd)
     end
     onlineguid[guid] = nil
 end
@@ -72,8 +80,8 @@ function server.sc_logout(fd,...)
 end
 
 function server.disconnect_handler(c)
-	local u = onlineguid[c.guid]
-	if u then
+	local u = fdsession[c.fd]
+	if u and u.agent then
         pcall(skynet.call,u.agent, "lua", "afk")
     else
         pcall(skynet.call,loginservice,"lua","logout",c.fd)
@@ -88,20 +96,23 @@ function server.request_handler(msgstr,session)
     end
 
     local u = fdsession[fd]
-    if not u then
-        skynet.send(loginservice,"client",msgstr,session)
-        return
+
+    local msgid,str = netmsgopt.unpack(msgstr)
+    local msg = netmsgopt.decode(msgid,str)
+    local msgname = netmsgopt.msgname(msgid)
+    if msgname ~= "CS_HeartBeat" then
+        log.info("gated.dispatch %s,%s",msgname,u and u.guid or fd)
+        log.dump(msg)
     end
 
-    local guid = u.guid
-    if not guid or not u.agent then
-        log.error("request_handler but not login,session:%d,%s:%d",session.fd,session.ip,session.port)
+    if not u or not u.guid or LOGIN_HANDLE[msgname] then
+        skynet.send(loginservice,"client",msgname,msg,session)
         return
     end
-
-    skynet.send(u.agent,"client",msgstr)
 
     u.last_live_time = os.time()
+
+    skynet.send(u.agent,"client",msgname,msg)
 end
 
 local function guid_monitor()
@@ -112,7 +123,7 @@ local function guid_monitor()
         end
     end
 
-    skynet.timeout(heartbeat_check_time * 100,guid_monitor)
+    skynet.timeout(2 * 100,guid_monitor)
 end
 
 skynet.init(function()

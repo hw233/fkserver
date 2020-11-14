@@ -13,10 +13,6 @@ local connection = {}
 function server.close(fd)
 	local u = connection[fd]
 	connection[fd] = nil
-	
-	if u then
-		u.fd = nil
-	end
 
 	gateserver.closeclient(fd)
 end
@@ -60,10 +56,12 @@ function server.start(conf)
 	function handler.disconnect(fd)
 		local c = connection[fd]
 		if c then
-			if c.guid and conf.disconnect_handler then
+			if conf.disconnect_handler then
 				conf.disconnect_handler(c)
 			end
 			connection[fd] = nil
+		else
+			log.warning("msgserver.disconnect got nil session,%s",fd)
 		end
 	end
 

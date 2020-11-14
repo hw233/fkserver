@@ -458,14 +458,7 @@ skynet.start(function()
         unpack = skynet.unpack,
     }
 
-    skynet.dispatch("client",function(_,_,msgstr,...)
-        local msgid,msg = netmsgopt.unpack(msgstr)
-        msg = netmsgopt.decode(msgid,msg)
-        local msgname = netmsgopt.msgname(msgid)
-        if msgname ~= "CS_HeartBeat" then
-            log.info("logind.dispatch %s,%s,%s",msgname,msgid,#msgstr)
-            log.dump(msg)
-        end
-        skynet.retpack(netmsgopt.dispatch(msgid,msg,...))
+    skynet.dispatch("client",function(_,_,msgname,msg,...)
+        skynet.retpack(netmsgopt.dispatch(msgname,msg,...))
     end)
 end)

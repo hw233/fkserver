@@ -411,21 +411,8 @@ function MSG.CS_HeartBeat()
     })
 end
 
-local function dispatch_client(buf)
-    local msgid,msgstr = netmsgopt.unpack(buf)
-    local msgname = netmsgopt.msgname(msgid)
-    if not msgname then
-        log.error("dispatch unkown buf")
-        return
-    end
-
-    local msg = netmsgopt.decode(msgid,msgstr)
-    if msgname ~= "CS_HeartBeat" then
-        log.info("agent.dispatch %s,%s,%s",msgname,msgid,#msgstr)
-        log.dump(msg)
-    end
-
-    local f = netmsgopt.dispatcher(msgid)
+local function dispatch_client(msgname,msg,...)
+    local f = MSG[msgname]
     if f then
         return f(msg)
     end
@@ -450,7 +437,6 @@ skynet.start(function()
         pack = skynet.pack,
     }
 
-    netmsgopt.register_handle(MSG)
 	skynet.dispatch("client", function(_,_,...)
 	    skynet.retpack(dispatch_client(...))
     end)
