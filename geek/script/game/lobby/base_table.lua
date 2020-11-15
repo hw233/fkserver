@@ -1363,7 +1363,7 @@ function base_table:delay_kickout(player,reason)
 	log.info("delay_kickout %s",player.guid)
 	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
 		self:cancel_delay_kickout(player)
-		if not self.ext_round_status or self.ext_round_status == EXT_ROUND_STATUS.FREE then
+		if self:is_round_free() then
 			player:forced_exit(reason)
 		end
 	end)
@@ -1434,7 +1434,7 @@ function base_table:player_stand_up(player, reason)
 			
 			-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
 			if 	self.private_id and 
-				self.ext_round_status == EXT_ROUND_STATUS.FREE and 
+				self:is_round_free() and 
 				reason == enum.STANDUP_REASON_OFFLINE 
 			then
 				self:notify_online(player,false)
@@ -1466,7 +1466,7 @@ function base_table:player_stand_up(player, reason)
 			self:on_player_stand_uped(player,reason)
 
 			if 	player_count == 1 and
-				(self.ext_round_status == EXT_ROUND_STATUS.END or reason ~= enum.STANDUP_REASON_OFFLINE) 
+				(self:is_round_end() or reason ~= enum.STANDUP_REASON_OFFLINE) 
 			then
 				self:do_dismiss(dismiss_reason[reason])
 			else
@@ -1604,7 +1604,7 @@ end
 
 function base_table:check_kickout_no_ready()
 	self:lockcall(function() 
-		if self.ext_round_status ~= EXT_ROUND_STATUS.FREE then
+		if not self:is_round_free() then
 			return
 		end
 
@@ -2100,6 +2100,34 @@ function base_table:private_init(private_id,rule,conf)
 	self.someone_trustee_round = nil
 	self.is_someone_trustee = nil
 	self:on_private_inited()
+end
+
+function base_table:is_private()
+	return self.private_id ~= nil
+end
+
+function base_table:is_round_end()
+	if not self:is_private() then
+		return true
+	end
+
+	return self.ext_round_status == EXT_ROUND_STATUS.END
+end
+
+function base_table:is_round_free()
+	if not self:is_private() then
+		return true
+	end
+
+	return not self.ext_round_status or self.ext_round_status == EXT_ROUND_STATUS.END
+end
+
+function base_table:is_round_gaming()
+	if not self:is_private() then
+		return true
+	end
+
+	return self.ext_round_status == EXT_ROUND_STATUS.GAMING
 end
 
 function base_table:private_clear()
