@@ -1659,7 +1659,7 @@ function base_table:ready(player)
 		return
 	end
 
-	self.lockcall(function()
+	self:lockcall(function()
 		if self.ready_list[player.chair_id] then
 			log.warning("chair_id[%d] ready error,guid[%d]", player.chair_id,player.guid)
 			return true
