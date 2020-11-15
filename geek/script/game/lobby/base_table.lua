@@ -1319,6 +1319,10 @@ function base_table:is_private()
 	return self.private_id and self.conf
 end
 
+function base_table:id()
+	return self.private_id or self.table_id_
+end
+
 function base_table:interrupt_dismiss(reason)
 	local dreason = dismiss_reason[reason]
 	if self.cur_round and self.cur_round > 0 then
