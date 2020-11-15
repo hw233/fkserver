@@ -875,12 +875,10 @@ end
 
 -- 玩家进入房间
 function base_room:player_enter_room(player)
-	log.info("set player[%s] in_game true this room have player count is [%s] [%s]" ,
-		player.guid , self.cur_player_count_ , self:get_player_num())
 	self.players[player.guid] = player
 	self.cur_player_count_ = self.cur_player_count_ + 1
-
-	log.info("base_room:player_enter_room, guid %s, room_id %s",player.guid,def_game_id)
+	log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s,player_count:%s",
+		player.guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
 	local online_key = string.format("player:online:guid:%d",player.guid)
 	reddb:hmset(online_key,{
@@ -904,6 +902,7 @@ function base_room:player_exit_room(player)
 		end
 		common.switch_room(guid,lobby_id)
 		self.cur_player_count_ = self.cur_player_count_ - 1
+		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 		base_players[guid] = nil
 		onlineguid[guid] = nil
 		self.players[guid] = nil
@@ -923,8 +922,9 @@ function base_room:player_kickout_room(player)
 		end
 		common.switch_room(guid,lobby_id)
 		self.cur_player_count_ = self.cur_player_count_ - 1
-		self.players[guid] = nil
 
+		log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
+		self.players[guid] = nil
 		base_players[guid] = nil
 		onlineguid[guid] = nil
 	else
@@ -946,14 +946,17 @@ function base_room:player_login_server(player)
 
 	self.cur_player_count_ = self.cur_player_count_ + 1
 	self.players[guid] = player
+
+	log.info("base_room:player_login_server  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 end
 
 function base_room:player_logout_server(player)
 	local guid = player.guid
-	log.info("base_room:player_logout_server, guid %s, room_id %s",guid,def_game_id)
-	
 	self.players[guid] = nil
 	self.cur_player_count_ = self.cur_player_count_ - 1
+
+	log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,player_count %s.",
+		guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
 	reddb:del("player:online:guid:"..tostring(guid))
 	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
