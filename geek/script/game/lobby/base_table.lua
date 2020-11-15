@@ -558,7 +558,7 @@ function base_table:cost_tax(winlose)
 	end
 
 	if taxconf.AA and not winlose then
-		if self.cur_round ~= 1 then
+		if self:gaming_round() > 1 then
 			return
 		end
 
@@ -829,7 +829,7 @@ function base_table:on_game_overed()
 		return
 	end
 
-	if self.cur_round and self.cur_round >= self.conf.round then
+	if self:gaming_round() >= self:total_round() then
 		self:on_final_game_overed()
 		self:kickout_players_when_ext_round_over()
 		if self:is_private() then
@@ -842,7 +842,7 @@ function base_table:on_game_overed()
 		return
 	end
 
-	if self.cur_round and self.cur_round > 0 then
+	if self:is_round_gaming() then
 		local is_trustee,seconds = self:get_trustee_conf()
 		if not is_trustee then return end
 
@@ -853,7 +853,7 @@ function base_table:on_game_overed()
 
 		self:incr_trustee_round()
 
-		if self.cur_round >= self.conf.round then
+		if self:gaming_round() > self:total_round() then
 			return 
 		end
 
@@ -1094,14 +1094,8 @@ function base_table:can_sit_down(player,chair_id,reconnect)
 		return cheat_check
 	end
 
-	if self:is_private() then
-		if self.cur_round or self:is_play() then
-			return enum.ERROR_TABLE_STATUS_GAMING
-		end
-	else
-		if self:is_play() then
-			return enum.ERROR_TABLE_STATUS_GAMING
-		end
+	if self:is_round_gaming() or self:is_play() then
+		return enum.ERROR_TABLE_STATUS_GAMING
 	end
 
 	return enum.ERROR_NONE
@@ -1325,7 +1319,7 @@ end
 
 function base_table:interrupt_dismiss(reason)
 	local dreason = dismiss_reason[reason]
-	if self.cur_round and self.cur_round > 0 then
+	if self:gaming_round() > 0 then
 		self:on_final_game_overed(reason)
 	end
 
@@ -1716,7 +1710,7 @@ function base_table:can_stand_up(player,reason)
         return true
     end
 
-    return not self:is_play(player) and not self.cur_round
+    return not self:is_play(player) and not self:is_round_gaming()
 end
 
 -- 检查开始
@@ -1870,7 +1864,7 @@ function base_table:on_started(player_count)
 		end
 	end
 
-	if self.cur_round == 1 then
+	if self:gaming_round() == 1 then
 		self:cost_private_fee()
 		self:cost_tax()
 	end
@@ -2012,7 +2006,7 @@ function base_table:start(player_count)
 		return nil
 	end
 
-	if not self.cur_round then
+	if not self:is_round_gaming() then
 		self:on_process_start(player_count)
 	end
 
@@ -2118,6 +2112,22 @@ end
 
 function base_table:is_round_gaming()
 	return not self:is_private() or self.ext_round_status == EXT_ROUND_STATUS.GAMING
+end
+
+function base_table:gaming_round()
+	if not self:is_private() then
+		return 0
+	end
+
+	return self.cur_round or 0
+end
+
+function base_table:total_round()
+	if not self:is_private() then
+		return 0
+	end
+
+	return self.conf.round
 end
 
 function base_table:private_clear()
@@ -2305,7 +2315,7 @@ function base_table:global_status_info()
 	local info = {
 	    table_id = self.private_id,
 	    seat_list = seats,
-	    room_cur_round = self.cur_round or 0,
+	    room_cur_round = self:gaming_round(),
 	    rule = self:is_private() and json.encode(self.rule) or "",
 	    game_type = def_first_game_type,
 	    template_id = private_conf and private_conf.template,
