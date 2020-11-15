@@ -77,6 +77,11 @@ local function clean_private_table()
 	timer.timeout(60 * 5,clean_private_table)
 end
 
+local function init_server_online_count()
+	reddb:zadd(string.format("player:online:count:%d",def_first_game_type),0,def_game_id)
+	reddb:zadd(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),0,def_game_id)
+end
+
 
 local CMD = {}
 
@@ -93,6 +98,8 @@ function CMD.start(conf)
 	LOG_NAME = def_game_name .. "." .. def_first_game_type
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
+
+	
 
 	local boot = require("game."..def_game_name..".bootstrap")
 	g_room = boot(gameconf)
@@ -120,6 +127,8 @@ function CMD.start(conf)
 	end
 	
 	on_tick()
+
+	init_server_online_count()
 
 	-- timer.timeout(60 * 5,clean_private_table)
 end

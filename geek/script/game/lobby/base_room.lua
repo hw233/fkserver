@@ -940,8 +940,10 @@ function base_room:player_login_server(player)
 		server = def_game_id,
 	})
 
-	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		1,def_game_id)
 	reddb:incr("player:online:count")
 
 	self.cur_player_count_ = self.cur_player_count_ + 1
@@ -959,8 +961,10 @@ function base_room:player_logout_server(player)
 		guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
 	reddb:del("player:online:guid:"..tostring(guid))
-	reddb:decr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:decr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		-1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		-1,def_game_id)
 	reddb:decr("player:online:count")
 
 	channel.publish("db.?","msg","S_Logout", {

@@ -463,6 +463,6 @@ skynet.start(function()
 
     skynet.timeout(0,function()
         clean_when_start()
-        setup_default_redis_value()
+        -- setup_default_redis_value()
     end)
 end)

@@ -579,7 +579,7 @@ function on_cl_login(msg,gate,session_id)
     end
 
     -- 找一个默认大厅服务器
-    game_id = find_a_default_lobby()
+    game_id = util.find_lightest_weight_game_server(1)
     if not game_id then
         log.warning("no default lobby")
         return {
@@ -662,7 +662,7 @@ function on_cl_reg_account(msg,gate)
     log.info("[%s] reg account, guid = %d ,platform_id = %s", info.account, info.guid,info.platform_id)
 
     -- 找一个默认大厅服务器
-    local gameid = find_a_default_lobby()
+    local gameid = util.find_lightest_weight_game_server(1)
     if not gameid then
         log.warning("no default lobby")
         return {
@@ -716,7 +716,7 @@ function on_L_KickClient(msg)
         local info = get_player_login_info_temp(account_key)
         if info then
             log.info( "[%s] reg account, guid = %d", account_key, info )
-            local gameid = find_a_default_lobby()
+            local gameid = util.find_lightest_weight_game_server(1)
             if gameid == 0 then
                 local session_id = info.session_id
                 local gate_id = info.gate_id

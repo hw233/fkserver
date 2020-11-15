@@ -785,8 +785,10 @@ function on_ss_change_game(guid)
 		server = def_game_id,
 	})
 
-	reddb:incr(string.format("player:online:count:%s:%d:%d",def_game_name,def_first_game_type,def_second_game_type))
-	reddb:incr(string.format("player:online:count:%s:%d:%d:%d",def_game_name,def_first_game_type,def_second_game_type,def_game_id))
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		1,def_game_id)
 
 	onlineguid[player.guid] = nil
 	onlineguid.control(player,"goserver",def_game_id)
