@@ -376,7 +376,7 @@ end
 
 function base_table:calc_score_money(score)
 	local base_multi = 1
-    if self.private_id then
+    if self:is_private() then
         local private_table = base_private_table[self.private_id]
         local rule = private_table.rule
         base_multi = rule.union and rule.union.score_rate or 1
@@ -386,7 +386,7 @@ function base_table:calc_score_money(score)
 end
 
 function base_table:do_commission_standalone(guid,commission,contributer)
-	if not self.private_id then 
+	if not self:is_private() then 
 		return
 	end
 
@@ -425,7 +425,7 @@ function base_table:do_commission_standalone(guid,commission,contributer)
 end
 
 function base_table:do_commission(taxes)
-	if not self.private_id then 
+	if not self:is_private() then 
 		return
 	end
 
@@ -519,7 +519,7 @@ function base_table:cost_tax(winlose)
 		return
 	end
 	
-	if not self.private_id then
+	if not self:is_private() then
 		return
 	end
 
@@ -681,7 +681,7 @@ function base_table:on_final_game_overed(reason)
 end
 
 function base_table:get_trustee_conf()
-	if not self.private_id then return end
+	if not self:is_private() then return end
 
 	local trustee = self.rule and self.rule.trustee or nil
 	if trustee and trustee.type_opt ~= nil and trustee.second_opt ~= nil then
@@ -819,7 +819,7 @@ end
 function base_table:on_game_overed()
 	self.old_moneies = nil
 	self:clear_ready()
-	if not self.private_id then
+	if not self:is_private() then
 		return
 	end
 
@@ -832,7 +832,7 @@ function base_table:on_game_overed()
 	if self.cur_round and self.cur_round >= self.conf.round then
 		self:on_final_game_overed()
 		self:kickout_players_when_ext_round_over()
-		if self.private_id then
+		if self:is_private() then
 			if not game_util.is_in_maintain() then
 				self:delay_normal_dismiss(enum.STANDUP_REASON_ROUND_END)
 			else
@@ -1094,7 +1094,7 @@ function base_table:can_sit_down(player,chair_id,reconnect)
 		return cheat_check
 	end
 
-	if self.private_id then
+	if self:is_private() then
 		if self.cur_round or self:is_play() then
 			return enum.ERROR_TABLE_STATUS_GAMING
 		end
@@ -1153,7 +1153,7 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 			chair = chair_id,
 		})
 
-		if self.private_id then
+		if self:is_private() then
 			reddb:set("player:table:"..tostring(player.guid),self.private_id)
 			reddb:sadd("table:player:"..tostring(self.private_id),player.guid)
 		end
@@ -1205,7 +1205,7 @@ end
 function base_table:do_dismiss(reason)
 	return self:lockcall(function()
 		log.info("base_table:dismiss %s",self.private_id)
-		if not self.conf or not self.private_id then
+		if not self.conf or not self:is_private() then
 			log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 		end
@@ -1256,7 +1256,7 @@ end
 function base_table:transfer_owner()
 	return self:lockcall(function()
 		log.info("transfer owner:%s,%s",self.conf.private_id,self.conf.owner.guid)
-		if not self.conf or not self.private_id then
+		if not self.conf or not self:is_private() then
 			log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 		end
@@ -1386,7 +1386,7 @@ function base_table:cancel_all_delay_kickout()
 end
 
 function base_table:broadcast_sync_table_info_2_club(type,roominfo)
-	if not self.private_id then
+	if not self:is_private() then
 		return
 	end
 
@@ -1433,7 +1433,7 @@ function base_table:player_stand_up(player, reason)
 			local player_count = table.nums(self.players)
 			
 			-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
-			if 	self.private_id and 
+			if 	self:is_private() and 
 				self:is_round_free() and 
 				reason == enum.STANDUP_REASON_OFFLINE 
 			then
@@ -1454,7 +1454,7 @@ function base_table:player_stand_up(player, reason)
 
 			self:on_player_stand_up(player,reason)
 
-			if self.private_id and player == self.conf.owner and player_count > 1 then
+			if self:is_private() and player == self.conf.owner and player_count > 1 then
 				self:transfer_owner()
 			end
 
@@ -1510,7 +1510,7 @@ function base_table:notify_sit_down(player,chair_id)
 		is_trustee = player.trustee and true or false,
 	}
 
-	if self.private_id then
+	if self:is_private() then
 		local money_id = self:get_money_id()
 		seat.money = {
 			money_id = money_id,
@@ -1573,7 +1573,7 @@ function base_table:is_trustee(player)
 end
 
 function base_table:set_trusteeship(player,trustee)
-	if not self.private_id then return end
+	if not self:is_private() then return end
 
 	if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
         return 
@@ -1765,7 +1765,7 @@ function base_table:room_private_conf()
 end
 
 function base_table:private_table_conf()
-	if not self.private_id then
+	if not self:is_private() then
 		log.info("base_table:private_table_conf,not private table,return nil.")
 		return nil
 	end
@@ -1783,7 +1783,7 @@ function base_table:get_private_fee(rule)
 end
 
 function base_table:cost_private_fee()
-	if not self.private_id then
+	if not self:is_private() then
 		return
 	end
 
@@ -1843,7 +1843,7 @@ function base_table:cost_private_fee()
 end
 
 function base_table:on_started(player_count)
-	if not self.private_id then return end
+	if not self:is_private() then return end
 	self:cancel_ready_timer()
 	self:cancel_kickout_no_ready_timer()
 	self.ext_round_status = EXT_ROUND_STATUS.GAMING
@@ -1878,7 +1878,7 @@ function base_table:balance(moneies,why)
 	log.dump(moneies)
 
 	local money_id = self:get_money_id() or -1
-	if self.private_id and self.conf.club and self.conf.club.type  == enum.CT_UNION then
+	if self:is_private() and self.conf.club and self.conf.club.type  == enum.CT_UNION then
 		local minrate = 1
 		for pid,money in pairs(moneies) do
 			local p = self.players[pid] or base_players[pid]
@@ -1922,7 +1922,7 @@ end
 
 function base_table:on_process_start(player_count)
 	self.ext_round_id = self:hold_ext_game_id()
-	if not self.private_id then 
+	if not self:is_private() then 
 		return
 	end
 
@@ -1955,7 +1955,7 @@ function base_table:on_process_start(player_count)
 end
 
 function base_table:on_process_over(reason,l)
-	if not self.private_id then 
+	if not self:is_private() then 
 		log.warning("base_table:on_process_over [%s] got nil private id.",self.private_id)
 		return
 	end
@@ -2102,10 +2102,6 @@ function base_table:private_init(private_id,rule,conf)
 	self:on_private_inited()
 end
 
-function base_table:is_private()
-	return self.private_id ~= nil
-end
-
 function base_table:is_round_end()
 	if not self:is_private() then
 		return true
@@ -2131,8 +2127,6 @@ function base_table:is_round_gaming()
 end
 
 function base_table:private_clear()
-	if not self.private_id then return end
-	
 	self.rule = nil
 	self.conf = nil
 	self.private_id = nil
@@ -2175,7 +2169,7 @@ end
 -- 破产检测
 function base_table:check_bankruptcy()
 	local money_id = self:get_money_id()
-	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
+	local limit = self:is_private() and self.rule.union and self.rule.union.min_score or 0
 	local bankruptcy = table.map(self.players,function(p)
 		local money = player_money[p.guid][money_id]
 		return p.guid,money <= 0 or money < limit
@@ -2190,7 +2184,7 @@ function base_table:is_bankruptcy(player)
 	end
 
 	local money_id = self:get_money_id()
-	local limit = self.private_id and self.rule.union and self.rule.union.min_score or 0
+	local limit = self:is_private() and self.rule.union and self.rule.union.min_score or 0
 	local money = player_money[player.guid][money_id]
 	return money <= 0 or money < limit
 end
@@ -2318,7 +2312,7 @@ function base_table:global_status_info()
 	    table_id = self.private_id,
 	    seat_list = seats,
 	    room_cur_round = self.cur_round or 0,
-	    rule = self.private_id and json.encode(self.rule) or "",
+	    rule = self:is_private() and json.encode(self.rule) or "",
 	    game_type = def_first_game_type,
 	    template_id = private_conf and private_conf.template,
 	}
