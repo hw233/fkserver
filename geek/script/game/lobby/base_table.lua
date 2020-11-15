@@ -2107,27 +2107,17 @@ function base_table:private_init(private_id,rule,conf)
 end
 
 function base_table:is_round_end()
-	if not self:is_private() then
-		return true
-	end
-
-	return self.ext_round_status == EXT_ROUND_STATUS.END
+	return not self:is_private() or self.ext_round_status == EXT_ROUND_STATUS.END
 end
 
 function base_table:is_round_free()
-	if not self:is_private() then
-		return true
-	end
-
-	return not self.ext_round_status or self.ext_round_status == EXT_ROUND_STATUS.END
+	return not self:is_private() or 
+		not self.ext_round_status or 
+		self.ext_round_status == EXT_ROUND_STATUS.END
 end
 
 function base_table:is_round_gaming()
-	if not self:is_private() then
-		return true
-	end
-
-	return self.ext_round_status == EXT_ROUND_STATUS.GAMING
+	return not self:is_private() or self.ext_round_status == EXT_ROUND_STATUS.GAMING
 end
 
 function base_table:private_clear()
