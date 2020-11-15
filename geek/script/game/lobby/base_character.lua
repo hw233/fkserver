@@ -145,10 +145,11 @@ function base_character:forced_exit(reason)
 	local table_id = self.table_id
 	local chair_id = self.chair_id
 
-	local stand_up = tb:lockcall(function() return tb:player_stand_up(self,reason) end)
-	if not stand_up then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,reason)
-		return
+	local result = tb:player_stand_up(self,reason)
+	if result ~= enum.ERROR_NONE then
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,result %s,failed",
+			self.guid,table_id,chair_id,reason,result)
+		return result
 	end
 	
 	self:kickout_room(reason)

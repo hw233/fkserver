@@ -1120,9 +1120,9 @@ end
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	return self:lockcall(function() 
-		local can =  self:can_sit_down(player,chair_id,reconnect)
-		if can ~= enum.ERROR_NONE then
-			return can
+		local result =  self:can_sit_down(player,chair_id,reconnect)
+		if result ~= enum.ERROR_NONE then
+			return result
 		end
 
 		player.table_id = self.table_id_
@@ -1361,7 +1361,7 @@ function base_table:delay_kickout(player,reason)
 	log.info("delay_kickout %s",player.guid)
 	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
 		self:cancel_delay_kickout(player)
-		if self:is_round_free() then
+		if not self:is_round_gaming() then
 			player:forced_exit(reason)
 		end
 	end)
@@ -1424,7 +1424,9 @@ function base_table:player_stand_up(player, reason)
 		
 		if not chair_id or not table_id then
 			log.error("player_stand_up got nil table_id or chair_id,%s,%s",table_id,chair_id)
-			return true
+			return not table_id and 
+				enum.GAME_SERVER_RESULT_NOT_FIND_TABLE or 
+				enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
 		end
 
 		if self:can_stand_up(player, reason) then
@@ -1437,9 +1439,9 @@ function base_table:player_stand_up(player, reason)
 			then
 				self:notify_online(player,false)
 				self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
-				return
+				return enum.GAME_SERVER_RESULT_WAIT_LATER
 			end
-			log.info("base_table:player_stand_up success")
+			log.info("base_table:player_stand_up can_stand_up true.")
 			local chairid = player.chair_id
 			local p = self.players[chairid]
 			local list_guid = p and p.guid or -1
@@ -1478,17 +1480,19 @@ function base_table:player_stand_up(player, reason)
 			reddb:srem("table:player:"..tostring(self.private_id),guid)
 			onlineguid[guid] = nil
 
-			if 	reason == enum.STANDUP_REASON_NORMAL 
+			if 	player_count > 1 and (
+				reason == enum.STANDUP_REASON_NORMAL 
 				or reason == enum.STANDUP_REASON_OFFLINE
-				or reason == enum.STANDUP_REASON_NO_READY_TIMEOUT then
+				or reason == enum.STANDUP_REASON_NO_READY_TIMEOUT
+			) then
 				self:check_start()
 			end
-			return true
+			return enum.ERROR_NONE
 		end
 
 		self:notify_online(player,false)
 
-		return false
+		return enum.GAME_SERVER_RESULT_IN_GAME
 	end)
 end
 
@@ -2107,7 +2111,7 @@ end
 function base_table:is_round_free()
 	return not self:is_private() or 
 		not self.ext_round_status or 
-		self.ext_round_status == EXT_ROUND_STATUS.END
+		self.ext_round_status == EXT_ROUND_STATUS.FREE
 end
 
 function base_table:is_round_gaming()

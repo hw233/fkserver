@@ -816,19 +816,20 @@ end
 function base_player:force_stand_up(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
 	if not self.table_id or not self.chair_id then
+		self:kickout_room(reason)
 		return true
 	end
 
 	local tb = g_room:find_table_by_player(self)
 	if not tb then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
+		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,not find table",
+		self.guid,self.table_id,self.chair_id)
 		return
 	end
 
-	local stand_up = tb:lockcall(function() return tb:player_stand_up(self,reason) end)
-
-	if not stand_up then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,failed",self.guid,table_id,chair_id,reason)
+	local result = tb:player_stand_up(self,reason)
+	if result ~= enum.ERROR_NONE then
+		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,%s,failed",self.guid,table_id,chair_id,reason,result)
 		return
 	end
 
