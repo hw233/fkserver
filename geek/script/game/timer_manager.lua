@@ -3,7 +3,7 @@ local log = require "log"
 local skynet = require "skynetproto"
 
 local timer_manager = {
-	last_tick = os.clock(),
+	last_tick = skynet.time(),
 	timers = {},
 	pool_timers = {},
 	named_timers = {}
