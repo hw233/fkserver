@@ -167,7 +167,7 @@ function zhajinhua_table:on_started(player_count)
         actions = {},
 		balance = {},
 		rule = self.rule,
-		cur_round = self.cur_round,
+		cur_round = self:gaming_round(),
 		banker = self.banker,
 		players = table.series(self.players,function(v,i) 
 			return {
@@ -222,12 +222,12 @@ function zhajinhua_table:on_started(player_count)
 		banker = self.banker,
 		all_chairs = table.series(self.gamers,function(_,i) return i end),
 		all_guids = table.series(self.gamers,function(p) return p.guid end),
-		cur_round = self.cur_round,
+		cur_round = self:gaming_round(),
 		total_round = self.conf.round,
 	})
 
-	log.info("game start ID =%s   guid=%s   timeis:%s", self.round_id, 
-		table.concat(table.series(self.players,function(p) return p.guid end)), 
+	log.info("game start ID =%s   guid=%s   timeis:%s", self.table_id_, 
+		table.concat(table.series(self.players,function(p) return p.guid end),","), 
 		os.date("%y%m%d%H%M%S"))
 
 	self:deal_cards()
@@ -390,7 +390,7 @@ function zhajinhua_table:deal_cards()
 
 	table.foreach(self.gamers,function(p,chair)
 		local cards = dealer:deal_cards(3)
-		log.info("game_id[%s]:player guid[%s] --------------> cards:[%s]",self.round_id,p.guid,table.concat(cards,","))
+		log.info("table_id[%s]:player guid[%s] --------------> cards:[%s]",self.table_id_,p.guid,table.concat(cards,","))
 		p.cards_type = cards_util.get_cards_type(cards)
 		p.cards = cards
 	end)
@@ -461,7 +461,7 @@ function zhajinhua_table:check_ready(player)
 end
 
 function zhajinhua_table:compare_with_all(player)
-	log.info("game_id[%s]------->all f cards",self.round_id)
+	log.info("table_id[%s]------->all f cards",self.table_id_)
 
 	local all_count = table.sum(self.gamers,function(p) 
 		return (not p.all_in and not p.death) and 1 or 0
@@ -604,7 +604,7 @@ function zhajinhua_table:stop_start_ticker()
 end
 
 function zhajinhua_table:check_start(part)
-	log.info("check_start-----------------")
+	log.info("check_start %s-----------------",self.table_id_)
 	if self:is_play() then
 		return
 	end
@@ -613,7 +613,8 @@ function zhajinhua_table:check_start(part)
 	local player_count = table.nums(self.players)
 	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
 
-	if not self.cur_round then
+
+	if not self:is_round_gaming() then
 		if ready_count >= min_gamer_count then
 			if ready_count == player_count then
 				self:start(player_count)
@@ -637,11 +638,8 @@ end
 
 -- 重新上线
 function zhajinhua_table:reconnect(player)
-	if self.gamelog and self.round_id then
-		log.info("zhajinhua_table:game_id[%s] reconnect---------->guid[%d],chair_id[%d]",self.round_id,player.guid,player.chair_id)
-	else
-		log.info("zhajinhua_table:reconnect---------->guid[%d],chair_id[%d]",player.guid,player.chair_id)
-	end
+	log.info("zhajinhua_table:reconnect---------->table_id[%s],guid[%d],chair_id[%d]",
+		self.table_id_,player.guid,player.chair_id)
 
 	send2client_pb(player, "SC_ZhaJinHuaReconnect",{
 		players = table.map(self.players,function(p,chair)
@@ -659,7 +657,7 @@ function zhajinhua_table:reconnect(player)
 		banker = self.banker,
 		bet_round = self.bet_round,
 		desk_chips = self.desk_scores,
-		round = self.cur_round,
+		round = self:gaming_round(),
 		desk_score = self.all_score,
 		base_score = self.base_score,
 		cur_bet_score = self.last_score,
@@ -1079,10 +1077,10 @@ function zhajinhua_table:add_score(player,msg)
 	end
 
 	local score = msg.score
-	log.info("game_id[%s] player guid[%d]--------> add score[%d]",self.round_id,player.guid,score)
+	log.info("table_id[%s] player guid[%d]--------> add score[%d]",self.table_id_,player.guid,score)
 
 	if score < 0 then
-		log.warning("game_id[%s]: add_score guid[%d] status error  is score %s < 0", self.round_id, player.guid,score)
+		log.warning("table_id[%s]: add_score guid[%d] status error  is score %s < 0", self.table_id_, player.guid,score)
 		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
@@ -1090,7 +1088,7 @@ function zhajinhua_table:add_score(player,msg)
 	end
 
 	if player.all_in then
-		log.warning("game_id[%s]: add_score guid[%d] status error  is all_score_  true", self.round_id, player.guid)
+		log.warning("table_id[%s]: add_score guid[%d] status error  is all_score_  true", self.table_id_, player.guid)
 		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
@@ -1098,7 +1096,7 @@ function zhajinhua_table:add_score(player,msg)
 	end
 
 	if player.death then
-		log.error("game_id[%s]:add_score guid[%d] is dead", self.round_id,player.guid)
+		log.error("table_id[%s]:add_score guid[%d] is dead", self.table_id_,player.guid)
 		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
@@ -1130,33 +1128,28 @@ function zhajinhua_table:add_score(player,msg)
 				self.max_score = all_add_score
 				score = all_add_score
 
-				log.info("game_id [%s]: guid[%s] add_score self.max_score[%s]:", self.round_id,player.guid,self.max_score)
+				log.info("table_id [%s]: guid[%s] add_score self.max_score[%s]:", self.table_id_,player.guid,self.max_score)
 			else
-				log.warning("game_id[%s]: add_score guid[%s] status error",self.round_id, player.guid)
+				log.warning("table_id[%s]: add_score guid[%s] status error",self.table_id_, player.guid)
 				return
 			end
 		end
 	end
 
 	if score < self.last_score then
-		log.error("game_id[%s]:add_score guid[%d] score[%d] < last[%d]",self.round_id, player.guid, score, self.last_score)
+		log.error("table_id[%s]:add_score guid[%d] score[%d] < last[%d]",self.table_id_, player.guid, score, self.last_score)
 		return
 	end
 
 	if score > self.max_score then
-		log.error("game_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.round_id, player.guid, money_add, self.max_score)
+		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, money_add, self.max_score)
 		return
 	end
 
 	self.last_score = score
 
 	local score_add = player.is_look_cards and score * 2 or score
-	log.info("game_id[%s]: player guid[%d]----->score[%d],money[%d].",self.round_id,player.guid,score, score_add)
-
-	-- if score_add <= 0 or player.remain_money < score_add then
-	-- 	log.error("game_id[%s]:add_score guid[%d] money[%d] > player_money[%d]",self.round_id, player.guid, score_add, player.remain_money)
-	-- 	return false
-	-- end
+	log.info("table_id [%s]: player guid[%d]----->score[%d],money[%d].",self.table_id_,player.guid,score, score_add)
 
 	self:fake_cost_money(player,score_add)
 	self:player_bet(player,score_add)
@@ -1180,7 +1173,7 @@ function zhajinhua_table:add_score(player,msg)
 	
 	-- local cur_player = self:cur_player()
 	-- if is_all_in then
-	-- 	log.info("game_id[%s]:player guid[%d]--------->all score money score[%d]", self.round_id,player.guid,score_add)
+	-- 	log.info("table_id[%s]:player guid[%d]--------->all score money score[%d]", self.table_id_,player.guid,score_add)
 	-- 	player.all_in = true
 
 	-- 	if cur_player.all_in then
@@ -1208,10 +1201,10 @@ function zhajinhua_table:give_up(player)
 	end
 
 	local chair_id = player.chair_id
-	log.info("game_id[%s]:player guid[%d]------> give_up", self.round_id,player.guid)
+	log.info("table_id[%s]:player guid[%d]------> give_up", self.table_id_,player.guid)
 
 	if player.death then
-		log.error("game_id[%s]:add_score guid[%d] is dead", self.round_id,player.guid)
+		log.error("table_id[%s]:add_score guid[%d] is dead", self.table_id_,player.guid)
 		send2client_pb(player,"SC_ZhaJinHuaGiveUp",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1219,7 +1212,8 @@ function zhajinhua_table:give_up(player)
 	end
 
 	if self.ball_begin and self.cur_chair ~= chair_id then
-		log.error("game_id[%s]:give_up is ball_begin guid[%d] can not giveup charid [%d] cur_turn[%d]",self.round_id, player.guid, player.charid , self.cur_chair)
+		log.error("table_id[%s]:give_up is ball_begin guid[%d] can not giveup charid [%d] cur_turn[%d]",
+			self.table_id_, player.guid, player.charid , self.cur_chair)
 	end
 
 	self:cancel_clock_timer()
@@ -1276,7 +1270,7 @@ function zhajinhua_table:look_card(player)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
-	log.info("game_id[%s]:player guid[%d]-------------->look cards",self.round_id,player.guid)
+	log.info("table_id[%s]:player guid[%d]-------------->look cards",self.table_id_,player.guid)
 
 	--全压已经取了钱最少玩家的所有钱，不受看牌×2规则影响，所以可以看牌
 	--if self.ball_begin and player.remain_money < (self.max_score  * 2)  then
@@ -1324,11 +1318,12 @@ function zhajinhua_table:compare(player, msg)
 	local compare_with = msg.compare_with
 
 	local chair_id = player.chair_id
-	log.info("game_id[%s]:player guid[%d] chair_id[%d]-------------->compare_with[%d] COMPARE_CARD",self.round_id,player.guid,player.chair_id,compare_with)
+	log.info("table_id[%s]:player guid[%d] chair_id[%d]-------------->compare_with[%d] COMPARE_CARD",
+		self.table_id_,player.guid,player.chair_id,compare_with)
 
  	local target = self.players[compare_with]
  	if not target then
-		log.error("game_id[%s]:compare guid[%d] compare[%d] error",self.round_id, player.guid, compare_with)
+		log.error("table_id[%s]:compare guid[%d] compare[%d] error",self.table_id_, player.guid, compare_with)
 		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1336,7 +1331,7 @@ function zhajinhua_table:compare(player, msg)
 	end
 
 	if player.all_in or target.all_in or player.death or target.death then
-		log.error("game_id[%s]:compare error compare [%s]vs[%s]  is dead",self.round_id, player.guid,target.guid)
+		log.error("table_id[%s]:compare error compare [%s]vs[%s]  is dead",self.table_id_, player.guid,target.guid)
 		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1362,7 +1357,8 @@ function zhajinhua_table:compare(player, msg)
 	self.show_cards_to[chair_id][compare_with] = true
 	self.show_cards_to[compare_with][chair_id] = true
 
-	log.info("game_id[%s]:player guid[%d],target guid[%d]----------> win[%s].",self.round_id,player.guid,target.guid,ret)
+	log.info("table_id[%s]:player guid[%d],target guid[%d]----------> win[%s].",
+		self.table_id_,player.guid,target.guid,ret)
 
 	local loser = is_win and target or player
 	local winner = is_win and player or target
@@ -1370,8 +1366,8 @@ function zhajinhua_table:compare(player, msg)
 	loser.status = PLAYER_STATUS.LOSE
 	
 	--日志处理
-	log.info("game_id[%s]: player guid[%d] charid[%d] , target guid[%d] ,turn [%d] , otherplayer [%d] money[%d] win [%s]" ,
-		self.round_id,player.guid,chair_id,target.guid,self.bet_round,compare_with,score,ret)
+	log.info("table_id[%s]: player guid[%d] charid[%d] , target guid[%d] ,turn [%d] , otherplayer [%d] money[%d] win [%s]" ,
+		self.table_id_,player.guid,chair_id,target.guid,self.bet_round,compare_with,score,ret)
 	table.insert(self.gamelog.actions, {
 		action = "compare",
 		chair_id = chair_id,
@@ -1391,7 +1387,7 @@ function zhajinhua_table:compare(player, msg)
 	})
 
 	if self:is_end() then
-		log.info("game_id[%s]:------------->This Game Is  Over!",self.round_id)
+		log.info("table_id[%s]:------------->This Game Is  Over!",self.table_id_)
 		self:calllater(compare_anim_timeout,function() --比牌动画延时
 			self:game_balance()
 		end)
@@ -1468,7 +1464,7 @@ function zhajinhua_table:game_balance(winner)
 
 	self.winner = winner
 
-	log.info("game_id[%s]: game_balance---->Game is Over !!",self.round_id)
+	log.info("table_id[%s]: game_balance---->Game is Over !!",self.table_id_)
 	self.status = TABLE_STATUS.FREE
 
 	local winner_score = self.all_score - winner.bet_score
@@ -1533,7 +1529,7 @@ function zhajinhua_table:game_balance(winner)
 end
 
 function zhajinhua_table:on_game_overed()
-	log.info("game end ID =%s   guid=%s   timeis:%s", self.round_id, self.log_guid, os.date("%y%m%d%H%M%S"))
+	log.info("game end table_id =%s   guid=%s   timeis:%s", self.table_id_, self.log_guid, os.date("%y%m%d%H%M%S"))
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
@@ -1601,25 +1597,19 @@ end
 function zhajinhua_table:fake_cost_money(player,score)
 	local money = self:calc_score_money(score)
 	local remain = player.remain_money
-	if self.gamelog and self.round_id then
-		log.info("game_id[%s]: player guid[%d] cur money[%d],money[%d].",self.round_id,player.guid,money,money)
-	else
-		log.info("player guid[%d] cur money[%d],money[%d].",player.guid,money,money)
-	end
+
+	log.info("player table_id[%s] guid[%d] cur money[%d],money[%d].",self.table_id_,player.guid,money,money)
 
 	if self:check_player_money_leak(player,money) then 
-		log.error("game_id[%s]:guid[%d] fake_cost_money error.curmoney[%d], must cost money[%d]",self.round_id,player.guid,remain,money)
+		log.error("table_id[%s]:guid[%d] fake_cost_money error.curmoney[%d], must cost money[%d]",
+			self.table_id_,player.guid,remain,money)
 		return false
 	end
 
 	player.remain_money = player.remain_money - money
 
 	local new_money = player.remain_money
-	if self.gamelog and self.round_id then
-		log.info("game_id[%s]: player guid[%d] new_money[%d],money[%d].",self.round_id,player.guid,new_money,money)
-	else
-		log.info("player guid[%d] new_money[%d],money[%d].",player.guid,new_money,money)
-	end
+	log.info("table_id[%s] player guid[%d] new_money[%d],money[%d].",self.table_id_,player.guid,new_money,money)
 
 	player:notify_money(self:get_money_id(),new_money)
 
@@ -1939,14 +1929,14 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 				banker = self.banker,
 				bet_round = self.bet_round,
 				desk_chips = self.desk_scores,
-				round = self.cur_round,
+				round = self:gaming_round(),
 				desk_score = self.all_score,
 				base_score = self.base_score,
 				cur_bet_score = self.last_score,
 			})
 		end
 
-		if self.cur_round then
+		if self:is_round_gaming() then
 			channel.publish("db.?","msg","SD_LogExtGameRoundPlayerJoin",{
 				guid = player.guid,
 				ext_round = self.ext_round_id,
