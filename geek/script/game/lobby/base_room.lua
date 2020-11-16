@@ -374,6 +374,15 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		club = club,
 	})
 
+	tb.private_id = global_tid
+	tb.max_round = round
+	tb.owner = player
+	tb.owner_guid = player.guid
+	tb.owner_chair_id = chair_id
+	tb.rule = rule
+	tb.club = club
+	tb.club_id = club.id
+
 	local result = tb:player_sit_down(player, chair_id)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		log.info("base_room:create_private_table player_sit_down,%s,%s,%s,failed",player.guid,chair_id,result)

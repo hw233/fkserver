@@ -122,6 +122,7 @@ message CLUB_MEMBER{
     MONEY_INFO money = 3;
     string extra_data = 4;
     int32 parent = 5;
+    bool  block_gaming = 6;
 }
 
 message REQUEST_INFO{

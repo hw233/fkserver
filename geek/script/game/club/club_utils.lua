@@ -139,7 +139,7 @@ function utils.import_union_player_from_group(from,to)
     local root = utils.root(to)
     local members = club_member[from.id]
     local guids = table.series(members or {},function(_,guid)
-        if not utils.recusive_is_in_club(root,guid) then
+        if not utils.is_recursive_in_club(root,guid) then
             return guid
         end
     end)
@@ -152,12 +152,27 @@ function utils.import_union_player_from_group(from,to)
     return true
 end
 
-function utils.recusive_is_in_club(club,guid)
+function utils.is_recursive_in_club(club,guid)
     if not club or not guid then return end
-    return table.logic_or(club_member[club.id] or {},function(_,pid) return guid == pid end)
-        or table.logic_or(club_team[club] or {},function(_,teamid)
-            return utils.recusive_is_in_club(base_clubs[teamid],guid)
+    return club_member[club.id][guid] or 
+        table.logic_or(club_team[club] or {},function(_,teamid)
+            return utils.is_recursive_in_club(base_clubs[teamid],guid)
         end)
+end
+
+function utils.is_recursive_in_team(club,team_id,guid)
+    if not club or not guid or not team_id then 
+        return
+    end
+
+    local parent = club_member_partner[club.id][guid]
+    while parent and parent ~= 0 do
+        if parent == team_id then
+            return true
+        end
+
+        parent = club_member_partner[club.id][parent]
+    end
 end
 
 function utils.rand_union_club_id()

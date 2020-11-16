@@ -40,6 +40,7 @@ local club_conf = require "game.club.club_conf"
 local club_team_player_count = require "game.club.club_team_player_count"
 local club_team_money = require "game.club.club_team_money"
 local club_partner_conf = require "game.club.club_partner_conf"
+local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
 
 local queue = require "skynet.queue"
 
@@ -53,13 +54,13 @@ local g_room = g_room
 
 local reddb = redisopt.default
 
-local club_op = {
+local CLUB_OP = {
     ADD_ADMIN    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","ADD_ADMIN"),
     REMOVE_ADMIN    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","REMOVE_ADMIN"),
-    OP_JOIN_AGREED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_JOIN_AGREED"),
-    OP_JOIN_REJECTED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_JOIN_REJECTED"),
-    OP_EXIT_AGREED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_EXIT_AGREED"),
-    OP_APPLY_EXIT    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_APPLY_EXIT"),
+    JOIN_AGREED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","JOIN_AGREED"),
+    JOIN_REJECTED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","JOIN_REJECTED"),
+    EXIT_AGREED    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","EXIT_AGREED"),
+    APPLY_EXIT    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","APPLY_EXIT"),
     ADD_PARTNER = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","ADD_PARTNER"),
     REMOVE_PARTNER = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","REMOVE_PARTNER"),
     CANCEL_FORBID = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CANCEL_FORBID"),
@@ -68,7 +69,7 @@ local club_op = {
     UNBLOCK_CLUB    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","UNBLOCK_CLUB"),
     CLOSE_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CLOSE_CLUB"),
     OPEN_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OPEN_CLUB"),
-    OP_DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OP_DISMISS_CLUB"),
+    DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","DISMISS_CLUB"),
 }
 
 function on_bs_club_create(owner,name,type)
@@ -549,7 +550,7 @@ function on_cs_club_join_req(msg,guid)
         return
     end
 
-    if club_utils.recusive_is_in_club(club_utils.root(club),guid) then
+    if club_utils.is_recursive_in_club(club_utils.root(club),guid) then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = enum.ERROR_AREADY_MEMBER,
@@ -686,6 +687,7 @@ function on_cs_club_query_memeber(msg,guid)
                     },
                 }),
                 parent = club_member_partner[club_id][p.guid],
+                block_gaming = club_gaming_blacklist[club_id][p.guid],
             }
         end
     end)
@@ -707,11 +709,10 @@ end
 
 function on_cs_club_request_list_req(msg,guid)
     local club_id = msg.club_id
-    local reqs = {}
-    for rid,_ in pairs(club_request[club_id]) do
+    local reqs = table.series(club_request[club_id],function(_,rid) 
         local req = base_request[rid]
         local player = base_players[req.who]
-        table.insert(reqs,{
+        return {
             req_id = req.id,
             type = req.type,
             who = {
@@ -719,8 +720,8 @@ function on_cs_club_request_list_req(msg,guid)
                 nickname = player.nickname,
                 icon = player.icon,
             },
-        })
-    end
+        }
+    end)
 
     onlineguid.send(guid,"S2C_CLUB_REQUEST_LIST_RES",{
         result = enum.ERROR_NONE,
@@ -730,11 +731,59 @@ function on_cs_club_request_list_req(msg,guid)
 end
 
 local function on_cs_club_blacklist(msg,guid)
-    if msg.op == club_op.ADD_TO_BALACK then
-        
-    elseif msg.op == club_op.REMOVE_TO_BLACK then
+    local target_guid = msg.target_id
+    local club_id = msg.club_id
+    local op = msg.op
+    local res = {
+        club_id = club_id,
+        target_id = target_guid,
+        op = op,
+        result = enum.ERROR_NONE,
+    }
 
+    local club = base_clubs[club_id]
+    if not club then
+        res.result = enum.ERROR_CLUB_NOT_FOUND
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+        return
     end
+
+    local self_role = club_role[club_id][guid]
+    if not self_role or self_role == enum.CRT_PLAYER  then
+        res.result = enum.ERROR_PLAYER_NO_RIGHT
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+        return
+    end
+
+    local target_role = club_role[club_id][target_guid]
+    if target_role == enum.CRT_BOSS   then
+        res.result = enum.ERROR_INVALIDE_OPERATION
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+        return
+    end
+
+    if not base_players[target_guid] then
+        res.result = enum.ERROR_PLAYER_NOT_EXIST
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+        return
+    end
+
+    local team_id = self_role == enum.CRT_ADMIN and club.owner or guid
+    if not club_utils.is_recursive_in_team(club,team_id,target_guid) then
+        res.result = enum.ERROR_NOT_MEMBER
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+        return
+    end
+
+    if op == CLUB_OP.FORBID_GAME then
+        reddb:sadd("club:blacklist:gaming:"..tostring(club_id),target_guid)
+        club_gaming_blacklist[club_id] = nil
+    elseif op == CLUB_OP.CANCEL_FORBID then
+        reddb:srem("club:blacklist:gaming:"..tostring(club_id),target_guid)
+        club_gaming_blacklist[club_id] = nil
+    end
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
 end
 
 local function on_cs_club_administrator(msg,guid)
@@ -762,7 +811,7 @@ local function on_cs_club_administrator(msg,guid)
     end
 
 
-    if msg.op == club_op.ADD_ADMIN then
+    if msg.op == CLUB_OP.ADD_ADMIN then
         if not club_member[club_id][target_guid] then
             res.result = enum.ERROR_NOT_MEMBER
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
@@ -789,7 +838,7 @@ local function on_cs_club_administrator(msg,guid)
         return
     end
 
-    if msg.op == club_op.REMOVE_ADMIN then
+    if msg.op == CLUB_OP.REMOVE_ADMIN then
         if not club_member[club_id][target_guid] then
             res.result = enum.ERROR_NOT_MEMBER
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
@@ -824,7 +873,7 @@ local function on_cs_club_player(msg,guid)
         return
     end
     
-    if msg.op == club_op.REMOVE_PLAYER then
+    if msg.op == CLUB_OP.REMOVE_PLAYER then
         base_clubs[msg.club_id].kickout(msg.guid)
     end
 end
@@ -845,29 +894,12 @@ local function on_cs_club_exit(msg,guid)
     end
     
     if base_players[exit_guid] then
-        local partner_id = club_member_partner[club_id][exit_guid]
-        log.dump(partner_id)
-        if not partner_id then
-            log.error("%s in club %s,but not in partner.",exit_guid,club_id)
-        end
-
-        local partner = club_partners[partner_id]
-        partner:exit(exit_guid)
-
         local club = base_clubs[club_id]
-        if club then
-            club:exit(exit_guid)
+        if not club then
+            return enum.ERROR_CLUB_NOT_FOUND
         end
 
-        channel.publish("db.?","msg","SD_LogClubActionMsg",{
-            club = club_id,
-            operator = guid,
-            type = enum.CLUB_ACTION_EXIT,
-            msg = {
-                team = partner_id,
-                guid = exit_guid,
-            },
-        })
+        club:full_exit(exit_guid,guid)
     end
     
     return enum.ERROR_NONE
@@ -892,7 +924,7 @@ local function on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
-    if club_utils.recusive_is_in_club(club_utils.root(club),guid) then
+    if club_utils.is_recursive_in_club(club_utils.root(club),guid) then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_AREADY_MEMBER,
             op = msg.op,
@@ -900,8 +932,12 @@ local function on_cs_club_agree_join_club_with_share_id(msg,guid)
         return
     end
 
-    local inviter = param.guid
-    club:invite_join(guid,inviter,nil,"invite_join")
+    if not club.type or club.type == enum.CT_DEFAULT then
+        club:request_join(guid)
+    else
+        local inviter = param.guid
+        club:invite_join(guid,inviter,nil,"invite_join")
+    end
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
@@ -955,9 +991,11 @@ local function on_cs_club_agree_request(msg,guid)
         return
     end
 
+    reddb:srem(string.format("player:request:%s",request.whoee),request.id)
     -- 更新数据
     base_request[request.id] = nil
     club_request[request.club_id][msg.request_id] = nil
+    player_request[request.whoee][request.id] = nil
     club_member[request.club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -988,27 +1026,19 @@ local function on_cs_club_reject_request(msg,guid)
         return
     end
 
-    local club = base_clubs[request.club_id]
-    if not club then
-        log.error("unkonw club_id when reject request,id:%s",msg.request_id)
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_NOT_FOUND,
-            request_id = msg.request_id,
-        })
-        return
-    end
-
-    local err = club:reject_request(request)
-    if err ~= enum.ERROR_NONE then
+    local result = request:reject()
+    if result ~= enum.ERROR_NONE then
         log.error("reject request failed,id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = err,
+            result = result,
             request_id = msg.request_id,
+            op = msg.op,
         })
 
         return
     end
 
+    reddb:srem(string.format("player:request:%s",request.whoee),request.id)
     player_request[request.whoee][request.id] = nil
     base_request[request.id] = nil
     club_member[request.club_id] = nil
@@ -1016,6 +1046,7 @@ local function on_cs_club_reject_request(msg,guid)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
         request_id = msg.request_id,
+        op = msg.op,
     })
 end
 
@@ -1049,7 +1080,7 @@ local function on_cs_club_partner(msg,guid)
         return
     end
 
-    if msg.op == club_op.ADD_PARTNER then
+    if msg.op == CLUB_OP.ADD_PARTNER then
         local target_role = club_role[club_id][target_guid]
         if target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER or target_role == enum.CRT_ADMIN  then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
@@ -1068,7 +1099,7 @@ local function on_cs_club_partner(msg,guid)
         return
     end
 
-    if msg.op == club_op.REMOVE_PARTNER then
+    if msg.op == CLUB_OP.REMOVE_PARTNER then
         local target_role = club_role[club_id][target_guid]
         if target_role ~= enum.CRT_PARTNER then
             res.result = enum.ERROR_OPERATION_INVALID
@@ -1166,7 +1197,7 @@ function on_cs_club_dismiss(msg,guid)
     if not club then 
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
-            op = club_op.OP_EXIT_AGREED,
+            op = CLUB_OP.EXIT_AGREED,
             target_id = club_id,
         })
         return
@@ -1175,7 +1206,7 @@ function on_cs_club_dismiss(msg,guid)
     local result = dismiss_club(club)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = result,
-        op = club_op.OP_EXIT_AGREED,
+        op = CLUB_OP.EXIT_AGREED,
         target_id = club_id,
     })
 end
@@ -1197,7 +1228,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
     if not club then 
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
-            op = club_op.OP_EXIT_AGREED,
+            op = CLUB_OP.EXIT_AGREED,
             target_id = boss_guid,
         })
         return
@@ -1208,7 +1239,7 @@ local function on_cs_club_kickout_club_boss(msg,guid)
     local result = dismiss_club(club)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = result,
-        op = club_op.OP_EXIT_AGREED,
+        op = CLUB_OP.EXIT_AGREED,
         target_id = boss_guid,
     })
 end
@@ -1284,25 +1315,10 @@ function on_cs_club_kickout(msg,guid)
         end
     end
 
-    local partner_id = club_member_partner[club_id][target_guid]
-    local partner = club_partners[club_id][partner_id]
-    partner:exit(target_guid)
-
-    club:exit(target_guid)
-
-    channel.publish("db.?","msg","SD_LogClubActionMsg",{
-        club = club_id,
-        operator = guid,
-        type = enum.CLUB_ACTION_EXIT,
-        msg = {
-            team = partner_id,
-            guid = target_guid,
-        },
-    })
-
+    local result = club:full_exit(target_guid,guid)
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-        result = enum.ERROR_NONE,
-        op = club_op.OP_EXIT_AGREED,
+        result = result,
+        op = CLUB_OP.EXIT_AGREED,
         target_id = target_guid,
     })
 end
@@ -1311,7 +1327,7 @@ end
 local function on_cs_club_block(msg,guid,status)
     local club_id = msg.club_id
     local target_club_id = msg.target_id
-    local op = (status == 0 and club_op.UNBLOCK_CLUB or club_op.BLOCK_CLUB)
+    local op = (status == 0 and CLUB_OP.UNBLOCK_CLUB or CLUB_OP.BLOCK_CLUB)
 
     local player = base_players[guid]
     if not player then
@@ -1396,7 +1412,7 @@ end
 
 local function on_cs_club_close(msg,guid,status)
     local club_id = msg.club_id
-    local oper = (status == 0 and club_op.OPEN_CLUB or club_op.CLOSE_CLUB)
+    local oper = (status == 0 and CLUB_OP.OPEN_CLUB or CLUB_OP.CLOSE_CLUB)
 
     local player = base_players[guid]
     if not player then
@@ -1439,19 +1455,21 @@ local function on_cs_club_close(msg,guid,status)
 end
 
 local operator = {
-    [club_op.ADD_ADMIN] = on_cs_club_administrator,
-    [club_op.REMOVE_ADMIN] = on_cs_club_administrator,
-    [club_op.OP_JOIN_AGREED] = on_cs_club_agree_request,
-    [club_op.OP_JOIN_REJECTED] = on_cs_club_reject_request,
-    [club_op.OP_EXIT_AGREED] = on_cs_club_kickout,
-    [club_op.OP_APPLY_EXIT] = on_cs_club_exit,
-    [club_op.ADD_PARTNER] = on_cs_club_partner,
-    [club_op.REMOVE_PARTNER] = on_cs_club_partner,
-    [club_op.BLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,2) end,
-    [club_op.UNBLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,0) end,
-    [club_op.CLOSE_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,1) end,
-    [club_op.OPEN_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,0) end,
-    [club_op.OP_DISMISS_CLUB] = on_cs_club_dismiss,
+    [CLUB_OP.ADD_ADMIN] = on_cs_club_administrator,
+    [CLUB_OP.REMOVE_ADMIN] = on_cs_club_administrator,
+    [CLUB_OP.JOIN_AGREED] = on_cs_club_agree_request,
+    [CLUB_OP.JOIN_REJECTED] = on_cs_club_reject_request,
+    [CLUB_OP.EXIT_AGREED] = on_cs_club_kickout,
+    [CLUB_OP.APPLY_EXIT] = on_cs_club_exit,
+    [CLUB_OP.ADD_PARTNER] = on_cs_club_partner,
+    [CLUB_OP.REMOVE_PARTNER] = on_cs_club_partner,
+    [CLUB_OP.BLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,enum.CLUB_STATUS_BLOCK) end,
+    [CLUB_OP.UNBLOCK_CLUB] = function(msg,guid) on_cs_club_block(msg,guid,enum.CLUB_STATUS_NORMAL) end,
+    [CLUB_OP.CLOSE_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,enum.CLUB_STATUS_CLOSE) end,
+    [CLUB_OP.OPEN_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,enum.CLUB_STATUS_NORMAL) end,
+    [CLUB_OP.DISMISS_CLUB] = on_cs_club_dismiss,
+    [CLUB_OP.CANCEL_FORBID] = on_cs_club_blacklist;
+    [CLUB_OP.FORBID_GAME] = on_cs_club_blacklist;
 }
 
 function on_cs_club_operation(msg,guid)
@@ -2773,6 +2791,7 @@ function on_cs_search_club_player(msg,guid)
                     logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
                 }),
                 parent = club_member_partner[club_id][p.guid],
+                block_gaming = club_gaming_blacklist[club_id][p.guid],
             }
         end
     end)

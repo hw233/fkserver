@@ -53,6 +53,8 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_TABLE_TIMEOUT] = enum.DISMISS_REASON_TIMEOUT,
 	[enum.STANDUP_REASON_MAINTAIN] = enum.DISMISS_REASON_MAINTAIN,
 	[enum.STANDUP_REASON_ROUND_END] = enum.DISMISS_REASON_ROUND_END,
+	[enum.STANDUP_REASON_BLOCK_GAMING] = enum.DISMISS_REASON_ROUND_END,
+	[enum.STANDUP_REASON_CLUB_CLOSE] = enum.DISMISS_REASON_ROUND_END,
 }
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
@@ -833,6 +835,20 @@ function base_table:on_game_overed()
 		self:on_final_game_overed()
 		self:kickout_players_when_ext_round_over()
 		if self:is_private() then
+			local club = base_clubs[self.club_id]
+			if club then
+				if club:is_block() or club:is_close() then
+					self:force_dismiss(enum.STANDUP_REASON_CLUB_CLOSE)
+					return
+				end
+
+				self:foreach(function(p)
+					if club:is_block_gaming(p) then
+						p:forced_exit(enum.STANDUP_REASON_BLOCK_GAMING)
+					end
+				end)
+			end
+
 			if not game_util.is_in_maintain() then
 				self:delay_normal_dismiss(enum.STANDUP_REASON_ROUND_END)
 			else

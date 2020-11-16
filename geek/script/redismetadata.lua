@@ -102,6 +102,10 @@ tree.club.block.player.group["%d+"]["%d+"] = "set"
 tree.club.block.player.group["%d+"]["%d+"]["%d+"] = "number"
 tree.club.block.group.player["%d+"]["%d+"] = "set"
 tree.club.block.group.player["%d+"]["%d+"]["%d+"] = "number"
+
+tree.club.blacklist.gaming["%d+"] = "set"
+tree.club.blacklist.gaming["%d+"]["%d+"] = "number"
+
 tree.club.request["%d+"] = "set"
 tree.club.request["%d+"]["%d+"] = "number"
 tree.club.conf["%d+"] = "hash"
@@ -117,6 +121,8 @@ tree.club.table["%d+"]["%d+"] = "number"
 
 tree.club.team["%d+"] = "set"
 tree.club.team["%d+"]["%d+"] = "number"
+
+
 
 tree.club.template.commission.default["%d+"]["%d+"] = "number_hash"
 tree.club.template.commission.default["%d+"]["%d+"]["%d+"] = "number"

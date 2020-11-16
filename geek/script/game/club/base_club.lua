@@ -28,10 +28,15 @@ local club_member_partner = require "game.club.club_member_partner"
 local club_team_money = require "game.club.club_team_money"
 local club_partner_commission = require "game.club.club_partner_commission"
 local club_partner_conf = require "game.club.club_partner_conf"
+local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
+local club_request = require "game.club.club_request"
+local player_request = require "game.club.player_request"
 
 local reddb = redisopt.default
 
 local table_expire_seconds = 60 * 60 * 5
+
+local request_expire_seconds = 60 * 60 * 24 * 7
 
 local base_club = {}
 
@@ -171,7 +176,7 @@ function base_club:dismiss()
     channel.publish("db.?","msg","SD_DismissClub",{ club_id = self.id})
 end
 
-function base_club:request_join(guid)
+function base_club:request_join(guid,inviter)
 	local req_id = reddb:incr("request:global:id")
 	req_id = tonumber(req_id)
 	local request = {
@@ -179,10 +184,11 @@ function base_club:request_join(guid)
 		type = "join",
 		club_id = self.id,
         who = guid,
-        whoee = self.owner,
+        whoee = inviter or self.owner,
     }
 
     reddb:hmset("request:"..tostring(req_id),request)
+    reddb:expire("request:"..tostring(req_id),request_expire_seconds)
     reddb:sadd(string.format("club:request:%s",self.id),req_id)
 
     return req_id
@@ -190,30 +196,7 @@ end
 
 function base_club:invite_join(invitee,inviter,inviter_club,type)
     if string.lower(type) == "invite_join" then
-        local inviter_role = club_role[self.id][inviter]
-        if inviter_role == enum.CRT_ADMIN or inviter_role == enum.CRT_BOSS then
-            local partner = club_partners[self.id][self.owner]
-            log.dump(partner)
-            partner:join(invitee)
-        elseif inviter_role == enum.CRT_PARTNER then
-            local partner = club_partners[self.id][inviter]
-            partner:join(invitee)
-        else
-            return enum.ERROR_PLAYER_NO_RIGHT
-        end
-
-        self:join(invitee,inviter)
-        channel.publish("db.?","msg","SD_LogClubActionMsg",{
-            club = self.id,
-            operator = inviter,
-            type = enum.CLUB_ACTION_JOIN,
-            msg = {
-                team = inviter,
-                guid = invitee,
-            },
-        })
-        club_member[self.id] = nil
-        return enum.ERROR_NONE
+        return self:full_join(invitee,inviter)
     end
 
     if string.lower(type) == "invite_create" then
@@ -230,7 +213,6 @@ function base_club:invite_join(invitee,inviter,inviter_club,type)
 end
 
 function base_club:agree_request(request)
-    log.dump(request)
     local who = request.who
     local whoee = request.whoee
 
@@ -240,18 +222,21 @@ function base_club:agree_request(request)
 		return enum.ERROR_PLAYER_NOT_EXIST
     end
 
+    local result
     if request.type == "join" then
-        self:join(who)
-        reddb:srem(string.format("club:request:%s",request.club_id),request.id)
+        result = self:full_join(who,whoee)
     elseif request.type == "exit" then
-        self:exit(who)
-        reddb:srem(string.format("club:request:%s",request.club_id),request.id)
+        result = self:full_exit(who,whoee)
     elseif request.type == "invite" then
-        self:join(whoee)
-        reddb:srem(string.format("club:request:%s",request.club_id),request.id)
+        result = self:full_join(whoee,who)
+    end
+
+    if result ~= enum.ERROR_NONE then
+        return result
     end
 
     club_member[self.id] = nil
+    reddb:srem(string.format("club:request:%s",request.club_id),request.id)
     reddb:del(string.format("request:%s",request.id))
     return enum.ERROR_NONE
 end
@@ -265,7 +250,10 @@ function base_club:reject_request(request)
     end
 
     reddb:srem(string.format("player:request:%s",whoee),request.id)
+    reddb:srem(string.format("club:request:%s",self.id),request.id)
     reddb:del(string.format("request:%s",request.id))
+    club_request[self.id] = nil
+    player_request[whoee] = nil
     return enum.ERROR_NONE
 end
 
@@ -276,6 +264,35 @@ function base_club:join(guid,inviter)
     reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
     reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
     player_club[guid][self.type] = nil
+end
+
+function base_club:full_join(guid,inviter,team_id)
+    inviter = inviter or self.owner
+    team_id = team_id or inviter
+    local inviter_role = club_role[self.id][inviter]
+    if not inviter_role or inviter_role == enum.CRT_PLAYER then
+        return enum.ERROR_PLAYER_NO_RIGHT
+    end
+
+    if not base_players[team_id] then
+        return enum.ERROR_PLAYER_NOT_EXIST
+    end
+
+    local partner = club_partners[self.id][team_id]
+    partner:join(guid)
+
+    self:join(guid,inviter)
+    channel.publish("db.?","msg","SD_LogClubActionMsg",{
+        club = self.id,
+        operator = inviter,
+        type = enum.CLUB_ACTION_JOIN,
+        msg = {
+            team = team_id,
+            guid = guid,
+        },
+    })
+    club_member[self.id] = nil
+    return enum.ERROR_NONE
 end
 
 function base_club:batch_join(guids)
@@ -302,6 +319,32 @@ function base_club:exit(guid)
     player_club[guid][self.type] = nil
     club_role[self.id][guid] = nil
     channel.publish("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
+end
+
+function base_club:full_exit(guid,kicker)
+    kicker = kicker or self.owner
+    local partner_id = club_member_partner[self.id][guid]
+    if not partner_id then
+        log.error("%s in club %s,but not in partner.",guid,self.id)
+    end
+
+    local partner = club_partners[self.id][partner_id]
+
+    partner:exit(guid)
+
+    self:exit(guid)
+
+    channel.publish("db.?","msg","SD_LogClubActionMsg",{
+        club = self.id,
+        operator = kicker,
+        type = enum.CLUB_ACTION_EXIT,
+        msg = {
+            team = partner_id,
+            guid = guid,
+        },
+    })
+
+    return enum.ERROR_NONE
 end
 
 function base_club:broadcast(msgname,msg,except)
@@ -347,15 +390,26 @@ function base_club:create_table(player,chair_count,round,rule,template)
         return enum.ERROR_NOT_MEMBER
     end
 
+    if self:is_close() then
+        return enum.ERROR_CLUB_CLOSE
+    end
+
+    if self:is_block() then
+        return enum.ERROR_CLUB_BLOCK
+    end
+
+    if self:is_block_gaming(player) then
+        return enum.ERROR_BLOCK_GAMING
+    end
+
     if rule and not self:can_sit_down(rule,player) then
         return enum.ERROR_LESS_MIN_LIMIT
     end
 
-    local is_credit_block = self:is_team_credit_block_play(player.guid)
-    if is_credit_block then
+    if self:is_team_credit_block_play(player.guid) then
         return enum.ERROR_CLUB_TEAM_IS_LOCKED
     end
-   
+
     local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,rule,self)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         reddb:hmset(string.format("table:info:%d",global_tid),{
@@ -473,7 +527,31 @@ function base_club:is_block_in_2_team_layer(tb,player)
     end
 end
 
+function base_club:is_block_gaming(player)
+    return club_gaming_blacklist[self.id][player.guid]
+end
+
+function base_club:is_close()
+    return self.status and self.status == enum.CLUB_STATUS_CLOSE
+end
+
+function base_club:is_block()
+    return self.status and self.status == enum.CLUB_STATUS_BLOCK
+end
+
 function base_club:join_table(player,private_table,chair_count)
+    if self:is_close() then
+        return enum.ERROR_CLUB_CLOSE
+    end
+
+    if self:is_block() then
+        return enum.ERROR_CLUB_BLOCK
+    end
+
+    if self:is_block_gaming(player) then
+        return enum.ERROR_BLOCK_GAMING
+    end
+
     local rule = private_table.rule
     if rule and not self:can_sit_down(rule,player) then
         return enum.ERROR_LESS_GOLD

@@ -101,13 +101,13 @@ message C2S_CLUB_OP_REQ{
         REMOVE_PARTNER = 6;       //6、移除合伙人
         BLOCK_CLUB = 7;          //7、封停俱乐部
         UNBLOCK_CLUB = 8;       //8、取消封停
-        OP_EXIT_AGREED = 9;        //9、踢出俱乐部    
-        OP_JOIN_AGREED = 10;        //10、同意加入俱乐部
-        OP_JOIN_REJECTED = 11;      //11、拒绝加入俱乐部
-        OP_APPLY_EXIT = 12;        //12、退出俱乐部
+        EXIT_AGREED = 9;        //9、踢出俱乐部    
+        JOIN_AGREED = 10;        //10、同意加入俱乐部
+        JOIN_REJECTED = 11;      //11、拒绝加入俱乐部
+        APPLY_EXIT = 12;        //12、退出俱乐部
         CLOSE_CLUB = 13;            //打烊俱乐部
         OPEN_CLUB = 14;             //俱乐部开始营业
-        OP_DISMISS_CLUB = 15;       // 解散俱乐部
+        DISMISS_CLUB = 15;       // 解散俱乐部
     }
 
     int32 op = 1;

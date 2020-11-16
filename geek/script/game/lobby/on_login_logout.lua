@@ -950,13 +950,6 @@ function on_cs_create_private_room(msg,guid)
 			})
 			return
 		end
-
-		if club.status and club.status ~= 0 then
-			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERROR_OPERATION_INVALID,
-			})
-			return
-		end
 	end
 	
 	if def_first_game_type ~= game_type then

@@ -11,7 +11,6 @@ local base_clubs = setmetatable({},{
         end
         
         setmetatable(c,{__index = base_club})
-        t[id] = c
         return c
     end
 })

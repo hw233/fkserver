@@ -1,5 +1,4 @@
 local redisopt = require "redisopt"
-local base_request = require "game.club.base_request"
 require "functions"
 
 local reddb = redisopt.default
