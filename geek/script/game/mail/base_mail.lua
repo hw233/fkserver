@@ -6,14 +6,13 @@ local base_mails = require "game.mail.base_mails"
 local redisopt = require "redisopt"
 local player_mail = require "game.mail.player_mail"
 local reddot = require "game.reddot.reddot"
+local enum = require "pb_enums"
 
 local reddb = redisopt.default
 
 local mail_expaired_seconds = 60 * 60 * 24 * 7
 
 local base_mail = {}
-
-base_mail.reddot_type = 1001
 
 local function new_mail_id()
 	return string.format("%d-%d",skynet.time() * 1000,math.random(10000))
@@ -51,7 +50,7 @@ function base_mail.get_reddot_info(guid)
 		end
 	end
 	return {
-		type = base_mail.reddot_type,
+		type = enum.REDDOT_TYPE_MAIL,
 		count = count,
 	}
 end
