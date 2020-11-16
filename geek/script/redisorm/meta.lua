@@ -75,7 +75,7 @@ local typemetafunc = {
             return table.map(val,function(v)
                 local nk = n[v]
                 local meta = rawget(nk,"meta")
-                return meta and meta.encode(v) or v,true
+                return meta and meta.decode(v) or v,true
             end)
         end,
         encode = function(val)
