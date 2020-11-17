@@ -601,9 +601,9 @@ end
 function zhajinhua_table:begin_start_ticker()
 	local trustee,seconds = self:get_trustee_conf()
 	if trustee then
-		log.info("zhajinhua_table:begin_start_ticker table_id:%s",self.id())
+		log.info("zhajinhua_table:begin_start_ticker table_id:%s",self:id())
 		self:begin_kickout_no_ready_timer(seconds,function()
-			log.info("zhajinhua_table:begin_start_ticker timeout,start,table_id:%s",self.id())
+			log.info("zhajinhua_table:begin_start_ticker timeout,start,table_id:%s",self:id())
 			self:cancel_kickout_no_ready_timer()
 			self:start()
 		end)
@@ -611,7 +611,7 @@ function zhajinhua_table:begin_start_ticker()
 end
 
 function zhajinhua_table:stop_start_ticker()
-	log.info("zhajinhua_table:stop_start_ticker table_id:%s",self.id())
+	log.info("zhajinhua_table:stop_start_ticker table_id:%s",self:id())
 	self:cancel_kickout_no_ready_timer()
 end
 
