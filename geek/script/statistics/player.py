@@ -157,10 +157,10 @@ def player_play_count():
     sql = """
         INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
         SELECT pr.guid,r.club,r.game_id,COUNT(DISTINCT(r.round)) count,pr.create_time div 86400 * 86400 date FROM 
-            log.t_log_player_round pr
+            t_log_round r
         LEFT JOIN
-            log.t_log_round r
-        ON pr.round = r.round
+            t_log_player_round pr
+        ON r.round = pr.round
         WHERE pr.create_time > {} AND pr.create_time <= {}
         GROUP BY r.club,r.game_id,pr.guid,pr.create_time div 86400 * 86400
         ON DUPLICATE KEY UPDATE count = VALUES(count);
