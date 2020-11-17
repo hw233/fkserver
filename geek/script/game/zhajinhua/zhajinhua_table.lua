@@ -401,6 +401,13 @@ function zhajinhua_table:ding_zhuang(winner)
 	return winner and winner.chair_id or self.conf.owner.chair_id
 end
 
+function zhajinhua_table:on_private_dismissed(reason)
+	base_table.on_private_dismissed(self,reason)
+	self:stop_start_ticker()
+	self:cancel_clock_timer()
+	self:cancel_action_timer()
+end
+
 function zhajinhua_table:on_process_start(player_count)
 	self:foreach(function(p)
 		p.total_score = 0
@@ -413,6 +420,7 @@ function zhajinhua_table:on_process_over(reason)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
+	self:stop_start_ticker()
 	
 	self.status = nil
 	self.all_score = nil
@@ -632,7 +640,7 @@ function zhajinhua_table:check_start(part)
 		return self.ready_list[c] and true or false 
 	end)
 	local gamer_count = table.nums(self.gamers)
-	if is_all_gamer_ready and ready_count >= gamer_count then
+	if is_all_gamer_ready and ready_count >= gamer_count and gamer_count >= min_gamer_count then
 		self:start(player_count)
 	end
 end
