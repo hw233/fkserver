@@ -151,7 +151,7 @@ function zhajinhua_table:on_started(player_count)
 
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
-	self:cancel_kickout_no_ready_timer()
+	self:stop_start_ticker()
 
 	for i,_ in pairs(self.gamers)  do
 		self.show_cards_to[i] = {}
@@ -601,7 +601,9 @@ end
 function zhajinhua_table:begin_start_ticker()
 	local trustee,seconds = self:get_trustee_conf()
 	if trustee then
+		log.info("zhajinhua_table:begin_start_ticker table_id:%s",self.id())
 		self:begin_kickout_no_ready_timer(seconds,function()
+			log.info("zhajinhua_table:begin_start_ticker timeout,start,table_id:%s",self.id())
 			self:cancel_kickout_no_ready_timer()
 			self:start()
 		end)
@@ -609,6 +611,7 @@ function zhajinhua_table:begin_start_ticker()
 end
 
 function zhajinhua_table:stop_start_ticker()
+	log.info("zhajinhua_table:stop_start_ticker table_id:%s",self.id())
 	self:cancel_kickout_no_ready_timer()
 end
 
@@ -1213,7 +1216,7 @@ function zhajinhua_table:give_up(player)
 	log.info("table_id[%s]:player guid[%s]------> give_up", self.table_id_,player.guid)
 
 	if player.death then
-		log.error("table_id[%s]:add_score guid[%s] is dead", self.table_id_,player.guid)
+		log.error("table_id[%s]:give_up guid[%s] is dead", self.table_id_,player.guid)
 		send2client_pb(player,"SC_ZhaJinHuaGiveUp",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
