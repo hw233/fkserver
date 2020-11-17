@@ -17,7 +17,7 @@ netmsgopt.protocol(protocol)
 
 local onlineguid = {}
 local fdsession = {}
-local heartbeat_check_time = 8
+local heartbeat_check_time = 12
 
 local LOGIN_HANDLE = {
     CL_Auth = true,
