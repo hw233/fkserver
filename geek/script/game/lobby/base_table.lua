@@ -1118,6 +1118,7 @@ function base_table:can_sit_down(player,chair_id,reconnect)
 end
 
 function base_table:on_player_sit_down(player,chair_id,reconnect)
+	player.inactive = nil
 	if reconnect then
 		self:notify_online(player)
 	else
@@ -1453,7 +1454,7 @@ function base_table:player_stand_up(player, reason)
 				self:is_round_free() and 
 				reason == enum.STANDUP_REASON_OFFLINE
 			then
-				self:notify_online(player,false)
+				self:on_offline(player)
 				self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
 				return enum.GAME_SERVER_RESULT_WAIT_LATER
 			end
@@ -1498,7 +1499,7 @@ function base_table:player_stand_up(player, reason)
 			return enum.ERROR_NONE
 		end
 
-		self:notify_online(player,false)
+		self:on_offline(player)
 
 		return enum.GAME_SERVER_RESULT_IN_GAME
 	end)
@@ -1564,9 +1565,9 @@ function base_table:on_player_stand_uped(player,reason)
 	end
 end
 
-function base_table:on_offline(player,reason)
+function base_table:on_offline(player)
 	player.inactive = true
-	self:notify_offline(player,false)
+	self:notify_online(player,false)
 end
 
 function base_table:clear_trustee_status()
