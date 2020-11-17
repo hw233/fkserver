@@ -9,6 +9,7 @@ local card_dealer = require "card_dealer"
 local cards_util = require "game.zhajinhua.base.cards_util"
 local channel = require "channel"
 require "data.zhajinhua_data"
+require "random_mt19937"
 
 local table = table
 local string = string

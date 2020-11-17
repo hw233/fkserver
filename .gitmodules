@@ -25,3 +25,6 @@
 	path = 3rd/lua-protobuf
 	branch = dev
 	url = https://gitee.com/thinblog/lua-protobuf.git
+[submodule "3rd/lrandom"]
+	path = 3rd/lrandom
+	url = https://gitee.com/thinblog/lrandom.git
