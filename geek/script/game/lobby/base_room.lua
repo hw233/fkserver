@@ -381,7 +381,7 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 	tb.owner_chair_id = chair_id
 	tb.rule = rule
 	tb.club = club
-	tb.club_id = club.id
+	tb.club_id = club and club.id or nil
 
 	local result = tb:player_sit_down(player, chair_id)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
