@@ -122,6 +122,11 @@ local function guid_monitor()
         local last_live_time = u.last_live_time
         if last_live_time and os.time() - last_live_time > heartbeat_check_time then
             pcall(skynet.call,u.agent, "lua", "afk")
+            if u.fd then
+                msgserver.close(u.fd)
+            else
+                log.error("guid_monitor close socket got nil fd,guid:%s",u.guid)
+            end
         end
     end
 
