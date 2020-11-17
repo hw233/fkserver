@@ -835,7 +835,7 @@ function base_table:on_game_overed()
 		self:on_final_game_overed()
 		self:kickout_players_when_ext_round_over()
 		if self:is_private() then
-			local club = base_clubs[self.club_id]
+			local club = self.club_id and base_clubs[self.club_id] or nil
 			if club then
 				if club:is_block() or club:is_close() then
 					self:force_dismiss(enum.STANDUP_REASON_CLUB_CLOSE)
