@@ -1451,7 +1451,7 @@ function base_table:player_stand_up(player, reason)
 			-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
 			if 	self:is_private() and 
 				self:is_round_free() and 
-				reason == enum.STANDUP_REASON_OFFLINE 
+				reason == enum.STANDUP_REASON_OFFLINE
 			then
 				self:notify_online(player,false)
 				self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
@@ -1481,12 +1481,11 @@ function base_table:player_stand_up(player, reason)
 
 			self:on_player_stand_uped(player,reason)
 
-			if 	player_count == 1 and
-				(self:is_round_end() or reason ~= enum.STANDUP_REASON_OFFLINE) 
-			then
+			if 	player_count == 1 then
 				self:do_dismiss(dismiss_reason[reason])
 			else
 				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
+				self:check_start()
 			end
 
 			reddb:hdel("player:online:guid:"..tostring(guid),"global_table")
@@ -1496,13 +1495,6 @@ function base_table:player_stand_up(player, reason)
 			reddb:srem("table:player:"..tostring(self.private_id),guid)
 			onlineguid[guid] = nil
 
-			if 	player_count > 1 and (
-				reason == enum.STANDUP_REASON_NORMAL 
-				or reason == enum.STANDUP_REASON_OFFLINE
-				or reason == enum.STANDUP_REASON_NO_READY_TIMEOUT
-			) then
-				self:check_start()
-			end
 			return enum.ERROR_NONE
 		end
 
