@@ -33,12 +33,12 @@ function connection.close(conn)
 	conn:disconnect()
 end
 
-function connection.query(conn,fmtsql,...)
+function connection.query(conn,sql)
 	if not conn then 
 		log.errro("connection.query conn is nil.")
 		return
 	end
-	return conn:query(string.format(fmtsql,...))
+	return conn:query(sql)
 end
 
 function new_connection_pool(conf)
@@ -57,6 +57,21 @@ end
 
 local connection_pool = {}
 
+local function wait(pool)
+	local co = coroutine.running()
+	pool.waiting = pool.waiting or {}
+	table.insert(pool.waiting,co)
+	skynet.wait(co)
+end
+
+local function wakeup(pool)
+	for _,co in pairs(pool.waiting or {}) do
+		skynet.wakeup(co)
+	end
+
+	pool.waiting = nil
+end
+
 function connection_pool.close(pool)
 	for id,conn in pairs(pool.__connections) do
 		connection.close(conn)
@@ -65,8 +80,13 @@ function connection_pool.close(pool)
 end
 
 function connection_pool.occupy(pool)
-	local free_count = table.nums(pool.__free)
-	if free_count  == 0 then
+	for i = 1,10000 do
+		for cid,conn in pairs(pool.__free) do
+			pool.__free[cid] = nil
+			pool.__occupied[cid] = conn
+			return cid,conn
+		end
+
 		if #pool.__connections <= pool.__max then
 			local conn = new_connection(pool.__conf)
 			local cid = #pool.__connections + 1
@@ -75,14 +95,8 @@ function connection_pool.occupy(pool)
 			return cid,conn
 		end
 
-		log.warning("all of pool connection is occupied,pool:%s.",pool.__conf.name)
-		return nil
-	end
 
-	for cid,conn in pairs(pool.__free) do
-		pool.__free[cid] = nil
-		pool.__occupied[cid] = conn
-		return cid,conn
+		wait(pool)
 	end
 end
 
@@ -95,6 +109,7 @@ function connection_pool.release(pool,cid)
 
 	pool.__free[cid] = conn
 	pool.__occupied[cid] = nil
+	wakeup(pool)
 end
 
 function connection_pool.query(pool,fmtsql,...)

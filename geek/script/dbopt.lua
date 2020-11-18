@@ -8,14 +8,24 @@ local string = string
 
 local mysqld = ".mysqld"
 
+local escape_map = {
+	['\0'] = "\\0",
+	['\b'] = "\\b",
+	['\n'] = "\\n",
+	['\r'] = "\\r",
+	['\t'] = "\\t",
+	['\26'] = "\\Z",
+	['\\'] = "\\\\",
+	["'"] = "\\'",
+	['"'] = '\\"',
+}
+
 local function escape(str)
 	if type(str) ~= "string" then
 		return str
 	end
 
-	return string.gsub(str,"[%%'\"]",function(s)
-		return (s == "%" and "%" or "\\")..s
-	end)
+	return string.gsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
 end
 
 local function uniform_sql_quota(sql)
