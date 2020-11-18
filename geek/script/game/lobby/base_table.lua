@@ -46,6 +46,7 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_OFFLINE] = enum.DISMISS_REASON_NORMAL,
 	[enum.STANDUP_REASON_NORMAL] = enum.DISMISS_REASON_NORMAL,
 	[enum.STANDUP_REASON_DISMISS] = enum.DISMISS_REASON_NORMAL,
+	[enum.STANDUP_REASON_FORCE] = enum.DISMISS_REASON_ADMIN_FORCE,
 	[enum.STANDUP_REASON_ADMIN_DISMISS_FORCE] = enum.DISMISS_REASON_ADMIN_FORCE,
 	[enum.STANDUP_REASON_DISMISS_REQUEST] = enum.DISMISS_REASON_REQUEST,
 	[enum.STANDUP_REASON_DISMISS_TRUSTEE] = enum.DISMISS_REASON_TRUSTEE_AUTO,
@@ -1297,8 +1298,8 @@ function base_table:transfer_owner()
 		reddb:del("player:table:"..old_owner.guid)
 		reddb:hset("table:info:"..private_table_id,"owner",new_owner.guid)
 		reddb:set("player:table:"..new_owner.guid,private_table_id)
-		-- reddb:expire("player:table:"..new_owner.guid,dismiss_timeout)
 		private_conf.owner = new_owner
+		private_conf.owner_guid = new_owner.guid
 
 		self:broadcast2client("S2C_TRANSFER_ROOM_OWNER_RES",{
 			table_id = self.private_id,
@@ -1499,7 +1500,9 @@ function base_table:player_stand_up(player, reason)
 			return enum.ERROR_NONE
 		end
 
-		self:on_offline(player)
+		if reason == enum.STANDUP_REASON_OFFLINE then
+			self:on_offline(player)
+		end
 
 		return enum.GAME_SERVER_RESULT_IN_GAME
 	end)
@@ -1718,12 +1721,14 @@ end
 
 function base_table:can_stand_up(player,reason)
 	log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.STANDUP_REASON_OFFLINE then
-        return true
-    end
+    if reason == enum.STANDUP_REASON_NORMAL or
+		reason == enum.STANDUP_REASON_OFFLINE or
+		reason == enum.STANDUP_REASON_FORCE
+	then
+        return not self:is_play(player) and not self:is_round_gaming()
+	end
 
-    return not self:is_play(player) and not self:is_round_gaming()
+    return true
 end
 
 -- 检查开始
@@ -2306,6 +2311,18 @@ end
 function base_table:kill_timer(timer)
 	local id = type(timer) == "table" and timer.id or timer
 	timer_manager:kill_timer(id)
+end
+
+function base_table:kickout_player(player,kicker)
+	if 	kicker.guid ~= self.conf.owner_guid then
+		return enum.ERROR_PLAYER_NO_RIGHT
+	end
+
+	if player.guid == kicker.guid then
+		return enum.ERROR_OPERATION_INVALID
+	end
+
+	return player:forced_exit(enum.STANDUP_REASON_FORCE)
 end
 
 function base_table:global_status_info()
