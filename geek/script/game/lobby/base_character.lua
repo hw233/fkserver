@@ -135,35 +135,28 @@ end
 -- 强制踢出房间
 function base_character:forced_exit(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
-	log.info("force exit,guid:%s,chair_id:%s,reason:%s",self.guid,self.chair_id,reason)
-	local tb = g_room:find_table_by_player(self)
-	if not tb then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,not find table",self.guid,self.table_id,self.chair_id)
-		return
-	end
-
-	local table_id = self.table_id
 	local chair_id = self.chair_id
+	local table_id = self.table_id
+	log.info("force exit,guid:%s,chair_id:%s,reason:%s",self.guid,self.chair_id,reason)
 
-	local result = tb:player_stand_up(self,reason)
+	local result = self:kickout_room(reason)
 	if result ~= enum.ERROR_NONE then
 		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,result %s,failed",
 			self.guid,table_id,chair_id,reason,result)
 		return result
 	end
 	
-	self:kickout_room(reason)
-
 	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.ERROR_NONE,reason)
 	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
+	return enum.ERROR_NONE
 end
 
 function base_character:kickout(reason)
-	g_room:kickout_server(self,reason)
+	return g_room:kickout_server(self,reason)
 end
 
 function base_character:kickout_room(reason)
-	g_room:kickout_room(self,reason)
+	return g_room:kickout_room(self,reason)
 end
 
 return base_character
