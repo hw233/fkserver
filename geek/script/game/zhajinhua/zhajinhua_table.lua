@@ -1916,12 +1916,13 @@ end
 
 function zhajinhua_table:can_stand_up(player,reason)
 	log.info("zhajinhua_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason ~= enum.STANDUP_REASON_NORMAL and
-        reason ~= enum.STANDUP_REASON_OFFLINE then
-        return true
+    if reason == enum.STANDUP_REASON_NORMAL or
+		reason == enum.STANDUP_REASON_OFFLINE or 
+		reason == enum.STANDUP_REASON_FORCE then
+        return not self:is_play(player)
     end
 
-    return not self:is_play(player)
+    return true
 end
 
 function zhajinhua_table:on_player_sit_downed(player,reconnect)
