@@ -116,6 +116,7 @@ local function get_club_tables(club)
     local ct = club_table[club.id] or {}
     local tables = table.series(ct,function(_,tid)
         local priv_tb = base_private_table[tid]
+        if not priv_tb then return end
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
         return tableinfo
     end)
