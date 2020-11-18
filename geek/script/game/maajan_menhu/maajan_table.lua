@@ -2973,14 +2973,14 @@ function maajan_table:on_cs_get_ting_tiles_info(player)
     local hu_tips = self.rule and self.rule.play.hu_tips or nil
     if not hu_tips then 
         send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
-            result = enum.ERROR_INVALIDE_OPERATION,
+            result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
 
     if player.hu then 
         send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
-            result = enum.ERROR_INVALIDE_OPERATION,
+            result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
