@@ -1752,3 +1752,16 @@ message SC_CancelTimer{
 	enum MsgID { Nil = 0; ID = 1234; }
 	int32 id = 1;
 }
+
+message CS_ForceKickoutPlayer{
+    enum MsgID {NIL = 0;ID = 1235;}
+    int32 guid = 1;
+	int32 club_id = 2;
+}
+
+message SC_ForceKickoutPlayer{
+    enum MsgID {NIL = 0;ID = 1236;}
+    int32 result = 1;
+    int32 guid = 2;
+	int32 club_id = 3;
+}

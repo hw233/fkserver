@@ -757,7 +757,7 @@ local function on_cs_club_blacklist(msg,guid)
 
     local target_role = club_role[club_id][target_guid]
     if target_role == enum.CRT_BOSS   then
-        res.result = enum.ERROR_INVALIDE_OPERATION
+        res.result = enum.ERROR_OPERATION_INVALID
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
     end
@@ -2837,4 +2837,86 @@ function on_cs_club_edit_team_config(msg,guid)
     reddb:hmset(string.format("club:partner:conf:%s:%s",club_id,partner_id),conf)
 
     onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",msg)
+end
+
+function on_cs_club_kickout_player(msg,kicker_guid)
+    local club_id = msg.club_id
+    local guid = msg.guid
+    log.dump(msg)
+    if not club_id or club_id == 0 then
+        onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+
+        return
+    end
+
+    if not guid or guid == 0 then
+        onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+        })
+
+        return
+    end
+
+    local player = base_players[guid]
+    if not player then
+        onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+        })
+
+        return
+    end
+
+    local kicker = base_players[kicker_guid]
+    local kicker_table = g_room:find_table_by_player(kicker)
+    local kickee_table = g_room:find_table_by_player(player)
+    local result = enum.ERROR_NONE
+    if kickee_table ~= kicker_table then
+        local kicker_role = club_role[club_id][kicker_guid]
+        if kicker_role ~= enum.CRT_ADMIN and kicker_role ~= enum.CRT_BOSS then
+            onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+                result = enum.ERROR_PLAYER_NO_RIGHT,
+            })
+    
+            return
+        end
+
+        if not club_member[club_id][guid] then
+            onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+                result = enum.ERROR_OPERATION_INVALID,
+            })
+    
+            return
+        end
+
+        if kicker_guid == guid then
+            onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+                result = enum.ERROR_OPERATION_INVALID,
+            })
+    
+            return
+        end
+
+        result = player:forced_exit(enum.STANDUP_REASON_FORCE)
+    else
+        if not kickee_table then
+            result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+        else
+            result = kickee_table:kickout_player(player,kicker)
+        end
+    end
+
+    onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+        result = result,
+    })
 end

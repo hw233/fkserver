@@ -2163,3 +2163,81 @@ function on_cs_play_once_again(msg,guid)
 		}
 	})
 end
+
+local function kickout_player(guid,kicker)
+	if not guid or guid == 0 then
+		onlineguid.send(guid,"SC_ForceKickoutPlayer",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(guid,"SC_ForceKickoutPlayer",{
+			result = enum.ERROR_PLAYER_NOT_EXIST
+		})
+		return
+	end
+
+	local kickee_table = g_room:find_table_by_player(player)
+	if not kickee_table then
+		onlineguid.send(kicker.guid,"SC_ForceKickoutPlayer",{
+			result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		})
+		return
+	end
+	
+	local result = kickee_table:kickout_player(player,enum.STANDUP_REASON_FORCE)
+	onlineguid.send(kicker.guid,"SC_ForceKickoutPlayer",{
+		result = result
+	})
+end
+
+function on_cs_force_kickout_player(msg,kicker_guid)
+	local kicker = base_players[kicker_guid]
+	if not kicker then
+		onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+
+	local guid = msg.guid
+	if not guid or guid == 0 then
+		onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+	
+	local os = onlineguid[guid]
+	if not os or not os.server then
+		onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
+			result = enum.GAME_SERVER_RESULT_OUT_ROOM
+		})
+		return
+	end
+
+	local server = os.server
+	if server ~= def_game_id then
+		channel.publish("service."..tostring(server),"msg","CS_ForceKickoutPlayer",msg,kicker_guid)
+		return
+	end
+
+	local club_id = msg.club_id
+	if club_id and club_id ~= 0 then
+		on_cs_club_kickout_player(msg,kicker_guid)
+		return
+	end
+
+	kickout_player(guid,kicker)
+end

@@ -134,4 +134,6 @@ skynet.start(function()
 	register_dispatcher("CS_PlayOnceAgain",on_cs_play_once_again)
 
 	register_dispatcher("CS_Logout",on_cs_logout)
+
+	register_dispatcher("CS_ForceKickoutPlayer",on_cs_force_kickout_player)
 end)
