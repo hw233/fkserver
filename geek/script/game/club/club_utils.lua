@@ -17,6 +17,7 @@ local club_template_conf = require "game.club.club_template_conf"
 local club_partner_template_commission = require "game.club.club_partner_template_commission"
 local club_member_partner = require "game.club.club_member_partner"
 local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
+local enum = require "pb_enums"
 
 require "functions"
 
@@ -352,6 +353,18 @@ function utils.get_real_partner_template_commission_rate(club_id,template_id,par
     end
 
     return commission_rate or 0
+end
+
+function utils.role_team_id(club,guid)
+    club = type(club) == "number" and base_clubs[club] or club
+    local role = club_role[club.id][guid]
+    if role == enum.CRT_ADMIN then
+        return club.owner
+    end
+
+    if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
+        return guid
+    end
 end
 
 return utils
