@@ -72,8 +72,8 @@ function on_sd_join_club(msg)
     local money_id = res[1].money_id
 
     local sqls = {
-        string.format([[INSERT OR IGNORE INTO t_club_member(club,guid) VALUES(%d,%d);]],club_id,guid),
-        string.format([[INSERT OR IGNORE INTO t_player_money(guid,money_id,money,`where`) VALUES(%d,%d,0,0);]],guid,money_id),
+        string.format([[INSERT IGNORE INTO t_club_member(club,guid) VALUES(%d,%d);]],club_id,guid),
+        string.format([[INSERT IGNORE INTO t_player_money(guid,money_id,money,`where`) VALUES(%d,%d,0,0);]],guid,money_id),
     }
 
     log.dump(sqls)
