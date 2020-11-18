@@ -109,7 +109,6 @@ function on_sl_log_game(msg)
         VALUES ('%s',%d, '%s', '%s','%s', %d, %d, %d);
         ]],
         msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime,os.time())
-    log.dump(sql)
     local ret = dbopt.log:query(sql)
     if ret.errno then
         log.error(ret.err)
