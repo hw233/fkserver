@@ -102,34 +102,28 @@ end
 -- 玩家退出
 function on_s_logout(msg)
 	-- 上次在线时间
-	local db = dbopt.account
-	local ret
-	if msg.phone then
-		ret = dbopt.account:query([[
-				UPDATE t_account SET 
-					login_time = FROM_UNIXTIME(%s), 
-					logout_time = FROM_UNIXTIME(%s),
-					last_login_phone = '%s', 
-					last_login_phone_type = '%s', 
-					last_login_version = '%s', 
-					last_login_channel_id = '%s', 
-					last_login_package_name = '%s', 
-					last_login_imei = '%s', 
-					last_login_ip = '%s' 
-					WHERE guid = %s;
-			]],
-			msg.login_time, msg.logout_time, msg.phone, msg.phone_type, 
-			msg.version, msg.channel_id, msg.package_name, 
-			msg.imei, msg.ip, msg.guid)
-	else
-		ret = dbopt.account:query([[
-				UPDATE t_account SET 
-					login_time = FROM_UNIXTIME(%s), 
-					logout_time = FROM_UNIXTIME(%s) 
-					WHERE guid = %s;
-			]],
-			msg.login_time, msg.logout_time, msg.guid)
-	end
+	local ret = dbopt.account:query([[
+			UPDATE t_account SET 
+				login_time = FROM_UNIXTIME(%s), 
+				logout_time = FROM_UNIXTIME(%s),
+				last_login_phone = '%s', 
+				last_login_phone_type = '%s', 
+				last_login_version = '%s', 
+				last_login_channel_id = '%s', 
+				last_login_package_name = '%s', 
+				last_login_ip = '%s' 
+				WHERE guid = %s;
+		]],
+		msg.login_time, 
+		msg.logout_time, 
+		msg.phone or '', 
+		msg.phone_type or '', 
+		msg.version or '', 
+		msg.channel_id or '', 
+		msg.package_name or '', 
+		msg.ip or '', 
+		msg.guid
+	)
 	if ret.errno then
 		log.error(ret.err)
 	end
