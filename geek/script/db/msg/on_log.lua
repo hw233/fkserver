@@ -60,7 +60,7 @@ function on_sd_log_ext_game_round_start(msg)
         table.series(guids,function(guid)
             return string.format("(%s,'%s',unix_timestamp())",guid,round)
         end),",")
-    ret = dbopt.log:query("INSERT INTO t_log_player_round(guid,round,create_time) VALUES" .. values_sql .. ";")
+    ret = dbopt.log:query("INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES" .. values_sql .. ";")
     if ret.errno then
         log.error("INSERT INTO t_log_player_round error:%s:%s",ret.errno,ret.err)
         return
