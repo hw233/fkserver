@@ -140,15 +140,12 @@ function on_ls_login_notify(guid,reconnect)
 
 	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
-	player.risk = player.risk or 0
-	player.inviter_guid = player.inviter_guid or player.inviter_guid or 0
-	player.invite_code = player.invite_code or player.invite_code or "0"
 	if reconnect then
 		-- 重连
 		-- local s = onlineguid[guid]
 		player.table_id = s.table
 		player.chair_id = s.chair
-		log.info("login step reconnect game->LC_Login,account=%s", player.account)
+		log.info("login step reconnect game->LC_Login,guid=%s", guid)
 		return
 	end
 
