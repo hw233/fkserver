@@ -104,8 +104,9 @@ function on_s_logout(msg)
 	-- 上次在线时间
 	local db = dbopt.account
 	local sql
+	local ret
 	if msg.phone then
-		sql = string.format([[
+		ret = db:query([[
 				UPDATE t_account SET 
 					login_time = FROM_UNIXTIME(%s), 
 					logout_time = FROM_UNIXTIME(%s),
@@ -122,7 +123,7 @@ function on_s_logout(msg)
 			msg.version, msg.channel_id, msg.package_name, 
 			msg.imei, msg.ip, msg.guid)
 	else
-		sql = string.format([[
+		ret = db:query([[
 				UPDATE t_account SET 
 					login_time = FROM_UNIXTIME(%s), 
 					logout_time = FROM_UNIXTIME(%s) 
@@ -130,7 +131,6 @@ function on_s_logout(msg)
 			]],
 			msg.login_time, msg.logout_time, msg.guid)
 	end
-	local ret = db:batchquery(sql)
 	if ret.errno then
 		log.error(ret.err)
 	end

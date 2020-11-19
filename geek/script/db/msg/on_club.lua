@@ -72,13 +72,13 @@ function on_sd_join_club(msg)
     local money_id = res[1].money_id
 
     local sqls = {
-        string.format([[INSERT IGNORE INTO t_club_member(club,guid) VALUES(%d,%d);]],club_id,guid),
-        string.format([[INSERT IGNORE INTO t_player_money(guid,money_id,money,`where`) VALUES(%d,%d,0,0);]],guid,money_id),
+        {[[INSERT IGNORE INTO t_club_member(club,guid) VALUES(%d,%d);]],club_id,guid},
+        {[[INSERT IGNORE INTO t_player_money(guid,money_id,money,`where`) VALUES(%d,%d,0,0);]],guid,money_id},
     }
 
     log.dump(sqls)
 
-    res = dbopt.game:query(table.concat(sqls,"\n"))
+    res = dbopt.game:batchquery(table.concat(sqls,"\n"))
     if res.errno then
         log.error("on_sd_join_club error:%d,%s",res.errno,res.err)
         return

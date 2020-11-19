@@ -25,21 +25,17 @@ function on_sl_channel_invite_tax( msg)
 end
 
 function on_sd_log_game_money( msg)
-    local sql
     if msg.guid >= 0 then
-        sql = string.format([[
+        dbopt.log:query([[
             INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `change_money`, `round_id`, `platform_id')
             VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, '%s', '%d')]],
             msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.change_money,msg.id,msg.platform_id or 0)
     elseif msg.guid < 0 then --机器人日志记录到另一张同样的表里
-        sql = string.format([[
+        dbopt.log:query([[
             INSERT INTO `log`.`t_log_game_money` (`guid`, `type`, `gameid`, `game_name`,`money_id`, `old_money`, `new_money`, `change_money`, `round_id`, `platform_id')
             VALUES (%d, %d, %d, '%s',%d, %d, %d, %d, '%s', '%d')]],
             msg.guid,msg.type,msg.gameid,msg.game_name,msg.money_id,msg.old_money,msg.new_money,msg.change_money,msg.round_id,msg.platform_id or 0)
     end
-
-    log.info("sql [%s]" , sql)
-    dbopt.log:query(sql)
 end
 
 function on_sd_log_ext_game_round_start(msg)
@@ -104,12 +100,11 @@ end
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
     json.encode_sparse_array(true)  
-    local sql = string.format([[
+    local ret = dbopt.log:query([[
         INSERT INTO `log`.`t_log_game` (`round_id`, `game_id`,`game_name`, `log`, `ext_round_id`, `start_time`,`end_time`,`created_time`)
         VALUES ('%s',%d, '%s', '%s','%s', %d, %d, %d);
         ]],
         msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime,os.time())
-    local ret = dbopt.log:query(sql)
     if ret.errno then
         log.error(ret.err)
     end
@@ -124,10 +119,9 @@ function on_sl_robot_log_money(msg)
 end
 
 function  on_SD_SaveCollapsePlayerLog(msg)
-    local sql = string.format([[
+    local sql = dbopt.log:query([[
         INSERT INTO `t_log_bankrupt`(`day`,`guid`,`times_bkt`,`bag_id`,`plat_id`) VALUES('%s',%d,1,'%s','%s') ON DUPLICATE KEY UPDATE `times_bkt`=(`times_bkt`+1),`bag_id`=VALUES(`bag_id`),`plat_id`=VALUES(`plat_id`)]],
         os.date("%Y-%m-%d",os.time()),msg.guid,msg.channel_id,msg.platform_id)
-    dbopt.log:query(sql)
     dbopt.game:query("UPDATE t_player SET is_collapse=1 WHERE guid=%d;",msg.guid)
 end
 
@@ -181,13 +175,13 @@ end
 
 function on_sd_log_recharge(msg)
     local sqls = {
-        string.format("INSERT INTO t_log_recharge(source_id,target_id,type,operator,created_time) VALUES(%d,%d,%d,%d,%d);",
-                msg.source_id,msg.target_id,msg.type,msg.operator,os.time()),
-        string.format("SELECT LAST_INSERT_ID() AS id;")
+        {"INSERT INTO t_log_recharge(source_id,target_id,type,operator,created_time) VALUES(%d,%d,%d,%d,%d);",
+                msg.source_id,msg.target_id,msg.type,msg.operator,os.time()},
+        {"SELECT LAST_INSERT_ID() AS id;"}
     }
 
     log.dump(sqls)
-    local res = dbopt.log:query(table.concat(sqls,"\n"))
+    local res = dbopt.log:batchquery(table.concat(sqls,"\n"))
     if res.errno then
         log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
         return
