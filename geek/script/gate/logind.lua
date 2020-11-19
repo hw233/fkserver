@@ -123,9 +123,9 @@ local function login_by_sms(msg,session)
     end
 
     msg.ip = session.ip
-    local info,server = channel.call("login.?","msg","CL_Login",msg,gateid,session.fd)
+    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid,session.fd)
     local guid = info.guid
-    if info.result == enum.LOGIN_RESULT_SUCCESS then
+    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
         if not check_login_session(session.fd) then --已断开连接
             channel.publish("service."..tostring(server),"lua","afk",guid)
             return
@@ -136,7 +136,7 @@ local function login_by_sms(msg,session)
 
     log.dump(info)
 
-    return info
+    return ok,info
 end
 
 local function login_by_openid(msg,session)
@@ -147,9 +147,9 @@ local function login_by_openid(msg,session)
     end
 
     msg.ip = session.ip
-    local info,server = channel.call("login.?","msg","CL_Login",msg,gateid)
-    local guid = info.guid
-    if info.result == enum.LOGIN_RESULT_SUCCESS then
+    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
+    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
+        local guid = info.guid
         if not check_login_session(session.fd) then --已断开连接
             channel.publish("service."..tostring(server),"lua","afk",guid)
             return
@@ -160,7 +160,7 @@ local function login_by_openid(msg,session)
 
     log.dump(info)
 
-    return info
+    return ok,info
 end
 
 local function login_by_account(msg,session)
@@ -226,13 +226,6 @@ local function login_by_account(msg,session)
 end
 
 function MSG.CL_Auth(msg,session)
-    if is_maintain then
-        netmsgopt.send(fd,"LC_Auth",{
-            result = enum.LOGIN_RESULT_MAINTAIN,
-        })
-        return
-    end
-
     local fd = session.fd
     if logining[fd] then
         netmsgopt.send(fd,"LC_Auth",{
@@ -252,10 +245,19 @@ function MSG.CL_Auth(msg,session)
     logining[fd] = true
 
     msg.ip = session.ip
-    local result,userinfo = channel.call("login.?","msg","CL_Auth",msg)
+    local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
     log.dump(result)
     log.dump(userinfo)
-    if  result ~= enum.LOGIN_RESULT_SUCCESS and 
+    if not ok then
+        netmsgopt.send(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_MAINTAIN,
+        })
+        logining[fd] = nil
+        return
+    end
+
+    if  ok and
+        result ~= enum.LOGIN_RESULT_SUCCESS and 
         result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
         netmsgopt.send(fd,"LC_Auth",{
             result = result,
@@ -264,10 +266,10 @@ function MSG.CL_Auth(msg,session)
         logining[fd] = nil
         return
     end
+    
     logining[fd] = nil
 
     log.dump(userinfo)
-
 
     MSG.CL_Login({
         ip = msg.ip,
@@ -281,13 +283,6 @@ end
 function MSG.CL_Login(msg,session)
     log.dump(msg)
     local fd = session.fd
-
-    if is_maintain then
-        netmsgopt.send(fd,"LC_Login",{
-            result = enum.LOGIN_RESULT_MAINTAIN,
-        })
-        return
-    end
     
     if logining[fd] then
         netmsgopt.send(fd,"LC_Login",{
@@ -309,22 +304,29 @@ function MSG.CL_Login(msg,session)
 
     logining[fd] = true
 
-    local res
+    local ok,res
     if msg.account and msg.account ~= "" then
-        res = login_by_account(msg,session)
+        ok,res = login_by_account(msg,session)
     end
 
     if msg.open_id and msg.open_id ~= "" then
-        res = login_by_openid(msg,session)
+        ok,res = login_by_openid(msg,session)
     end
 
     if msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
-        res = login_by_sms(msg,session)
+        ok,res = login_by_sms(msg,session)
     end
 
     logining[fd] = nil
 
     log.dump(res)
+
+    if not ok then
+        netmsgopt.send(fd,"LC_Login",{
+            result = enum.LOGIN_RESULT_MAINTAIN
+        })
+        return
+    end
 
 	netmsgopt.send(fd,"LC_Login",res)
 end
