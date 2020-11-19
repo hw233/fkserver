@@ -76,18 +76,18 @@ function base_table:get_next_game_id()
 	local sround_id = string.format(
 		[[%03d-%03d-%04d-%s-%03d]], def_game_id, self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),math.floor((skynet.time() % 1) * 1000)
 	)
-	log.info(sround_id)
+	log.info("base_table:get_next_game_id table_id:%s,round:%s",self:id(),sround_id)
 	return sround_id
 end
 
 function base_table:get_ext_game_id()
 	local sext_round_id = string.format("%03d-%03d-%04d-%s-%06d",def_game_id,self.room_.id, self.table_id_,os.date("%Y%m%d%H%M%S"),math.random(1,100000))
-	log.info(sext_round_id)
+	log.info("base_table:get_ext_game_id table_id:%s,round:%s",self:id(),sext_round_id)
 	return sext_round_id
 end
 
 function base_table:hold_game_id()
-	self.round_id = self.round_id or self:get_ext_game_id()
+	self.round_id = self.round_id or self:get_next_game_id()
 	return self.round_id
 end
 
