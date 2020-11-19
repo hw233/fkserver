@@ -260,7 +260,7 @@ function gateserver.start(handler)
     local function dispatch_queue(fd)
         local framecode,msg,reason = ws_pick_msg(fd)
         if not framecode then
-            log.warning("websocket parse frame error:%s",msg)
+            log.warning("websocket parse frame got nil framecode,maybe lost connection:%s",msg)
             close(fd)
             return
         end
