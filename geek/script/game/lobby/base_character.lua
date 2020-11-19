@@ -137,7 +137,7 @@ function base_character:forced_exit(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
 	local chair_id = self.chair_id
 	local table_id = self.table_id
-	log.info("force exit,guid:%s,chair_id:%s,reason:%s",self.guid,self.chair_id,reason)
+	log.info("force exit,guid:%s,table_id:%s,chair_id:%s,reason:%s",self.guid,table_id,chair_id,reason)
 
 	local result = self:kickout_room(reason)
 	if result ~= enum.ERROR_NONE then
