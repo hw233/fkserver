@@ -770,17 +770,16 @@ function base_table:cancel_ready_timer()
 	self.ready_timer = nil
 end
 
-function base_table:kickout_players_when_ext_round_over()
+function base_table:can_kickout_when_round_over(p)
+	local club = self.conf.club
+	return p.inactive or p.trustee or not club or club:can_sit_down(self.rule,p) ~= enum.ERROR_NONE
+end
+
+function base_table:kickout_players_when_round_over()
 	local club = self.conf.club
 	self:foreach(function(p)
-		if p.inactive or p.trustee then 
+		if self:can_kickout_when_round_over(p) then 
 			p:forced_exit(enum.STANDUP_REASON_NORMAL)
-			return
-		end
-
-		if club and not club:can_sit_down(self.rule,p) then
-			p:forced_exit(enum.STANDUP_REASON_NORMAL)
-			return
 		end
 	end)
 end
@@ -834,7 +833,7 @@ function base_table:on_game_overed()
 
 	if self:gaming_round() >= self:total_round() then
 		self:on_final_game_overed()
-		self:kickout_players_when_ext_round_over()
+		self:kickout_players_when_round_over()
 		if self:is_private() then
 			local club = self.club_id and base_clubs[self.club_id] or nil
 			if club then
@@ -1487,7 +1486,14 @@ function base_table:player_stand_up(player, reason)
 				self:do_dismiss(dismiss_reason[reason])
 			else
 				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
-				self:check_start()
+				if 	reason == enum.STANDUP_REASON_OFFLINE or
+					reason == enum.STANDUP_REASON_NORMAL or
+					reason == enum.STANDUP_REASON_FORCE or
+					reason == enum.STANDUP_REASON_BANKRUPCY or
+					reason == enum.STANDUP_REASON_NO_READY_TIMEOUT
+				then
+					self:check_start()
+				end
 			end
 
 			reddb:hdel("player:online:guid:"..tostring(guid),"global_table")

@@ -384,30 +384,9 @@ function base_club:is_team_credit_block_play(guid)
 end
 
 function base_club:create_table(player,chair_count,round,rule,template)
-    local member = club_member[self.id][player.guid]
-    if not member then
-        log.warning("create club table,but guid [%s] not exists",player.guid)
-        return enum.ERROR_NOT_MEMBER
-    end
-
-    if self:is_close() then
-        return enum.ERROR_CLUB_CLOSE
-    end
-
-    if self:is_block() then
-        return enum.ERROR_CLUB_BLOCK
-    end
-
-    if self:is_block_gaming(player) then
-        return enum.ERROR_BLOCK_GAMING
-    end
-
-    if rule and not self:can_sit_down(rule,player) then
-        return enum.ERROR_LESS_MIN_LIMIT
-    end
-
-    if self:is_team_credit_block_play(player.guid) then
-        return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    local result = self:can_sit_down(rule,player)
+    if result ~= enum.ERROR_NONE then
+        return result
     end
 
     local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,rule,self)
@@ -427,14 +406,38 @@ end
 
 --玩家坐下积分检测
 function base_club:can_sit_down(rule,player)
-    if not rule or not rule.union then
-        return true
+    local member = club_member[self.id][player.guid]
+    if not member then
+        log.warning("create club table,but guid [%s] not exists",player.guid)
+        return enum.ERROR_NOT_MEMBER
     end
 
-    local entry_score = rule.union.entry_score or 0
-    local money_id = club_money_type[self.id]
-    local money = player_money[player.guid][money_id]
-    return money >= entry_score
+    if self:is_close() then
+        return enum.ERROR_CLUB_CLOSE
+    end
+
+    if self:is_block() then
+        return enum.ERROR_CLUB_BLOCK
+    end
+
+    if self:is_block_gaming(player) then
+        return enum.ERROR_BLOCK_GAMING
+    end
+
+    if rule and rule.union and self.type == enum.CT_UNION then
+        local entry_score = rule.union.entry_score or 0
+        local money_id = club_money_type[self.id]
+        local money = player_money[player.guid][money_id]
+        if money < entry_score then
+            return enum.ERROR_LESS_MIN_LIMIT
+        end
+    end
+    
+    if self:is_team_credit_block_play(player.guid) then
+        return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    end
+
+    return enum.ERROR_NONE
 end
 
 --玩家积分破产
@@ -540,28 +543,17 @@ function base_club:is_block()
 end
 
 function base_club:join_table(player,private_table,chair_count)
-    if self:is_close() then
-        return enum.ERROR_CLUB_CLOSE
-    end
-
-    if self:is_block() then
-        return enum.ERROR_CLUB_BLOCK
-    end
-
-    if self:is_block_gaming(player) then
-        return enum.ERROR_BLOCK_GAMING
-    end
-
     local rule = private_table.rule
-    if rule and not self:can_sit_down(rule,player) then
-        return enum.ERROR_LESS_GOLD
-    end
-
-    if self:is_team_credit_block_play(player.guid) then
-        return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    local result = self:can_sit_down(rule,player)
+    if result ~= enum.ERROR_NONE then
+        return result
     end
 
     local tb = g_room:find_table(private_table.real_table_id)
+    if not tb then
+        return enum.GAME_SERVER_RESULT_TABLE_NOT_FOUND
+    end
+
     if  self:is_block_in_block_group(tb,player) or
         self:is_block_play_in_same_team_layer(tb,player) or
         self:is_block_in_same_team_branch(tb,player) or
