@@ -1458,7 +1458,7 @@ function base_table:player_stand_up(player, reason)
 				self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
 				return enum.GAME_SERVER_RESULT_WAIT_LATER
 			end
-			log.info("base_table:player_stand_up can_stand_up true.")
+			log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
 			local chairid = player.chair_id
 			local p = self.players[chairid]
 			local list_guid = p and p.guid or -1
