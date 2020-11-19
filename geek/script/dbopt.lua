@@ -72,7 +72,7 @@ local function fomrat_batch_sql(s)
 
 		local vargs = {}
 		for i = 2,#s do 
-			vargs[i - 1] = escape(s[i])
+			vargs[i - 1] = escape(s[i]) or 'NULL'
 		end
 
 		local sql = string.format(s[1],table.unpack(vargs))
