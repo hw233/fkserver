@@ -24,25 +24,25 @@ function on_sd_create_club(msg)
     local transqls = {
         {
             [[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s);]],
-            {club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()}
+            club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()
         },
         {
-            [[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],{club_info.id,club_info.owner}
+            [[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],club_info.id,club_info.owner
         },
         {   
             [[INSERT INTO t_club_money_type(money_id,club) VALUES(%d,%d);]],
-            {money_info.id,club_info.id}
+            money_info.id,club_info.id
         },
         {
-            [[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],{club_info.id,money_info.id,club_info.id}
+            [[INSERT INTO t_club_money(club,money_id,money) VALUES(%d,%d,0),(%d,0,0);]],club_info.id,money_info.id,club_info.id
         },
         {
             [[INSERT INTO t_club_member(club,guid) VALUES(%d,%d);]],
-            {club_info.id,club_info.owner}
+            club_info.id,club_info.owner
         },
         {
             [[INSERT IGNORE INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]],
-            {club_info.owner,money_info.id}
+            club_info.owner,money_info.id
         },
     }
 
@@ -78,7 +78,7 @@ function on_sd_join_club(msg)
 
     log.dump(sqls)
 
-    res = dbopt.game:batchquery(table.concat(sqls,"\n"))
+    res = dbopt.game:batchquery(sqls)
     if res.errno then
         log.error("on_sd_join_club error:%d,%s",res.errno,res.err)
         return

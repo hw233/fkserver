@@ -181,7 +181,7 @@ function on_sd_log_recharge(msg)
     }
 
     log.dump(sqls)
-    local res = dbopt.log:batchquery(table.concat(sqls,"\n"))
+    local res = dbopt.log:batchquery(sqls)
     if res.errno then
         log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
         return

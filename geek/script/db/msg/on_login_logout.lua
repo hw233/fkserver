@@ -103,10 +103,9 @@ end
 function on_s_logout(msg)
 	-- 上次在线时间
 	local db = dbopt.account
-	local sql
 	local ret
 	if msg.phone then
-		ret = db:query([[
+		ret = dbopt.account:query([[
 				UPDATE t_account SET 
 					login_time = FROM_UNIXTIME(%s), 
 					logout_time = FROM_UNIXTIME(%s),
@@ -123,7 +122,7 @@ function on_s_logout(msg)
 			msg.version, msg.channel_id, msg.package_name, 
 			msg.imei, msg.ip, msg.guid)
 	else
-		ret = db:query([[
+		ret = dbopt.account:query([[
 				UPDATE t_account SET 
 					login_time = FROM_UNIXTIME(%s), 
 					logout_time = FROM_UNIXTIME(%s) 
@@ -1776,7 +1775,6 @@ function on_ld_reg_account(msg)
 				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,union_id,promoter,channel_id,created_time) 
 				VALUES(%d,'%s','%s','%s','%s','%s','%s',%s,'%s',NOW())
 			]],
-		{
 			guid,
 			msg.account,
 			msg.nickname,
@@ -1786,9 +1784,9 @@ function on_ld_reg_account(msg)
 			msg.union_id or "",
 			msg.promoter or "NULL",
 			msg.channel_id or ""
-		}},
+		},
 		{	[[INSERT INTO t_player_money(guid,money_id) VALUES(%d,0),(%d,-1)]],
-			{guid,guid}
+			guid,guid
 		},
 	}
 
@@ -2692,14 +2690,14 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 	log.info("%s,%s,%s,%s,%s",guid,money_id,money,where,why)
 	local res = dbopt.game:batchquery({
 			{
-				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],{guid,money_id,where}
+				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where
 			},
 			{
 				[[INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = money + (%s);]],
-				{guid,money_id,money,where,money}
+				guid,money_id,money,where,money
 			},
 			{
-				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],{guid,money_id,where}
+				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where
 			},
 		});
 	if res.errno then
@@ -2750,12 +2748,12 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
-		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{- amount,club_id,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],{amount,guid,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],- amount,club_id,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where` = 0;]],amount,guid,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id},
 	}
 
 	local gamedb = dbopt.game
@@ -2781,13 +2779,13 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	local logsqls = {
 		{
 			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-			{club_id,money_id,old_club_money,new_club_money,why,why_ext}
+			club_id,money_id,old_club_money,new_club_money,why,why_ext
 		},
 		{	
 			[[
 			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 			VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-			]],{guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()}
+			]],guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()
 		},
 	}
 	res = dbopt.log:batchquery(logsqls)
@@ -2831,14 +2829,14 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	local logsqls = {
 		{
 			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-			{club_id,money_id,old_club_money,new_club_money,why,why_ext}
+			club_id,money_id,old_club_money,new_club_money,why,why_ext
 		},
 		{
 			[[
 			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 			VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
 			]],
-			{guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()}
+			guid,money_id,old_player_money,new_player_money,why,why_ext,timer.milliseconds_time()
 		},
 	}
 	res = dbopt.log:batchquery(logsqls)
@@ -2886,11 +2884,11 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	local logsqls = {
 		{
 			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-			{club_id_from,money_id,old_from_money,new_from_money,why,why_ext}
+			club_id_from,money_id,old_from_money,new_from_money,why,why_ext
 		},
 		{
 			[[INSERT INTO t_log_money_club(club,money_id,old_money,new_money,opt_type,opt_ext) VALUES(%d,%d,%d,%d,%d,'%s');]],
-			{club_id_to,money_id,old_to_money,new_to_money,why,why_ext},
+			club_id_to,money_id,old_to_money,new_to_money,why,why_ext,
 		}
 	}
 
@@ -2944,14 +2942,14 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
 			]],
-			{from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.milliseconds_time()}
+			from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.milliseconds_time()
 		},
 		{
 			[[
 				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
 				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
 			]],
-			{to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.milliseconds_time()}
+			to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.milliseconds_time()
 		},
 	}
 
@@ -3012,22 +3010,26 @@ function on_sd_update_player_info(msg)
 		return
 	end
 
+	local args = {}
 	local sql = "UPDATE t_player SET "
 	if msg.nickname then
-		sql = sql .. string.format(" nickname = '%s'",dbopt.escapefield(msg.nickname))
+		sql = sql .. " nickname = '%s'";
+		table.insert(args, msg.nickname)
 	end
 
 	if msg.icon then
-		sql = sql .. string.format(", head_url = '%s'",msg.icon)
+		sql = sql ..  ", head_url = '%s'"
+		table.insert(args, msg.icon)
 	end
 
 	if msg.phone then
-		sql = sql .. string.format(", phone = '%s'",dbopt.escapefield(msg.phone))
+		sql = sql .. ", phone = '%s'"
+		table.insert(args, msg.phone)
 	end
 
 	sql = sql .. string.format(" WHERE guid = %s;",guid)
 
-	local r = dbopt.game:batchquery(sql)
+	local r = dbopt.game:batchquery(sql,table.unapck(args))
 	if r.errno then
 		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
 	end

@@ -70,7 +70,11 @@ local function fomrat_batch_sql(s)
 			return uniform_sql_quota(s[1])
 		end
 
-		local vargs = table.series(s[2],escape)
+		local vargs = {}
+		for i = 2,#s do 
+			vargs[i - 1] = escape(s[i])
+		end
+
 		local sql = string.format(s[1],table.unpack(vargs))
 		sql = uniform_sql_quota(sql)
 		return sql
