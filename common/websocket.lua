@@ -208,7 +208,7 @@ end
 function ws.parse_frame(readbytes)
     local data, err = readbytes(2)
     if not data then
-        return nil, nil, "Read first 2 byte error: " .. tostring(err)
+        return nil, nil, "Read first 2 byte got nil: " .. tostring(err)
     end
 
     local header, payloadlen = string.unpack(">BB", data)
