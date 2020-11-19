@@ -21,6 +21,20 @@ function channel.call(id,proto,cmd,...)
     return table.unpack(rets)
 end
 
+function channel.pcall(id,proto,cmd,...)
+    if id:match("%*") then
+        log.error("channel.pcall id include '*' to call multi target,id:%s",id)
+        return nil
+    end
+    local now = skynet.time()
+    local rets = {pcall(skynet.call,channeld,"lua","call",id,proto,cmd,...)}
+    local deltatime = skynet.time() - now
+    if deltatime > max_ttl then
+        log.warning("channel.pcall %s,%s,%s time > max_ttl %s",id,proto,cmd,deltatime)
+    end
+    return table.unpack(rets)
+end
+
 function channel.publish(id,proto,...)
     return skynet.send(channeld,"lua","publish",id,proto,...)
 end
