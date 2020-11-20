@@ -612,6 +612,8 @@ function zhajinhua_table:begin_start_ticker()
 			self:cancel_kickout_no_ready_timer()
 			if not self:is_play() then
 				self:start()
+			else
+				log.warning("zhajinhua_table:begin_start_ticker timeout table_id:%s is gaming.",self:id())
 			end
 		end)
 	end
