@@ -1,7 +1,7 @@
 include "path.lua"
 
 -- preload = "./examples/preload.lua"	-- run preload.lua before every lua service run
-thread = 40
+thread = 10
 logger = "service.logd"
 logservice = "snlua"
 harbor = 0
@@ -14,3 +14,4 @@ bootstrap = "snlua bootstrap"	-- The service for bootstrap
 cpath = root.."cservice/?.so"
 -- daemon = "./skynet.pid"
 lualoader = "./common/loader.lua"
+profile = true
