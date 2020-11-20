@@ -402,6 +402,7 @@ function zhajinhua_table:ding_zhuang(winner)
 end
 
 function zhajinhua_table:on_private_dismissed(reason)
+	log.info("zhajinhua_table:on_private_dismissed table_id:%s,reason:%s",self:id(),reason)
 	base_table.on_private_dismissed(self,reason)
 	self:stop_start_ticker()
 	self:cancel_clock_timer()
@@ -417,6 +418,7 @@ function zhajinhua_table:on_process_start(player_count)
 end
 
 function zhajinhua_table:on_process_over(reason)
+	log.info("zhajinhua_table:on_process_over table_id:%s,reason:%s",self:id(),reason)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
@@ -619,7 +621,7 @@ function zhajinhua_table:stop_start_ticker()
 end
 
 function zhajinhua_table:check_start(part)
-	log.info("check_start %s-----------------",self.table_id_)
+	log.info("zhajinhua_table:check_start %s-----------------",self.table_id_)
 	if self:is_play() then
 		return
 	end
@@ -628,7 +630,8 @@ function zhajinhua_table:check_start(part)
 	local player_count = table.nums(self.players)
 	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
 
-
+	log.info("zhajinhua_table:check_start table_id:%s,[%s,%s,%s],ext_status:%s",
+		self:id(),min_gamer_count,player_count,ready_count,self.ext_round_status)
 	if not self:is_round_gaming() then
 		if ready_count >= min_gamer_count then
 			if ready_count == player_count then
