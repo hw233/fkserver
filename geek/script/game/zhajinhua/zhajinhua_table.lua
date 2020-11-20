@@ -608,9 +608,11 @@ function zhajinhua_table:begin_start_ticker()
 	if trustee then
 		log.info("zhajinhua_table:begin_start_ticker table_id:%s",self:id())
 		self:begin_kickout_no_ready_timer(seconds,function()
-			log.info("zhajinhua_table:begin_start_ticker timeout,start,table_id:%s",self:id())
+			log.info("zhajinhua_table:begin_start_ticker timeout,start,table_id:%s,is_play:%s",self:id(),self:is_play())
 			self:cancel_kickout_no_ready_timer()
-			self:start()
+			if not self:is_play() then
+				self:start()
+			end
 		end)
 	end
 end
