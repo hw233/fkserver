@@ -99,8 +99,6 @@ function CMD.start(conf)
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
 
-	
-
 	local boot = require("game."..def_game_name..".bootstrap")
 	g_room = boot(gameconf)
 
@@ -116,17 +114,13 @@ function CMD.start(conf)
 	
 	local base_passive_android = base_passive_android
 	local room = g_room
-		
+	
 	local function on_tick()
-		timer_manager:tick()
 		base_players:save_all()
 		base_passive_android:on_tick()
 		room:tick()
-
-		skynet.timeout(4,on_tick)
 	end
-	
-	on_tick()
+	timer_manager:loop(1,on_tick)
 
 	init_server_online_count()
 
