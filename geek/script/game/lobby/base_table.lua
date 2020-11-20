@@ -1461,9 +1461,8 @@ function base_table:player_stand_up(player, reason)
 			log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
 			local chairid = player.chair_id
 			local p = self.players[chairid]
-			local list_guid = p and p.guid or -1
-			log.info("set guid[%s] table_id[%s] players[%s] is false [ player_list is %s , player_list.guid [%s]]",
-				guid,player.table_id,chairid , self.players[chairid], list_guid)
+			local list_guid = table.concat(table.extract(self.players,"guid"),",")
+			log.info("set guid[%s] table_id[%s] is false player_list [%s]",guid,table_id,chairid , list_guid)
 			self.player_count = self.player_count - 1
 			if self:is_ready(chairid) then
 				self:cancel_ready(chairid)
