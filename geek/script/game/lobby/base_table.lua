@@ -1685,8 +1685,10 @@ function base_table:ready(player)
 			return true
 		end
 
-		log.info("set tableid [%d] chair_id[%d]  ready_list is %s ",self.table_id_,player.chair_id,player.guid)
 		self.ready_list[player.chair_id] = player
+
+		log.info("set tableid [%d] chair_id[%d]  ready_list is [%s]",self:id(),player.chair_id,
+			table.concat(table.series(self.ready_list,function(p) return p.guid end),","))
 
 		-- 机器人准备
 		self:foreach(function(p)
@@ -2024,11 +2026,6 @@ function base_table:start(player_count)
 	log.info("base_table:start %s,%s",self.chair_count,player_count)
 	self:cancel_delay_dismiss()
 	self:cancel_all_delay_kickout()
-	local result_ = self:check_single_game_is_maintain()
-	if result_ == true then
-		log.info("game is maintain cant start roomid[%d] tableid[%d]" ,self.room_.id, self.table_id_)
-		return nil
-	end
 
 	if not self:is_round_gaming() then
 		self:on_process_start(player_count)
@@ -2117,7 +2114,6 @@ function base_table:private_init(private_id,rule,conf)
 	self.start_count = conf.chair_count
 	self.conf = conf
 	self:cancel_delay_dismiss()
-	self:cancel_all_delay_kickout()
 	self.ext_round_status = EXT_ROUND_STATUS.FREE
 	self.someone_trustee_round = nil
 	self.is_someone_trustee = nil
