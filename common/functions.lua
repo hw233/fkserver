@@ -904,7 +904,14 @@ function table.intersect(left,right,on)
     return inter
 end
 
-table.extract = table.series
+function table.extract(tb,field)
+    return table.series(tb,function(v) return v[field] end)
+end
+
+function table.tostring(tb)
+    return string.format("{%s}",table.concat(tb,","))
+end
+
 
 string._htmlspecialchars_set = {}
 string._htmlspecialchars_set["&"] = "&amp;"
