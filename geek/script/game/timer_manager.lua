@@ -47,13 +47,14 @@ function timer:restart(func)
 end
 
 function timer:kill()
-	if not self.id or not timer_manager.timers[self.id] then return end
     timer_manager:kill_timer(self)
 end
 
 
 function timer_manager:new_timer(time,func,name,is_repeat,init_pause)
-    if not time or type(time) ~= "number" or time <= 0 or type(func) ~= "function" then  return nil end
+	if not time or type(time) ~= "number" or time <= 0 or type(func) ~= "function" then  
+		return nil 
+	end
 	
 	if name and self.named_timers[name] then 
 		log.error("new timer error,name [%s] already exists",name)
@@ -78,10 +79,16 @@ function timer_manager:generate_id()
 end
 
 function timer_manager:kill_timer(name_or_id_or_timer)
-	if not name_or_id_or_timer then return end
+	if not name_or_id_or_timer then
+		log.warning("timer_manager:kill_timer got nil timer id.")
+		return 
+	end
 
 	local timer = self:get_timer(name_or_id_or_timer)
-	if not timer then return end
+	if not timer then 
+		log.warning("timer_manager:kill_timer no timer id:%s.",name_or_id_or_timer)
+		return 
+	end
 
 	if timer.id then 
 		self.timers[timer.id] = nil 
