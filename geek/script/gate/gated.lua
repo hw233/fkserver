@@ -129,8 +129,6 @@ local function guid_monitor()
             end
         end
     end
-
-    skynet.timeout(2 * 100,guid_monitor)
 end
 
 skynet.init(function()
@@ -138,7 +136,8 @@ skynet.init(function()
 end)
 
 skynet.start(function()
-    guid_monitor()
+    local timermgr = require "timermgr"
+    timermgr:loop(2,guid_monitor)
 end)
 
 msgserver.start(server)
