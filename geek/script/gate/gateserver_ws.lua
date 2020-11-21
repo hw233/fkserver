@@ -224,7 +224,7 @@ function gateserver.start(handler)
             dispatch_msg(fd,msg)
         end,
         [ws.OPCODE_PING] = function(fd,msg,_)
-            socketdriver.send(fd,ws.build_pong())
+            socketdriver.send(fd,ws.build_pong(msg))
         end,
         [ws.OPCODE_PONG] = function(fd,msg,_)
 
