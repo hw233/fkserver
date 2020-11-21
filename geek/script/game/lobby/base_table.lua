@@ -1378,9 +1378,7 @@ function base_table:delay_kickout(player,reason)
 	log.info("delay_kickout %s",player.guid)
 	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
 		self:cancel_delay_kickout(player)
-		if not self:is_round_gaming() then
-			player:forced_exit(reason)
-		end
+		player:forced_exit(reason)
 	end)
 end
 
@@ -1455,7 +1453,7 @@ function base_table:player_stand_up(player, reason)
 				reason == enum.STANDUP_REASON_OFFLINE
 			then
 				self:on_offline(player)
-				self:delay_kickout(player,enum.STANDUP_REASON_NO_READY_TIMEOUT)
+				self:delay_kickout(player,enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT)
 				return enum.GAME_SERVER_RESULT_WAIT_LATER
 			end
 			log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
@@ -1730,7 +1728,8 @@ function base_table:can_stand_up(player,reason)
 	log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
     if reason == enum.STANDUP_REASON_NORMAL or
 		reason == enum.STANDUP_REASON_OFFLINE or
-		reason == enum.STANDUP_REASON_FORCE
+		reason == enum.STANDUP_REASON_FORCE or 
+		reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT
 	then
         return not self:is_play(player) and not self:is_round_gaming()
 	end
