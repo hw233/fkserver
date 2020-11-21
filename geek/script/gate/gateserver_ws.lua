@@ -158,7 +158,7 @@ function gateserver.start(handler)
     local function close_fd(fd)
 		local c = connection[fd]
         if c then
-            log.warning("close_fd,fd:%d,addr:%s",fd,c.addr)            
+            log.warning("close_fd,fd:%s,addr:%s",fd,c.addr)            
             if c.co then
                 wakeup(c)
             end
@@ -167,20 +167,24 @@ function gateserver.start(handler)
 				handler.disconnect(fd)
             end
 
-			client_number = client_number - 1
+            client_number = client_number - 1
+        else
+            log.error("close_fd %s,got nil session.")
 		end
 	end
 
     local function close(fd)
+        log.warning("socket close %s",fd)
         if fd ~= socket then
 			close_fd(fd)
         else
-            log.warning("listen fd: %d closed...",socket)
+            log.warning("listen fd: %s closed...",socket)
 			socket = nil
 		end
     end
 
     local function error(fd,msg)
+        log.error("socket error,%s,%s",fd,msg)
         if fd == socket then
 			socketdriver.close(fd)
 			log.error("gateserver_ws close listen socket, accpet error:",msg)
@@ -188,7 +192,7 @@ function gateserver.start(handler)
 			if handler.error then
 				handler.error(fd, msg)
 			end
-			close_fd(fd)
+			close(fd)
 		end
     end
 
@@ -208,12 +212,12 @@ function gateserver.start(handler)
 
     local function ws_close(fd,code,reason)
         log.warning("websocket close,%d code:%s,reason:%s",fd,code,reason)
-        close(fd)
+        close_fd(fd)
+        socketdriver.close(fd)
     end
     
     local ws_frame_dispatch = {
-        [ws.OPCODE_CLOSE] = function(fd,msg,reason)
-            local code = msg
+        [ws.OPCODE_CLOSE] = function(fd,code,reason)
             ws_close(fd,code,reason)
         end,
         [ws.OPCODE_BINARY] = function(fd,msg,_)
@@ -294,18 +298,13 @@ function gateserver.start(handler)
         skynet.fork(dispatch_queue,fd)
     end
 
-    local function socket_close(fd,...)
-        log.warning("socket close %d",fd)
-        close_fd(fd)
-    end
-    
     local socket_message = {
         -- SKYNET_SOCKET_TYPE_DATA = 1
         [1] = data,
         -- SKYNET_SOCKET_TYPE_CONNECT = 2
         [2] = function(fd, _ , addr) end,
         -- SKYNET_SOCKET_TYPE_CLOSE = 3
-        [3] = socket_close,
+        [3] = close,
         -- SKYNET_SOCKET_TYPE_ACCEPT = 4
         [4] = open,
         -- SKYNET_SOCKET_TYPE_ERROR = 5
