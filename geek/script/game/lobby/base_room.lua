@@ -662,9 +662,10 @@ function base_room:kickout_room(player,reason)
 	local guid = player.guid
 	local table_id = player.table_id
 	local chair_id = player.chair_id
-	log.info("base_room:kickout_room guid[%d],offline:%s",guid,offline)
+	log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
+		guid,table_id,chair_id,reason)
 	if not table_id or not chair_id then
-		log.warning("base_room:kickout_room,player:%s table_id or chair_id is nil,exit.",guid)
+		log.warning("base_room:kickout_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
 		self:player_kickout_room(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
@@ -691,9 +692,10 @@ function base_room:kickout_server(player,reason)
 	local guid = player.guid
 	local table_id = player.table_id
 	local chair_id = player.chair_id
-	log.info("base_room:kickout_server guid[%d],offline:%s",guid,offline)
+	log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
+		guid,table_id,chair_id,reason)
 	if not table_id or not chair_id then
-		log.warning("base_room:kickout_server,player:%s table_id or chair_id is nil,exit.",guid)
+		log.warning("base_room:kickout_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
 		self:player_kickout_server(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
@@ -720,9 +722,10 @@ function base_room:exit_room(player,reason)
 	local guid = player.guid
 	local table_id = player.table_id
 	local chair_id = player.chair_id
-	log.info("base_room:exit_room guid[%d],offline:%s",guid,offline)
+	log.info("base_room:exit_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
+		guid,table_id,chair_id,reason)
 	if not table_id or not chair_id then
-		log.warning("base_room:exit_room,player:%s table_id or chair_id is nil,exit.",guid)
+		log.warning("base_room:exit_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
 		self:player_exit_room(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
@@ -751,9 +754,10 @@ function base_room:exit_server(player,offline)
 	local guid = player.guid
 	local table_id = player.table_id
 	local chair_id = player.chair_id
-	log.info("base_room:exit_server guid[%d],offline:%s",guid,offline)
+	log.info("base_room:exit_server guid[%d],table_id:%s,chair_id:%s,offline:%s",
+		guid,table_id,chair_id,offline)
 	if not table_id or not chair_id then
-		log.warning("base_room:exit_server,player:%s table_id or chair_id is nil,exit.",guid)
+		log.warning("base_room:exit_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
 		self:player_exit_room(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
