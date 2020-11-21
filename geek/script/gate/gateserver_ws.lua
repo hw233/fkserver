@@ -155,28 +155,28 @@ function gateserver.start(handler)
         end
     end
 
-    local function close_fd(fd)
-		local c = connection[fd]
-        if c then
-            log.warning("close_fd,fd:%s,addr:%s",fd,c.addr)            
-            if c.co then
-                wakeup(c)
-            end
-            connection[fd] = nil
-            if handler.disconnect then
-				handler.disconnect(fd)
-            end
+    local function close_session(fd)
+        log.warning("close_session,fd:%s",fd)
+        local c = connection[fd]
+        if not c then 
+            return 
+        end
 
-            client_number = client_number - 1
-        else
-            log.error("close_fd %s,got nil session.")
-		end
+        connection[fd] = nil        
+        if c.co then
+            wakeup(c)
+        end
+        if handler.disconnect then
+            handler.disconnect(fd)
+        end
+
+        client_number = client_number - 1
 	end
 
     local function close(fd)
         log.warning("socket close %s",fd)
         if fd ~= socket then
-			close_fd(fd)
+			close_session(fd)
         else
             log.warning("listen fd: %s closed...",socket)
 			socket = nil
@@ -212,7 +212,6 @@ function gateserver.start(handler)
 
     local function ws_close(fd,code,reason)
         log.warning("websocket close,%d code:%s,reason:%s",fd,code,reason)
-        close_fd(fd)
         socketdriver.close(fd)
     end
     
@@ -264,8 +263,11 @@ function gateserver.start(handler)
     local function dispatch_queue(fd)
         local framecode,msg,reason = ws_pick_msg(fd)
         if not framecode then
+            local c = connection[fd]
+            if c then
+                close(c.fd)
+            end
             log.warning("websocket parse frame got nil framecode,maybe lost connection:%s",msg)
-            close(fd)
             return
         end
 
