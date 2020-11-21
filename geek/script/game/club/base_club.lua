@@ -267,8 +267,15 @@ function base_club:join(guid,inviter)
 end
 
 function base_club:full_join(guid,inviter,team_id)
-    inviter = inviter or self.owner
-    team_id = team_id or inviter
+    if self.type == enum.CT_UNION then
+        if inviter and club_role[self.id][inviter] == enum.CRT_ADMIN then
+            team_id = self.owner
+        else
+            team_id = team_id or inviter or self.owner
+        end
+    else
+        team_id = self.owner
+    end
     local inviter_role = club_role[self.id][inviter]
     if not inviter_role or inviter_role == enum.CRT_PLAYER then
         return enum.ERROR_PLAYER_NO_RIGHT
