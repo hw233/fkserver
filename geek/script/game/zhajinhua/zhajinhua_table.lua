@@ -1353,7 +1353,7 @@ function zhajinhua_table:compare(player, msg)
 	end
 
 	if player.all_in or target.all_in or player.death or target.death then
-		log.error("table_id[%s]:compare error compare [%s]vs[%s]  is dead",self.table_id_, player.guid,target.guid)
+		log.error("table_id[%s]:compare anyone [%s]vs[%s]  is dead",self.table_id_, player.guid,target.guid)
 		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
