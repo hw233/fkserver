@@ -40,22 +40,14 @@ function CMD.login(source, u)
     channel.subscribe("guid."..tostring(guid),skynet.self())
 end
 
-local function logout(...)
-	if gate then
-		skynet.call(gate, "lua", "logout", guid)
-	end
-	skynet.exit()
-end
-
 local function afk(...)
     log.warning("afk,guid:%s",guid)
     if not inserverid then
-        logout()
+        log.warning("afk,guid:%s,not in server,%s",guid,inserverid)
         return
     end
 
     channel.call("service."..tostring(inserverid),"lua","afk",guid,true)
-    logout()
 end
 
 function CMD.logout(...)
@@ -65,10 +57,6 @@ end
 
 function CMD.afk(...)
     afk()
-end
-
-function CMD.kickout()
-    skynet.exit()
 end
 
 function CMD.goserver(_,id)
@@ -90,8 +78,6 @@ function MSG.C_RequestPublicKey(msg)
         public_key = rsa_public_key,
     })
 end
-
-
 
 function MSG.CL_GetInviterInfo(msg) 
     if not msg.invite_code then

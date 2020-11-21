@@ -259,7 +259,7 @@ function on_cs_logout(guid,fd)
 
 	local os = onlineguid[guid]
 	local result = g_room:kickout_server(player,enum.STANDUP_REASON_NORMAL)
-	channel.publish("gate."..tostring(os.gate),"lua","sc_logout",fd,{
+	channel.publish("gate."..tostring(os.gate),"lua","sc_logout",guid,{
 		result = result,
 	})
 end

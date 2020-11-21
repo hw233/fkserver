@@ -1,7 +1,6 @@
 local skynet = require "skynetproto"
 local assert = assert
 local log = require "log"
-local netmsgopt = require "netmsgopt"
 
 local protocol = protocol
 local gateserver
@@ -10,7 +9,7 @@ local server = {}
 
 local connection = {}
 
-function server.close(fd)
+function server.closeclient(fd)
 	local u = connection[fd]
 	connection[fd] = nil
 
@@ -25,16 +24,14 @@ function server.ip(fd)
 end
 
 function server.start(conf)
+	local protocol = conf.protocol
 	gateserver = require(protocol == "ws" and "gate.gateserver_ws" or "gate.gateserver")
 
 	local expired_number = conf.expired_number or 128
 
-	local handler = {}
-
-	function handler.command(cmd, source, ...)
-		local f = assert(conf[cmd])
-		return f(...)
-	end
+	local handler = {
+		conf = conf,
+	}
 
 	function handler.open(source, gateconf)
 		
@@ -51,6 +48,10 @@ function server.start(conf)
 			expired = false,
 			open_time = os.time(),
 		}
+
+		if conf.connect_handler then
+			conf.connect_handler(fd,addr)
+		end
 	end
 
 	function handler.disconnect(fd)
@@ -89,7 +90,8 @@ function server.start(conf)
 		return do_request(fd,msgstr)
 	end
 
-	return gateserver.start(handler)
+	gateserver.start(handler)
+	gateserver.open(conf)
 end
 
 return server

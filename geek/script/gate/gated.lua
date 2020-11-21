@@ -1,22 +1,21 @@
-local netmsgopt = require "netmsgopt"
 
-local loginservice,gateid,proto = ...
-loginservice = tonumber(loginservice)
-protocol = tostring(proto)
-gateid = tonumber(gateid)
+
 
 local skynet = require "skynetproto"
 local msgserver = require "gate.msgserver"
 local log = require "log"
-
+local netmsgopt = require "netmsgopt"
+local channel = require "channel"
+require "skynet.manager"
 require "functions"
 
 LOG_NAME = "gate"
 
-netmsgopt.protocol(protocol)
+local loginservice = nil
+local protocol = nil
 
 local onlineguid = {}
-local fdsession = {}
+local fduser = {}
 local heartbeat_check_time = 12
 
 local LOGIN_HANDLE = {
@@ -24,48 +23,24 @@ local LOGIN_HANDLE = {
     CL_Login = true,
 }
 
+local CMD = {}
 
-local server = {}
-
-function server.login(fd,guid,inserverid,conf)
-    local s = onlineguid[guid] or fdsession[fd]
-    if s then
-        if s.fd == fd and s.guid == guid then
-            log.warning(" %d login repeated!",guid)
-            return
-        end
-        server.kickout(s.guid)
-    end
-
-    local agent = skynet.newservice("gate.agent",skynet.self(),protocol,inserverid)
-	local u = {
-		agent = agent,
-        guid = guid,
-        fd = fd,
-        ip = msgserver.ip(fd),
-        conf = conf,
-    }
-
-	skynet.call(agent, "lua", "login", u)
-    onlineguid[guid] = u
-    fdsession[fd] = u
-end
-
-function server.logout(guid)
-	local u = onlineguid[guid]
-    if u then
+local function logout(guid)
+    local u = onlineguid[guid]
+    if u and u.guid then
         log.warning("%s logout",guid)
-        pcall(skynet.call,loginservice, "lua", "logout",u.fd)
+        skynet.kill(u.agent)
         onlineguid[guid] = nil
-        fdsession[u.fd] = nil
+        fduser[u.fd] = nil
 	end
 end
 
-function server.kickout(guid)
+local function kickout(guid)
+    log.info("kickout %s",guid)
     local u = onlineguid[guid]
     if u then
-        pcall(skynet.call, u.agent, "lua", "kickout")
-        fdsession[u.fd] = nil
+        skynet.kill(u.agent)
+        fduser[u.fd] = nil
         netmsgopt.send(u.fd,"SC_Logout",{
             result = 0,
         })
@@ -73,57 +48,171 @@ function server.kickout(guid)
     onlineguid[guid] = nil
 end
 
-function server.maintain(switch)
+local function afk(fd)
+    local u  = fduser[fd]
+    if not u then
+        pcall(skynet.call,loginservice, "lua", "afk",fd)
+        return
+    end
+
+    logout(u.guid)
+    pcall(skynet.call,u.agent, "lua", "afk")
+end
+
+local function login(fd,guid,server,conf)
+    local s = onlineguid[guid] or fduser[fd]
+    if s then
+        if s.fd == fd and s.guid == guid then
+            log.warning(" %d login repeated!",guid)
+            return
+        end
+        kickout(s.guid)
+    end
+
+    local agent = skynet.newservice("gate.agent",skynet.self(),protocol,server)
+	local u = {
+		agent = agent,
+        guid = guid,
+        fd = fd,
+        ip = msgserver.ip(fd),
+        conf = conf,
+        server = server,
+    }
+
+	skynet.call(agent, "lua", "login", u)
+    onlineguid[guid] = u
+    fduser[fd] = u
+end
+
+function CMD.login(fd,guid,server,conf)
+    login(fd,guid,server,conf)
+end
+
+function CMD.logout(guid)
+	logout(guid)
+end
+
+function CMD.kickout(guid)
+    kickout(guid)
+end
+
+function CMD.maintain(switch)
     skynet.call(loginservice,"lua","maintain",switch)
 end
 
-function server.sc_logout(fd,...)
-    netmsgopt.send(fd,"SC_Logout",...)
+function CMD.sc_logout(guid)
+    log.info("sc_logout %s",guid)
+    kickout(guid)
 end
 
-function server.disconnect_handler(c)
-	local u = fdsession[c.fd]
-	if u and u.agent then
-        pcall(skynet.call,u.agent, "lua", "afk")
-    else
-        pcall(skynet.call,loginservice,"lua","logout",c.fd)
-	end
+function CMD.forward(who,proto,...)
+    channel.publish(who,proto,...)
 end
 
-function server.request_handler(msgstr,session)
-    local fd = session and session.fd or nil
-    if not session or not fd then
-        log.error("request_handler but no connection")
+local function checkgateconf(conf)
+    assert(conf)
+    assert(conf.id)
+    assert(conf.type)
+    assert(conf.name)
+end
+
+function CMD.start(conf)
+    checkgateconf(conf)
+    local sconf = conf
+    local gateid = conf.id
+
+    LOG_NAME = "gate." .. gateid
+
+    if not sconf or sconf.is_launch == 0 or not sconf.conf then
+        log.error("launch a unconfig or unlaunch gate service,service:%d.",gateid)
         return
     end
 
-    local u = fdsession[fd]
+    local gateconf = sconf.conf
+    protocol = gateconf.protocol
+    netmsgopt.protocol(protocol)
 
-    local msgid,str = netmsgopt.unpack(msgstr)
-    local msg = netmsgopt.decode(msgid,str)
-    local msgname = netmsgopt.msgname(msgid)
-    if msgname ~= "CS_HeartBeat" then
-        log.info("gated.dispatch %s,%s",msgname,u and u.guid or fd)
-        log.dump(msg)
+    local host,port = gateconf.host,gateconf.port
+    if not port then
+        host,port = host:match("([^:]+):(%d+)")
+        port = tonumber(port)
     end
 
-    if not u or not u.guid or LOGIN_HANDLE[msgname] then
-        skynet.send(loginservice,"client",msgname,msg,session)
-        return
+    loginservice = skynet.newservice("gate.logind",skynet.self(),gateid,protocol)
+
+    local is_maintain = channel.call("config.?","msg","maintain")
+    log.dump(is_maintain)
+    skynet.call(loginservice,"lua","maintain",is_maintain)
+
+    local server = {
+        host = host,
+        port = port,
+        protocol = protocol
+    }
+
+    function server.disconnect_handler(c)
+        local u = fduser[c.fd]
+        if u and u.agent then
+            pcall(skynet.call,u.agent, "lua", "afk")
+            logout(u.guid)
+        else
+            pcall(skynet.call,loginservice,"lua","logout",c.fd)
+        end
     end
 
-    u.last_live_time = os.time()
+    function server.request_handler(msgstr,session)
+        local fd = session and session.fd or nil
+        if not session or not fd then
+            log.error("request_handler but no connection")
+            return
+        end
 
-    skynet.send(u.agent,"client",msgname,msg)
+        local u = fduser[fd]
+
+        local msgid,str = netmsgopt.unpack(msgstr)
+        local msg = netmsgopt.decode(msgid,str)
+        local msgname = netmsgopt.msgname(msgid)
+        if msgname ~= "CS_HeartBeat" then
+            log.info("gated.dispatch %s,guid:%s,fd:%s",msgname,u and u.guid,fd)
+            log.dump(msg)
+        end
+
+        if not u or not u.guid or LOGIN_HANDLE[msgname] then
+            skynet.send(loginservice,"client",msgname,msg,session)
+            return
+        end
+
+        u.last_live_time = os.time()
+
+        skynet.send(u.agent,"client",msgname,msg)
+    end
+
+    msgserver.start(server)
+end
+
+local FORWARD = {}
+
+function FORWARD.forward(who,...)
+    channel.publish("guid."..tostring(who),"forward",...)
+end
+
+function FORWARD.broadcast(whos,...)
+    for _,guid in pairs(whos) do
+        channel.publish("guid."..tostring(guid),"forward",...)
+    end
+end
+
+function FORWARD.lua(who,...)
+    channel.publish("guid."..tostring(who),"lua",...)
 end
 
 local function guid_monitor()
     for _,u in pairs(onlineguid) do
         local last_live_time = u.last_live_time
         if last_live_time and os.time() - last_live_time > heartbeat_check_time then
-            pcall(skynet.call,u.agent, "lua", "afk")
+            afk(u.fd)
             if u.fd then
-                msgserver.close(u.fd)
+                msgserver.closeclient(u.fd)
             else
                 log.error("guid_monitor close socket got nil fd,guid:%s",u.guid)
             end
@@ -131,16 +220,45 @@ local function guid_monitor()
     end
 end
 
-skynet.init(function()
-    skynet.call(loginservice,"lua","register_gate",skynet.self())
-end)
-
 skynet.start(function()
+    local handle = skynet.localname ".gate"
+    if handle then
+        log.error("same cluster launch too many gate service,exit %s.",skynet.self())
+        skynet.exit()
+        return handle
+    end
+
+    skynet.register_protocol {
+        name = "client",
+        id = skynet.PTYPE_CLIENT,
+        unpack = skynet.unpack,
+        pack = skynet.pack,
+    }
+
+    skynet.dispatch("client",function(_,_,guids,msg,...)
+        local f = FORWARD[msg]
+        if not f then
+            log.error("unknow cmd:%s",msg)
+            return
+        end
+
+        skynet.retpack(f(guids,...))
+    end)
+
+    skynet.dispatch("lua", function (_, address, cmd, ...)
+        local f = CMD[cmd]
+        if f then
+            skynet.retpack(f(...))
+        else
+            log.error("unkown cmd,%s",cmd)
+        end
+    end)
+
     local timermgr = require "timermgr"
     timermgr:loop(2,guid_monitor)
 end)
 
-msgserver.start(server)
+
 
 
 

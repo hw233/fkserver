@@ -3,12 +3,6 @@ local socketdriver = require "skynet.socketdriver"
 local ws = require "websocket"
 local log = require "log"
 
-skynet.register_protocol {
-    name = "client",
-    id = skynet.PTYPE_CLIENT,
-    unpack = skynet.unpack,
-    pack = skynet.pack,
-}
 
 local gateserver = {}
 
@@ -16,10 +10,9 @@ local socket	-- listen socket
 local maxclient	-- max client
 local client_number = 0
 local buffer_pool = {}
-local CMD = setmetatable({}, { __gc = function() socketdriver.clear(buffer_pool) end })
 local nodelay
 
-local connection = {}
+local connection = setmetatable({}, { __gc = function() socketdriver.clear(buffer_pool) end })
 
 local function wakeup(c)
     local co = c.co
@@ -117,28 +110,32 @@ function gateserver.closeclient(fd)
 	end
 end
 
-function gateserver.start(handler)
-	assert(handler.message)
-	assert(handler.connect)
+local handler 
 
-	function CMD.open( source, conf )
-		assert(not socket)
-		local address = conf.address or "0.0.0.0"
-		local port = assert(conf.port)
-		maxclient = conf.maxclient or 1024
-		nodelay = conf.nodelay
-		log.info("Listen on %s:%d", address, port)
-		socket = socketdriver.listen(address, port)
-		socketdriver.start(socket)
-		if handler.open then
-			return handler.open(source, conf)
-		end
-	end
-
-	function CMD.close()
-		assert(socket)
-		socketdriver.close(socket)
+function gateserver.open(conf)
+    assert(not socket)
+    local address = conf.address or "0.0.0.0"
+    local port = assert(conf.port)
+    maxclient = conf.maxclient or 1024
+    nodelay = conf.nodelay
+    log.info("Listen on %s:%d", address, port)
+    socket = socketdriver.listen(address, port)
+    socketdriver.start(socket)
+    if handler.open then
+        return handler.open(source, conf)
     end
+end
+
+function gateserver.close()
+    assert(socket)
+    socketdriver.close(socket)
+end
+
+function gateserver.start(conf)
+	assert(conf.message)
+    assert(conf.connect)
+    
+    handler = conf
 
     local function data(fd,size,msg) 
         local c = connection[fd]
@@ -325,17 +322,6 @@ function gateserver.start(handler)
             socket_message[t](...)
         end
     }
-
-	skynet.start(function()
-		skynet.dispatch("lua", function (_, address, cmd, ...)
-			local f = CMD[cmd]
-			if f then
-				skynet.ret(skynet.pack(f(address, ...)))
-			else
-				skynet.ret(skynet.pack(handler.command(cmd, address, ...)))
-			end
-		end)
-	end)
 end
 
 return gateserver

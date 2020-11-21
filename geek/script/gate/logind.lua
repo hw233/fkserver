@@ -15,19 +15,17 @@ local datacenter = require "skynet.datacenter"
 
 LOG_NAME = "gate.logind"
 
-local gateid,protocol = ...
+local gateservice,gateid,protocol = ...
 log.info("gate.logind protocol %s",protocol)
 netmsgopt.protocol(protocol)
 gateid = tonumber(gateid)
+gateservice = tonumber(gateservice)
 
 local rsa_public_key
 local logining = {}
 local sms = {}
 local sms_time_limit
-local gate
-local serviceid
 local is_maintain
-
 
 local function check_login_session(fd)
     return logining[fd]
@@ -35,15 +33,10 @@ end
 
 local CMD = {}
 
-function CMD.logout(fd)
+function CMD.afk(fd)
     if not fd then return end
     
     logining[fd] = nil
-end
-
-function CMD.register_gate(g)
-    assert(g)
-    gate = g
 end
 
 function CMD.maintain(switch)
@@ -106,7 +99,7 @@ function MSG.CL_RegAccount(msg,session)
     info.game_id = gameid
     log.info("login step MSG.CL_RegAccount,account=%s, session_id=%s", info.account, session.fd)
     if info.ret == enum.LOGIN_RESULT_SUCCESS then
-        skynet.call(gate,"lua","login",session.fd,info.guid,gameid,info)
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,gameid,info)
     end
 
     log.dump(info)
@@ -131,7 +124,7 @@ local function login_by_sms(msg,session)
             return
         end
 
-        skynet.call(gate,"lua","login",session.fd,info.guid,server,info)
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
     end
 
     log.dump(info)
@@ -155,7 +148,7 @@ local function login_by_openid(msg,session)
             return
         end
 
-        skynet.call(gate,"lua","login",session.fd,info.guid,server,info)
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
     end
 
     log.dump(info)
@@ -218,10 +211,10 @@ local function login_by_account(msg,session)
             return
         end
         
-        skynet.call(gate,"lua","login",session.fd,info.guid,info.game_id,info)
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,info.game_id,info)
     end
 
-    log.info( "login step gate.CL_Login,account=%s, session_id=%d", msg.account, fd )
+    log.info( "login step gateservice.CL_Login,account=%s, session_id=%d", msg.account, fd )
     return info
 end
 
@@ -375,7 +368,7 @@ end
 --     end
 
 --     if res.ret == LOGIN_RESULT_SUCCESS then
---         skynet.call(gate,"lua","login",session.fd,res.guid,res.game_id,res)
+--         skynet.call(gateservice,"lua","login",session.fd,res.guid,res.game_id,res)
 --     end
 
 --     --保存imei
@@ -406,7 +399,6 @@ function MSG.CS_HeartBeat(_,session)
         severTime = os.time(),
     })
 end
-
 
 function MSG.CG_GameServerCfg(msg,session)
     local player_platform_id = "0"

@@ -135,7 +135,6 @@ function gateserver.start(handler)
         end
 
         local sz = socketdriver.push(c.buffer, buffer_pool, msg, size)
-        log.dump(sz)
         if c.read_required and sz >= c.read_required then
             c.read_required = nil
             wakeup(c)
