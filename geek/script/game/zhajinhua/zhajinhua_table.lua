@@ -686,12 +686,19 @@ function zhajinhua_table:reconnect(player)
 	})
 
 	if self.status == TABLE_STATUS.PLAY then
-		send2client_pb(player,"SC_ZhaJinHuaTurn",{
+		local turn = {
 			chair_id = self.cur_chair,
-			actions = player.chair_id == self.cur_chair and 
-				table.series(self.waiting_actions[self.cur_chair],function(v,k) return v and k or nil end) or 
-				nil,
-		})
+		}
+
+		if 	player.chair_id == self.cur_chair and 
+			self.waiting_actions and 
+			self.waiting_actions[self.cur_chair] 
+		then
+			turn.actions = table.series(self.waiting_actions[self.cur_chair],function(v,k) 
+				return v and k or nil 
+			end)
+		end
+		send2client_pb(player,"SC_ZhaJinHuaTurn",turn)
 
 		if self.clock_timer then
 			self:begin_clock(self.clock_timer.remainder,player)
