@@ -32,7 +32,6 @@ local base_player = setmetatable({
 -- 初始化
 function base_player:init(guid_, account_, nickname_)
 	base_character.init(self,guid_,account_,nickname_)
-	self.online = true
 	self.game_end_event = {}
 	log.info("set player[%d] in_game true" ,self.guid)
 	self.player_count = self.player_count + 1
