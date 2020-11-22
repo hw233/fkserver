@@ -553,17 +553,19 @@ function on_cl_login(msg,gate,session_id)
     info = clone(info)
 
     -- 重连判断
+    --清空online信息，重接最新数据
+    onlineguid[info.guid] = nil
+
     local onlineinfo = onlineguid[info.guid]
     local game_id = tonumber(onlineinfo.server)
     local first_game_type = tonumber(onlineinfo.first_game_type)
     if game_id  and tonumber(first_game_type) ~= 1 then
         log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", info.guid, game_id, info.session_id, info.gate_id)
         info.result = enum.LOGIN_RESULT_SUCCESS
-        local reconnect = 1
-        info.reconnect = reconnect
+        info.reconnect = 1
         reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
 
-        channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,reconnect)
+        channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,true)
 
         log.dump(info)
 
@@ -611,7 +613,7 @@ function on_cl_login(msg,gate,session_id)
         login = def_game_id,
     })
 
-    channel.publish("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
+    channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
 
     log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
 
@@ -676,7 +678,7 @@ function on_cl_reg_account(msg,gate)
         gate = gate,
     })
 
-    channel.publish("game."..tostring(gameid),"msg","LS_LoginNotify",{
+    channel.pcall("game."..tostring(gameid),"msg","LS_LoginNotify",{
         player_login_info = info,
         password = msg.password,
     })
@@ -739,7 +741,7 @@ function on_L_KickClient(msg)
             reddb.hset("player:login:info",account_key,json.encode(info))
             reddb.hset("player:login:info:guid",info.guid,json.encode(info))
 
-            channel("game."..tostring(gameid),"LS_LoginNotify",{
+            channel.pcall("game."..tostring(gameid),"LS_LoginNotify",{
                 player_login_info = info,
             })
         end
