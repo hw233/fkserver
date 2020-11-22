@@ -606,17 +606,17 @@ function base_room:enter_room(player,reconnect)
 			def_game_name,def_game_id,guid)
 
 		-- 通知消息
-		if not player:is_android() then
-			local notify = {
-				room_id = self.id,
-				guid = player.guid,
-			}
-			self:foreach_by_player(function (p)
-				if p then
-					p:on_notify_enter_room(notify)
-				end
-			end)
-		end
+		-- if player:is_android() then
+		-- 	local notify = {
+		-- 		room_id = self.id,
+		-- 		guid = player.guid,
+		-- 	}
+		-- 	self:foreach_by_player(function (p)
+		-- 		if p then
+		-- 			p:on_notify_enter_room(notify)
+		-- 		end
+		-- 	end)
+		-- end
 
 		if reconnect then
 			local s = onlineguid[guid]
