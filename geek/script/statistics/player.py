@@ -33,6 +33,8 @@ db_engine = my_create_engine(
 )
 
 day_seconds = 60 * 60 * 24
+# 减5保证0点统计昨天数据
+now_timestamp = time.time() - 5
 
 log_create_table_sql = [
     "USE log;",
@@ -153,7 +155,7 @@ def pd_insert_or_update(dup_update_name):
 
 
 def player_play_count():
-    today = math.floor(time.time() / day_seconds)
+    today = math.floor(now_timestamp / day_seconds)
     sql = """
         INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
         SELECT pr.guid,r.club,r.game_id,COUNT(DISTINCT(r.round)) count,pr.create_time div 86400 * 86400 date FROM 
@@ -196,7 +198,7 @@ def deepest_members(alls):
     pass
 
 def club_team_play_count(cpcs):
-    today = math.floor(time.time() / day_seconds) * day_seconds
+    today = math.floor(now_timestamp / day_seconds) * day_seconds
     sons = club_deepest_members(cpcs)
     while len(sons) > 0:
         sons = cpcs[cpcs.partner.isin(sons.partner)]
@@ -211,7 +213,7 @@ def club_team_play_count(cpcs):
     return cpcs
 
 def team_play_count():
-    today = math.floor(time.time() / day_seconds) * day_seconds
+    today = math.floor(now_timestamp / day_seconds) * day_seconds
     members = pd.read_sql_query('SELECT club,guid,partner FROM game.t_partner_member;',db_engine)
     play_counts = pd.read_sql_query('SELECT club,guid,count,date FROM log.t_log_player_daily_play_count WHERE date >= {};'.format(today),db_engine)
     play_counts['club'].fillna(0,inplace=True)
@@ -289,7 +291,7 @@ def team_money():
 
 
 def player_commission_contribute():
-    today = math.floor(time.time() / day_seconds)
+    today = math.floor(now_timestamp / day_seconds)
     
     db_engine.execute('''
         INSERT INTO log.t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
@@ -304,7 +306,7 @@ def player_commission_contribute():
 
 
 def player_daily_win_lose():
-    today = math.floor(time.time() / day_seconds)
+    today = math.floor(now_timestamp / day_seconds)
     sql = """
         INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
         SELECT guid,r.club,r.game_id,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 date FROM 
@@ -324,7 +326,7 @@ def player_daily_win_lose():
     pass
 
 def player_daily_big_win_count():
-    today = math.floor(time.time() / day_seconds)
+    today = math.floor(now_timestamp / day_seconds)
     sql = """
         SELECT guid,r.club,r.game_id,r.round,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 date FROM 
 			t_log_money m

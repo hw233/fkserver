@@ -423,7 +423,7 @@ local function task(dbconf)
 end
 
 function player_statistics.setup()
-    create_table()
+    -- create_table()
 end
 
 function player_statistics.task(dbconf)
