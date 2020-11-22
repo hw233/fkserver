@@ -231,7 +231,13 @@ function logout(guid,offline)
 		player.online = nil
 	end
 
-	return g_room:exit_server(player,offline)
+	local result = g_room:exit_server(player,offline)
+	-- 不管是否掉线,退出成功,online空
+	if result == enum.ERROR_NONE then
+		player.online = nil
+	end
+
+	return result
 end
 
 function on_s_logout(msg)
