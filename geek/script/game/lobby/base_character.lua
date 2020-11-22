@@ -141,7 +141,7 @@ function base_character:forced_exit(reason)
 
 	local result = self:kickout_room(reason)
 	if result ~= enum.ERROR_NONE then
-		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,result %s,failed",
+		log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,reason:%s,result %s,failed",
 			self.guid,table_id,chair_id,reason,result)
 		return result
 	end
