@@ -594,46 +594,49 @@ function base_room:auto_enter_room(player)
 end
 
 -- 进入房间
-function base_room:enter_room(player)
-	if player.disable == 1 then
-		print("enter_room player is Freeaz forced_exit")
-		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
-	end
-
-	log.info("base_room:enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%s]",
-		def_game_name,def_game_id,self.game_switch_is_open)
-	if  self.game_switch_is_open == 1 then --游戏进入维护阶段
-		if player.vip ~= 100 then
-			send2client_pb(player, "SC_GameMaintain", {
-					result = enum.GAME_SERVER_RESULT_MAINTAIN,
-					})
-			log.warning("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id)
-			return 14
+function base_room:enter_room(player,reconnect)
+	return self:lockcall(function()
+		local guid = player.guid
+		if player.disable == 1 then
+			print("enter_room player is Freeaz forced_exit")
+			return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 		end
-	end
 
-	if player:check_money_limit(self:get_room_limit()) then
-		log.warning("guid[%d] check money limit fail,limit[%d],self[%s]",
-			player.guid, self:get_room_limit(), player.money)
-		return GAME_SERVER_RESULT_ROOM_LIMIT
-	end
+		log.info("base_room:enter_room,game_name = [%s],game_id =[%s],guid:%s",
+			def_game_name,def_game_id,guid)
 
-	-- 通知消息
-	local notify = {
-		room_id = self.id,
-		guid = player.guid,
-	}
-	if not player:is_android() then
-		self:foreach_by_player(function (p)
-			if p then
-				p:on_notify_enter_room(notify)
-			end
-		end)
-	end
+		-- 通知消息
+		if not player:is_android() then
+			local notify = {
+				room_id = self.id,
+				guid = player.guid,
+			}
+			self:foreach_by_player(function (p)
+				if p then
+					p:on_notify_enter_room(notify)
+				end
+			end)
+		end
 
-	self:player_enter_room(player)
+		if reconnect then
+			local s = onlineguid[guid]
+			player.table_id = s.table
+			player.chair_id = s.chair
+		else
+			self:player_login_server(player)
+		end
 
-	return enum.GAME_SERVER_RESULT_SUCCESS
+		return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
+end
+
+function base_room:enter_server(player,reconnect)
+	return self:lockcall(function()
+		local guid = player.guid
+		log.info("base_room:enter_server game_id:%s server:%s,guid:%s",
+			def_first_game_type,def_game_id,guid)
+		return self:enter_room(player,reconnect)
+	end)
 end
 
 function base_room:cs_trusteeship(player,is_trustee)
@@ -659,130 +662,138 @@ function base_room:is_play(player)
 end
 
 function base_room:kickout_room(player,reason)
-	local guid = player.guid
-	local table_id = player.table_id
-	local chair_id = player.chair_id
-	log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
-		guid,table_id,chair_id,reason)
-	if not table_id or not chair_id then
-		log.warning("base_room:kickout_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+	return self:lockcall(function()
+		local guid = player.guid
+		local table_id = player.table_id
+		local chair_id = player.chair_id
+		log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
+			guid,table_id,chair_id,reason)
+		if not table_id or not chair_id then
+			log.warning("base_room:kickout_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+			self:player_kickout_room(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		local tb = self:find_table_by_player(player)
+		if not tb then
+			log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
+		reason = reason or enum.STANDUP_REASON_NORMAL
+		local result = tb:player_stand_up(player,reason)
+		log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,result,reason)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
 		self:player_kickout_room(player)
+
 		return enum.GAME_SERVER_RESULT_SUCCESS
-	end
-
-	local tb = self:find_table_by_player(player)
-	if not tb then
-		log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	reason = reason or enum.STANDUP_REASON_NORMAL
-	local result = tb:player_stand_up(player,reason)
-	log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,result,reason)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	self:player_kickout_room(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
 end
 
 function base_room:kickout_server(player,reason)
-	local guid = player.guid
-	local table_id = player.table_id
-	local chair_id = player.chair_id
-	log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
-		guid,table_id,chair_id,reason)
-	if not table_id or not chair_id then
-		log.warning("base_room:kickout_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+	return self:lockcall(function() 
+		local guid = player.guid
+		local table_id = player.table_id
+		local chair_id = player.chair_id
+		log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
+			guid,table_id,chair_id,reason)
+		if not table_id or not chair_id then
+			log.warning("base_room:kickout_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+			self:player_kickout_server(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		local tb = self:find_table_by_player(player)
+		if not tb then
+			log.warning("base_room:kickout_server not found table:%s,guid:%s",table_id,guid)
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
+		reason = reason or enum.STANDUP_REASON_NORMAL
+		local result = tb:player_stand_up(player,reason)
+		log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result[%s]",guid,table_id,reason,result)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
 		self:player_kickout_server(player)
+
 		return enum.GAME_SERVER_RESULT_SUCCESS
-	end
-
-	local tb = self:find_table_by_player(player)
-	if not tb then
-		log.warning("base_room:kickout_server not found table:%s,guid:%s",table_id,guid)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	reason = reason or enum.STANDUP_REASON_NORMAL
-	local result = tb:player_stand_up(player,reason)
-	log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result[%s]",guid,table_id,reason,result)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	self:player_kickout_server(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
 end
 
 function base_room:exit_room(player,reason)
-	local guid = player.guid
-	local table_id = player.table_id
-	local chair_id = player.chair_id
-	log.info("base_room:exit_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
-		guid,table_id,chair_id,reason)
-	if not table_id or not chair_id then
-		log.warning("base_room:exit_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+	return self:lockcall(function() 
+		local guid = player.guid
+		local table_id = player.table_id
+		local chair_id = player.chair_id
+		log.info("base_room:exit_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
+			guid,table_id,chair_id,reason)
+		if not table_id or not chair_id then
+			log.warning("base_room:exit_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+			self:player_exit_room(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		local tb = self:find_table_by_player(player)
+		if not tb then
+			log.warning("base_room:exit_room not found table:%s,guid:%s",table_id,guid)
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
+		reason = reason or enum.STANDUP_REASON_NORMAL
+		local result = tb:player_stand_up(player,reason)
+		log.info("base_room:exit_room,guid[%d] player_stand_up,table_id:%s,reason[%s],result %s,",
+			guid,table_id,reason,result)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
 		self:player_exit_room(player)
+
 		return enum.GAME_SERVER_RESULT_SUCCESS
-	end
-
-	local tb = self:find_table_by_player(player)
-	if not tb then
-		log.warning("base_room:exit_room not found table:%s,guid:%s",table_id,guid)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	reason = reason or enum.STANDUP_REASON_NORMAL
-	local result = tb:player_stand_up(player,reason)
-	log.info("base_room:exit_room,guid[%d] player_stand_up,table_id:%s,reason[%s],result %s,",
-		guid,table_id,reason,result)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	self:player_exit_room(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
 end
 
 -- 退出服务器
 function base_room:exit_server(player,offline)
-	local guid = player.guid
-	local table_id = player.table_id
-	local chair_id = player.chair_id
-	log.info("base_room:exit_server guid[%d],table_id:%s,chair_id:%s,offline:%s",
-		guid,table_id,chair_id,offline)
-	if not table_id or not chair_id then
-		log.warning("base_room:exit_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-		self:player_exit_room(player)
+	return self:lockcall(function()
+		local guid = player.guid
+		local table_id = player.table_id
+		local chair_id = player.chair_id
+		log.info("base_room:exit_server guid[%d],table_id:%s,chair_id:%s,offline:%s",
+			guid,table_id,chair_id,offline)
+		if not table_id or not chair_id then
+			log.warning("base_room:exit_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
+			self:player_exit_room(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		local tb = self:find_table_by_player(player)
+		if not tb then
+			log.warning("base_room:exit_server not found table:%s,guid:%s",table_id,guid)
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
+		local reason = offline and enum.STANDUP_REASON_OFFLINE or enum.STANDUP_REASON_NORMAL
+		local result = tb:player_stand_up(player,reason)
+		log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result [%s]",
+			guid,table_id,reason,result)
+		if result ~= enum.ERROR_NONE then
+			return enum.GAME_SERVER_RESULT_IN_GAME
+		end
+
+		if offline then
+			self:player_logout_server(player)
+		else
+			self:player_exit_room(player)
+		end
+
 		return enum.GAME_SERVER_RESULT_SUCCESS
-	end
-
-	local tb = self:find_table_by_player(player)
-	if not tb then
-		log.warning("base_room:exit_server not found table:%s,guid:%s",table_id,guid)
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-
-	local reason = offline and enum.STANDUP_REASON_OFFLINE or enum.STANDUP_REASON_NORMAL
-	local result = tb:player_stand_up(player,reason)
-	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result [%s]",
-		guid,table_id,reason,result)
-	if result ~= enum.ERROR_NONE then
-		return enum.GAME_SERVER_RESULT_IN_GAME
-	end
-
-	if offline then
-		self:player_logout_server(player)
-	else
-		self:player_exit_room(player)
-	end
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
+	end)
 end
 
 -- 快速坐下

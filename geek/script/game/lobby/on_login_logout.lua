@@ -130,8 +130,7 @@ end
 function on_ls_login_notify(guid,reconnect)
 	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
-	local s = onlineguid[guid]
-
+	
 	local player = base_players[guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
@@ -142,10 +141,8 @@ function on_ls_login_notify(guid,reconnect)
 	player.online = true
 	if reconnect then
 		-- 重连
-		-- local s = onlineguid[guid]
-		player.table_id = s.table
-		player.chair_id = s.chair
 		log.info("login step reconnect game->LC_Login,guid=%s", guid)
+		g_room:enter_room(player,true)
 		return
 	end
 
@@ -176,9 +173,7 @@ function on_ls_login_notify(guid,reconnect)
 	
 	log.info("login step game->LC_Login,account=%s", player.account)
 
-	g_room:player_login_server(player)
-
-	log.info("test .................. on_les_login_notify %s", player.h_bank_password)
+	g_room:enter_server(player)
 end
 
 -- 登录验证框
