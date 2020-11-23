@@ -2901,12 +2901,12 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		from_guid,to_guid,money_id,amount,why,why_ext)
 	local sqls = {
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{from_guid,money_id}},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],{-amount,from_guid,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{from_guid,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{to_guid,money_id}},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],{amount,to_guid,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],{to_guid,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],-amount,from_guid,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],amount,to_guid,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id},
 	}
 
 	log.dump(sqls)
