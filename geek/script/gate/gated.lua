@@ -156,7 +156,7 @@ function CMD.start(conf)
             pcall(skynet.call,u.agent, "lua", "afk")
             logout(u.guid)
         else
-            pcall(skynet.call,loginservice,"lua","logout",c.fd)
+            pcall(skynet.call,loginservice,"lua","afk",c.fd)
         end
     end
 
