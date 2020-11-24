@@ -136,4 +136,6 @@ skynet.start(function()
 	register_dispatcher("CS_Logout",on_cs_logout)
 
 	register_dispatcher("CS_ForceKickoutPlayer",on_cs_force_kickout_player)
+
+	register_dispatcher("C2S_VoiceInteractive",on_cs_voice_interactive)
 end)

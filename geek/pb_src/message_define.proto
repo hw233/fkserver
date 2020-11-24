@@ -1765,3 +1765,20 @@ message SC_ForceKickoutPlayer{
     int32 guid = 2;
 	int32 club_id = 3;
 }
+
+//语音
+message C2S_VoiceInteractive{
+	enum MsgID{Nil = 0; ID = 1237;}
+    string content = 1;
+	int32 time = 2;
+    int32 receiver = 3;//接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}
+
+message S2C_VoiceInteractive{
+	enum MsgID{Nil = 0; ID = 1238;}
+    int32 result = 1;
+    string content = 2;
+	int32 time = 3;
+    int32 sender = 4;
+    int32 receiver = 5;  //接受者，0 是发送给所有玩家，>0 则是发给某一个玩家
+}

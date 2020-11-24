@@ -130,3 +130,34 @@ function on_cs_player_interaction(msg,guid)
 		receiver = receiver_chair,
 	})
 end
+
+
+function on_cs_voice_interactive(msg,guid)
+	local content = msg.content
+	local time = msg.time 
+	local receiver = msg.receiver
+
+	local player = base_players[guid]
+	if not player then
+		send2client_pb(guid,"S2C_VoiceInteractive",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if not tb then
+		send2client_pb(guid,"S2C_VoiceInteractive",{
+			result = enum.ERROR_TABLE_NOT_EXISTS
+		})
+		return
+	end
+
+	tb:broadcast2client("S2C_VoiceInteractive",{
+		result = enum.ERROR_NONE,
+		content = content,
+		time = time,
+		sender = guid,
+		receiver = receiver,
+	})
+end
