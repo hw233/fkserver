@@ -2795,12 +2795,12 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	log.info("transfer_money_player2club club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],{- amount,guid,money_id}},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],{guid,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
-		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{amount,club_id,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id,money_id}},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id},
+		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d AND `where`= 0;]],- amount,guid,money_id},
+		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],ssclub_id,money_id},
 	}
 
 	local gamedb = dbopt.game
@@ -2846,12 +2846,12 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 	log.info("transfer_money_club2club from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id_from,club_id_to,money_id,amount,why,why_ext)
 	local sqls = {
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_from,money_id}},
-		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{-amount,club_id_from,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_from,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_to,money_id}},
-		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],{amount,club_id_to,money_id}},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],{club_id_to,money_id}},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],-amount,club_id_from,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_from,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id},
+		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id_to,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id_to,money_id},
 	}
 
 	log.dump(sqls)
