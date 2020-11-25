@@ -147,7 +147,7 @@ function base_character:forced_exit(reason)
 	end
 	
 	self:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.ERROR_NONE,reason)
-	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,chair_id:%s,success",self.guid,table_id,chair_id,reason)
+	log.warning("force exit,guid:%s,table_id:%s,chair_id:%s,reason:%s,success",self.guid,table_id,chair_id,reason)
 	return enum.ERROR_NONE
 end
 
