@@ -106,11 +106,7 @@ skynet.start(function()
 	register_dispatcher("CS_BandAlipay",on_cs_bandalipay)
 	register_dispatcher("CS_Trustee",on_cs_trusteeship)
 	register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
-	-- --红包
-	-- register_dispatcher("CS_QueryBonusActivity",on_cs_query_bonus_activities)
-	-- register_dispatcher("CS_QueryBonus",on_cs_query_bonus)
-	-- register_dispatcher("CS_PickBonus",on_cs_pick_bonus)
-
+	
 	-- register_dispatcher("SS_JoinPrivateRoom",on_SS_JoinPrivateRoom)
 
 	register_dispatcher("CS_DismissTableReq",on_cs_dismiss_table_req)
@@ -138,4 +134,6 @@ skynet.start(function()
 	register_dispatcher("CS_ForceKickoutPlayer",on_cs_force_kickout_player)
 
 	register_dispatcher("C2S_VoiceInteractive",on_cs_voice_interactive)
+
+	register_dispatcher("BS_Recharge",on_bs_recharge)
 end)

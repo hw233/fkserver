@@ -175,8 +175,8 @@ end
 
 function on_sd_log_recharge(msg)
     local sqls = {
-        {"INSERT INTO t_log_recharge(source_id,target_id,type,operator,created_time) VALUES(%d,%d,%d,%d,%d);",
-                msg.source_id,msg.target_id,msg.type,msg.operator,os.time()},
+        {"INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);",
+            msg.source_id,msg.target_id,msg.type,msg.operator,msg.money or "NULL",msg.comment or "",os.time()},
         {"SELECT LAST_INSERT_ID() AS id;"}
     }
 

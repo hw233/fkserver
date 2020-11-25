@@ -2239,3 +2239,29 @@ function on_cs_force_kickout_player(msg,kicker_guid)
 
 	kickout_player(guid,kicker)
 end
+
+function on_bs_recharge(msg)
+	local guid = msg.guid
+	local amount = msg.amount
+	local money_id = msg.money_id
+	local operator = msg.operator
+	local comment = msg.comment
+	local money = msg.money
+
+	local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+		source_id = 0,
+		target_id = guid,
+		type = 5,
+		operator = operator,
+		comment = comment,
+		money = money,
+	})
+
+	local player = base_players[guid]
+	player:incr_money({
+        money_id = money_id,
+        money = amount,
+	},enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,recharge_id)
+
+	return enum.ERROR_NONE
+end

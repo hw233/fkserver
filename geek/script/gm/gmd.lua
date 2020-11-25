@@ -13,6 +13,7 @@ local player_money = require "game.lobby.player_money"
 local club_money = require "game.club.club_money"
 local club_notice = require "game.notice.club_notice"
 local base_notices = require "game.notice.base_notices"
+local util = require "util"
 require "functions"
 
 
@@ -23,48 +24,41 @@ local gmd = {}
 local global_sign = global_sign
 
 local function recharge_team(team_id,coin_type,count)
-    local team = base_clubs[team_id]
-    if not team then
-        return {
-            errcode = error.DATA_ERROR,
-            errstr = string.format("team [%d] not exists.",team_id),
-        }
-    end
+    -- local team = base_clubs[team_id]
+    -- if not team then
+    --     return {
+    --         errcode = error.DATA_ERROR,
+    --         errstr = string.format("team [%d] not exists.",team_id),
+    --     }
+    -- end
 
-    if coin_type ~= 0 then
-        local money_id = club_money_type[team_id]
-        if money_id ~= coin_type then
-            return {
-                errcode = error.DATA_ERROR,
-                errstr = string.format("coin type is wrong."),
-            }
-        end
-    end
+    -- if coin_type ~= 0 then
+    --     local money_id = club_money_type[team_id]
+    --     if money_id ~= coin_type then
+    --         return {
+    --             errcode = error.DATA_ERROR,
+    --             errstr = string.format("coin type is wrong."),
+    --         }
+    --     end
+    -- end
 
-    if count == 0 then
-        return {
-            errcode = error.SUCCESS,
-        }
-    end
+    -- if count == 0 then
+    --     return {
+    --         errcode = error.SUCCESS,
+    --     }
+    -- end
 
-    team:incr_money({
-        money_id = coin_type,
-        money = count
-    },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
+    -- team:incr_money({
+    --     money_id = coin_type,
+    --     money = count
+    -- },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
 
     return {
         errcode = error.SUCCESS,
     }
 end
 
-local function recharge_player(guid,coin_type,count)
-    -- if coin_type ~= 2 then
-    --     return {
-    --         errcode = error.DATA_ERROR,
-    --         errstr = "coin type can not be 1(gold).",
-    --     }
-    -- end
-
+local function recharge_player(guid,money_id,amount,money,comment,operator)
     local player = base_players[guid]
     if not player then
         log.error("recharge_player player [%d] not exists.",guid)
@@ -74,57 +68,93 @@ local function recharge_player(guid,coin_type,count)
         }
     end
 
-    count = math.floor(tonumber(count))
-    if count == 0 then
+    amount = math.floor(tonumber(amount))
+    if amount == 0 then
         return {
             errcode = error.SUCCESS,
         }
     end
 
-    player:incr_money({
-        money_id = coin_type,
-        money = count,
-    },enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
+    local result
+    local os = onlineguid[guid]
+    if os and os.server then
+        result = channel.call("game."..os.server,"msg","BS_Recharge",{
+            money_id = money_id,
+            guid = guid,
+            amount = amount,
+            money = money,
+            comment = comment,
+            operator = operator,
+        })
+    else
+        local server = util.find_lightest_weight_game_server(1)
+        if not server then
+            return {
+                errcode = error.SERVER_ERROR,
+            }
+        end
 
+        result = channel.call("game."..server,"msg","BS_Recharge",{
+            money_id = money_id,
+            guid = guid,
+            amount = amount,
+            money = money,
+            comment = comment,
+            operator = operator,
+        })
+    end
+
+    local errcode = result == enum.ERROR_NONE and error.SUCCESS or error.SERVER_ERROR
     return {
-        errcode = error.SUCCESS,
+        errcode = errcode,
     }
 end
 
 function gmd.recharge(data)
-    local target_id = tonumber(data.target_id)
-    if not target_id then
+    local guid = tonumber(data.guid)
+    if not guid then
         return {
             errcode = error.DATA_ERROR,
             errstr = "target id can not be nil."
         }
     end
 
-    target_id = math.floor(target_id)
+    guid = math.floor(guid)
 
-    local coin_type = tonumber(data.coin_type)
-    if not coin_type then
+    local money_id = tonumber(data.money_id)
+    if not money_id then
         return {
             errcode = error.DATA_ERROR,
-            errstr = "coin_type is nil.",
+            errstr = "money_id is nil.",
         }
     end
 
-    coin_type = math.floor(coin_type)
+    money_id = math.floor(money_id)
 
-    local count = tonumber(data.count)
-    if not count or count == 0 then
+    local amount = tonumber(data.amount)
+    if not amount or amount == 0 then
         return {
             errcode = error.DATA_ERROR,
-            errstr = "count is nil.",
+            errstr = "amount is nil.",
         }
     end
+
+    local operator = tonumber(data.operator)
+    if not operator or operator == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "operator is invalid.",
+        }
+    end
+
+    local money = tonumber(data.money)
+    local comment = data.comment
 
     local is_team = data.is_team
     if is_team then
-        return recharge_team(target_id,coin_type,count)
+        return recharge_team(guid,money_id,amount,money,comment,operator)
     else
-        return recharge_player(target_id,coin_type,count)
+        return recharge_player(guid,money_id,amount,money,comment,operator)
     end
 end
 
