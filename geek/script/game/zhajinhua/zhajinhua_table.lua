@@ -371,7 +371,8 @@ function zhajinhua_table:get_player_actions(player_or_chair)
 end
 
 function zhajinhua_table:bet_base_score()
-	local base_score = self.base_score
+	local play = self.rule.play
+	local base_score = play and play.base_men_score or self.base_score
 	table.foreach(self.gamers,function(p)
 		self:fake_cost_money(p,base_score)
 		self:player_bet(p,base_score)
