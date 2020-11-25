@@ -1376,6 +1376,11 @@ end
 
 function base_table:delay_kickout(player,reason)
 	log.info("delay_kickout %s",player.guid)
+	if player.kickout_timer then
+		log.info("delay_kickout exists kickout timer:%s.",player.kickout_timer.id)
+		return
+	end
+
 	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
 		self:cancel_delay_kickout(player)
 		player:forced_exit(reason)
@@ -1566,6 +1571,7 @@ function base_table:on_player_stand_up(player,reason)
 end
 
 function base_table:on_player_stand_uped(player,reason)
+	self:cancel_delay_kickout(player)
 	if resaon ~= enum.STANDUP_REASON_OFFLINE then
 		self:check_kickout_no_ready()
 	end
