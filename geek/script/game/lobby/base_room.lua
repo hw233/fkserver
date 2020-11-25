@@ -924,7 +924,7 @@ function base_room:player_exit_room(player)
 			log.error("base_room:player_exit_room can not find default lobby.")
 			return
 		end
-		common.switch_room(guid,lobby_id)
+		common.switch_to(guid,lobby_id)
 		self.cur_player_count_ = self.cur_player_count_ - 1
 		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 		base_players[guid] = nil
@@ -944,7 +944,7 @@ function base_room:player_kickout_room(player)
 			log.error("base_room:player_kickout_room can not find default lobby.")
 			return
 		end
-		common.switch_room(guid,lobby_id)
+		common.switch_to(guid,lobby_id)
 		self.cur_player_count_ = self.cur_player_count_ - 1
 
 		log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)

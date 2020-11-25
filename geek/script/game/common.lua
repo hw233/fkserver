@@ -17,10 +17,10 @@ function common.find_best_room(first_game_type,second_game_type)
 	return util.find_lightest_weight_game_server(first_game_type,second_game_type)
 end
 
-function common.switch_room(guid,room_id)
+function common.switch_to(guid,room_id)
 	if room_id == def_game_id then return end
 
-	log.info("%s switch room from %s to %s",guid,def_game_id,room_id)
+	log.info("%s switch_to from %s to %s",guid,def_game_id,room_id)
 	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 
 	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
@@ -31,6 +31,25 @@ function common.switch_room(guid,room_id)
 	base_players[guid].online = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
+end
+
+function common.switch_from(guid,room_id)
+	if room_id == def_game_id then return end
+
+	local player = base_players[guid]
+	player.online = true
+
+	log.info("%s switch_from from %s to %s",guid,room_id,def_game_id)
+	channel.call("game."..tostring(room_id),"msg","SS_ChangeTo",guid,def_game_id)
+
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		1,def_game_id)
+
+	onlineguid.control(player,"goserver",def_game_id)
+
+	onlineguid[guid] = nil
 end
 
 function common.switch_to_lobby(guid)

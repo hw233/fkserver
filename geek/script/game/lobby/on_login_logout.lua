@@ -880,11 +880,18 @@ local function check_create_table_limit(player,rule,club)
 end
 
 
-function on_cs_create_private_room(msg,guid)
+function on_cs_create_private_room(msg,guid,game_id)
 	local game_type = msg.game_type
     local club_id = msg.club_id
 	local rule = msg.rule
 	local template_id = msg.template_id
+
+	if game_util.is_global_in_maintain() then
+		onlineguid.send(guid,"SC_CreateRoom",{
+			result = enum.LOGIN_RESULT_MAINTAIN,
+		})
+		return
+	end
 
 	local os = onlineguid[guid]
 	if os.table then
@@ -961,16 +968,7 @@ function on_cs_create_private_room(msg,guid)
 			return
 		end
 
-		common.switch_room(guid,room_id)
-		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid)
-		return
-	end
-
-	if game_util.is_global_in_maintain() then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.LOGIN_RESULT_MAINTAIN,
-		})
-		player:kickout(enum.STANDUP_REASON_MAINTAIN)
+		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid,def_game_id)
 		return
 	end
 
@@ -1027,6 +1025,10 @@ function on_cs_create_private_room(msg,guid)
 			result = result,
 		})
 		return
+	end
+
+	if game_id then
+		common.switch_from(guid,game_id)
 	end
 
 	local money_id = club_id and club_money_type[club_id] or -1
@@ -1136,7 +1138,7 @@ function on_cs_reconnect(guid)
 end
 
 -- 加入私人房间
-function on_cs_join_private_room(msg,guid)
+function on_cs_join_private_room(msg,guid,game_id)
 	local player = base_players[guid]
 	local reconnect = msg.reconnect
 	local global_table_id = msg.table_id
@@ -1177,8 +1179,7 @@ function on_cs_join_private_room(msg,guid)
 	if def_game_id ~= room_id then
 		onlineguid[guid] = nil
 
-		common.switch_room(guid,room_id)
-		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid)
+		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid,def_game_id)
 		base_players[guid] = nil
 		return
 	end
@@ -1194,7 +1195,6 @@ function on_cs_join_private_room(msg,guid)
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
 		})
-		player:kickout(enum.STANDUP_REASON_MAINTAIN)
 		return
 	end
 
@@ -1249,6 +1249,10 @@ function on_cs_join_private_room(msg,guid)
 			result = result,
 		})
 		return
+	end
+
+	if game_id then
+		common.switch_from(guid,game_id)
 	end
 	
 	local seats = table.series(tb.players,function(p) 
@@ -2264,4 +2268,20 @@ function on_bs_recharge(msg)
 	},enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,recharge_id)
 
 	return enum.ERROR_NONE
+end
+
+function on_ss_change_to(guid,room_id)
+	local player = base_players[guid]
+	player.online = nil
+	player.inactive = nil
+
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		-1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		-1,def_game_id)
+
+	onlineguid[guid] = nil
+	base_players[guid] = nil
+
+	log.info("change step login notify,guid=%s", guid)
 end
