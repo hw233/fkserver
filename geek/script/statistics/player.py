@@ -331,16 +331,16 @@ def player_daily_big_win_count():
         SELECT guid,r.club,r.game_id,r.round,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 date FROM 
 			t_log_money m
         LEFT JOIN
-                log.t_log_game g
+            t_log_game g
         ON m.reason_ext = g.round_id AND m.money_id != 0
         LEFT JOIN
-                log.t_log_round r
+            t_log_round r
         ON g.ext_round_id = r.round
-        WHERE g.created_time > {} AND g.created_time <= {}
+        WHERE r.create_time > {} AND r.create_time <= {}
         GROUP BY r.club,r.game_id,m.guid,r.round,g.created_time div 86400 * 86400;
     """.format(today * day_seconds,(today + 1) * day_seconds)
     data = pd.read_sql_query(sql,db_engine)
-    bigwins = data.groupby('round').max('money').reset_index()
+    bigwins = data.groupby('round').apply(lambda t: t[t['money'] == t['money'].max()])
     bigwins = bigwins.groupby(['club','guid','game_id','date']).count().reset_index()
     bigwins.rename(columns = {"round":"count"},inplace=True)
     bigwins[['club','guid','game_id','count','date']].to_sql(
