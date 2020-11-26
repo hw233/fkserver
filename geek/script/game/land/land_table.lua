@@ -97,7 +97,7 @@ function land_table:can_dismiss()
 end
 
 function land_table:on_process_start()
-	self.cur_competer = nil
+	self.compete_first = nil
 	self:foreach(function(p) 
 		p.statistics = {}
 		p.total_score = 0
@@ -154,10 +154,18 @@ function land_table:do_game_start()
 	self.landlord_competitions = nil
 	self.begin_competition_normal = nil
 	self.compete_landlord_2_round = nil
+	self.compete_first = nil
 	self.multi = 0
 
 	log.dump(self.rule.play)
 	
+	local play = self.rule.play
+	if self.cur_round == 1 then
+		self.compete_first = play.random_call and 
+			math.random(self.chair_count) or 
+			self.conf.owner_chair_id
+	end
+
 	-- 获取 牌局id
 	log.info("gamestart =================================================")
 	self:foreach(function(p) 
@@ -192,17 +200,8 @@ function land_table:deal_cards()
 end
 
 function land_table:begin_compete_landlord()
-	local play = self.rule.play
-	if self.cur_round == 1 then
-		if play.random_call then
-			self.cur_competer = math.random(self.chair_count)
-		else
-			self.cur_competer = self.conf.owner_chair_id
-		end
-	end
-
-
-
+	self:clean_compete_landlord()
+	self.cur_competer = self.compete_first
 	self.landlord_swap = nil
 	self:allow_compete_landlord()
 end
@@ -466,13 +465,19 @@ function land_table:do_compete_landlord_normal(player,msg)
 
 		if self.begin_competition_normal == player.chair_id or all_call == 1 then
 			self.landlord = self.landlord_swap
-			self.landlord_swap = nil
 			self:on_compete_landlord_over()
 			return
 		end
 	end
 
 	return true
+end
+
+function land_table:clean_compete_landlord()
+	self.cur_competer = nil
+	self.last_landlord_cometition = nil
+	self.landlord_competitions = nil
+	self.landlord_swap = nil
 end
 
 function land_table:do_compete_landlord(player,msg)
@@ -493,14 +498,15 @@ function land_table:do_compete_landlord(player,msg)
 		end
 
 		local play = self.rule.play
-		if play.call_landlord then
-			if not self:do_compete_landlord_normal(player,msg) then 
-				return
-			end
+		local continue = nil
+		if play and play.call_landlord then
+			continue = self:do_compete_landlord_normal(player,msg)
 		else
-			if not self:do_compete_landlord_score(player,msg) then
-				return
-			end
+			continue = self:do_compete_landlord_score(player,msg)
+		end
+
+		if not continue then
+			return
 		end
 
 		self:next_landlord_competer()
@@ -509,6 +515,7 @@ function land_table:do_compete_landlord(player,msg)
 end
 
 function land_table:on_compete_landlord_over()
+	self:clean_compete_landlord()
 	self:update_status(TABLE_STATUS.PLAY)
 	self:broadcast2client("SC_DdzCallLandlordOver",{
 		landlord = self.landlord,
@@ -705,7 +712,7 @@ function land_table:on_game_overed()
 end
 
 function land_table:on_process_over(reason)
-	self.cur_competer = nil
+	self.compete_first = nil
 
 	self:cancel_clock_timer()
 	self:cancel_discard_timer()
@@ -994,7 +1001,7 @@ function  land_table:is_play()
 end
 
 function land_table:game_balance(winner)
-	self.cur_competer = winner.chair_id
+	self.compete_first = winner.chair_id
 
 	local is_chuntian = table.logic_and(self.players,function(p)
 		if p.chair_id == self.landlord then return true end
