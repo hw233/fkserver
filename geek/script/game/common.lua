@@ -73,4 +73,12 @@ function common.switch_to_lobby(guid)
 	base_players[guid] = nil
 end
 
+function common.is_in_lobby()
+	return def_first_game_type == 1
+end
+
+function common.lobby_game_type()
+	return 1
+end
+
 return common
