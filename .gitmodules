@@ -28,3 +28,7 @@
 [submodule "3rd/lrandom"]
 	path = 3rd/lrandom
 	url = https://gitee.com/thinblog/lrandom.git
+[submodule "3rd/chronos"]
+	path = 3rd/chronos
+	url = https://gitee.com/thinblog/chronos.git
+	branch = makefile

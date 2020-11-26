@@ -60,7 +60,8 @@ COMMON_CLIB = cjson \
   pb \
   gbk \
   openssl \
-  random
+  random \
+  chronos
 
 LUA_CLIB_SKYNET = \
   lua-skynet.c lua-seri.c \
@@ -144,6 +145,9 @@ $(COMMON_CLIB_PATH)/pb.so: | $(COMMON_CLIB_PATH) update3rd
 
 $(COMMON_CLIB_PATH)/random.so: | $(COMMON_CLIB_PATH) update3rd
 	cd 3rd/lrandom && $(MAKE)
+
+$(COMMON_CLIB_PATH)/chronos.so: | $(COMMON_CLIB_PATH) update3rd
+	cd 3rd/chronos && $(MAKE)
 
 clean :
 	rm -rf $(SKYNET_BUILD_PATH)/skynet $(CSERVICE_PATH)/*.so $(LUA_CLIB_PATH)/*.so $(COMMON_CLIB_PATH)/*.so \
