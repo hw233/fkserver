@@ -602,8 +602,8 @@ function base_room:enter_room(player,reconnect)
 			return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 		end
 
-		log.info("base_room:enter_room,game_name = [%s],game_id =[%s],guid:%s",
-			def_game_name,def_game_id,guid)
+		log.info("base_room:enter_room,game_name = [%s],game_id =[%s],guid:%s,reconnect:%s,online:%s",
+			def_game_name,def_game_id,guid,reconect,player.online)
 
 		-- 通知消息
 		-- if player:is_android() then
@@ -620,6 +620,8 @@ function base_room:enter_room(player,reconnect)
 
 		if reconnect then
 			local s = onlineguid[guid]
+			log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
+				guid,def_game_id,reconnect,s.table,s.chair)
 			player.table_id = s.table
 			player.chair_id = s.chair
 		else
@@ -633,8 +635,8 @@ end
 function base_room:enter_server(player,reconnect)
 	return self:lockcall(function()
 		local guid = player.guid
-		log.info("base_room:enter_server game_id:%s server:%s,guid:%s",
-			def_first_game_type,def_game_id,guid)
+		log.info("base_room:enter_server game_id:%s server:%s,guid:%s,reconnect:%s,online:%s",
+			def_first_game_type,def_game_id,guid,reconnect,player.online)
 		return self:enter_room(player,reconnect)
 	end)
 end
