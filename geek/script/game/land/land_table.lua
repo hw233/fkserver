@@ -154,20 +154,19 @@ function land_table:do_game_start()
 	self.landlord_competitions = nil
 	self.begin_competition_normal = nil
 	self.compete_landlord_2_round = nil
-	self.compete_first = nil
 	self.multi = 0
 
 	log.dump(self.rule.play)
-	
-	local play = self.rule.play
-	if self.cur_round == 1 then
-		self.compete_first = play.random_call and 
+
+	if not self.compete_first then
+		local play = self.rule.play
+		self.compete_first = play and play.random_call and 
 			math.random(self.chair_count) or 
 			self.conf.owner_chair_id
 	end
 
 	-- 获取 牌局id
-	log.info("gamestart =================================================")
+	log.info("gamestart =============,compete_first:%s",self.compete_first)
 	self:foreach(function(p) 
 		log.info("Player InOut Log,land_table:startGame player %s, table_id %s ,private_table_id:%s",p.guid,p.table_id,self.private_id)
 	end)
