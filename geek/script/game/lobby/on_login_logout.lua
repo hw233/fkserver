@@ -768,14 +768,7 @@ function on_ss_change_game(guid)
 	local player = base_players[guid]
 	player.online = true
 	player.inactive = nil
-	log.info("player[%d] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s",
-		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,
-		player.bank_name,player.bank_province,player.bank_city,player.bank_branch)
-
-	log.info("player[%d] seniorpromoter[%s] identity_type[%s] identity_param[%s]",
-		player.guid,player.seniorpromoter,player.identity_type,player.identity_param)
-	log.info("player[%d] has_bank_password[%s] bankpwd[%s] platform_id[%s]",
-		player.guid,player.has_bank_password,player.bank_password,player.platform_id)
+	log.info("on_ss_change_game[%d] %s,%s,%s",player.guid,def_first_game_type,def_second_game_type,def_game_id)
 
 	reddb:hmset(string.format("player:online:guid:%d",guid),{
 		first_game_type = def_first_game_type,
@@ -792,7 +785,7 @@ function on_ss_change_game(guid)
 	onlineguid.control(player,"goserver",def_game_id)
 	onlineguid[player.guid] = nil
 
-	log.info("change step login notify,account=%s", player.account)
+	log.info("on_ss_change_game change step login notify,guid=%s", player.guid)
 end
 
 local function check_pay_option(option)
@@ -2275,6 +2268,8 @@ function on_ss_change_to(guid,room_id)
 	player.online = nil
 	player.inactive = nil
 
+	log.info("on_ss_change_to[%s],%s,%s,%s",guid,def_first_game_type,def_second_game_type,def_game_id)
+
 	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
 		-1,def_game_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
@@ -2283,5 +2278,5 @@ function on_ss_change_to(guid,room_id)
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 
-	log.info("change step login notify,guid=%s", guid)
+	log.info("on_ss_change_to change step login notify,guid=%s", guid)
 end
