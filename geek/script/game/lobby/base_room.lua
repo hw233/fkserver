@@ -917,7 +917,7 @@ end
 -- 玩家退出房间
 function base_room:player_exit_room(player)
 	local guid = player.guid
-	log.info("base_room:player_exit_room, guid %s, room_id %s",guid,def_game_id)
+	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
 	if player.online and not common.is_in_lobby() then
 		local lobby_id = common.find_best_room(1)
 		if not lobby_id then
@@ -937,7 +937,7 @@ end
 
 function base_room:player_kickout_room(player)
 	local guid = player.guid
-	log.info("base_room:player_kickout_room, guid %s, room_id %s",guid,def_game_id)
+	log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
 	if player.online and not common.is_in_lobby() then
 		local lobby_id = common.find_best_room(1)
 		if not lobby_id then
