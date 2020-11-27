@@ -192,20 +192,33 @@ end
 
 local FORWARD = {}
 
-local function forward(guid,...)
+local function forward(guid,msgname,msg)
     local u = onlineguid[guid]
-    if not u or not u.agent then
+    if not u then
         log.error("forward %s got nil session.",guid)
         return
     end
 
-    skynet.send(u.agent,"forward",...)
+    if not u.fd then
+        log.error("forward %s got nil fd.",guid)
+        return
+    end
+
+    log.info("gated toclient %s:%s,%s",guid,u.fd,msgname)
+    log.dump(msg)
+
+    netmsgopt.send(u.fd,msgname,msg)
 end
 
 local function forwardcommand(guid,...)
     local u = onlineguid[guid]
-    if not u or not u.agent then
+    if not u then
         log.error("forwardcommand %s got nil session.",guid)
+        return
+    end
+
+    if not u.agent then
+        log.error("forwardcommand %s got nil agent.",guid)
         return
     end
 
