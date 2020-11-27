@@ -192,18 +192,38 @@ end
 
 local FORWARD = {}
 
+local function forward(guid,...)
+    local u = onlineguid[guid]
+    if not u or not u.agent then
+        log.error("forward %s got nil session.",guid)
+        return
+    end
+
+    skynet.send(u.agent,"forward",...)
+end
+
+local function forwardcommand(guid,...)
+    local u = onlineguid[guid]
+    if not u or not u.agent then
+        log.error("forwardcommand %s got nil session.",guid)
+        return
+    end
+
+    skynet.send(u.agent,"lua",...)
+end
+
 function FORWARD.forward(who,...)
-    channel.publish("guid."..tostring(who),"forward",...)
+    forward(who,...)
 end
 
 function FORWARD.broadcast(whos,...)
     for _,guid in pairs(whos) do
-        channel.publish("guid."..tostring(guid),"forward",...)
+        forward(guid,...)
     end
 end
 
 function FORWARD.lua(who,...)
-    channel.publish("guid."..tostring(who),"lua",...)
+    forwardcommand(who,...)
 end
 
 local function guid_monitor()
