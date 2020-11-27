@@ -130,12 +130,15 @@ end
 function on_ls_login_notify(guid,reconnect)
 	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
-	
+
 	local player = base_players[guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
 		return
 	end
+
+	
+	
 
 	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
@@ -170,6 +173,12 @@ function on_ls_login_notify(guid,reconnect)
 	-- 		answer = player.login_validate_answer,
 	-- 	}
 	-- end
+
+	local os = onlineguid[guid]
+	if os and os.server then
+		log.error("on_ls_login_notify guid:%s,game_id:%s,server:%s,login but session not nil",
+			guid,def_game_id,os.server)
+	end
 	
 	log.info("login step game->LC_Login,account=%s", player.account)
 
