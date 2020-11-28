@@ -15,6 +15,7 @@ local function elapsed_cache_key()
 	local time = os.time()
 	for key,c in pairs(cache) do
 		if time - c.time > default_elapsed_time then
+			log.info("del cache key %s",key)
 			cache[key] = nil
 		end
 	end
