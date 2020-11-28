@@ -128,7 +128,7 @@ end
 
 -- 玩家登录通知 验证账号成功后会收到
 function on_ls_login_notify(guid,reconnect)
-	log.info("on_ls_login_notify game_id = %d,guid:%s,recconect:%s", def_game_id,guid, reconnect)
+	log.info("on_ls_login_notify game_id = %d,guid:%s,reconnect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
 
 	local player = base_players[guid]
@@ -137,23 +137,19 @@ function on_ls_login_notify(guid,reconnect)
 		return
 	end
 
-	
-	
-
+	local os = onlineguid[guid]
 	log.info("set player.online = true,guid:%d",guid)
 	player.online = true
-	if reconnect then
-		-- 重连
-		log.info("login step reconnect game->LC_Login,guid=%s", guid)
+	local repeat_login = os and os.server == def_game_id
+	if reconnect or repeat_login then
+		-- 重连/重复登陆
+		log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
+			guid,def_game_id,reconnect,repeat_login)
 		g_room:enter_room(player,true)
 		return
 	end
 
 	log.info("ip_area =%s",player.ip_area)
-	log.info("player[%s] has_bank_password[%s] bankpwd[%s] platform_id[%s]",player.guid,player.has_bank_password,player.bank_password,player.platform_id)
-	log.info("player[%s] bank_card_name[%s] bank_card_num[%s] change_bankcard_num[%s] bank_name[%s] bank_province[%s] bank_city[%s] bank_branch[%s]",
-		player.guid, player.bank_card_name , player.bank_card_num, player.change_bankcard_num,player.bank_name,
-		player.bank_province,player.bank_city,player.bank_branch)
 	
 	-- math.randomseed(tostring(os.time()):reverse():sub(1, 6))
 	-- -- 是否需要弹出验证框
@@ -174,7 +170,6 @@ function on_ls_login_notify(guid,reconnect)
 	-- 	}
 	-- end
 
-	local os = onlineguid[guid]
 	if os and os.server then
 		log.error("on_ls_login_notify guid:%s,game_id:%s,server:%s,login but session not nil",
 			guid,def_game_id,os.server)
