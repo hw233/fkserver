@@ -1,6 +1,7 @@
 
 local skynet = require "skynet"
 require "functions"
+local chronos = require "chronos"
 
 local print = print
 local SERVICE_NAME = SERVICE_NAME
@@ -12,7 +13,7 @@ local function debuginfo()
 end
 
 local function strtime()
-    local time = skynet.time()
+    local time = chronos.nanotime()
     local ms = math.ceil((time % 1) * 1000)
     return string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),ms)
 end

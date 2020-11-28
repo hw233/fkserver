@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-
+local chronos = require "chronos"
 local log_name_files = {}
 local service_file = {}
 
@@ -29,7 +29,7 @@ function CMD.do_log(servicename,log)
 end
 
 local function log_text_dispatch(_, address, msg)
-	local time = skynet.time()
+	local time = chronos.nanotime()
 	local strtime = string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),math.ceil((time % 1) * 1000))
 	local log = string.format("%s %-8s%08x: %s",strtime,"SYSTEM ",address, msg)
 	local file = log_file("system")
