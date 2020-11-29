@@ -622,6 +622,13 @@ function base_room:enter_room(player,reconnect)
 			local s = onlineguid[guid]
 			log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
 				guid,def_game_id,reconnect,s.table,s.chair)
+			
+			reddb:hmset("player:online:guid:"..tostring(guid),{
+				first_game_type = def_first_game_type,
+				second_game_type = def_second_game_type,
+				server = def_game_id,
+			})
+
 			player.table_id = s.table
 			player.chair_id = s.chair
 		else
