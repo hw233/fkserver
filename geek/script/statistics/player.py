@@ -34,7 +34,7 @@ db_engine = my_create_engine(
 
 day_seconds = 60 * 60 * 24
 # 减5保证0点统计昨天数据
-now_timestamp = time.time() - 86400 * 10
+now_timestamp = time.time() - 10
 
 log_create_table_sql = [
     "USE log;",
