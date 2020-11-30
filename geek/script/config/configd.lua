@@ -416,10 +416,7 @@ end
 local function setup_default_redis_value()
     local global_conf = globalconf
     local first_guid = global_conf.first_guid or 100001
-    local exists = reddb:exists("player:global:guid")
-    if not exists or exists == 0 then
-        reddb:set("player:global:guid",math.floor(first_guid))
-    end
+    reddb:setnx("player:global:guid",math.floor(first_guid))
 end
 
 skynet.start(function()
