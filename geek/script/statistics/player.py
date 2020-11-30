@@ -168,12 +168,12 @@ def player_play_count():
         INSERT INTO t_log_player_daily_play_count(guid,club,game_id,`count`,date)
         SELECT guid,club,game_id,COUNT(DISTINCT(round)) `count`,date FROM
         (
-            SELECT r.club,r.game_id,pr.guid,r.round,(pr.create_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+            SELECT r.club,r.game_id,pr.guid,r.round,(r.start_time - @timezone) div 86400 * 86400 + @timezone date FROM 
                 t_log_round r
             JOIN
                 t_log_player_round pr
             ON r.round = pr.round
-            WHERE pr.create_time >= {} AND pr.create_time < {}
+            WHERE r.start_time >= {} AND r.start_time < {}
         ) d
         GROUP BY club,game_id,guid,date
         ON DUPLICATE KEY UPDATE `count` = VALUES(`count`);
@@ -331,7 +331,7 @@ def player_daily_win_lose():
         INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
         SELECT guid,club,game_id,SUM(delta_money) money,date FROM 
         (
-            SELECT guid,r.club,r.game_id,new_money - old_money delta_money,(g.created_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+            SELECT guid,r.club,r.game_id,new_money - old_money delta_money,(r.start_time - @timezone) div 86400 * 86400 + @timezone date FROM 
                 t_log_money m
             JOIN
                 log.t_log_game g
@@ -339,7 +339,7 @@ def player_daily_win_lose():
             JOIN
                 log.t_log_round r
             ON g.ext_round_id = r.round
-            WHERE g.created_time >= {} AND g.created_time < {}
+            WHERE r.start_time >= {} AND r.start_time < {}
         ) d
         GROUP BY club,game_id,guid,date
         ON DUPLICATE KEY UPDATE money = VALUES(money);
@@ -356,7 +356,7 @@ def player_daily_big_win_count():
     sql = """
         SELECT guid,club,game_id,round,SUM(delta_money) money,date FROM 
         (
-            SELECT guid,r.club,r.game_id,r.round,new_money - old_money delta_money,(g.created_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+            SELECT guid,r.club,r.game_id,r.round,new_money - old_money delta_money,(r.start_time - @timezone) div 86400 * 86400 + @timezone date FROM 
                 t_log_money m
             JOIN
                 t_log_game g
@@ -364,7 +364,7 @@ def player_daily_big_win_count():
             JOIN
                 t_log_round r
             ON g.ext_round_id = r.round
-            WHERE r.create_time >= {} AND r.create_time < {} AND m.money_id > 0
+            WHERE r.start_time >= {} AND r.start_time < {} AND m.money_id > 0
         ) d
         GROUP BY club,game_id,guid,round,date;
     """.format(
