@@ -189,6 +189,42 @@ function gmd.create_club(data)
     }
 end
 
+function gmd.del_club(data)
+    log.dump(data)
+    local club_id = tonumber(data.club_id)
+    if not club_id or club_id == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("club id is illigal.")
+        }
+    end
+
+    club_id = math.floor(club_id)
+
+    local code = channel.call("game.?","msg","B2S_CLUB_DEL",club_id)
+    return {
+        errcode = code ~= enum.ERROR_PLAYER_NO_RIGHT and error.SUCCESS or error.PARAMETER_ERROR,
+    }
+end
+
+function gmd.dismiss_club(data)
+    local club_id = tonumber(data.club_id)
+    if not club_id or club_id == 0 then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = string.format("club id is illigal.")
+        }
+    end
+
+    club_id = math.floor(club_id)
+
+    local code = channel.call("game.?","msg","B2S_CLUB_DISMISS",club_id)
+    return {
+        errcode = code ~= enum.ERROR_PLAYER_NO_RIGHT and error.SUCCESS or error.PARAMETER_ERROR,
+    }
+end
+
+
 function gmd.edit_club(data)
     local club_id = tonumber(data.club_id) or nil
     local club = base_clubs[club_id]
@@ -872,6 +908,8 @@ end
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
+gmd["club/del"] = gmd.del_club
+gmd["club/dismiss"] = gmd.dismiss_club
 gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove

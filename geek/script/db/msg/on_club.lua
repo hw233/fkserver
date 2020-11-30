@@ -151,6 +151,23 @@ function on_sd_dismiss_club(msg)
     return true
 end
 
+function on_sd_del_club(msg)
+    local club_id = msg.club_id
+    local res = dbopt.game:batchquery({
+        {"DELETE FROM t_club WHERE id = %d;",club_id},
+        {"DELETE FROM t_club_member WHERE club = %d;",club_id},
+        {"DELETE FROM t_club_money_type WHERE club = %d;",club_id},
+        {"DELETE FROM t_club_role WHERE club = %d;",club_id},
+        {"DELETE FROM t_partner_member WHERE club = %d;",club_id},
+    })
+    if res.errno then
+        log.error("on_sd_del_club delete member error:%d,%s",res.errno,res.err)
+        return
+    end
+
+    return true
+end
+
 function on_sd_add_club_member(msg)
     local club_id = msg.club_id
     local guid = msg.guid

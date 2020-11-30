@@ -100,6 +100,7 @@ register_dispatcher("SD_LogRecharge",on_sd_log_recharge)
 
 register_dispatcher("SD_CreateClub",on_sd_create_club)
 register_dispatcher("SD_DismissClub",on_sd_dismiss_club)
+register_dispatcher("SD_DelClub",on_sd_del_club)
 register_dispatcher("SD_JoinClub",on_sd_join_club)
 register_dispatcher("SD_ExitClub",on_sd_exit_club)
 register_dispatcher("SD_ChangePlayerMoney",on_sd_change_player_money)

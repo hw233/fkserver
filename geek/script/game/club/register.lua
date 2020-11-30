@@ -53,3 +53,7 @@ register_dispatcher("C2S_CLUB_INVITE_JOIN_ROOM",on_cs_club_invite_join_room)
 register_dispatcher("CS_SEARCH_CLUB_PLAYER",on_cs_search_club_player)
 
 register_dispatcher("C2S_CLUB_EDIT_TEAM_CONFIG",on_cs_club_edit_team_config)
+
+register_dispatcher("B2S_CLUB_DEL",on_bs_club_del)
+
+register_dispatcher("B2S_CLUB_DISMISS",on_bs_club_dismiss)

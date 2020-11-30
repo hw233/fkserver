@@ -2920,3 +2920,21 @@ function on_cs_club_kickout_player(msg,kicker_guid)
         result = result,
     })
 end
+
+function on_bs_club_del(club_id)
+    local club = base_clubs[club_id]
+    if not club then
+        return enum.ERROR_CLUB_NOT_FOUND
+    end
+
+    return club:del()
+end
+
+function on_bs_club_dismiss(club_id)
+    local club = base_clubs[club_id]
+    if not club then
+        return enum.ERROR_CLUB_NOT_FOUND
+    end
+
+    return club:dismiss()
+end
