@@ -157,6 +157,7 @@ cleanall: clean
 ifneq (,$(wildcard 3rd/jemalloc/Makefile))
 	cd 3rd/jemalloc && $(MAKE) clean && rm Makefile
 endif
+	cd 3rd/lua-cjson && $(MAKE) clean
 	cd 3rd/lua && $(MAKE) clean
 	rm -f $(LUA_STATICLIB)
 
