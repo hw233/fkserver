@@ -36,6 +36,9 @@ day_seconds = 60 * 60 * 24
 # 减5保证0点统计昨天数据
 now_timestamp = time.time() - 10
 
+if 'offset' in my_conf:
+    now_timestamp = time.time() - 86400 * int(my_conf['offset'])
+
 log_create_table_sql = [
     "USE log;",
     """
@@ -162,22 +165,24 @@ def pd_insert_or_update(dup_update_name):
 
 def player_play_count():
     sql = """
-        INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
-        SELECT pr.guid,r.club,r.game_id,COUNT(DISTINCT(r.round)) count,pr.create_time div 86400 * 86400 + {}  date FROM 
-            t_log_round r
-        LEFT JOIN
-            t_log_player_round pr
-        ON r.round = pr.round
-        WHERE pr.create_time >= {} AND pr.create_time < {}
-        GROUP BY r.club,r.game_id,pr.guid,pr.create_time div 86400 * 86400 + {}
-        ON DUPLICATE KEY UPDATE count = VALUES(count);
+        INSERT INTO t_log_player_daily_play_count(guid,club,game_id,`count`,date)
+        SELECT guid,club,game_id,COUNT(DISTINCT(round)) `count`,date FROM
+        (
+            SELECT r.club,r.game_id,pr.guid,r.round,(pr.create_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+                t_log_round r
+            JOIN
+                t_log_player_round pr
+            ON r.round = pr.round
+            WHERE pr.create_time >= {} AND pr.create_time < {}
+        ) d
+        GROUP BY club,game_id,guid,date
+        ON DUPLICATE KEY UPDATE `count` = VALUES(`count`);
     """.format(
-        time.timezone,
         floor_today_time(now_timestamp),
-        floor_next_time(now_timestamp),
-        time.timezone
+        floor_next_time(now_timestamp)
     )
     db_engine.execute("USE log;")
+    db_engine.execute("SET @timezone = {};".format(time.timezone))
     db_engine.execute(sql)
 
     pass
@@ -301,18 +306,21 @@ def team_money():
 
 
 def player_commission_contribute():
+    db_engine.execute("USE log;".format(time.timezone))
+    db_engine.execute("SET @timezone = {};".format(time.timezone))
     db_engine.execute('''
-        INSERT INTO log.t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
-        SELECT parent,son,SUM(commission) commission,template,club,create_time div 86400 * 86400 + {} date 
-        FROM log.t_log_player_commission_contribute
-        WHERE create_time >= {} AND create_time < {}
-        GROUP BY parent,son,template,club,create_time div 86400 * 86400 + {}
+        INSERT INTO t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
+        SELECT parent,son,SUM(commission) commission,template,club,date FROM
+        (
+            SELECT parent,son,commission,template,club,(create_time - @timezone) div 86400 * 86400 + @timezone date 
+            FROM t_log_player_commission_contribute
+            WHERE create_time >= {} AND create_time < {}
+        ) d
+        GROUP BY parent,son,template,club,date
         ON DUPLICATE KEY UPDATE commission = VALUES(commission);
     '''.format(
-        time.timezone,
         floor_today_time(now_timestamp),
-        floor_next_time(now_timestamp),
-        time.timezone
+        floor_next_time(now_timestamp)
     ))
 
     pass
@@ -321,45 +329,49 @@ def player_commission_contribute():
 def player_daily_win_lose():
     sql = """
         INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
-        SELECT guid,r.club,r.game_id,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 + {} date FROM 
-			t_log_money m
-        LEFT JOIN
+        SELECT guid,club,game_id,SUM(delta_money) money,date FROM 
+        (
+            SELECT guid,r.club,r.game_id,new_money - old_money delta_money,(g.created_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+                t_log_money m
+            JOIN
                 log.t_log_game g
-        ON m.reason_ext = g.round_id AND m.money_id != 0
-        LEFT JOIN
+            ON m.reason_ext = g.round_id AND m.money_id != 0
+            JOIN
                 log.t_log_round r
-        ON g.ext_round_id = r.round
-        WHERE g.created_time >= {} AND g.created_time < {}
-        GROUP BY r.club,r.game_id,m.guid,g.created_time div 86400 * 86400 + {}
+            ON g.ext_round_id = r.round
+            WHERE g.created_time >= {} AND g.created_time < {}
+        ) d
+        GROUP BY club,game_id,guid,date
         ON DUPLICATE KEY UPDATE money = VALUES(money);
     """.format(
-        time.timezone,
         floor_today_time(now_timestamp),
-        floor_next_time(now_timestamp),
-        time.timezone
+        floor_next_time(now_timestamp)
     )
     db_engine.execute("USE log;")
+    db_engine.execute("SET @timezone = {};".format(time.timezone))
     db_engine.execute(sql)
     pass
 
 def player_daily_big_win_count():
     sql = """
-        SELECT guid,r.club,r.game_id,r.round,SUM(new_money - old_money) money,g.created_time div 86400 * 86400 + {} date FROM 
-			t_log_money m
-        LEFT JOIN
-            t_log_game g
-        ON m.reason_ext = g.round_id AND m.money_id != 0
-        LEFT JOIN
-            t_log_round r
-        ON g.ext_round_id = r.round
-        WHERE r.create_time >= {} AND r.create_time < {}
-        GROUP BY r.club,r.game_id,m.guid,r.round,g.created_time div 86400 * 86400 + {};
+        SELECT guid,club,game_id,round,SUM(delta_money) money,date FROM 
+        (
+            SELECT guid,r.club,r.game_id,r.round,new_money - old_money delta_money,(g.created_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+                t_log_money m
+            JOIN
+                t_log_game g
+            ON m.reason_ext = g.round_id
+            JOIN
+                t_log_round r
+            ON g.ext_round_id = r.round
+            WHERE r.create_time >= {} AND r.create_time < {} AND m.money_id > 0
+        ) d
+        GROUP BY club,game_id,guid,round,date;
     """.format(
-        time.timezone,
         floor_today_time(now_timestamp),
-        floor_next_time(now_timestamp),
-        time.timezone
+        floor_next_time(now_timestamp)
     )
+    db_engine.execute("SET @timezone = {};".format(time.timezone))
     data = pd.read_sql_query(sql,db_engine)
     bigwins = data.groupby('round').apply(lambda t: t[t['money'] == t['money'].max()])
     bigwins = bigwins.groupby(['club','guid','game_id','date']).count().reset_index()
