@@ -82,6 +82,16 @@ function on_sd_log_ext_game_round_end(msg)
         log.error("UPDATE t_log_round error:%s:%s",ret.errno,ret.err)
         return
     end
+
+    for guid,money in pairs(log.balance or {}) do
+        local ret = dbopt.log:query([[
+          INSERT INTO t_log_round_money(round,guid,money,create_time)
+          VALUES('%s',%s,%s,%s)  
+        ]],round,guid,money,os.time())
+        if ret.errno then
+            log.error('INSERT INTO t_log_round_money error:%s',ret.err)
+        end
+    end
 end
 
 function on_sd_log_ext_game_round_player_join(msg)
