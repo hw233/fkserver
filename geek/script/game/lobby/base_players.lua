@@ -2,7 +2,13 @@ local redisopt = require "redisopt"
 
 local base_player = require "game.lobby.base_player"
 
+local timermgr = require "timermgr"
+
+local log = require "log"
+
 local reddb = redisopt.default
+
+local unused_player_info_elapsed = 30
 
 local player_manager = {}
 
@@ -145,5 +151,19 @@ function player_manager.update_game_notice_everyone(msg)
 		end
 	end
 end
+
+timermgr:loop(unused_player_info_elapsed,function()
+	for guid,info in pairs(player_manager) do
+		if type(guid) == "number" then
+			if not info.online and 
+				not info.table_id and 
+				not info.chair_id 
+			then
+				log.info("clean unused player info %s",guid)
+				player_manager[guid] = nil
+			end
+		end
+	end
+end)
 
 return player_manager
