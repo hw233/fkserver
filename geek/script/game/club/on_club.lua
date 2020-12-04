@@ -711,6 +711,8 @@ function on_cs_club_request_list_req(msg,guid)
     local club_id = msg.club_id
     local reqs = table.series(club_request[club_id],function(_,rid) 
         local req = base_request[rid]
+        if not req then return end
+
         local player = base_players[req.who]
         return {
             req_id = req.id,
