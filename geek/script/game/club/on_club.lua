@@ -2546,7 +2546,7 @@ function on_cs_club_get_config(msg,guid)
     end
 
     local role = club_role[club_id][guid]
-    if role ~= enum.CRT_BOSS then
+    if role ~= enum.CRT_BOSS and role ~= enum.CRT_ADMIN then
         onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
             result = enum.ERROR_PLAYER_NO_RIGHT,
             club_id = club_id,
