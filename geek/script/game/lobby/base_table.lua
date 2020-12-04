@@ -34,6 +34,7 @@ local game_util = require "game.util"
 local dismiss_timeout = 60
 local auto_dismiss_timeout = 2 * 60
 local auto_kickout_timer = 1 * 60
+local auto_ready_timeout = 10
 
 local EXT_ROUND_STATUS = {
 	NONE = enum.ERS_NONE,
@@ -859,7 +860,7 @@ function base_table:on_game_overed()
 	end
 
 	if self:is_round_gaming() then
-		local is_trustee,seconds = self:get_trustee_conf()
+		local is_trustee,_ = self:get_trustee_conf()
 		if not is_trustee then return end
 
 		if self:can_dismiss_by_trustee() then
@@ -873,7 +874,7 @@ function base_table:on_game_overed()
 			return 
 		end
 
-		self:auto_ready(seconds)
+		self:auto_ready(auto_ready_timeout)
 	end
 end
 
