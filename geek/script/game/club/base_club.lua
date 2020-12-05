@@ -33,6 +33,7 @@ local club_request = require "game.club.club_request"
 local player_request = require "game.club.player_request"
 local club_block_groups = require "game.club.block.groups"
 local club_notice = require "game.notice.club_notice"
+local club_block_group_players = require "game.club.block.group_players"
 
 local reddb = redisopt.default
 
