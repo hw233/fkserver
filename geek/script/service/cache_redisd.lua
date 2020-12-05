@@ -2,6 +2,7 @@ local skynet = require "skynetproto"
 local redis = require "skynet.db.redis"
 local log = require "log"
 local timer = require "timer"
+local queue = require "skynet.queue"
 
 LOG_NAME = "redis_cached"
 
@@ -11,14 +12,18 @@ local cache = {}
 
 local default_elapsed_time = 5
 
+local lock = queue()
+
 local function elapsed_cache_key()
 	local time = os.time()
-	for key,c in pairs(cache) do
-		if time - c.time > default_elapsed_time then
-			log.info("del cache key %s",key)
-			cache[key] = nil
+	lock(function()
+		for key,c in pairs(cache) do
+			if time - c.time > default_elapsed_time then
+				log.info("del cache key %s",key)
+				cache[key] = nil
+			end
 		end
-	end
+	end)
 
 	timer.timeout(default_elapsed_time,elapsed_cache_key)
 end
@@ -29,7 +34,7 @@ end
 
 local function new_commander(cmd,fn)
 	return function(db,...)
-		return fn(db,cmd,...)
+		return lock(fn,db,cmd,...)
 	end
 end
 
