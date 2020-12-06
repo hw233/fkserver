@@ -113,14 +113,30 @@ end
 
 function on_sl_log_game(msg)
     log.info("...................... on_sl_log_game")
+    local gamelog = msg.log
+    local round_id = msg.round_id
     json.encode_sparse_array(true)  
     local ret = dbopt.log:query([[
         INSERT INTO `log`.`t_log_game` (`round_id`, `game_id`,`game_name`, `log`, `ext_round_id`, `start_time`,`end_time`,`created_time`)
         VALUES ('%s',%d, '%s', '%s','%s', %d, %d, %d);
         ]],
-        msg.round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime,os.time())
+        round_id,msg.game_id,msg.game_name,json.encode(msg.log),msg.ext_round_id,msg.starttime,msg.endtime,os.time())
     if ret.errno then
-        log.error(ret.err)
+        log.error("INSERT INTO t_log_game error:%s",ret.err)
+    end
+
+    local sqls = table.series(gamelog.players or {},function(p,chair)
+        return {
+            [[INSERT IGNORE INTO t_log_player_game(guid,chair_id,round_id,created_time) VALUES(%s,%s,'%s',unix_timestamp())]],
+            p.guid,
+            p.chair_id or chair,
+            round_id
+        }
+    end)
+
+    ret = dbopt.log:batchquery(sqls)
+    if ret.errno then
+        log.error("INSERT INTO t_log_player_game error:%s",ret.err)
     end
 end
 
