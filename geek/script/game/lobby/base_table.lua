@@ -1979,7 +1979,8 @@ function base_table:on_process_start(player_count)
 		game_name = def_game_name,
 		ext_round = self.ext_round_id,
 		guids = table.series(self.players,function(p) return p.guid end),
-		table_id = self.private_id
+		table_id = self.private_id,
+		rule = self.rule,
 	})
 end
 

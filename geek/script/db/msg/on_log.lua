@@ -46,11 +46,15 @@ function on_sd_log_ext_game_round_start(msg)
     local template = msg.template
     local game_id = msg.game_id
     local game_name = msg.game_name
+    local rule = msg.rule
 
+    json.encode_sparse_array(true)
     local ret = dbopt.log:query([[
-            INSERT INTO t_log_round(round,table_id,club,template,game_id,game_name,log,start_time,end_time,create_time) 
-            VALUES('%s',%s,%s,%s,%s,'%s','',unix_timestamp(),unix_timestamp(),unix_timestamp());
-        ]],round,table_id,club or 'NULL',template or "NULL",game_id or 'NULL',game_name or "")
+            INSERT INTO t_log_round(round,table_id,club,template,game_id,game_name,rule,start_time,end_time,create_time) 
+            VALUES('%s',%s,%s,%s,%s,'%s','%s',unix_timestamp(),unix_timestamp(),unix_timestamp());
+        ]],round,table_id,club or 'NULL',template or "NULL",game_id or 'NULL',game_name or "",
+            rule and json.encode(rule) or ""
+        )
     if ret.errno then
         log.error("INSERT INTO t_log_round error:%s:%s",ret.errno,ret.err)
         return
