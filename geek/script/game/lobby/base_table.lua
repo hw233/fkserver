@@ -31,9 +31,9 @@ local reddb = redisopt.default
 local queue = require "skynet.queue"
 local game_util = require "game.util"
 
-local dismiss_timeout = 60
+local dismiss_request_timeout = 60
 local auto_dismiss_timeout = 2 * 60
-local auto_kickout_timer = 1 * 60
+local auto_kickout_timer = 2 * 60
 local auto_ready_timeout = 10
 
 local EXT_ROUND_STATUS = {
@@ -256,7 +256,7 @@ function base_table:on_reconnect(player)
 end
 
 function base_table:request_dismiss(player)
-	local timer = self:new_timer(dismiss_timeout,function()
+	local timer = self:new_timer(dismiss_request_timeout,function()
 		self:foreach(function(p)
 			if not self.dismiss_request then
 				return
@@ -289,7 +289,7 @@ function base_table:request_dismiss(player)
 		request_guid = player.guid,
 		request_chair_id = player.chair_id,
 		datetime = os.time(),
-		timeout = dismiss_timeout,
+		timeout = dismiss_request_timeout,
 	})
 
 	self:broadcast2client("SC_DismissTableCommit",{
