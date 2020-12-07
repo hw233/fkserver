@@ -22,6 +22,7 @@ local boot = {
         },
     },
     enable_log = true,
+    stdout_log = true,
 }
 
 return boot

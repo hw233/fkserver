@@ -3,10 +3,14 @@ local skynet = require "skynet"
 require "functions"
 local chronos = require "chronos"
 
+
 local print = print
 local SERVICE_NAME = SERVICE_NAME
 local logd = ".logd"
 local debuglayer = 3
+
+local bootconf = require "conf.boot"
+local stdout_enable = bootconf.stdout_log
 
 local function debuginfo()
     return debug.getinfo(debuglayer)
@@ -25,6 +29,10 @@ local level_fmts = {
 
 local function log_out(s,level)
     skynet.send(logd, "lua","do_log",LOG_NAME or SERVICE_NAME,s)
+
+    if not stdout_enable then
+        return
+    end
 
     local level_fmt = level and level_fmts[level] or nil
     if level_fmt then 
