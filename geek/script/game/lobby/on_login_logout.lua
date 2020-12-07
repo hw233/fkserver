@@ -232,6 +232,7 @@ function logout(guid,offline)
 
 	if os.server ~= def_game_id then
 		log.error("logout %s,offline:%s session server %s ~= %s",guid,offline,os.server,def_game_id)
+		return
 	end
 
 	local player = base_players[guid]
