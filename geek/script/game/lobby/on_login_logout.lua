@@ -1147,17 +1147,14 @@ end
 -- 加入私人房间
 function on_cs_join_private_room(msg,guid,game_id)
 	local player = base_players[guid]
-	local reconnect = msg.reconnect
+	local reconnect = msg.reconnect and msg.reconnect ~= 0
 	local global_table_id = msg.table_id
-	if reconnect and reconnect ~= 0 then
-		local onlineinfo = onlineguid[guid]
-		if not onlineinfo then
-			onlineguid.send(guid,"SC_JoinRoom",{
-				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
-			})
-			return
-		end
-		global_table_id = onlineinfo.global_table
+	local os = onlineguid[guid]
+	if reconnect and not os then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
+		})
+		return
 	end
 
 	if not global_table_id then
@@ -1193,7 +1190,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 
 	player.inactive = nil
 
-	if reconnect and reconnect ~= 0 then
+	if os and os.table or os.chair and os.server == def_game_id then
 		on_cs_reconnect(guid)
 		return
 	end
