@@ -2161,6 +2161,16 @@ function on_cs_play_once_again(msg,guid)
 		return
 	end
 
+	local rule = tb.rule
+	local club = tb.conf.club
+	local result = check_create_table_limit(player,rule,club)
+	if result then
+		onlineguid.send(guid,"SC_PlayOnceAgain",{
+			result = result,
+		})
+		return
+	end
+
 	local result = tb:lockcall(function() 
 		return tb:play_once_again(player)
 	end)
