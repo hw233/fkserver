@@ -33,7 +33,7 @@ local game_util = require "game.util"
 
 local dismiss_request_timeout = 60
 local auto_dismiss_timeout = 2 * 60
-local auto_kickout_timer = 2 * 60
+local auto_kickout_timeout = 2 * 60
 local auto_ready_timeout = 10
 
 local EXT_ROUND_STATUS = {
@@ -1382,7 +1382,7 @@ function base_table:delay_kickout(player,reason)
 		return
 	end
 
-	player.kickout_timer = self:new_timer(auto_kickout_timer,function()
+	player.kickout_timer = self:new_timer(auto_kickout_timeout,function()
 		self:cancel_delay_kickout(player)
 		player:forced_exit(reason)
 	end)
