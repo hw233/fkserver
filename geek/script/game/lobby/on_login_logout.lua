@@ -1151,11 +1151,14 @@ function on_cs_join_private_room(msg,guid,game_id)
 	local reconnect = msg.reconnect and msg.reconnect ~= 0
 	local global_table_id = msg.table_id
 	local os = onlineguid[guid]
-	if reconnect and not os then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
-		})
-		return
+	if reconnect then
+		if not os then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
+			})
+			return
+		end
+		global_table_id = os.global_table
 	end
 
 	if not global_table_id then
