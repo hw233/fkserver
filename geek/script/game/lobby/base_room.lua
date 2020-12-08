@@ -1000,6 +1000,8 @@ function base_room:player_logout_server(player)
 	if not os then
 		log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,got nil online session",
 			guid,def_first_game_type,def_game_id)
+		base_players[guid] = nil
+		onlineguid[guid] = nil
 		return
 	end
 
