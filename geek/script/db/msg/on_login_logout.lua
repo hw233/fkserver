@@ -1766,8 +1766,8 @@ function on_ld_reg_account(msg)
 
 	local transqls = {
 		{	[[
-				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,union_id,promoter,channel_id,created_time) 
-				VALUES(%d,'%s','%s','%s','%s','%s','%s',%s,'%s',NOW())
+				INSERT INTO t_player(guid,account,nickname,level,head_url,phone,phone_type,union_id,promoter,channel_id,created_time) 
+				VALUES(%d,'%s','%s','%s','%s','%s','%s','%s',%s,'%s',NOW())
 			]],
 			guid,
 			msg.account,
@@ -1775,6 +1775,7 @@ function on_ld_reg_account(msg)
 			msg.level,
 			msg.icon,
 			msg.phone or "",
+			msg.phone_type or "unknown",
 			msg.union_id or "",
 			msg.promoter or "NULL",
 			msg.channel_id or ""
