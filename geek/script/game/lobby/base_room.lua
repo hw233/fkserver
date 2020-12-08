@@ -927,13 +927,14 @@ end
 function base_room:player_exit_room(player)
 	local guid = player.guid
 	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
-	if player.online and not common.is_in_lobby() then
-		local lobby_id = common.find_best_room(1)
-		if not lobby_id then
-			log.error("base_room:player_exit_room can not find default lobby.")
+	if player.online and not common.is_in_lobby(guid)then
+		if common.is_player_in_lobby(guid) then
+			log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
+				guid,def_game_id,player.online)
 			return
 		end
-		common.switch_to(guid,lobby_id)
+		
+		common.switch_to_lobby(guid)
 		self.cur_player_count_ = self.cur_player_count_ - 1
 		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 		base_players[guid] = nil
@@ -948,12 +949,14 @@ function base_room:player_kickout_room(player)
 	local guid = player.guid
 	log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
 	if player.online and not common.is_in_lobby() then
-		local lobby_id = common.find_best_room(1)
-		if not lobby_id then
-			log.error("base_room:player_kickout_room can not find default lobby.")
+		if common.is_player_in_lobby(guid) then
+			log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
+				guid,def_game_id,player.online)
 			return
 		end
-		common.switch_to(guid,lobby_id)
+
+		common.switch_to_lobby(guid)
+
 		self.cur_player_count_ = self.cur_player_count_ - 1
 
 		log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)

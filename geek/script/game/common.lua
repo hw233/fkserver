@@ -71,10 +71,17 @@ function common.switch_to_lobby(guid)
 	base_players[guid].online = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
+
+	return true
 end
 
 function common.is_in_lobby()
 	return def_first_game_type == 1
+end
+
+function common.is_player_in_lobby(guid)
+	local os = onlineguid[guid]
+	return os and os.server and os.first_game_type == common.lobby_game_type()
 end
 
 function common.lobby_game_type()
