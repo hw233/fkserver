@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local chronos = require "chronos"
 
 local timer = {}
 
@@ -9,7 +10,11 @@ end
 timer.timeout = timer.add_timer
 
 function timer.milliseconds_time()
-	return math.floor(skynet.time() * 1000)
+	return math.floor(chronos.nanotime() * 1000)
+end
+
+function timer.nanotime()
+	return chronos.nanotime()
 end
 
 return timer
