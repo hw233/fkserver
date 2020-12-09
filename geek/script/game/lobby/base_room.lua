@@ -12,7 +12,8 @@ local serviceconf = require "serviceconf"
 local nameservice = require "nameservice"
 local queue = require "skynet.queue"
 local common = require "game.common"
-
+local game_util = require "game.util"
+local club_utils = require "game.club.club_utils"
 
 require "game.net_func"
 local timer_manager = require "game.timer_manager"
@@ -336,6 +337,27 @@ function base_room:del_table(id)
 	self.tables[id] = nil
 end
 
+function base_room:play_once_again(player)
+	if player.trustee then
+		return enum.ERROR_OPERATION_INVALID
+	end
+
+	if not player.table_id or not player.chair_id then
+		return enum.ERROR_PLAYER_NOT_IN_GAME
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if not tb then
+		return enum.ERROR_TABLE_NOT_EXISTS
+	end
+
+	local result = tb:lockcall(function() 
+		return tb:play_once_again(player)
+	end)
+
+	return result,tb:hold_ext_game_id()
+end
+
 -- 创建私人房间
 function base_room:create_private_table(player,chair_count,round, rule,club)
 	if player.table_id or player.chair_id then
@@ -343,16 +365,10 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
-	-- if self.cur_player_count_ >= self.player_count_limit then
-	-- 	log.warning("room player is full,%s,%d",def_game_name,def_game_id)
-	-- 	return enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-	-- end
-
-	-- local tb,table_id = self:find_empty_table()
-	-- if not tb then
-	-- 	log.info("create private table:%s,%d no found table",def_game_name,def_game_id,player.guid)
-	-- 	return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	-- end
+	local room_fee_result = self:check_room_fee(rule,club,player)
+	if room_fee_result ~= enum.ERROR_NONE then
+		return room_fee_result
+	end
 
 	local global_tid = math.random(100000,999999)
 	for _ = 1,1000 do
@@ -1127,6 +1143,37 @@ function base_room:check_player_is_in_blacklist( player_guid )
 	end
 
 	return self.blacklist_player[player_guid]
+end
+
+function base_room:check_room_fee(rule,club,player)
+	if game_util.is_private_fee_free(club) then
+		log.warning("check_create_table_limit room fee switch is closed.")
+		return enum.ERROR_NONE
+	end
+
+	local payopt = rule.pay.option
+	local roomfee = g_room:get_private_fee(rule)
+	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
+		if player:check_money_limit(roomfee,0) then
+			return enum.ERROR_LESS_ROOM_CARD
+		end
+	elseif payopt == enum.PAY_OPTION_BOSS then
+		if not club then 
+			return enum.ERROR_PARAMETER_ERROR
+		end
+		
+		local root = club_utils.root(club)
+		if not root then 
+			return enum.ERROR_PARAMETER_ERROR
+		end
+
+		local boss = base_players[root.owner]
+		if boss:check_money_limit(roomfee,0) then
+			return enum.ERROR_LESS_ROOM_CARD
+		end
+	end
+
+	return enum.ERROR_NONE
 end
 
 return base_room

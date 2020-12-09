@@ -57,6 +57,7 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_ROUND_END] = enum.DISMISS_REASON_ROUND_END,
 	[enum.STANDUP_REASON_BLOCK_GAMING] = enum.DISMISS_REASON_ROUND_END,
 	[enum.STANDUP_REASON_CLUB_CLOSE] = enum.DISMISS_REASON_ROUND_END,
+	[enum.STANDUP_REASON_LESS_ROOM_FEE] = enum.DISMISS_REASON_LESS_ROOM_FEE,
 }
 
 -- local base_prize_pool = require "game.lobby.base_prize_pool"
@@ -836,6 +837,16 @@ function base_table:on_game_overed()
 		self:on_final_game_overed()
 		self:kickout_players_when_round_over()
 		if self:is_private() then
+			if game_util.is_in_maintain() then
+				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)
+				return
+			end
+
+			if self:check_private_fee() ~= enum.ERROR_NONE then
+				self:force_dismiss(enum.STANDUP_REASON_LESS_ROOM_FEE)
+				return
+			end
+
 			local club = self.club_id and base_clubs[self.club_id] or nil
 			if club then
 				if club:is_block() or club:is_close() then
@@ -850,11 +861,12 @@ function base_table:on_game_overed()
 				end)
 			end
 
-			if not game_util.is_in_maintain() then
-				self:delay_normal_dismiss(enum.STANDUP_REASON_ROUND_END)
-			else
-				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)
+			-- 检查前面踢人时是否已解散房间
+			if not self:is_private() then
+				return
 			end
+
+			self:delay_normal_dismiss(enum.STANDUP_REASON_ROUND_END)
 		end
 		return
 	end
@@ -1811,6 +1823,28 @@ function base_table:get_private_fee(rule)
 	return self.room_:get_private_fee(rule)
 end
 
+function base_table:check_private_fee()
+	local rule = self.rule
+	local payopt = rule.pay.option
+	if payopt == enum.PAY_OPTION_AA then
+		local all = table.logic_and(self.players,function(p) 
+			return self.room_:check_room_fee(self.rule,self.conf.club,p) == enum.ERROR_NONE
+		end)
+		return not all and enum.ERROR_LESS_ROOM_CARD or enum.ERROR_NONE
+	elseif payopt == enum.PAY_OPTION_OWNER then
+		local owner = base_players[self.owner_guid]
+		return self.room_:check_room_fee(self.rule,self.conf.club,owner)
+	elseif payopt == enum.PAY_OPTION_BOSS then
+		if not self.conf.club then
+			return enum.ERROR_PARAMETER_ERROR
+		end
+
+		return self.room_:check_room_fee(self.rule,self.conf.club)
+	end
+
+	return enum.ERROR_NONE
+end
+
 function base_table:cost_private_fee()
 	if not self:is_private() then
 		return
@@ -2289,6 +2323,11 @@ function base_table:log_msg(str)
 end
 
 function base_table:play_once_again(player)
+	local room_fee_result = self:check_private_fee()
+	if room_fee_result ~= enum.ERROR_NONE then
+		return room_fee_result
+	end
+
 	local club = self.conf.club
 	if club and self.rule and not club:can_sit_down(self.rule,player) then
         return enum.ERROR_LESS_GOLD

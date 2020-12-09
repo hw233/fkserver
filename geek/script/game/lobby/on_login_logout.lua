@@ -856,38 +856,6 @@ local function check_rule(rule)
 	return enum.ERROR_NONE,play_round,chair_count,pay_option,money_type
 end
 
-local function check_create_table_limit(player,rule,club)
-	if game_util.is_private_fee_free(club) then
-		log.warning("check_create_table_limit room fee switch is closed.")
-		return
-	end
-
-	local payopt = rule.pay.option
-	local roomfee = g_room:get_private_fee(rule)
-	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
-		if player:check_money_limit(roomfee,0) then
-			return enum.ERROR_LESS_ROOM_CARD
-		end
-	elseif payopt == enum.PAY_OPTION_BOSS then
-		if not club then 
-			return enum.ERROR_PARAMETER_ERROR
-		end
-		
-		local root = club_utils.root(club)
-		if not root then 
-			return enum.ERROR_PARAMETER_ERROR
-		end
-
-		local boss = base_players[root.owner]
-		if boss:check_money_limit(roomfee,0) then
-			return enum.ERROR_LESS_ROOM_CARD
-		end
-	end
-
-	return
-end
-
-
 function on_cs_create_private_room(msg,guid,game_id)
 	local game_type = msg.game_type
     local club_id = msg.club_id
@@ -998,21 +966,11 @@ function on_cs_create_private_room(msg,guid,game_id)
 		return
 	end
 
-	local result,global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
-	local errno = check_create_table_limit(player,rule,club)
-	if errno then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = errno,
-			game_type = game_type,
-		})
-		return
-	end
-
+	local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
 			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.ERROR_CLUB_NOT_FOUND,
-				game_type = game_type,
 			})
 			return
 		end
@@ -2140,46 +2098,11 @@ function on_cs_play_once_again(msg,guid)
 		return
 	end
 
-	if player.trustee then
-		onlineguid.send(guid,"SC_PlayOnceAgain",{
-			result = enum.ERROR_OPERATION_INVALID
-		})
-		return
-	end
-
-	if not player.table_id or not player.chair_id then
-		onlineguid.send(guid,"SC_PlayOnceAgain",{
-			result = enum.ERROR_PLAYER_NOT_IN_GAME
-		})
-		return
-	end
-
-	local tb = g_room:find_table_by_player(player)
-	if not tb then
-		onlineguid.send(guid,"SC_PlayOnceAgain",{
-			result = enum.ERROR_TABLE_NOT_EXISTS
-		})
-		return
-	end
-
-	local rule = tb.rule
-	local club = tb.conf.club
-	local result = check_create_table_limit(player,rule,club)
-	if result then
-		onlineguid.send(guid,"SC_PlayOnceAgain",{
-			result = result,
-		})
-		return
-	end
-
-	local result = tb:lockcall(function() 
-		return tb:play_once_again(player)
-	end)
-
+	local result,round_id = g_room:play_once_again(player)
 	onlineguid.send(guid,"SC_PlayOnceAgain",{
 		result = result,
 		round_info = {
-			round_id = tb:hold_ext_game_id(),
+			round_id = round_id,
 		}
 	})
 end
