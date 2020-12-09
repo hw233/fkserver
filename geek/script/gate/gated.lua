@@ -240,9 +240,10 @@ function FORWARD.lua(who,...)
 end
 
 local function guid_monitor()
+    local now = os.time()
     for _,u in pairs(onlineguid) do
         local last_live_time = u.last_live_time
-        if last_live_time and os.time() - last_live_time > heartbeat_check_time then
+        if last_live_time and now - last_live_time > heartbeat_check_time then
             afk(u.fd)
             if u.fd then
                 msgserver.closeclient(u.fd)
