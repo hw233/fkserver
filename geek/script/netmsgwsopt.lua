@@ -83,7 +83,10 @@ end
 
 function NETMSG.dispatch(msgid,msg,...)
     local f = dispatcher[msgid]
-	assert(f, string.format("on_net_msg msgid:%s", msgid))
+    if not f then
+        log.trace("on_net_msg dispatch error,unkown msgid:%s",msgid)
+        return
+    end
 
     return f(msg,...)
 end
