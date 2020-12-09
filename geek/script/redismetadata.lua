@@ -35,6 +35,9 @@ tree.player.info["%d+"] = {
 tree.player.money["%d+"] = "number_hash" 
 tree.player.money["%d+"]["%d+"] = "number"
 
+tree.player.winlose["%d+"] = "number_hash" 
+tree.player.winlose["%d+"]["%d+"] = "number"
+
 tree.player.club["%d+"]["%d+"] = "set"
 tree.player.club["%d+"]["%d+"]["%d+"] = "number"
 

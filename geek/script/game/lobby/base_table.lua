@@ -30,6 +30,7 @@ local club_partners = require "game.club.club_partners"
 local reddb = redisopt.default
 local queue = require "skynet.queue"
 local game_util = require "game.util"
+local player_winlose = require "game.lobby.player_winlose"
 
 local dismiss_request_timeout = 60
 local auto_dismiss_timeout = 2 * 60
@@ -1962,8 +1963,10 @@ function base_table:balance(moneies,why)
 
 		for chair_or_guid,money in pairs(moneies) do
 			if money ~= 0 then
+				money = math.floor(money)
 				local p = self.players[chair_or_guid] or base_players[chair_or_guid]
-				club:incr_member_money(p.guid,math.floor(money),why,self.round_id)
+				club:incr_member_money(p.guid,money,why,self.round_id)
+				player_winlose.incr_money(p.guid,money_id,money)
 			end
 		end
 
@@ -1972,11 +1975,14 @@ function base_table:balance(moneies,why)
 	
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
+			money = math.floor(money)
 			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
 			p:incr_money({
 				money_id = money_id,
-				money = math.floor(money),
+				money = money,
 			},why,self.round_id)
+
+			player_winlose.incr_money(p.guid,money_id,money)
 		end
 	end
 
