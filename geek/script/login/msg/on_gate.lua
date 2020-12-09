@@ -85,6 +85,10 @@ local function reg_account(msg)
 
         local p = base_players[guid]
 
+        if util.is_in_maintain() and (not p.vip or p.vip == 0) then
+            return enum.LOGIN_RESULT_MAINTAIN
+        end
+
         local info = {
             guid = guid,
             account = p.open_id,
@@ -105,6 +109,7 @@ local function reg_account(msg)
             promoter = p.promoter,
             channel_id = p.channel_id,
             union_id = msg.union_id,
+            vip = p.vip,
         }
         
         return enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC,info
@@ -208,6 +213,7 @@ local function open_id_login(msg,gate)
         ip = player.ip,
         promoter = player.promoter,
         channel_id = player.channel_id,
+        vip = player.vip,
     }
 
     base_players[guid] = nil
@@ -231,10 +237,6 @@ local function wx_auth(msg)
 end
 
 function on_cl_auth(msg)
-    if util.is_in_maintain() then
-        return enum.LOGIN_RESULT_MAINTAIN
-    end
-
     local do_auth = wx_auth
     if not do_auth then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
@@ -367,6 +369,7 @@ local function sms_login(msg,_,session_id)
             ip = player.ip,
             promoter = player.promoter,
             channel_id = player.channel_id,
+            vip = player.vip,
         }
 
         base_players[guid] = nil
@@ -515,6 +518,7 @@ local function h5_login(msg,gate)
         ip = player.ip,
         promoter = player.promoter,
         channel_id = player.channel_id,
+        vip = player.vip,
     }
 
     base_players[guid] = nil
@@ -574,7 +578,7 @@ function on_cl_login(msg,gate,session_id)
         return info,game_id
     end
 
-    if util.is_in_maintain() then
+    if util.is_in_maintain() and (not info.vip or info.vip == 0) then
         return {
             result = enum.LOGIN_RESULT_MAINTAIN
         }
