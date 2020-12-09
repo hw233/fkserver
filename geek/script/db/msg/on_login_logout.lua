@@ -2992,39 +2992,36 @@ function on_sd_bind_phone(msg)
 	dbopt.game:batchquery("UPDATE t_player SET phone = \"%s\" WHERE guid = %s;",phone,guid)
 end
 
-function on_sd_update_player_info(msg)
-	local guid = msg.guid
-
+function on_sd_update_player_info(msg,guid)
 	if 	(not guid or guid == 0) or
 		(
 			not msg.nickname and 
 			not msg.icon and 
-			not msg.phone
-		) 
+			not msg.phone and 
+			not msg.promoter and
+			not msg.channel_id and 
+			not msg.platform_id and
+			not msg.vip and 
+			not msg.head_url and 
+			not msg.status
+		)
 	then
 		return
 	end
 
-	local args = {}
-	local sql = "UPDATE t_player SET "
-	if msg.nickname then
-		sql = sql .. " nickname = '%s'";
-		table.insert(args, msg.nickname)
-	end
-
 	if msg.icon then
-		sql = sql ..  ", head_url = '%s'"
-		table.insert(args, msg.icon)
+		msg.head_url = msg.icon
+		msg.icon = nil
 	end
 
-	if msg.phone then
-		sql = sql .. ", phone = '%s'"
-		table.insert(args, msg.phone)
-	end
+	local sets = table.map(msg,function(v,f) 
+		local fmtv = type(v) == "string" and "'%s'" or '%s'
+		return string.format("%s = %s",f,fmtv),v
+	end)
 
-	sql = sql .. string.format(" WHERE guid = %s;",guid)
-
-	local r = dbopt.game:batchquery(sql,table.unapck(args))
+	local sql = string.format("UPDATE t_player SET %s  WHERE guid = %s;",table.concat(table.keys(sets),","),guid)
+	log.dump(sql)
+	local r = dbopt.game:query(sql,table.unpack(table.values(sets)))
 	if r.errno then
 		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
 	end

@@ -605,16 +605,14 @@ function gmd.update_player(data)
         }
     end
 
-    local update = {
-        channel_id = data.channel_id,
-        promoter = data.promoter,
-        platform_id = data.platform_id,
-    }
+    data.guid = nil
+    local update = data
 
     reddb:hmset("player:info:"..tostring(guid),update)
-
+    local ok = channel.pcall("db.?","msg","SD_UpdatePlayerInfo",update,guid)
     return {
-        errcode = error.SUCCESS
+        errcode = ok and error.SUCCESS or error.SERVER_ERROR,
+        errstr = not ok and "unkown server error",
     }
 end
 
@@ -904,6 +902,8 @@ function gmd.maintain_switch(data)
         switch = switch,
     }
 end
+
+
 
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp

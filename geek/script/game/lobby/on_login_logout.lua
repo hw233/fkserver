@@ -1571,10 +1571,9 @@ function on_cs_set_nickname(msg,guid)
 	reddb:hset(string.format("player:info:%d",guid),"nickname",nickname)
 	player.nickname = nickname
 
-	channel.call("db.?","msg","SD_SetNickname", {
-		guid = guid,
-		nickname = nickname,
-	})
+	channel.call("db.?","msg","SD_UpdatePlayerInfo",{
+		nickname = player.nickname,
+	},guid)
 
 	send2client_pb(guid,"SC_SetNickname",{
 		nickname = nickname,
@@ -2043,9 +2042,8 @@ function on_cs_request_bind_wx(msg,guid)
 
 	channel.publish("db.?","msg","SD_UpdatePlayerInfo",{
 		nickname = player.nickname,
-		icon = player.icon,
+		head_url = player.icon,
 		sex = player.sex,
-
 	})
 	onlineguid.send(guid,"SC_RequestBindWx",{
 		result = enum.ERROR_NONE,
