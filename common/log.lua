@@ -16,6 +16,10 @@ local function debuginfo()
     return debug.getinfo(debuglayer)
 end
 
+local function traceback()
+    return debug.traceback(nil,debuglayer)
+end
+
 local function strtime()
     local time = chronos.nanotime()
     local ms = math.ceil((time % 1) * 1000)
@@ -53,8 +57,7 @@ function log.info(fmt, ...)
 end
 
 function log.trace(fmt, ...)
-    local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"TRACE",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s"..fmt,strtime(),"TRACE",...) .. "\n" .. traceback()
     log_out(s)
 end
 
