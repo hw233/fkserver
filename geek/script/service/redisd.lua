@@ -2,6 +2,7 @@ local skynet = require "skynetproto"
 local redis = require "skynet.db.redis"
 local log = require "log"
 local channel = require "channel"
+local rediscluster = require "skynet.db.redis.cluster"
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
@@ -12,7 +13,9 @@ require "functions"
 
 local function get_redis_conf(t,id)
 	local conf = channel.call("config.?","msg","query_redis_conf",id)
-	t[id] = conf
+	if id then
+		t[id] = conf
+	end
 	return conf
 end
 
@@ -37,7 +40,24 @@ local function get_redis_db(t,id)
 	return db
 end
 
-local redisdb = setmetatable({},{__index = get_redis_db})
+local function setupcluster()
+	local confs = table.series(redisconf[nil],function(c)
+		return (c.cluster and c.cluster ~= 0) and c or nil
+	end)
+	assert(#confs > 0)
+	return rediscluster.new(
+		confs,
+		{read_slave=true,auth=confs[1].auth,db=0,}
+	)
+end
+
+local clusterdb
+local function get_redis_cluster_db(t)
+	clusterdb = clusterdb or setupcluster()
+	return clusterdb
+end
+
+local redisdb = setmetatable({},{__index = get_redis_cluster_db})
 
 local CMD = {}
 
@@ -52,10 +72,18 @@ function CMD.command(db,cmd,...)
 end
 
 function CMD.close(db)
-    if not rawget(redisdb,db) then return end
+	if not db or not rawget(redisdb,db) then 
+		return 
+	end
 
-    redisdb[db]:disconnect()
-    redisdb[db] = nil
+	local rdb = redisdb[db]
+	if rdb == clusterdb then
+		rdb:close_all_connection()
+		clusterdb = nil
+	else
+		rdb:disconnect()
+    	redisdb[db] = nil
+	end
 end
 
 skynet.start(function()

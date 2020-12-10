@@ -1,0 +1,1 @@
+redis-cli --cluster check 127.0.0.1:6480 --pass hM2^aA0!

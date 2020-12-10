@@ -33,6 +33,7 @@ function base_mail.create_mail(sender,receiver,title,content)
 		status = 0,
     }
 
+	reddb:sadd("mail:all",mail_info.id)
 	reddb:hmset("mail:"..mail_info.id,mail_info)
 	reddb:sadd("player:mail:"..tostring(mail_info.receiver),mail_info.id)
 	local _ = base_mails[mail_info.id]

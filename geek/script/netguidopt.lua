@@ -1,6 +1,7 @@
 local log = require "log"
 local redisopt = require "redisopt"
 local channel = require "channel"
+local allonlineguid = require "allonlineguid"
 
 local reddb = redisopt.default
 
@@ -34,6 +35,12 @@ end
 
 function onlineguid.control(player_or_guid,msgname,msg)
     local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
+
+    if not allonlineguid[guid] then
+        log.warning("send2guid %d not online.",guid)
+        return
+    end
+
     local s = onlineguid[guid]
     if not s or not s.gate then 
         log.warning("control2guid %d not online.",guid)
@@ -48,7 +55,7 @@ end
 function onlineguid.broadcast(guids,msgname,msg)
     local gateguids = {}
     for _,guid in pairs(guids) do
-        local s = onlineguid[guid]
+        local s = allonlineguid[guid] and onlineguid[guid]
         if s and s.gate then
             gateguids[s.gate] = gateguids[s.gate] or {}
             tinsert(gateguids[s.gate],guid)

@@ -61,11 +61,14 @@ end
 
 local function random_guid()
     local guid
-    repeat
+    local exists
+    for _ = 1,10000 do
         guid = math.random(100000,9999999)
-    until not base_players[guid]
-
-    return guid
+        exists = reddb:sismember("player:all",guid)
+        if not exists then
+            return guid
+        end
+    end
 end
 
 local function reg_account(msg)
@@ -161,6 +164,7 @@ local function reg_account(msg)
         info.phone = phone
     end
 
+    reddb:sadd("player:all",guid)
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
     
@@ -619,6 +623,8 @@ function on_cl_login(msg,gate,session_id)
         gate = gate,
         login = def_game_id,
     })
+
+    reddb:sadd("player:online:all",info.guid)
 
     channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
 

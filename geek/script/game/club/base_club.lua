@@ -129,6 +129,7 @@ function base_club:create(id,name,icon,owner,tp,parent,creator)
     reddb:hset(string.format("player:money:%d",owner_guid),money_info.id,0)
     reddb:sadd(string.format("player:club:%d:%d",owner_guid,tp),id)
     reddb:sadd(string.format("club:team:%d",parent or 0),id)
+    reddb:sadd("club:all",id)
 
     club_money[id] = nil
     club_money_type[id] = nil
@@ -175,6 +176,7 @@ function base_club:dismiss()
 
     for req_id,_ in pairs(club_request[self.id]) do
         reddb:del(string.format("request:%s",req_id))
+        reddb:srem("request:all",req_id)
     end
 
     for notice_id,_ in pairs(club_notice[self.id]) do
@@ -226,10 +228,12 @@ function base_club:del()
 
     for req_id,_ in pairs(club_request[self.id]) do
         reddb:del(string.format("request:%s",req_id))
+        reddb:srem("request:all",req_id)
     end
 
     for notice_id,_ in pairs(club_notice[self.id]) do
         reddb:del(string.format("notice:%s",notice_id))
+        reddb:srem("notice:all",notice_id)
     end
 
     reddb:del(string.format("club:request:%d",self.id))
@@ -265,6 +269,7 @@ function base_club:request_join(guid,inviter)
     reddb:hmset("request:"..tostring(req_id),request)
     reddb:expire("request:"..tostring(req_id),request_expire_seconds)
     reddb:sadd(string.format("club:request:%s",self.id),req_id)
+    reddb:sadd("request:all",req_id)
 
     return req_id
 end
@@ -311,8 +316,10 @@ function base_club:agree_request(request)
     end
 
     club_member[self.id] = nil
-    reddb:srem(string.format("club:request:%s",request.club_id),request.id)
-    reddb:del(string.format("request:%s",request.id))
+    local req_id = request.id
+    reddb:srem(string.format("club:request:%s",request.club_id),req_id)
+    reddb:del(string.format("request:%s",req_id))
+    reddb:srem("request:all",req_id)
     return enum.ERROR_NONE
 end
 
@@ -324,9 +331,11 @@ function base_club:reject_request(request)
 		return enum.ERROR_PLAYER_NOT_EXIST
     end
 
-    reddb:srem(string.format("player:request:%s",whoee),request.id)
-    reddb:srem(string.format("club:request:%s",self.id),request.id)
-    reddb:del(string.format("request:%s",request.id))
+    local req_id = request.id
+    reddb:srem(string.format("player:request:%s",whoee),req_id)
+    reddb:srem(string.format("club:request:%s",self.id),req_id)
+    reddb:del(string.format("request:%s",req_id))
+    reddb:srem("request:all",req_id)
     club_request[self.id] = nil
     player_request[whoee] = nil
     return enum.ERROR_NONE
@@ -539,13 +548,14 @@ function base_club:is_player_bankrupt(template,player)
 end
 
 function base_club:is_block_in_block_group(tb,player)
-    return table.logic_or(tb.players,function(p)
-        local inters = reddb:sinter(
-            string.format("club:block:player:group:%s:%s",self.id,p.guid),
-            string.format("club:block:player:group:%s:%s",self.id,player.guid)
-        )
-
-        return table.nums(inters) > 0
+    local dgroups = club_block_player_groups[player.guid][self.id]
+    local players_groups = table.series(tb.players,function(p) 
+            return club_block_player_groups[p.guid][self.id]
+    end)
+    return table.logic_or(players_groups,function(groups)
+        return table.logic_or(groups,function(_,g)
+            return dgroups[g]
+        end)
     end)
 end
 

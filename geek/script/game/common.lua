@@ -3,8 +3,8 @@ local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
 local base_players = require "game.lobby.base_players"
 local log = require "log"
-local util = require "util"
 local g_common = require "common"
+local allonlineguid = require "allonlineguid"
 
 local reddb  = redisopt.default
 
@@ -32,7 +32,7 @@ function common.switch_to(guid,room_id)
 	player.table_id = nil
 	player.chair_id = nil
 	player.online = nil
-	
+	allonlineguid[guid] = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 end
@@ -77,6 +77,7 @@ function common.switch_to_lobby(guid)
 	player.chair_id = nil
 	player.online = nil
 
+	allonlineguid[guid] = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 

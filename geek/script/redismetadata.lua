@@ -1,6 +1,9 @@
 
 local tree = require "redisorm.meta"
 
+tree.player.all = "set"
+tree.player.all["%d+"] = "number"
+
 tree.player.info["%d+"] = "hash"
 tree.player.info["%d+"] = {
     guid = "number",
@@ -49,6 +52,9 @@ tree.player.online.count = "number"
 tree.player.online.count["%s+"]["%d+"]["%d+"] = "number"
 tree.player.online.count["%s+"]["%d+"]["%d+"]["%d+"] = "number"
 
+tree.player.online.all = "set"
+tree.player.online["%d+"] = "number"
+
 tree.player.online.guid["%d+"] = "hash"
 tree.player.online.guid["%d+"] = {
     gate = "number",
@@ -69,6 +75,9 @@ tree.player.request["%d+"]["%d+"] = "number"
 
 tree.player.mail["%d+"] = "set"
 tree.player.mail["%d+"]["%d+"] = "number"
+
+tree.club.all = "set"
+tree.club.all["%d+"] = "number"
 
 tree.club.info["%d+"] = "hash"
 tree.club.info["%d+"] = {
@@ -152,6 +161,8 @@ tree.conf["%d+"] = {
     partner_id = "number",
 }
 
+tree.request.all = "set"
+tree.request.all["%d+"] = "number"
 tree.request.global.id = "number"
 tree.request["%d+"] = "hash"
 tree.request["%d+"] = {
@@ -161,6 +172,9 @@ tree.request["%d+"] = {
     who = "number",
     whoee = "number",
 }
+
+tree.table.all = "set"
+tree.table.all["%d+"] = "number"
 
 tree.table.info["%d+"] = "hash"
 tree.table.info["%d+"] = {
@@ -175,6 +189,9 @@ tree.table.info["%d+"] = {
     template = "number",
 }
 
+tree.template.all = "set"
+tree.template.all["%d+"] = "number"
+
 tree.template["%d+"] = "hash"
 tree.template["%d+"] = {
     template_id = "number",
@@ -186,6 +203,7 @@ tree.template["%d+"] = {
     advanced_rule = "json",
 }
 
+tree.mail.all = "set"
 tree.mail["%d+"] = "hash"
 tree.mail["%d+"] = {
     email_id = "string",
@@ -197,6 +215,8 @@ tree.mail["%d+"] = {
     create_time = "number",
 }
 
+tree.money.all = "set"
+tree.moeny.all["%d+"] = "number"
 tree.money.global = "number"
 tree.money.info["%d+"] = "hash"
 tree.money.info["%d+"] = {

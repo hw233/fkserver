@@ -1,5 +1,6 @@
 -- 登陆，退出，切换服务器消息处理
 local common = require "game.common"
+local allonlineguid = require "allonlineguid"
 require "game.net_func"
 
 local base_players = require "game.lobby.base_players"
@@ -1394,6 +1395,7 @@ function on_ss_change_to(guid,room_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		-1,def_game_id)
 
+	allonlineguid[guid] = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 

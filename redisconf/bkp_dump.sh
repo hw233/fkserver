@@ -1,0 +1,1 @@
+sudo cp /var/lib/redis/dump.rdb ~/dump.rdb

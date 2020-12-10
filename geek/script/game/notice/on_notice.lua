@@ -49,6 +49,7 @@ function on_cs_publish_notice(msg, guid)
 	notice.create_time = os.time()
 	notice.where = 3
 
+	reddb:sadd("notice:all",id)
 	reddb:hmset("notice:info:" .. id, notice)
 	reddb:sadd("notice:all",id)
 	if club_id and club_id ~= 0 then

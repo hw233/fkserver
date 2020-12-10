@@ -238,12 +238,38 @@ end
 
 local function clean_when_start()
     local reddb = redisopt.default
-    local key_patterns = {"table:player:*","player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
-    for _,pattern in pairs(key_patterns) do
-		local keys = reddb:keys(pattern)
-        for _,key in pairs(keys) do
-            log.info("redis del %s",key)
-            reddb:del(key)
+    local tables = reddb:smembers("table:all")
+    log.dump(tables)
+    for id,_ in pairs(tables) do
+        log.info("redis clean table session %s",id)
+        reddb:del(string.format("table:info:%s",id))
+        reddb:del(string.format("table:player:%s",id))
+        reddb:srem("table:all",id)
+    end
+
+    local onlineguids = reddb:smembers("player:online:all")
+    log.dump(onlineguids)
+    for guid,_ in pairs(onlineguids) do
+        log.info("redis clean guid session %s",guid)
+        reddb:del(string.format("player:online:guid:%s",guid))
+        reddb:del(string.format("player:table:%s",guid))
+        reddb:srem("player:online:all",guid)
+    end
+
+    local clubs = reddb:smembers("club:all")
+    log.dump(clubs)
+    for cid,_ in pairs(clubs) do
+        log.info("redis clean club session %s",cid)
+        reddb:del(string.format("club:table:%s",cid))
+    end
+
+    reddb:del("player:online:all")
+    reddb:set("player:online:count",0)
+    for sid,sconf in pairs(services) do
+        log.info("redis reset online count session %s",sid)
+        if sconf.conf.first_game_type then
+            reddb:set(string.format("player:online:count:%s",sconf.conf.first_game_type),0)
+            reddb:set(string.format("player:online:count:%s:%s",sconf.conf.first_game_type,sconf.conf.second_game_type),0)
         end
     end
 end

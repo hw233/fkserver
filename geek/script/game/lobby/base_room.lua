@@ -11,6 +11,7 @@ local common = require "game.common"
 local game_util = require "game.util"
 local club_utils = require "game.club.club_utils"
 local club_money = require "game.club.club_money"
+local allonlineguid = require "allonlineguid"
 
 require "game.net_func"
 
@@ -319,10 +320,11 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		return room_fee_result
 	end
 
-	local global_tid = math.random(100000,999999)
-	for _ = 1,1000 do
-		if not base_private_table[global_tid] then break end
+	local global_tid
+	for _ = 1,10000 do
 		global_tid = math.random(100000,999999)
+		local exists = reddb:sismember("table:all",global_tid)
+		if not exists then break end
 	end
 
 	local table_id = global_tid
@@ -367,6 +369,8 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 		game_type = def_first_game_type,
 		create_time = os.time(),
 	})
+
+	reddb:sadd("table:all",global_tid)
 
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",global_tid)
 
@@ -942,8 +946,7 @@ function base_room:player_logout_server(player)
 	log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,player_count %s.",
 		guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
-	local s = onlineguid[guid]
-	if not s then
+	if not allonlineguid[guid] then
 		log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,got nil online session",
 			guid,def_first_game_type,def_game_id)
 		base_players[guid] = nil
@@ -951,6 +954,7 @@ function base_room:player_logout_server(player)
 		return
 	end
 
+	reddb:srem("player:online:all",guid)
 	reddb:del("player:online:guid:"..tostring(guid))
 	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
 		-1,def_game_id)
@@ -960,6 +964,7 @@ function base_room:player_logout_server(player)
 
 	base_players[guid] = nil
 	onlineguid[guid] = nil
+	allonlineguid[guid] = nil
 
 	channel.publish("db.?","msg","S_Logout", {
 		account = player.account,

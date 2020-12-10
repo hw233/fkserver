@@ -174,25 +174,33 @@ end
 function utils.rand_union_club_id()
     local id_begin = (math.random(10) > 5 and 6 or 8) * 10000000
     local id_end = id_begin + 9999999
-    local id = math.random(id_begin,id_end)
+    local id
+    local exists
     for _ = 1,1000 do
-        if not base_clubs[id] then break end
         id = math.random(id_begin,id_end)
+        exists = reddb:sismember("club:all",id)
+        if not exists then
+            return id
+        end
     end
 
-    return id
+    return
 end
 
 function utils.rand_group_club_id()
     local id_begin = (math.random(10) > 5 and 6 or 8) * 100000
     local id_end = id_begin + 99999
-    local id = math.random(id_begin,id_end)
+    local id
+    local exists
     for _ = 1,1000 do
-        if not base_clubs[id] then break end
         id = math.random(id_begin,id_end)
+        exists = reddb:sismember("club:all",id)
+        if not exists then
+            return id
+        end
     end
 
-    return id
+    return
 end
 
 local function member_money_sum(c,money_id)
