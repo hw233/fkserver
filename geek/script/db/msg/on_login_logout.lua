@@ -9,6 +9,7 @@ local reddb = redisopt.default
 local enum = require "pb_enums"
 local queue = require "skynet.queue"
 local timer = require "timer"
+local skynet = require "skynet"
 
 local money_lock = queue()
 
@@ -2682,7 +2683,7 @@ function on_reg_account(msg)
 end
 
 local function incr_player_money(guid,money_id,money,where,why,why_ext)
-	log.info("%s,%s,%s,%s,%s",guid,money_id,money,where,why)
+	log.info("incr_player_money %s,%s,%s,%s,%s",guid,money_id,money,where,why)
 	local res = dbopt.game:batchquery({
 			{
 				[[SELECT money FROM t_player_money WHERE guid =  %s AND money_id = %s and `where` = %s;]],guid,money_id,where
@@ -2709,12 +2710,16 @@ local function incr_player_money(guid,money_id,money,where,why,why_ext)
 		return
 	end
 
-	dbopt.log:batchquery([[
-			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-			VALUES(%d,%d,%d,%d,%d,%d,'%s',%d);
-		]],
-		guid,money_id,oldmoney,newmoney,where,why,
-		why_ext or '',timer.milliseconds_time())
+	-- 单独执行，避免统计时锁表卡住
+	skynet.fork(function()
+		dbopt.log:batchquery([[
+				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+				VALUES(%d,%d,%d,%d,%d,%d,'%s',%d);
+			]],
+			guid,money_id,oldmoney,newmoney,where,why,
+			why_ext or '',timer.milliseconds_time()
+		)
+	end)
 	return oldmoney,newmoney
 end
 
