@@ -51,7 +51,7 @@ log_create_table_sql = [
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club,date,game_id)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
     """
         CREATE TABLE IF NOT EXISTS t_log_player_daily_commission_contribute(
@@ -64,7 +64,7 @@ log_create_table_sql = [
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(parent,son,club,date)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
     """
         CREATE TABLE IF NOT EXISTS t_log_team_daily_play_count(
@@ -76,7 +76,7 @@ log_create_table_sql = [
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club,date,game_id)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
     """
         CREATE TABLE IF NOT EXISTS t_log_player_daily_win_lose(
@@ -88,7 +88,7 @@ log_create_table_sql = [
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club,date,game_id)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
     """
         CREATE TABLE IF NOT EXISTS t_log_player_daily_big_win_count(
@@ -100,8 +100,19 @@ log_create_table_sql = [
             date INT(8) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club,date,game_id)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    """,
     """
+        CREATE TABLE IF NOT EXISTS t_log_coin_hour_change(
+            id INT(8) NOT NULL AUTO_INCREMENT,
+            money_id INT(4),
+            reason INT(4) NOT NULL,
+            amount INT(4) NOT NULL,
+            time INT(8) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE(money_id,time,reason)
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    """,
 ]
 
 game_create_table_sql = [
@@ -114,7 +125,7 @@ game_create_table_sql = [
             count INT(4) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
     """
         CREATE TABLE IF NOT EXISTS t_team_money(
@@ -124,7 +135,7 @@ game_create_table_sql = [
             money INT(4) NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE(guid,club)
-        )ENGINE=InnoDB DEFAULT CHARSET=UTF8;
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
 ]
 
@@ -382,7 +393,29 @@ def player_daily_big_win_count():
     )
     pass
 
+def coin_hour_change():
+    hour = math.floor(now_timestamp / 3600) * 3600 * 1000
+    next_hour = (math.floor(now_timestamp / 3600) + 1) * 3600 * 1000
+    sql = """
+        INSERT INTO t_log_coin_hour_change(money_id,reason,amount,time)
+        SELECT money_id,reason,SUM(delta_money) amount,time FROM 
+        (
+            SELECT money_id,reason,new_money - old_money delta_money,created_time DIV (3600 * 1000) * 3600 time 
+            FROM t_log_money
+            WHERE created_time >= {} AND created_time < {} 
+        ) d
+        GROUP BY money_id,reason,time
+        ON DUPLICATE KEY UPDATE amount = VALUES(amount);
+    """.format(
+        floor_today_time(hour),
+        floor_next_time(next_hour)
+    )
+    db_engine.execute("USE log;")
+    db_engine.execute(sql)
+    pass
+
 create_table()
+coin_hour_change()
 player_play_count()
 player_daily_big_win_count()
 player_daily_win_lose()
