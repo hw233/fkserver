@@ -419,10 +419,7 @@ def coin_hour_change():
         ) d
         GROUP BY money_id,reason,time
         ON DUPLICATE KEY UPDATE amount = VALUES(amount);
-    """.format(
-        floor_today_time(hour),
-        floor_next_time(next_hour)
-    )
+    """.format(hour,next_hour)
     db_engine.execute("USE log;")
     db_engine.execute(sql)
     pass
@@ -449,10 +446,7 @@ def club_room_card_hour_cost():
         ) d1
         WHERE amount IS NOT NULL AND amount != 0
         ON DUPLICATE KEY UPDATE amount = VALUES(amount);
-    """.format(
-        floor_today_time(hour),
-        floor_next_time(next_hour)
-    )
+    """.format(hour,next_hour)
     db_engine.execute("USE log;")
     db_engine.execute(sql)
     pass
