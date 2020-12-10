@@ -16,14 +16,12 @@ local lock = queue()
 
 local function elapsed_cache_key()
 	local time = os.time()
-	lock(function()
-		for key,c in pairs(cache) do
-			if time - c.time > default_elapsed_time then
-				log.info("del cache key %s",key)
-				cache[key] = nil
-			end
+	for key,c in pairs(cache) do
+		if time - c.time > default_elapsed_time then
+			log.info("del cache key %s",key)
+			cache[key] = nil
 		end
-	end)
+	end
 
 	timer.timeout(default_elapsed_time,elapsed_cache_key)
 end
@@ -34,7 +32,7 @@ end
 
 local function new_commander(cmd,fn)
 	return function(db,...)
-		return lock(fn,db,cmd,...)
+		return fn(db,cmd,...)
 	end
 end
 
