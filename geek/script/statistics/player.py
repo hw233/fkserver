@@ -113,6 +113,19 @@ log_create_table_sql = [
             UNIQUE(money_id,time,reason)
         )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
     """,
+    """
+        CREATE TABLE IF NOT EXISTS t_log_club_coin_hour_change(
+            id INT(8) NOT NULL AUTO_INCREMENT,
+            money_id INT(4) NOT NULL,
+            reason INT(4) NOT NULL,
+            club INT(4),
+            game_id INT(4),
+            amount INT(4) NOT NULL,
+            time INT(8) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE(money_id,reason,game_id,club,time)
+        )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    """,
 ]
 
 game_create_table_sql = [
@@ -405,6 +418,36 @@ def coin_hour_change():
             WHERE created_time >= {} AND created_time < {} 
         ) d
         GROUP BY money_id,reason,time
+        ON DUPLICATE KEY UPDATE amount = VALUES(amount);
+    """.format(
+        floor_today_time(hour),
+        floor_next_time(next_hour)
+    )
+    db_engine.execute("USE log;")
+    db_engine.execute(sql)
+    pass
+
+def club_room_card_hour_cost():
+    hour = math.floor(now_timestamp / 3600) * 3600 * 1000
+    next_hour = (math.floor(now_timestamp / 3600) + 1) * 3600 * 1000
+    sql = """
+        INSERT INTO t_log_club_coin_hour_change(money_id,reason,club,game_id,amount,time)
+        SELECT * FROM 
+        (
+            SELECT money_id,reason,club,game_id,SUM(delta_money) amount,time FROM 
+            (
+                    SELECT money_id,reason,club,new_money - old_money delta_money,game_id,m.created_time DIV (3600 * 1000) * 3600 time 
+                    FROM 
+                        t_log_money m
+                    LEFT JOIN
+                        (SELECT game_id,round,club FROM t_log_round) r
+                    ON r.round = m.reason_ext
+                    WHERE m.money_id = 0 AND
+                    m.created_time >= {} AND m.created_time < {}
+            ) d
+            GROUP BY money_id,reason,club,game_id,time
+        ) d1
+        WHERE amount IS NOT NULL AND amount != 0
         ON DUPLICATE KEY UPDATE amount = VALUES(amount);
     """.format(
         floor_today_time(hour),
