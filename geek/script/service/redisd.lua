@@ -17,7 +17,7 @@ local redisconf = setmetatable({},{__index = get_redis_conf,})
 
 local function get_redis_db(t,id)
 	local conf = redisconf[id]
-	if not conf then
+	if not conf or (conf.cluster and conf.cluster ~= 1) then
 		return nil
 	end
 
