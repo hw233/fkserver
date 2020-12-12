@@ -208,16 +208,27 @@ function utils.compare(left,right,with_color)
 		end
 	end
 
+	if lt == CARDS_TYPE.CT_235 then
+		if with_color then return lcolors[lvals[1][3]][1] < rcolors[rvals[1][3]][1] end
+		return false
+	end
+
 	return comp > 0
 end
 
--- local lt = utils.get_cards_type({12,32,2})
--- log.dump(lt)
+-- local t1 = utils.get_cards_type({5,46,28})
+-- local t2 = utils.get_cards_type({68,51,73})
+-- local t3 = utils.get_cards_type({2,65,63})
+-- local t4 = utils.get_cards_type({8,7,45})
+-- local t5 = utils.get_cards_type({6,30,25})
 
--- local rt = utils.get_cards_type({52,72,8})
--- log.dump(rt)
-
--- local comp = utils.compare(lt,rt,true)
--- log.dump(comp)
+-- local all = {t1,t2,t3,t4,t5}
+-- log.dump(all)
+-- local test = table.sort(all,function(l,r)
+-- 	log.dump(l.vals)
+-- 	log.dump(r.vals)
+-- 	return utils.compare(l,r,true,true)
+-- end)
+-- log.dump(all)
 
 return utils
