@@ -493,18 +493,17 @@ function zhajinhua_table:compare_with_all(player)
 end
 
 function zhajinhua_table:compare_each_other()
-	local gamers = table.values(self.gamers)
-	if #gamers < 1 then return end
-
-	local all_count = table.sum(self.gamers,function(p) 
-		return (not p.all_in and not p.death) and 1 or 0
+	local gamers = table.series(self.gamers,function(p)
+		return (not p.all_in and not p.death) and p or nil
 	end)
+	
+	if #gamers < 1 then
+		log.trace("zhajinhua_table:compare_each_other table_id:%s got 0 players.",self:id())
+		return 
+	end
+
+	local all_count = #gamers
 	table.sort(gamers,function(l,r)
-		local l_death = l.death or l.all_in
-		local r_death = r.death or r.all_in
-		if l_death and r_death then return false end
-		if l_death and not r_death then return false end
-		if not l_death and r_death then return true end
 		return self:compare_player(l,r,true,all_count > 2)
 	end)
 
