@@ -1062,7 +1062,13 @@ function on_cs_reconnect(guid)
 
 	local club_id = private_table.club_id
 	local money_id = club_id and club_money_type[club_id] or -1
-	local tb = g_room.tables[table_id]
+	local tb = g_room:find_table(table_id)
+	if not tb then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
+		})
+		return
+	end
 	local seats = table.series(tb.players,function(p) 
 		return {
 			chair_id = p.chair_id,
