@@ -1237,6 +1237,10 @@ end
 
 function base_table:do_dismiss(reason)
 	return self:lockcall(function()
+		if not self:is_alive() then
+			log.trace("base_table do_dismiss but table:%s is not live,reason:%s",self:id(),reason)
+		end
+
 		log.info("base_table:dismiss %s",self.private_id)
 		if not self.conf or not self:is_private() then
 			log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
