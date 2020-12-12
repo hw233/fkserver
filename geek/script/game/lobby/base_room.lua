@@ -623,7 +623,7 @@ function base_room:enter_room(player,reconnect)
 		end
 
 		log.info("base_room:enter_room,game_name = [%s],game_id =[%s],guid:%s,reconnect:%s,online:%s",
-			def_game_name,def_game_id,guid,reconect,player.online)
+			def_game_name,def_game_id,guid,reconnect,player.online)
 
 		-- 通知消息
 		-- if player:is_android() then
