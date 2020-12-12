@@ -453,6 +453,7 @@ def club_room_card_hour_cost():
 
 create_table()
 coin_hour_change()
+club_room_card_hour_cost()
 player_play_count()
 player_daily_big_win_count()
 player_daily_win_lose()
