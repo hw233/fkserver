@@ -287,6 +287,10 @@ function base_room:save_private_table(owner,table_id,chair_id)
 	
 end
 
+function base_room:is_table_exists(table_id)
+	return self.tables[table_id] ~= nil
+end
+
 function base_room:force_dismiss_table(table_id,reason)
 	local tb = self:find_table(table_id)
 	if not tb then

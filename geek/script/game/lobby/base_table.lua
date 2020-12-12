@@ -1148,9 +1148,17 @@ function base_table:on_player_sit_downed(player,reconnect)
 	end
 end
 
+function base_table:is_alive()
+	return self.room_:is_table_exists(self.table_id_)
+end
+
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	return self:lockcall(function() 
+		if not self:is_alive() then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
 		local result =  self:can_sit_down(player,chair_id,reconnect)
 		if result ~= enum.ERROR_NONE then
 			return result
