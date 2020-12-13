@@ -788,7 +788,7 @@ function base_room:exit_server(player,offline)
 	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result [%s]",
 		guid,table_id,reason,result)
 	if result ~= enum.ERROR_NONE then
-		return enum.GAME_SERVER_RESULT_IN_GAME
+		return result
 	end
 
 	if offline then
