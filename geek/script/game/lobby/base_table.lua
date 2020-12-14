@@ -840,7 +840,7 @@ function base_table:on_game_overed()
 		if self:is_private() then
 			if game_util.is_in_maintain() and 
 				table.logic_or(self.players,function(p)
-					return not p.vip or p.vip == 0
+					return not p:is_vip()
 				end)
 			then
 				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)

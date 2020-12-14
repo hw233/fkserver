@@ -417,6 +417,11 @@ function base_player:decrby(field,value)
 	return tonumber(v)
 end
 
+function base_player:lockcall(fn)
+	self.lock = self.lock or queue()
+	return self.lock(fn)
+end
+
 function base_player:incr_redis_money(money_id,money,club_id)
 	self.lock = self.lock or queue()
 	return self.lock(function()
@@ -835,5 +840,8 @@ function base_player:force_stand_up(reason)
 	return true
 end
 
+function base_player:is_vip()
+	return self.vip and self.vip ~= 0
+end
 
 return base_player

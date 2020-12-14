@@ -863,7 +863,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 	local template_id = msg.template_id
 	local player = base_players[guid]
 
-	if game_util.is_global_in_maintain() and (not player.vip or player.vip == 0) then
+	if game_util.is_global_in_maintain() and not player:is_vip() then
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
 		})
@@ -1164,7 +1164,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 		return
 	end
 
-	if game_util.is_global_in_maintain() and (not player.vip or player.vip == 0) then
+	if game_util.is_global_in_maintain() and not player:is_vip() then
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
 		})

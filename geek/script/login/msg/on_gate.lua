@@ -21,6 +21,10 @@ local function gen_uuid(basestr)
     return util.sha1(entirestr)
 end
 
+local function is_player_vip(info)
+    return info.vip and info.vip ~= 0
+end
+
 function on_s_logout(msg)
 	local account = msg.account
 	local guid = msg.guid
@@ -85,7 +89,7 @@ local function reg_account(msg)
 
         local p = base_players[guid]
 
-        if util.is_in_maintain() and (not p.vip or p.vip == 0) then
+        if util.is_in_maintain() and not p:is_vip() then
             return enum.LOGIN_RESULT_MAINTAIN
         end
 
@@ -465,7 +469,7 @@ local function account_login(msg,gate)
     player.platform_id = platform_id
 
     local status = msg.maintain_switch
-    if status == 1 and player.vip ~= 100 then --vip不等于100的玩家在游戏维护时不能进入
+    if status == 1 and not player:is_vip() then
         log.warning("=======maintain login==============status = [%d]", status)
         return {
             result = enum.LOGIN_RESULT_MAINTAIN,
@@ -578,7 +582,7 @@ function on_cl_login(msg,gate,session_id)
         return info,game_id
     end
 
-    if util.is_in_maintain() and (not info.vip or info.vip == 0) then
+    if util.is_in_maintain() and not is_player_vip(info) then
         return {
             result = enum.LOGIN_RESULT_MAINTAIN
         }
