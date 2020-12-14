@@ -407,6 +407,7 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		log.info("base_room:create_private_table player_sit_down,%s,%s,%s,failed",player.guid,chair_id,result)
 		tb:private_clear()
+		self:del_table(table_id)
 		return result
 	end
 
