@@ -838,7 +838,11 @@ function base_table:on_game_overed()
 		self:on_final_game_overed()
 		self:kickout_players_when_round_over()
 		if self:is_private() then
-			if game_util.is_in_maintain() then
+			if game_util.is_in_maintain() and 
+				table.logic_or(self.players,function(p)
+					return not p.vip or p.vip == 0
+				end)
+			then
 				self:force_dismiss(enum.STANDUP_REASON_MAINTAIN)
 				return
 			end
