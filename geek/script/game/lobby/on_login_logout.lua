@@ -2136,7 +2136,7 @@ local function kickout_player(guid,kicker)
 		return
 	end
 	
-	local result = kickee_table:kickout_player(player,enum.STANDUP_REASON_FORCE)
+	local result = kickee_table:kickout_player(player,kicker)
 	onlineguid.send(kicker.guid,"SC_ForceKickoutPlayer",{
 		result = result
 	})
