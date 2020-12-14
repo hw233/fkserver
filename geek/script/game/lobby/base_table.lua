@@ -1602,7 +1602,7 @@ end
 
 function base_table:on_player_stand_uped(player,reason)
 	self:cancel_delay_kickout(player)
-	if resaon ~= enum.STANDUP_REASON_OFFLINE then
+	if reason ~= enum.STANDUP_REASON_OFFLINE then
 		self:check_kickout_no_ready()
 	end
 end
@@ -1618,7 +1618,7 @@ function base_table:clear_trustee_status()
 end
 
 function base_table:clear_player_trustee()
-	self:foreach(player,function(p) p.trustee = nil end)
+	self:foreach(function(p) p.trustee = nil end)
 end
 
 function base_table:is_trustee(player)
@@ -2124,7 +2124,7 @@ function base_table:start(player_count)
 	-- self:broadcast2client("SC_ShowTax", self.notify_msg)
 
 	self:on_started(player_count)
-	return ret
+	return
 end
 
 -- 检查是否维护
@@ -2218,23 +2218,9 @@ function base_table:private_clear()
 	self.private_id = nil
 end
 
--- 检查单个游戏维护
-function base_table:check_single_game_is_maintain()
-	self:game_end()
-	local iRet = false
-	self.def_game_name = def_game_name
-	self.def_game_id = def_game_id
-	if self.room_.game_switch_is_open == 1 or game_switch == 1 then--游戏将进入维护阶段
-		log.warning("game_name = [%s] gameid = [%d] game_switch_is_open[%d] get_db_status[%d] game_switch[%d] will maintain.....................",self.def_game_name,self.def_game_id,self.room_.game_switch_is_open,get_db_status(),game_switch)
-		iRet = self:send_maintain_player()
-		log.warning("game_name = [%s] gameid = [%d] game_switch_is_open[%d] get_db_status[%d] game_switch[%d] will maintain ret(%s).....................",self.def_game_name,self.def_game_id,self.room_.game_switch_is_open,get_db_status(),game_switch,tostring(iRet))
-	end
-	return iRet
-end
-
 function base_table:send_maintain_player()
 	local iRet = false
-	for i,v in pairs (self.players) do
+	for i,v in pairs(self.players) do
 		if  not v:is_android() and v.vip ~= 100 then
 			send2client_pb(v, "SC_GameMaintain", {
 			result = enum.GAME_SERVER_RESULT_MAINTAIN,
@@ -2275,43 +2261,9 @@ function base_table:is_bankruptcy(player)
 	return money <= 0 or money < limit
 end
 
---玩家破产日志
-function  base_table:save_player_collapse_log(player)
-	if not player then
-		return
-	end
-	local player_money = player:get_money()
-	local player_bank_money = player:get_bank_money()
-	log.info("save_player_collapse_log: player guid[%d],cur_money[%d] cur_bank[%d],player.channel_id[%s],player.platform_id[%s] platform_info[%s]",player.guid,player_money,player_bank_money,player.channel_id,player.platform_id,platform_info)
-
-	--先判断身上的钱加上银行的钱是否小于该平台配置的默认值，若是则记录日志
-	local player_money_total = player_money + player_bank_money
-	local collapse_value = tonumber(reddb:get("platform:collapse_value:"..tostring(player.platform_id)))
-	if collapse_value and player_money_total < collapse_value then
-		log.info("player guid[%d] is collapse, player_money_total[%d] channel_id[%s] platform_id[%s]",player.guid,player_money_total,player.channel_id,player.platform_id)
-		local nmsg = {
-			guid = player.guid,
-			channel_id = player.channel_id ,
-			platform_id = player.platform_id,
-		}
-		channel.publish("db.?","msg","SD_SaveCollapseLog",nmsg)
-	end
-end
-
 --检查玩家是否是黑名单列表玩家，若是则返回true，否则返回false
 function base_table:check_blacklist_player( player_guid )
 	return self.room_:check_player_is_in_blacklist(player_guid)
-end
-
---游戏结算回调
-function base_table:game_end()
-	for _,guid in pairs(self.game_end_event) do
-		local player = base_players.find(tonumber(guid))
-		if player then
-			player:do_game_end_event()
-		end
-	end
-	self.game_end_event = {}
 end
 
 function base_table:log( str , level , number)

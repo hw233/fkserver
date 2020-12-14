@@ -18,6 +18,12 @@ local club_partner_template_commission = require "game.club.club_partner_templat
 local club_member_partner = require "game.club.club_member_partner"
 local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
 local enum = require "pb_enums"
+local player_money = require "game.lobby.player_money"
+local club_money = require "game.club.club_money"
+local club_commission = require "game.club.club_commission"
+local redisopt = require "redisopt"
+
+local reddb = redisopt.default
 
 require "functions"
 

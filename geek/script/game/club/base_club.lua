@@ -68,7 +68,7 @@ local function recusive_get_members(club_id)
     return guids
 end
 
-local function recusive_broadcast(clubid,msgname,msg)
+local function recusive_broadcast(clubid,msgname,msg,except)
     local guids = recusive_get_members(clubid)
     onlineguid.broadcast(table.keys(guids),msgname,msg)
 end
@@ -161,7 +161,7 @@ function base_club:dismiss()
     reddb:del(string.format("club:partner:zmember:%d",self.id))
     
     for group_id,_ in pairs(club_block_groups[self.id]) do
-        for guid,_ in paris(club_block_group_players[self.id][group_id]) do
+        for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
             reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
         end
         reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))
@@ -212,7 +212,7 @@ function base_club:del()
     reddb:del(string.format("club:team_player_count:%d",self.id))
 
     for group_id,_ in pairs(club_block_groups[self.id]) do
-        for guid,_ in paris(club_block_group_players[self.id][group_id]) do
+        for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
             reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
         end
         reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))

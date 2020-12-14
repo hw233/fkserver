@@ -47,7 +47,7 @@ local function recusive_get_members(club_id,partner)
     return guids
 end
 
-local function recusive_broadcast(clubid,msgname,msg)
+local function recusive_broadcast(clubid,msgname,msg,except)
     local guids = recusive_get_members(clubid)
     onlineguid.broadcast(table.keys(guids),msgname,msg)
 end

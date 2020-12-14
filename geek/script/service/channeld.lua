@@ -80,7 +80,7 @@ end
 
 function nodemetaindex.son(self,s)
     if not self.__son then
-        local n = createnode(node)
+        local n = createnode(self)
         self.__son = {
             [s] = n
         }

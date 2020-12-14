@@ -276,8 +276,8 @@ function maajan_table:fast_start_vote_commit(p,msg)
     self.lock(function()
         local agree = msg.agree
         agree = agree and true or false
-        if not vote_result[p.chair_id] then
-            vote_result[p.chair_id] = agree
+        if not self.vote_result[p.chair_id] then
+            self.vote_result[p.chair_id] = agree
         end
 
         self:broadcast2client("SC_VoteTableCommit",{
@@ -288,12 +288,12 @@ function maajan_table:fast_start_vote_commit(p,msg)
         })
 
         if agree then
-            if not table.logic_and(self.players,function(_,chair) return vote_result[chair] ~= nil end) then
+            if not table.logic_and(self.players,function(_,chair) return self.vote_result[chair] ~= nil end) then
                 return
             end
         end
 
-        local all_agree = table.logic_and(vote_result,function(a) return a end)
+        local all_agree = table.logic_and(self.vote_result,function(a) return a end)
         self:broadcast2client("SC_VoteTable",{success = all_agree})
         if not all_agree then
             self:update_state(nil)
@@ -307,7 +307,7 @@ end
 
 function maajan_table:on_reconnect_when_fast_start_vote()
     local status = {}
-    for chair,r in pairs(vote_result) do
+    for chair,r in pairs(self.vote_result) do
         local pi = self.players[chair]
         table.insert(status,{
             chair_id = pi.chair_id,
@@ -336,9 +336,9 @@ function maajan_table:fast_start_vote(player)
         timeout = timeout,
     })
 
-    local vote_result = {}
+    self.vote_result = {}
 
-    vote_result[player.chair_id] = true
+    self.vote_result[player.chair_id] = true
     self:broadcast2client("SC_VoteTableCommit",{
         result = enum.ERROR_NONE,
         chair_id = player.chair_id,
@@ -348,7 +348,7 @@ function maajan_table:fast_start_vote(player)
 
     self:begin_clock_timer(timeout,function()
         self:foreach(function(p)
-            if vote_result[p.chair_id] == nil then
+            if self.vote_result[p.chair_id] == nil then
                 self:fast_start_vote_commit(p,{agree = false})
             end
         end)
@@ -610,7 +610,7 @@ function maajan_table:huan_pai()
         local function auto_huan_pai(p,huan_type,huan_count)
             if huan_type ~= 1 then
                 local huan_tiles = random_choice(self:tile_count_2_tiles(p.pai.shou_pai),huan_count)
-                log.dump(huan_pai)
+                log.dump(huan_tiles)
                 self.lock(function()
                     self:on_huan_pai(p,{
                         tiles = huan_tiles

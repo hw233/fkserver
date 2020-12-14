@@ -5,6 +5,7 @@ local club_role = require "game.club.club_role"
 local base_notices = require "game.notice.base_notices"
 local club_notice = require "game.notice.club_notice"
 local log = require "log"
+local base_clubs = require "game.club.base_clubs"
 local redisopt = require "redisopt"
 
 local reddb = redisopt.default
@@ -165,7 +166,7 @@ end
 
 
 function on_bs_reload_notice(msg)
-	for id,_ in paris(base_notices) do
+	for id,_ in pairs(base_notices) do
 		base_notices[id] = nil
 	end
 end

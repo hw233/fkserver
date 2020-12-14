@@ -119,6 +119,7 @@ local function hash_batch_get(db,cmd,key,...)
 			end
 		end
 		
+		local values = {}
 		for _,f in ipairs(fields) do
 			table.insert(values,cvalue[f])
 		end
@@ -279,7 +280,7 @@ local function key_expire_at(db,cmd,key,timestamp,...)
 		c.time = timestamp - (default_elapsed_time + 1)
 	end
 
-	return do_redis_command(db,cmd,key,seconds,...)
+	return do_redis_command(db,cmd,key,timestamp,...)
 end
 
 local function key_pexpire(db,cmd,key,milliseconds,...)
@@ -297,7 +298,7 @@ local function key_pexpire_at(db,cmd,key,milliseconds_timestamp,...)
 		c.time = math.floor(milliseconds_timestamp / 1000) - (default_elapsed_time + 1)
 	end
 
-	return do_redis_command(db,cmd,key,milliseconds,...)
+	return do_redis_command(db,cmd,key,milliseconds_timestamp,...)
 end
 
 
@@ -305,7 +306,7 @@ local key_commander = {
 	del = new_commander("del",key_del),
 	rename = new_commander("rename",key_rename),
 	expire = new_commander("expire",key_expire),
-	expireat = new_commander("expireat",key_expireat),
+	expireat = new_commander("expireat",key_expire_at),
 	pexpire = new_commander("pexpire",key_pexpire),
 	pexpireat = new_commander("pexpireat",key_pexpire),
 }
@@ -339,7 +340,7 @@ local command = {
 	del = new_commander("del",key_del),
 	rename = new_commander("rename",key_rename),
 	expire = new_commander("expire",key_expire),
-	expireat = new_commander("expireat",key_expireat),
+	expireat = new_commander("expireat",key_expire_at),
 	pexpire = new_commander("pexpire",key_pexpire),
 	pexpireat = new_commander("pexpireat",key_pexpire),
 }

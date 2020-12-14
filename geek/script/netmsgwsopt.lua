@@ -105,7 +105,7 @@ function NETMSG.on_msg(msgstr,...)
     log.info("netmsg.on_msg %s,%d,%d",msgname,msgid,#buf)
 	assert(f, string.format("on_net_msg func:%s", msgname))
 
-    return lock(f,msg,...)
+    return f(msg,...)
 end
 
 function NETMSG.register_handle(conf)

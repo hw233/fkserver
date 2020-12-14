@@ -187,7 +187,7 @@ function on_cs_login_validatebox(player, msg)
 		(msg.answer[1] == player.login_validate_answer[2] and msg.answer[2] == player.login_validate_answer[1])) then
 
 		onlineguid.send(player,  "SC_LoginValidatebox", {
-			result = LOGIN_RESULT_SUCCESS,
+			result = enum.LOGIN_RESULT_SUCCESS,
 			})
 
 		reddb:del("login_validate_error_count:"..tostring(player.guid))
@@ -266,7 +266,7 @@ function on_cs_logout(guid,fd)
 	local player = base_players[guid]
 	if not player then
 		log.warning("on_cs_logout got nil player.")
-		netguidopt.send(guid,"SC_Logout",{
+		onlineguid.send(guid,"SC_Logout",{
 			result = enum.ERROR_PLAYER_NOT_EXIST
 		})
 		return

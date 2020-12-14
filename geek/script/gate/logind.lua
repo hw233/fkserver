@@ -203,7 +203,7 @@ local function login_by_account(msg,session)
     msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
-    local info,server = channel.call("login.?","msg","CL_Login",msg,serviceid)
+    local info,server = channel.call("login.?","msg","CL_Login",msg)
     local guid = info.guid
     if info.ret == enum.LOGIN_RESULT_SUCCESS then
         if not check_login_session(session.fd) then --已断开连接

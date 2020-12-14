@@ -122,7 +122,7 @@ function gateserver.open(conf)
     socket = socketdriver.listen(address, port)
     socketdriver.start(socket)
     if handler.open then
-        return handler.open(source, conf)
+        return handler.open(conf)
     end
 end
 

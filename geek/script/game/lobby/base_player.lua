@@ -423,8 +423,7 @@ function base_player:lockcall(fn)
 end
 
 function base_player:incr_redis_money(money_id,money,club_id)
-	self.lock = self.lock or queue()
-	return self.lock(function()
+	return self:lockcall(function()
 		local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
 		self:notify_money(money_id,newmoney,club_id)
 		return newmoney
@@ -438,8 +437,7 @@ function base_player:incr_money(item,why,why_ext)
 	end
 
 	log.dump(item)
-	self.lock = self.lock or queue()
-	local oldmoney,newmoney = self.lock(function()
+	local oldmoney,newmoney = self:lockcall(function()
 		local where = item.where or 0
 		local oldmoney = player_money[self.guid][item.money_id]
 		log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
@@ -537,7 +535,7 @@ end
 -- 加钱
 function base_player:add_money(price,why,why_ext)
 	for _, item in ipairs(price) do
-		log.info("guid[%d] add money[%d],money_type:%d",self.guid , p.money,p.money_type)
+		log.info("guid[%d] add money[%d],money_type:%d",self.guid , item.money,item.money_type)
 		if item.money < 0 then 
 			log.error("add_money but got minus money value.")
 			return
@@ -745,7 +743,7 @@ function base_player:change_money(value, opttype, is_savedb, whatever)
 	local ret = true
 
 	if oldmoney + value < 0 then
-		log.error("change_money money isn't enough,guid:%s,money:%s,change:%s",self.guid,money,value)
+		log.error("change_money money isn't enough,guid:%s,money:%s,change:%s",self.guid,value,value)
 		value = -oldmoney
 		ret = false
 		if not whatever  then
@@ -833,7 +831,7 @@ function base_player:force_stand_up(reason)
 
 	local result = tb:player_stand_up(self,reason)
 	if result ~= enum.ERROR_NONE then
-		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,%s,failed",self.guid,table_id,chair_id,reason,result)
+		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,%s,failed",self.guid,self.table_id,self.chair_id,reason,result)
 		return
 	end
 

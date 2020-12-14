@@ -422,7 +422,7 @@ function cards_util.seek_greatest(kcards,rule)
 		end,
 		[LAND_CARD_TYPE.THREE_WITH_TWO] = function(val)
 			local three = pick_exactly(valuecards,3,val)
-			local v = find_min_value_with_exactly_count(valuecards,2,table.map(valuecards[i],function(c) return c,true end))
+			local v = find_min_value_with_exactly_count(valuecards,2,table.map(valuecards[val],function(c) return c,true end))
 			local two = pick_exactly(valuecards,2,v)
 			return table.union(three,two)
 		end,

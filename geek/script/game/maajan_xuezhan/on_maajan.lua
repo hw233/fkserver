@@ -1,5 +1,7 @@
 -- 诈金花消息处理
 local log = require "log"
+local enum = require "pb_enums"
+
 require "game.net_func"
 local send2client_pb = send2client_pb
 
