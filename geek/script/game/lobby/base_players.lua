@@ -155,13 +155,15 @@ end
 timermgr:loop(unused_player_info_elapsed,function()
 	for guid,info in pairs(player_manager) do
 		if type(guid) == "number" then
-			if not info.online and 
-				not info.table_id and 
-				not info.chair_id 
-			then
-				log.info("clean unused player info %s",guid)
-				player_manager[guid] = nil
-			end
+			info:lockcall(function() 
+				if 	not info.online and 
+					not info.table_id and 
+					not info.chair_id 
+				then
+					log.info("clean unused player info %s",guid)
+					player_manager[guid] = nil
+				end
+			end)
 		end
 	end
 end)
