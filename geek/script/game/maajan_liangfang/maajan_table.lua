@@ -1687,7 +1687,7 @@ function maajan_table:on_game_balance()
         }
         
         p.total_score = (p.total_score or 0) + p_score
-        log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
+        
         p_log.score = p_score
         p_log.describe = p.describe
         
@@ -1716,6 +1716,8 @@ function maajan_table:on_game_balance()
 
         local win_money = self:calc_score_money(p_score)
         chair_money[chair_id] = win_money
+
+        log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
     end
 
     chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_MENHU)
