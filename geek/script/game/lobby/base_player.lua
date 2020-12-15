@@ -437,45 +437,39 @@ function base_player:incr_money(item,why,why_ext)
 	end
 
 	log.dump(item)
-	local oldmoney,newmoney = self:lockcall(function()
-		local where = item.where or 0
-		local oldmoney = player_money[self.guid][item.money_id]
-		log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
-		log.info("base_player:incr_money money[%d] + p[%d]" , oldmoney,item.money)
+	log.info("base_player:incr_money guid[%d] money_id[%d]  money[%d]" ,self.guid, item.money_id, item.money)
 
-		local changes = channel.call("db.?","msg","SD_ChangePlayerMoney",{{
-			guid = self.guid,
-			money = math.floor(item.money),
-			money_id = item.money_id,
-			where = where,
-		}},why,why_ext)
+	local where = item.where or 0
+	local oldmoney = player_money[self.guid][item.money_id]
 
-		if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
-			log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
-			-- return
-		end
-		
-		local dboldmoney = changes[1].oldmoney
-		local dbnewmoney = changes[1].newmoney
-		
-		if dboldmoney ~= oldmoney then
-			log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
-			-- return
-		end
+	log.info("base_player:incr_money money[%d] + p[%d]" , oldmoney,item.money)
 
-		local newmoney
-		if not self:is_android() then
-			newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
-			if dbnewmoney ~= newmoney then
-				log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
-				-- return
-			end
-		end
-
-		return oldmoney,newmoney
-	end)
+	local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),item.money_id,math.floor(item.money))
 	
 	log.info("base_player:incr_money  end oldmoney[%d] new_money[%d]" , oldmoney, newmoney)
+
+	channel.publish("db.?","msg","SD_ChangePlayerMoney",{{
+		guid = self.guid,
+		money = math.floor(item.money),
+		money_id = item.money_id,
+		where = where,
+	}},why,why_ext)
+
+	-- if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
+	-- 	log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
+	-- end
+	
+	-- local dboldmoney = changes[1].oldmoney
+	-- local dbnewmoney = changes[1].newmoney
+	
+	-- if dboldmoney ~= oldmoney then
+	-- 	log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
+	-- end
+
+	-- if dbnewmoney ~= newmoney then
+	-- 	log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
+	-- end
+
 	self:notify_money(item.money_id)
 	return oldmoney,newmoney
 end
