@@ -57,21 +57,6 @@ end
 
 local connection_pool = {}
 
-local function wait(pool)
-	local co = coroutine.running()
-	pool.waiting = pool.waiting or {}
-	table.insert(pool.waiting,co)
-	skynet.wait(co)
-end
-
-local function wakeup(pool)
-	for _,co in pairs(pool.waiting or {}) do
-		skynet.wakeup(co)
-	end
-
-	pool.waiting = nil
-end
-
 function connection_pool.close(pool)
 	for id,conn in pairs(pool.__connections) do
 		connection.close(conn)
@@ -80,24 +65,17 @@ function connection_pool.close(pool)
 end
 
 function connection_pool.occupy(pool)
-	for i = 1,10000 do
-		for cid,conn in pairs(pool.__free) do
-			pool.__free[cid] = nil
-			pool.__occupied[cid] = conn
-			return cid,conn
-		end
-
-		if #pool.__connections <= pool.__max then
-			local conn = new_connection(pool.__conf)
-			local cid = #pool.__connections + 1
-			pool.__connections[cid] = conn
-			pool.__free[cid] = conn
-			return cid,conn
-		end
-
-
-		wait(pool)
+	for cid,conn in pairs(pool.__free) do
+		pool.__free[cid] = nil
+		pool.__occupied[cid] = conn
+		return cid,conn
 	end
+
+	local conn = new_connection(pool.__conf)
+	local cid = #pool.__connections + 1
+	pool.__connections[cid] = conn
+	pool.__free[cid] = conn
+	return cid,conn
 end
 
 function connection_pool.release(pool,cid)
@@ -107,9 +85,13 @@ function connection_pool.release(pool,cid)
 		return
 	end
 
-	pool.__free[cid] = conn
-	pool.__occupied[cid] = nil
-	wakeup(pool)
+	if table.nums(pool.__free) >= pool.__max then
+		pool.__connections[cid] = nil
+		conn.close()
+	else
+		pool.__free[cid] = conn
+		pool.__occupied[cid] = nil
+	end
 end
 
 function connection_pool.query(pool,fmtsql,...)
