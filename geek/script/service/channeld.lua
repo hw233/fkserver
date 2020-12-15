@@ -233,9 +233,9 @@ local function get_node(id)
     end
 
     log.warning("channeld get node %s,got nil node,waiting...",id)
-    local cos = waiting[id] or {}
-    cos[#cos + 1] = coroutine.running()
-    waiting[id] = cos
+    waiting[id] = waiting[id] or {}
+    local co = coroutine.running()
+    table.insert(waiting[id],co)
     skynet.wait()
 
     --double check
@@ -251,9 +251,13 @@ local function wakeup()
     for id,w in pairs(waiting) do
         local n = matcher[id]
         if n then
-            for _,co in pairs(w) do
-                skynet.wakeup(co)
-            end
+            local co
+            repeat
+                co = table.remove(w,1)
+                if co then
+                    skynet.wakeup(co)
+                end
+            until not co
             waiting[id] = nil
         end
     end

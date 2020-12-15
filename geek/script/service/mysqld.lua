@@ -6,6 +6,30 @@ local mysql = require "skynet.db.mysql"
 
 LOG_NAME = "mysqld"
 
+local table = table
+local assert = assert
+local string = string
+
+local max_pool_connections = 128
+
+local connection = {}
+
+function connection:close()
+	if not self.conn then 
+		return 
+	end
+	self.conn:disconnect()
+	self.conn = nil
+end
+
+function connection:query(sql)
+	if not self.conn then 
+		log.errro("connection:query conn is nil.")
+		return
+	end
+	return self.conn:query(sql)
+end
+
 function new_connection(cfg)
 	local conn = mysql.connect({
 		host=cfg.host or "127.0.0.1",
@@ -18,103 +42,126 @@ function new_connection(cfg)
 			db:query("set charset utf8;");
 		end,
 	})
+
 	if not conn then
 		log.error("mysql failed to connect")
 		return
 	end
 
-	return conn
-end
-
-local connection = {}
-
-function connection.close(conn)
-	if not conn then return end
-	conn:disconnect()
-end
-
-function connection.query(conn,sql)
-	if not conn then 
-		log.errro("connection.query conn is nil.")
-		return
-	end
-	return conn:query(sql)
-end
-
-function new_connection_pool(conf)
-	assert(conf)
 	return setmetatable({
-		__connections = {},
-		__conf = conf,
-		__max= conf.pool_size or 8,
-		__free = {},
-		__occupied = {},
-	},{__index = function(pool,id) 
-		if not id then return nil end
-		return pool.__connections[id]
-	end})
+		conn = conn,
+	},{
+		__index = connection,
+		__gc = function(t)
+			t:close()
+		end
+	})
 end
 
 local connection_pool = {}
 
-function connection_pool.close(pool)
-	for id,conn in pairs(pool.__connections) do
-		connection.close(conn)
-		pool.__connections[id] = nil
+function new_connection_pool(conf)
+	assert(conf)
+	log.dump(conf)
+	return setmetatable({
+		__conf = conf,
+		__min= conf.pool or 8,
+		__free = {},
+		__waiting = {},
+		__trans = {},
+	},{
+		__index = connection_pool,
+		__gc = function(pool)
+			pool:close()
+		end,
+	})
+end
+
+function connection_pool.wait(pool)
+	-- 自动扩充保持连接数
+	if pool.__min < max_pool_connections then
+		pool.__min = pool.__min * 2
 	end
+
+	local co = coroutine.running()
+	table.insert(pool.__waiting,co)
+	skynet.wait()
+end
+
+function connection_pool.wakeup(pool)
+	local co = table.remove(pool.__waiting,1)
+	if co then
+		skynet.wakeup(co)
+	end
+end
+
+function connection_pool.close(pool)
+	local conn
+	repeat
+		conn = table.remove(pool.__free,1)
+		if conn then
+			conn:close()
+		end
+	until not conn
 end
 
 function connection_pool.occupy(pool)
-	for cid,conn in pairs(pool.__free) do
-		pool.__free[cid] = nil
-		pool.__occupied[cid] = conn
-		return cid,conn
-	end
+	for i = 1,1000 do
+		local conn = table.remove(pool.__free,1)
+		if conn then
+			return conn
+		end
 
-	local conn = new_connection(pool.__conf)
-	local cid = #pool.__connections + 1
-	pool.__connections[cid] = conn
-	pool.__free[cid] = conn
-	return cid,conn
+		local ok
+		ok,conn = pcall(new_connection,pool.__conf)
+		if ok and conn then
+			return conn
+		end
+
+		log.dump(conn)
+		
+		pool:wait()
+	end
 end
 
-function connection_pool.release(pool,cid)
-	local conn = pool.__connections[cid]
-	if not conn then
-		log.warning("connection_pool.release got invalid id:%s.",cid)
-		return
+function connection_pool.release(pool,conn)
+	if #pool.__free > pool.__min then
+		conn:close()
+	else
+		table.insert(pool.__free,conn)
 	end
 
-	if table.nums(pool.__free) >= pool.__max then
-		pool.__connections[cid] = nil
-		conn.close()
-	else
-		pool.__free[cid] = conn
-		pool.__occupied[cid] = nil
-	end
+	pool:wakeup()
 end
 
 function connection_pool.query(pool,fmtsql,...)
-	local cid,conn = connection_pool.occupy(pool)
-	local res = connection.query(conn,fmtsql,...)
-	connection_pool.release(pool,cid)
+	local conn = pool:occupy()
+	local res = conn:query(fmtsql,...)
+	pool:release(conn)
 	return res
 end
 
 function connection_pool.do_transaction(pool,transid,fmtsql,...)
 	local conn
 	if not transid then
-		transid,conn = connection_pool.occupy(pool)
+		conn = pool:occupy()
+		transid = #pool.__trans + 1
+		pool.__trans[transid] = conn
 	else
-		conn = pool[transid]
+		conn = pool.__trans[transid]
+		assert(conn,string.format("do_transaction got nil conn with id %s.",transid))
 	end
 	
-	local res = connection.query(conn,fmtsql,...)
+	local res = conn:query(conn,fmtsql,...)
 	return transid,res
 end
 
 function connection_pool.finish_transaction(pool,transid)
-	connection_pool.release(pool,transid)
+	local conn = pool.__trans[transid]
+	if conn then
+		pool:release(conn)
+	end
+	pool.__trans[transid] = nil
 end
 
 local dbconfs= {}
@@ -122,14 +169,19 @@ local dbpools = {}
 
 local function opendb(conf)
 	local name = conf.name
-	dbconfs[name] = dbconfs[name] or  conf
+	dbconfs[name] = conf
+	dbpools[name] = nil
+	
 	return dbconfs[name]
 end
 
 local function closedb(name)
 	dbconfs[name] = nil
-	connection_pool.close(dbpools[name])
-	dbpools[name] = nil
+	local pool = dbpools[name]
+	if pool then
+		pool:close()
+		dbpools[name] = nil
+	end
 end
 
 setmetatable(dbpools,{__index = function(t,name)
@@ -147,7 +199,7 @@ function CMD.query(dbname,fmtsql,...)
 		return 
 	end
 
-	local res = connection_pool.query(pool,fmtsql,...)
+	local res = pool:query(fmtsql,...)
 	return res
 end
 
@@ -158,7 +210,7 @@ function CMD.begin_transaction(dbname)
 		return 
 	end
 
-	local transid,res = connection_pool.do_transaction(pool,nil,[[SET AUTOCOMMIT = 0;BEGIN;]])
+	local transid,res = pool:do_transaction(nil,[[SET AUTOCOMMIT = 0;BEGIN;]])
 	return transid,res
 end
 
@@ -170,7 +222,7 @@ function CMD.do_transaction(dbname,transid,fmtsql,...)
 	end
 
 	local res
-	transid,res = connection_pool.do_transaction(pool,transid,fmtsql,...)
+	transid,res = pool:do_transaction(transid,fmtsql,...)
 	return transid,res
 end
 
@@ -181,8 +233,8 @@ function CMD.rollback_transaction(dbname,transid)
 		return 
 	end
 
-	local res = connection_pool.do_transaction(pool,transid,[[ROLLBACK;SET AUTOCOMMIT = 1;]])
-	connection_pool.finish_transaction(pool,transid)
+	local res = pool:do_transaction(transid,[[ROLLBACK;SET AUTOCOMMIT = 1;]])
+	pool:finish_transaction(transid)
 	return res
 end
 
@@ -193,8 +245,8 @@ function CMD.commit_transaction(dbname,transid)
 		return 
 	end
 
-	local res = connection_pool.do_transaction(pool,transid,[[COMMIT;SET AUTOCOMMIT = 1;]])
-	connection_pool.finish_transaction(pool,transid)
+	local res = pool:do_transaction(transid,[[COMMIT;SET AUTOCOMMIT = 1;]])
+	pool:finish_transaction(transid)
 	return res
 end
 
