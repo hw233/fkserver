@@ -99,6 +99,41 @@ function db:execute(sql,tb)
 	return skynet.call(mysqld,"lua","query",self.name,sql)
 end
 
+local trans = {}
+
+function trans:exec(sql,...)
+	local args = table.series({...},escape)
+	sql = string.format(sql,table.unpack(args))
+	sql = uniform_sql_quota(sql)
+	return skynet.call(mysqld,"lua","do_transaction",self.name,self.id,sql)
+end
+
+function trans:batchexec(sqls,...)
+	if type(sqls) == "table" then
+		sqls = table.series(sqls,fomrat_batch_sql)
+		local sql = table.concat(sqls,"")
+		return skynet.call(mysqld,"lua","do_transaction",self.name,self.id,sql)
+	end
+	return self:do_trans(self.id,sqls,...)
+end
+
+function db:transaction(fn)
+	local conn_id = skynet.call(mysqld,"lua","begin_transaction",self.name)
+	local t = setmetatable({
+		id = conn_id
+	},{
+		__index = trans
+	})
+
+	local ok,succ = pcall(fn,t)
+
+	if not ok or not succ then
+		skynet.call(mysqld,"lua","rollback_transaction",self.name,conn_id)
+	else
+		skynet.call(mysqld,"lua","commit_transaction",self.name,conn_id)
+	end
+end
+
 function db:begin_trans()
 	return skynet.call(mysqld,"lua","begin_transaction",self.name)
 end
