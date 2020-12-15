@@ -15,16 +15,13 @@ end
 local base_notices =setmetatable({},{
 	__index = function(t, id)
 		if id == "*" then
-			for _, nkey in pairs(reddb:keys("notice:info:*") or {}) do
-				local nid = string.match(nkey,"notice:info:(.+)")
-				t[nid] = load_notice(nid)
-			end
-			return t
+			local all = reddb:smembers("notice:all")
+			return table.series(all,function(_,id)
+				return load_notice(id)
+			end)
 		end
 
-		local c = load_notice(id)
-		t[id] = c
-		return c
+		return load_notice(id)
 	end
 })
 

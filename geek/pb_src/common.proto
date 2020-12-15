@@ -166,12 +166,14 @@ enum NOTICE_WHERE {
     NW_NIL = 0;
     GLOBAL = 1;
     HALL = 2;
-    CLUB = 3;
-    GAME = 4;
+    CLUB = 4;
+    GAME = 8;
 }
 
 enum NOTICE_TYPE{
     NT_NIL = 0;
+    NT_MARQUEE = 1; //跑马灯
+    NT_PROMPT = 2; //提示窗
 }
 
 
@@ -181,6 +183,10 @@ message NOTICE{
     int32 where = 3;
 	string content = 4;
 	int32 club_id = 5;
+    uint64 start_time = 6;
+    uint64 end_time = 7;
+    int32 play_count = 8;
+    int32 interval = 9; //播放间隔 
 }
 
 message ROUND_INFO{

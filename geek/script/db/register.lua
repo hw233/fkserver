@@ -12,6 +12,7 @@ require "db.msg.on_chat_mail"
 require "db.msg.on_log"
 require "db.msg.on_bonus_hongbao"
 require "db.msg.on_club"
+require "db.msg.on_notice"
 
 local register_dispatcher = msgopt.register
 
@@ -110,3 +111,6 @@ register_dispatcher("SD_LogClubActionMsg",on_sd_log_club_action_msg)
 register_dispatcher("SD_SetClubRole",on_sd_set_club_role)
 register_dispatcher("SD_AddIntoClubGamingBlacklist",on_sd_add_into_club_gaming_blacklist)
 register_dispatcher("SD_RemoveFromClubGamingBlacklist",on_sd_remove_from_club_gaming_blacklist)
+register_dispatcher("SD_AddNotice",on_sd_add_notice)
+register_dispatcher("SD_EditNotice",on_sd_edit_notice)
+register_dispatcher("SD_RemoveNotice",on_sd_del_notice)

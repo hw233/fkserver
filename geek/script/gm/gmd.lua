@@ -1,6 +1,5 @@
 
 local channel = require "channel"
-local md5 = require "md5"
 local base_players = require "game.lobby.base_players"
 local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
@@ -14,6 +13,7 @@ local club_money = require "game.club.club_money"
 local club_notice = require "game.notice.club_notice"
 local base_notices = require "game.notice.base_notices"
 local g_common = require "common"
+local json = require "json"
 require "functions"
 
 collectgarbage("setpause", 100)
@@ -700,7 +700,10 @@ function gmd.publish_notice(data)
     local content = data.content
     local club_id = tonumber(data.club_id)
     local ttl = tonumber(data.ttl)
+    local start_time = tonumber(data.start_time)
+    local end_time = tonumber(data.end_time)
     local expireat = tonumber(data.expireat)
+    local title = data.title
 
     if where == enum.NW_CLUB then
         if not club_id or club_id == 0 then
@@ -725,13 +728,6 @@ function gmd.publish_notice(data)
         }
     end
 
-    if ttl and ttl == 0 then
-        return {
-            errcode = error.PARAMETER_ERROR,
-            errstr = "invalid ttl.",
-        }
-    end
-
     if expireat and expireat <= os.time() then
         return {
             errcode = error.PARAMETER_ERROR,
@@ -746,11 +742,12 @@ function gmd.publish_notice(data)
         where = where,
         type = type,
         expireat = expireat,
+        start_time = start_time,
+        end_time = end_time,
+        title = title,
         create_time = os.time(),
         update_time = os.time(),
     })
-
-    channel.publish("game.?","msg","BS_ReloadNotice")
 
     return {
         errcode = error.SUCCESS,
@@ -764,6 +761,10 @@ function gmd.edit_notice(data)
     local content = data.content
     local club_id = tonumber(data.club_id)
     local ttl = tonumber(data.ttl)
+    local start_time = tonumber(data.start_time)
+    local end_time = tonumber(data.end_time)
+    local expireat = tonumber(data.expireat)
+    local title = data.title
     local id = data.id
 
     if not id or id == "" then
@@ -810,14 +811,37 @@ function gmd.edit_notice(data)
         ttl = ttl,
         where = where,
         type = type,
-        expireat = tonumber(data.expireat),
+        expireat = expireat,
+        start_time = start_time,
+        end_time = end_time,
+        title = title,
         update_time = os.time(),
     })
 
-    local ret = channel.publish("game.?","msg","BS_ReloadNotice")
+    return {
+        errcode = error.SUCCESS,
+        id = id,
+    }
+end
+
+function gmd.del_notice(data)
+    local id = data.id
+
+    log.dump(data)
+
+    if not id or id == "" then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "notice id not exists."
+        }
+    end
+
+    local result = channel.call("game.?","msg","BS_DelNotice",{
+        id = id,
+    })
 
     return {
-        errcode = ret and error.SUCCESS or error.PARAMETER_ERROR,
+        errcode = result == enum.ERROR_NONE and error.SUCCESS or error.PARAMETER_ERROR,
         id = id,
     }
 end
@@ -910,5 +934,6 @@ gmd["online/player"] = gmd.online_player
 gmd["player/update"] = gmd.update_player
 gmd['notice/publish'] = gmd.publish_notice
 gmd['notice/edit'] = gmd.edit_notice
+gmd["notice/del"] = gmd.del_notice
 
 return gmd

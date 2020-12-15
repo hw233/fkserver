@@ -5,7 +5,7 @@ local gmd = require "gm.gmd"
 local channel = require "channel"
 local json = require "json"
 local error = require "gm.errorcode"
-local md5 = require "md5.core"
+local md5 = require "md5"
 local log = require "log"
 require "functions"
 
