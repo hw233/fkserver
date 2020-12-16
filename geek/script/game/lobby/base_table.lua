@@ -20,7 +20,7 @@ local club_template_conf = require "game.club.club_template_conf"
 local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_utils = require "game.club.club_utils"
 local club_role = require "game.club.club_role"
-local json = require "cjson"
+local json = require "json"
 local util = require "util"
 local club_partner_commission = require "game.club.club_partner_commission"
 local club_member_partner = require "game.club.club_member_partner"
@@ -945,7 +945,7 @@ end
 
 function  base_table:save_game_log(gamelog)
 	log.info("==============================base_table:save_game_log")
-	log.info(json.encode(gamelog))
+	log.info(json.encode(gamelog or {}))
 	local nMsg = {
 		game_id = def_first_game_type,
 		game_name = def_game_name,

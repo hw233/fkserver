@@ -1,6 +1,6 @@
 local skynet = require "skynetproto"
 local base_players = require "game.lobby.base_players"
-local json = require "cjson"
+local json = require "json"
 local log = require "log"
 local base_mails = require "game.mail.base_mails"
 local redisopt = require "redisopt"

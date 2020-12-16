@@ -1,6 +1,6 @@
 -- 日志消息处理
 local log = require "log"
-local json = require "cjson"
+local json = require "json"
 local dbopt = require "dbopt"
 local enum = require "pb_enums"
 

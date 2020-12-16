@@ -2,7 +2,7 @@
 local base_table = require "game.lobby.base_table"
 local base_prize_pool = require "game.lobby.base_prize_pool"
 local base_bonus = require "game.lobby.base_bonus"
-local json = require "cjson"
+local json = require "json"
 local enum = require "pb_enums"
 local base_players = require "game.lobby.base_players"
 local base_private_table = require "game.lobby.base_private_table"

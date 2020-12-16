@@ -3,7 +3,7 @@ local base_table = require "game.lobby.base_table"
 local def 		= require "game.maajan.base.define"
 local mj_util 	= require "game.maajan.base.mang_jiang_util"
 local base_player = require "game.lobby.base_player"
-local json = require "cjson"
+local json = require "json"
 local log = require "log"
 local enum = require "pb_enums"
 

@@ -3,7 +3,7 @@
 local enum = require "pb_enums"
 local redisopt = require "redisopt"
 local log = require "log"
-local json = require "cjson"
+local json = require "json"
 local reddot = require "game.reddot.reddot"
 
 require "functions"

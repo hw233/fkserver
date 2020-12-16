@@ -1,4 +1,4 @@
-local json = require "cjson"
+local json = require "json"
 local httpc = require "http.httpc"
 local log = require "log"
 local md5 = require "md5.core"

@@ -5,7 +5,7 @@ local table_template = require "game.lobby.table_template"
 local onlineguid = require "netguidopt"
 local club_role = require "game.club.club_role"
 local club_utils = require "game.club.club_utils"
-local json = require "cjson"
+local json = require "json"
 local log = require "log"
 
 function on_cs_create_table_template(msg,guid)

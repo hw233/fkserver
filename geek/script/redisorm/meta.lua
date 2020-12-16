@@ -1,5 +1,5 @@
 
-local json = require "cjson"
+local json = require "json"
 local log = require "log"
 
 local function default(v)
