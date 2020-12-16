@@ -158,7 +158,8 @@ function on_ls_login_notify(guid,reconnect)
 		end
 		
 		log.info("login step game->LC_Login,account=%s", player.account)
-
+		
+		player.login_time = os.time()
 		g_room:enter_server(player)
 	end)
 end
