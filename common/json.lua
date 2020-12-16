@@ -9,4 +9,7 @@ function cjson.loadfile(filename)
 	return tb
 end
 
+cjson.encode_sparse_array(true)
+
+
 return cjson
