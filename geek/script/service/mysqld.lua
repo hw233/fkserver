@@ -10,6 +10,8 @@ local table = table
 local assert = assert
 local string = string
 
+local query_ttl_time = 3
+
 local max_pool_connections = 128
 
 local connection = {}
@@ -135,9 +137,14 @@ function connection_pool.release(pool,conn)
 end
 
 function connection_pool.query(pool,fmtsql,...)
+	local starttime = skynet.time()
 	local conn = pool:occupy()
 	local res = conn:query(fmtsql,...)
 	pool:release(conn)
+	local delta = skynet.time() - starttime
+	if delta > query_ttl_time then
+		log.trace("msyqld connection_pool.query max_ttl > %s,sql:\"%s\"",query_ttl_time,fmtsql)
+	end
 	return res
 end
 
