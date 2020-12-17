@@ -81,9 +81,9 @@ end
 
 function connection_pool.wait(pool)
 	-- 自动扩充保持连接数
-	if pool.__min < max_pool_connections then
-		pool.__min = pool.__min * 2
-	end
+	-- if pool.__min < max_pool_connections then
+	-- 	pool.__min = pool.__min * 2
+	-- end
 
 	local co = coroutine.running()
 	table.insert(pool.__waiting,co)
