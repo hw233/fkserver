@@ -138,10 +138,10 @@ function on_ls_login_notify(guid,reconnect)
 	end
 
 	return player:lockcall(function()
-		local os = onlineguid[guid]
+		local s = onlineguid[guid]
 		log.info("set player.online = true,guid:%d",guid)
 		player.online = true
-		local repeat_login = os and os.server == def_game_id
+		local repeat_login = s and s.server == def_game_id
 		if reconnect or repeat_login then
 			-- 重连/重复登陆
 			log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
@@ -152,9 +152,9 @@ function on_ls_login_notify(guid,reconnect)
 
 		log.info("ip_area =%s",player.ip_area)
 
-		if os and os.server then
+		if s and s.server then
 			log.error("on_ls_login_notify guid:%s,game_id:%s,server:%s,login but session not nil",
-				guid,def_game_id,os.server)
+				guid,def_game_id,s.server)
 		end
 		
 		log.info("login step game->LC_Login,account=%s", player.account)
