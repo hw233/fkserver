@@ -324,33 +324,27 @@ function on_sd_dismiss_partner(msg)
     return true
 end
 
-function on_sd_edit_club_info(msg)
-    local club = msg.club
-    local name = msg.name
-    local icon = msg.icon
-
-    if not name and not icon then
+function on_sd_edit_club_info(msg,club)
+    if 	(not club or club == 0) or
+    (
+        not msg.name and
+        not msg.icon and
+        not msg.status
+    )
+    then
         return
     end
 
-    local fields = {}
+    local sets = table.map(msg,function(v,f) 
+        local fmtv = type(v) == "string" and "'%s'" or '%s'
+        return string.format("%s = %s",f,fmtv),v
+    end)
 
-    if name then
-        fields.name = "'" .. dbopt.escapefield(name) .. "'"
-    end
-
-    if icon then
-        fields.icon = "'" .. icon .. "'"
-    end
-
-    local r = dbopt.game:query(string.format(
-        "UPDATE t_club SET %s WHERE id = %s;",
-        table.concat(table.series(fields,function(v,k) return k .. "=" .. v end)),
-        club
-    ))
+    local sql = string.format("UPDATE t_club SET %s  WHERE id = %s;",table.concat(table.keys(sets),","),club)
+    log.dump(sql)
+    local r = dbopt.game:query(sql,table.unpack(table.values(sets)))
     if r.errno then
-        log.error("on_sd_edit_club_info UPDATE t_club errno:%d,errstr:%s",r.errno,r.err)
-        return
+        log.error("on_sd_edit_club_info UPDATE t_club error,%s,%s",r.errno,r.err)
     end
 
     return true

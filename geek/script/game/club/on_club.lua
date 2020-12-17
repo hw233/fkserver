@@ -1447,6 +1447,8 @@ local function on_cs_club_close(msg,guid,status)
         status = status
     })
 
+    channel.publish("db.?","msg","SD_EditClubInfo",{status = status},club_id)
+
     base_clubs[club_id] = nil
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -2510,9 +2512,8 @@ function on_cs_club_edit_info(msg,guid)
     })
 
     channel.publish("db.?","msg","SD_EditClubInfo",{
-        club = club_id,
         name = name,
-    })
+    },club_id)
 
     base_clubs[club_id] = nil
 

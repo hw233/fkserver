@@ -239,9 +239,8 @@ function gmd.edit_club(data)
     })
 
     channel.publish("db.?","msg","SD_EditClubInfo",{
-        club = club_id,
         name = data.name or "",
-    })
+    },club_id)
     
     return {
         errcode = error.SUCCESS,
