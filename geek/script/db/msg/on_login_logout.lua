@@ -2758,18 +2758,16 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 
 	local gamedb = dbopt.game
 
-	local transid,res = gamedb:begin_trans()
-
-	transid,res = gamedb:do_batchtrans(transid,sqls)
-	if res.errno then
-		gamedb:rollback_trans(transid)
+	local succ,res = gamedb:transaction(function(trans)
+		local res = trans:batchexec(sqls)
+		return not res.errno,res
+	end)
+	if not succ then
 		log.error("transfer_money_club2player do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
-
-	gamedb:commit_trans(transid)
 
 	local old_club_money = res[1] and res[1][1] and res[1][1].money or nil
 	local new_club_money = res[3] and res[3][1] and res[3][1].money or nil
@@ -2806,20 +2804,19 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d AND `where` = 0;]],guid,money_id},
 		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
 		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],amount,club_id,money_id},
-		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],ssclub_id,money_id},
+		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
 	}
 
-	local gamedb = dbopt.game
-
-	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_batchtrans(transid,sqls)
-	if res.errno then
-		gamedb:rollback_trans(transid)
+	local succ,res = dbopt.game:transaction(function(trans)
+		local res = trans:batchexec(sqls)
+		return not res.errno,res
+	end)
+	if not succ then
 		log.error("transfer_money_player2club do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
-	gamedb:commit_trans(transid)
+	log.dump(res)
 
 	local old_player_money = res[1] and res[1][1] and res[1][1].money or nil
 	local new_player_money = res[3] and res[3][1] and res[3][1].money or nil
@@ -2864,17 +2861,17 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 
 	local gamedb = dbopt.game
 
-	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_batchtrans(transid,sqls)
-	if res.errno then
-		gamedb:rollback_trans(transid)
+	local succ,res = gamedb:transaction(function(trans)
+		local res = trans:batchexec(sqls)
+		return not res.errno,res
+	end)
+
+	if not succ then
 		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
-
-	gamedb:commit_trans(transid)
 
 	local old_from_money = res[1] and res[1][1] and res[1][1].money or nil
 	local new_from_money = res[3] and res[3][1] and res[3][1].money or nil
@@ -2917,19 +2914,17 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 
 	log.dump(sqls)
 
-	local gamedb = dbopt.game
-
-	local transid,res = gamedb:begin_trans()
-	transid,res = gamedb:do_batchtrans(transid,sqls)
-	if res.errno then
-		gamedb:rollback_trans(transid)
-		log.error("transfer_money_club2club do money error,errno:%d,err:%s",res.errno,res.err)
+	local succ,res = dbopt.game:transaction(function(trans)
+		local res = trans:batchexec(sqls)
+		return not res.errno,res
+	end)
+	
+	if not succ then
+		log.error("transfer_money_player2player do money error,err:%s",res and res.err or nil)
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
-
-	gamedb:commit_trans(transid)
 
 	local old_from_money = res[1] and res[1][1] and res[1][1].money or nil
 	local new_from_money = res[3] and res[3][1] and res[3][1].money or nil

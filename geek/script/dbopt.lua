@@ -105,61 +105,42 @@ function trans:exec(sql,...)
 	local args = table.series({...},escape)
 	sql = string.format(sql,table.unpack(args))
 	sql = uniform_sql_quota(sql)
-	return skynet.call(mysqld,"lua","do_transaction",self.name,self.id,sql)
+	return skynet.call(mysqld,"lua","do_transaction",self.__name,self.__id,sql)
 end
 
 function trans:batchexec(sqls,...)
 	if type(sqls) == "table" then
 		sqls = table.series(sqls,fomrat_batch_sql)
 		local sql = table.concat(sqls,"")
-		return skynet.call(mysqld,"lua","do_transaction",self.name,self.id,sql)
+		return skynet.call(mysqld,"lua","do_transaction",self.__name,self.__id,sql)
 	end
-	return self:do_trans(self.id,sqls,...)
+	return skynet.call(mysqld,"lua","do_transaction",self.__name,self.__id,sqls)
 end
 
 function db:transaction(fn)
 	local conn_id = skynet.call(mysqld,"lua","begin_transaction",self.name)
 	local t = setmetatable({
-		id = conn_id
+		__id = conn_id,
+		__name = self.name,
 	},{
 		__index = trans
 	})
 
-	local ok,succ = pcall(fn,t)
-
-	if not ok or not succ then
+	local ok,succ,ret = pcall(fn,t)
+	if not ok then
+		log.dump(succ)
 		skynet.call(mysqld,"lua","rollback_transaction",self.name,conn_id)
-	else
-		skynet.call(mysqld,"lua","commit_transaction",self.name,conn_id)
+		return
 	end
-end
 
-function db:begin_trans()
-	return skynet.call(mysqld,"lua","begin_transaction",self.name)
-end
-
-function db:do_trans(transid,sql,...)
-	local args = table.series({...},escape)
-	sql = string.format(sql,table.unpack(args))
-	sql = uniform_sql_quota(sql)
-	return skynet.call(mysqld,"lua","do_transaction",self.name,transid,sql)
-end
-
-function db:do_batchtrans(transid,sqls,...)
-	if type(sqls) == "table" then
-		sqls = table.series(sqls,fomrat_batch_sql)
-		local sql = table.concat(sqls,"")
-		return skynet.call(mysqld,"lua","do_transaction",self.name,transid,sql)
+	if not succ then
+		skynet.call(mysqld,"lua","rollback_transaction",self.name,conn_id)
+		return succ
 	end
-	return self:do_trans(transid,sqls,...)
-end
 
-function db:rollback_trans(transid)
-	return skynet.call(mysqld,"lua","rollback_transaction",self.name,transid)
-end
+	skynet.call(mysqld,"lua","commit_transaction",self.name,conn_id)
 
-function db:commit_trans(transid)
-	return skynet.call(mysqld,"lua","commit_transaction",self.name,transid)
+	return succ,ret
 end
 
 local mysql = {}

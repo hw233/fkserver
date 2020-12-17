@@ -148,19 +148,19 @@ function connection_pool.query(pool,fmtsql,...)
 	return res
 end
 
+function connection_pool.begin_transaction(pool)
+	local transid = #pool.__trans + 1
+	local conn = pool:occupy()
+	conn:query([[SET AUTOCOMMIT = 0;BEGIN;]])
+	pool.__trans[transid] = conn
+	return transid
+end
+
 function connection_pool.do_transaction(pool,transid,fmtsql,...)
-	local conn
-	if not transid then
-		conn = pool:occupy()
-		transid = #pool.__trans + 1
-		pool.__trans[transid] = conn
-	else
-		conn = pool.__trans[transid]
-		assert(conn,string.format("do_transaction got nil conn with id %s.",transid))
-	end
+	local conn = pool.__trans[transid]
+	assert(conn,string.format("do_transaction got nil conn with id %s.",transid))
 	
-	local res = conn:query(conn,fmtsql,...)
-	return transid,res
+	return conn:query(fmtsql,...)
 end
 
 function connection_pool.finish_transaction(pool,transid)
@@ -217,8 +217,7 @@ function CMD.begin_transaction(dbname)
 		return 
 	end
 
-	local transid,res = pool:do_transaction(nil,[[SET AUTOCOMMIT = 0;BEGIN;]])
-	return transid,res
+	return pool:begin_transaction([[SET AUTOCOMMIT = 0;BEGIN;]])
 end
 
 function CMD.do_transaction(dbname,transid,fmtsql,...)
@@ -228,9 +227,7 @@ function CMD.do_transaction(dbname,transid,fmtsql,...)
 		return 
 	end
 
-	local res
-	transid,res = pool:do_transaction(transid,fmtsql,...)
-	return transid,res
+	return pool:do_transaction(transid,fmtsql,...)
 end
 
 function CMD.rollback_transaction(dbname,transid)
