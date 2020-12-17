@@ -945,7 +945,7 @@ end
 
 function  base_table:save_game_log(gamelog)
 	log.info("==============================base_table:save_game_log")
-	log.dump(json.encode(gamelog or {}))
+	log.info("%s",json.encode(gamelog or {}))
 	local nMsg = {
 		game_id = def_first_game_type,
 		game_name = def_game_name,
