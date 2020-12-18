@@ -38,7 +38,7 @@ end
 
 local function launchservice(conf)
     local serviceid = conf.name .. "." .. tostring(conf.id)
-    local s = nameservice.new(serviceid,servicepath[conf.type or conf.name])
+    local s = nameservice.new(serviceid,servicepath[conf.type or conf.name],conf.id)
     skynet.call(s,"lua","start",conf)
     return serviceid,s
 end

@@ -16,5 +16,11 @@ end
 
 skynet.setenv("clusterid",tonumber(clusterid))
 
+
+
 require "bootloader"
+
+skynet.start(function() 
+    skynet.newservice("debug_console", 8008)
+end)
 
