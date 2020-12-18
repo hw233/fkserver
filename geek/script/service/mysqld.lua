@@ -143,7 +143,7 @@ function connection_pool.query(pool,fmtsql,...)
 	pool:release(conn)
 	local delta = skynet.time() - starttime
 	if delta > query_ttl_time then
-		log.trace("msyqld connection_pool.query max_ttl > %s,sql:\"%s\"",query_ttl_time,fmtsql)
+		log.warning("msyqld connection_pool.query max_ttl %s,sql:\"%s\"",delta,fmtsql)
 	end
 	return res
 end
