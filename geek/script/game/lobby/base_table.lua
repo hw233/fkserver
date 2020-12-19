@@ -1365,6 +1365,9 @@ function base_table:id()
 end
 
 function base_table:interrupt_dismiss(reason)
+	-- 解散时，清理准备列表，避免游戏check_start再开始
+	self:clear_ready()
+
 	local dreason = dismiss_reason[reason]
 	if self:gaming_round() > 0 then
 		self:on_final_game_overed(reason)
@@ -1378,6 +1381,9 @@ function base_table:interrupt_dismiss(reason)
 end
 
 function base_table:normal_dismiss(reason)
+	-- 解散时，清理准备列表，避免游戏check_start再开始
+	self:clear_ready()
+
 	local tb_dismiss_reason = dismiss_reason[reason]
 	self:notify_dismiss(tb_dismiss_reason)
 	self:foreach(function(p)
