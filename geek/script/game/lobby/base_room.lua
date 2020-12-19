@@ -626,18 +626,20 @@ function base_room:enter_room(player,reconnect)
 		def_game_name,def_game_id,guid,reconnect,player.online)
 
 	if reconnect then
-		local s = onlineguid[guid]
-		log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
-			guid,def_game_id,reconnect,s.table,s.chair)
-		
-		reddb:hmset("player:online:guid:"..tostring(guid),{
-			first_game_type = def_first_game_type,
-			second_game_type = def_second_game_type,
-			server = def_game_id,
-		})
+		player:lockcall(function() 
+			local s = onlineguid[guid]
+			log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
+				guid,def_game_id,reconnect,s.table,s.chair)
+			
+			reddb:hmset("player:online:guid:"..tostring(guid),{
+				first_game_type = def_first_game_type,
+				second_game_type = def_second_game_type,
+				server = def_game_id,
+			})
 
-		player.table_id = s.table
-		player.chair_id = s.chair
+			player.table_id = s.table
+			player.chair_id = s.chair
+		end)
 	else
 		self:player_login_server(player)
 	end
@@ -910,12 +912,14 @@ function base_room:player_enter_room(player)
 	log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s,player_count:%s",
 		player.guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
-	local online_key = string.format("player:online:guid:%d",player.guid)
-	reddb:hmset(online_key,{
-		first_game_type = def_first_game_type,
-		second_game_type = def_second_game_type,
-		server = def_game_id,
-	})
+	player:lockcall(function()
+		local online_key = string.format("player:online:guid:%d",player.guid)
+		reddb:hmset(online_key,{
+			first_game_type = def_first_game_type,
+			second_game_type = def_second_game_type,
+			server = def_game_id,
+		})
+	end)
 
 	onlineguid[player.guid] = nil
 end
@@ -925,13 +929,19 @@ function base_room:player_exit_room(player)
 	local guid = player.guid
 	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
 	if player.online and not common.is_in_lobby(guid)then
-		if common.is_player_in_lobby(guid) then
-			log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
-				guid,def_game_id,player.online)
+		local in_lobby = player:lockcall(function()
+			if common.is_player_in_lobby(guid) then
+				log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
+					guid,def_game_id,player.online)
+				return true
+			end
+			common.switch_to_lobby(guid)
+		end)
+
+		if in_lobby then
 			return
 		end
-		
-		common.switch_to_lobby(guid)
+
 		self.cur_player_count_ = self.cur_player_count_ - 1
 		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 		base_players[guid] = nil
@@ -946,13 +956,19 @@ function base_room:player_kickout_room(player)
 	local guid = player.guid
 	log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
 	if player.online and not common.is_in_lobby() then
-		if common.is_player_in_lobby(guid) then
-			log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
-				guid,def_game_id,player.online)
+		local in_lobby = player:lockcall(function()
+			if common.is_player_in_lobby(guid) then
+				log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
+					guid,def_game_id,player.online)
+				return true
+			end
+
+			common.switch_to_lobby(guid)
+		end)
+
+		if in_lobby then
 			return
 		end
-
-		common.switch_to_lobby(guid)
 
 		self.cur_player_count_ = self.cur_player_count_ - 1
 
@@ -967,17 +983,19 @@ end
 
 function base_room:player_login_server(player)
 	local guid = player.guid
-	reddb:hmset("player:online:guid:"..tostring(guid),{
-		first_game_type = def_first_game_type,
-		second_game_type = def_second_game_type,
-		server = def_game_id,
-	})
+	player:lockcall(function()
+		reddb:hmset("player:online:guid:"..tostring(guid),{
+			first_game_type = def_first_game_type,
+			second_game_type = def_second_game_type,
+			server = def_game_id,
+		})
 
-	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
-		1,def_game_id)
-	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
-		1,def_game_id)
-	reddb:incr("player:online:count")
+		reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+			1,def_game_id)
+		reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+			1,def_game_id)
+		reddb:incr("player:online:count")
+	end)
 
 	self.cur_player_count_ = self.cur_player_count_ + 1
 	self.players[guid] = player
@@ -1002,12 +1020,14 @@ function base_room:player_logout_server(player)
 		return
 	end
 
-	reddb:del("player:online:guid:"..tostring(guid))
-	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
-		-1,def_game_id)
-	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
-		-1,def_game_id)
-	reddb:decr("player:online:count")
+	player:lockcall(function()
+		reddb:del("player:online:guid:"..tostring(guid))
+		reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+			-1,def_game_id)
+		reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+			-1,def_game_id)
+		reddb:decr("player:online:count")
+	end)
 
 	channel.publish("db.?","msg","S_Logout", {
 		account = player.account,
