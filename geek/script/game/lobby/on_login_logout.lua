@@ -1051,6 +1051,17 @@ function on_cs_reconnect(guid)
 		})
 		return
 	end
+
+	local result = tb:player_sit_down(player, chair_id,true)
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
+			table_id,guid,chair_id,result)
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = result
+		})
+		return
+	end
+
 	local seats = table.series(tb.players,function(p) 
 		return {
 			chair_id = p.chair_id,
@@ -1087,8 +1098,7 @@ function on_cs_reconnect(guid)
 		} or nil,
 	})
 
-	g_room:reconnect(player,table_id,chair_id)
-
+	tb:reconnect(player)
 	tb:on_player_sit_downed(player,true)
 end
 
