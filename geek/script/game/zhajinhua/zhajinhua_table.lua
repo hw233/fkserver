@@ -1170,7 +1170,7 @@ function zhajinhua_table:add_score(player,msg)
 	end
 
 	if score > self.max_score then
-		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, money_add, self.max_score)
+		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, score, self.max_score)
 		return
 	end
 
@@ -1386,7 +1386,7 @@ function zhajinhua_table:compare(player, msg)
 	self.show_cards_to[compare_with][chair_id] = true
 
 	log.info("table_id[%s]:player guid[%s],target guid[%s]----------> win[%s].",
-		self.table_id_,player.guid,target.guid,ret)
+		self.table_id_,player.guid,target.guid,is_win)
 
 	local loser = is_win and target or player
 	local winner = is_win and player or target
@@ -1395,7 +1395,7 @@ function zhajinhua_table:compare(player, msg)
 	
 	--日志处理
 	log.info("table_id[%s]: player guid[%s] charid[%s] , target guid[%s] ,turn [%s] , otherplayer [%s] money[%s] win [%s]" ,
-		self.table_id_,player.guid,chair_id,target.guid,self.bet_round,compare_with,score,ret)
+		self.table_id_,player.guid,chair_id,target.guid,self.bet_round,compare_with,score,is_win)
 	table.insert(self.gamelog.actions, {
 		action = "compare",
 		chair_id = chair_id,
@@ -1662,7 +1662,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 				if r < 70 and self.is_look_card_[player.chair_id] == false then
 					--看牌
 					self:look_card(player)
-					add_timer(math.random(2,4),add_score_timer_func)
+					self:calllater(math.random(2,4),add_score_timer_func)
 					return
 				else
 					if r < 70 then
@@ -1681,7 +1681,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 						if self.is_look_card_[player.chair_id] == false then
 							--看牌
 							self:look_card(player)
-							add_timer(math.random(2,4),add_score_timer_func)
+							self:calllater(math.random(2,4),add_score_timer_func)
 						else
 							score = 1
 						end
@@ -1691,7 +1691,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 				if r < 90 and self.is_look_card_[player.chair_id] == false then
 					--看牌
 					self:look_card(player)
-					add_timer(math.random(2,4),add_score_timer_func)
+					self:calllater(math.random(2,4),add_score_timer_func)
 					return
 				else
 					if r < 5 then
@@ -1710,7 +1710,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 						if self.is_look_card_[player.chair_id] == false then
 							--看牌
 							self:look_card(player)
-							add_timer(math.random(2,4),add_score_timer_func)
+							self:calllater(math.random(2,4),add_score_timer_func)
 						else
 							self:give_up(player)
 						end
@@ -1725,7 +1725,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 				if self.is_look_card_[player.chair_id] == false then
 					--看牌
 					self:look_card(player)
-					add_timer(math.random(2,4),add_score_timer_func)
+					self:calllater(math.random(2,4),add_score_timer_func)
 				else
 					score = 1
 				end
@@ -1734,7 +1734,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 				if self.is_look_card_[player.chair_id] == false then
 					--看牌
 					self:look_card(player)
-					add_timer(math.random(2,4),add_score_timer_func)
+					self:calllater(math.random(2,4),add_score_timer_func)
 				else
 					self:give_up(player)
 				end
@@ -1750,7 +1750,7 @@ function zhajinhua_table:start_add_score_timer(time,player)
 			log.error("guid[%s] add score No score", player.guid)
 		end
 	end
-	add_timer(time,add_score_timer_func)
+	self:calllater(time,add_score_timer_func)
 end
 
 --全比
@@ -1783,7 +1783,7 @@ function zhajinhua_table:check_compare_cards(player)
 		self:broadcast2client("SC_ZhaJinHuaAddScore", {
 			add_score_chair_id = player.chair_id,
 			cur_chair_id = self.cur_chair,
-			score = score_,
+			score = last_score,
 			money = money_,
 			is_all = false,
 		})
@@ -1812,7 +1812,7 @@ function zhajinhua_table:check_compare_cards(player)
 		else
 			--负，继续游戏
 			player.death = true
-			player.game_status = PLAYER_LOSE
+			player.game_status = PLAYER_STATUS.LOSE
 			local notify = {
 				lose_chair_id = player.chair_id,
 				cur_chair_id = self.cur_chair,

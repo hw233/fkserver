@@ -305,7 +305,7 @@ function maajan_table:fast_start_vote_commit(p,msg)
     end)
 end
 
-function maajan_table:on_reconnect_when_fast_start_vote()
+function maajan_table:on_reconnect_when_fast_start_vote(player)
     local status = {}
     for chair,r in pairs(self.vote_result) do
         local pi = self.players[chair]
@@ -316,11 +316,11 @@ function maajan_table:on_reconnect_when_fast_start_vote()
         })
     end
 
-    send2client_pb(p,"SC_VoteTableRequestInfo",{
+    send2client_pb(player,"SC_VoteTableRequestInfo",{
         vote_type = "FAST_START",
         request_guid = player.guid,
         request_chair_id = player.chair_id,
-        timeout= math.ceil(timer and timer.remainder or timeout),
+        -- timeout= math.ceil(timer and timer.remainder or timeout),
         status = status
     })
 end
