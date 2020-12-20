@@ -238,6 +238,7 @@ local function guid_monitor()
     for _,u in pairs(onlineguid) do
         local last_live_time = u.last_live_time
         if last_live_time and now - last_live_time > heartbeat_check_time then
+            log.info("guid_monitor timeout afk %s",u.guid)
             afk(u.fd)
             if u.fd then
                 msgserver.closeclient(u.fd)
