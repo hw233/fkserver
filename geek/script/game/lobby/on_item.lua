@@ -1,8 +1,6 @@
 -- 物品消息处理
-require "data.item_details_table"
-require "data.item_market_table"
-local item_details_table = item_details_table
-local item_market_table = item_market_table
+local item_details_table = require "data.item_details_table"
+local item_market_table = require "data.item_market_table"
 
 require "game.net_func"
 local send2client_pb = send2client_pb

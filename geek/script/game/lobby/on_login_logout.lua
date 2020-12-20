@@ -164,6 +164,7 @@ end
 
 -- 登录验证框
 function on_cs_login_validatebox(player, msg)
+	local guid = player.guid
 	if msg and msg.answer and #msg.answer == 2 and player.login_validate_answer and #player.login_validate_answer == 2  and 
 		((msg.answer[1] == player.login_validate_answer[1] and msg.answer[2] == player.login_validate_answer[2]) or
 		(msg.answer[1] == player.login_validate_answer[2] and msg.answer[2] == player.login_validate_answer[1])) then
@@ -453,34 +454,34 @@ function on_cs_change_game(msg,guid)
 		return
 	end
 
-	if msg.private_room_opt == 1 then
-		local needmoney = calc_private_table_need_money(msg.first_game_type, msg.private_room_score_type, msg.private_room_chair_count)
-		if not needmoney then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-			})
-			return
-		end
+	-- if msg.private_room_opt == 1 then
+	-- 	local needmoney = calc_private_table_need_money(msg.first_game_type, msg.private_room_score_type, msg.private_room_chair_count)
+	-- 	if not needmoney then
+	-- 		onlineguid.send(player, "SC_EnterRoomAndSitDown", {
+	-- 			result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
+	-- 			game_id = def_game_id,
+	-- 			first_game_type = msg.first_game_type,
+	-- 			second_game_type = msg.second_game_type,
+	-- 			ip_area = player.ip_area,
+	-- 			private_room_score_type = msg.private_room_score_type,
+	-- 		})
+	-- 		return
+	-- 	end
 
-		local money = player.money or 0
-		if money < needmoney then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_MONEY,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-				balance_money = needmoney-money,
-			})
-			return
-		end
-	end
+	-- 	local money = player.money or 0
+	-- 	if money < needmoney then
+	-- 		onlineguid.send(player, "SC_EnterRoomAndSitDown", {
+	-- 			result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_MONEY,
+	-- 			game_id = def_game_id,
+	-- 			first_game_type = msg.first_game_type,
+	-- 			second_game_type = msg.second_game_type,
+	-- 			ip_area = player.ip_area,
+	-- 			private_room_score_type = msg.private_room_score_type,
+	-- 			balance_money = needmoney-money,
+	-- 		})
+	-- 		return
+	-- 	end
+	-- end
 
 	if msg.first_game_type == def_first_game_type and msg.second_game_type == def_second_game_type then
 		-- 已经在这个服务器中了
@@ -499,14 +500,14 @@ function on_cs_change_game(msg,guid)
 		local b_private_room = true
 		local result_, table_id_, chair_id_, tb
 		if msg.private_room_opt == 1 then
-			result_, table_id_, chair_id_, tb = room:create_private_table(player, msg.private_room_chair_count, msg.private_room_score_type)
-			if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
+			-- result_, table_id_, chair_id_, tb = room:create_private_table(player, msg.private_room_chair_count, msg.private_room_score_type)
+			-- if result_ == enum.GAME_SERVER_RESULT_SUCCESS then
 				-- 开房费
-				local money = getCreatePrivateRoomNeedMoney(msg.first_game_type, msg.private_room_score_type, msg.private_room_chair_count)
-				if money > 0 then
-					player:change_money(-money, enum.LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
-				end
-			end
+				-- local money = getCreatePrivateRoomNeedMoney(msg.first_game_type, msg.private_room_score_type, msg.private_room_chair_count)
+				-- if money > 0 then
+				-- 	player:change_money(-money, enum.LOG_MONEY_OPT_TYPE_CREATE_PRIVATE_ROOM)
+				-- end
+			-- end
 		elseif msg.private_room_opt == 2 then
 			result_, table_id_, chair_id_, tb = room:join_private_table(player, msg.owner_guid)
 		else
@@ -1091,106 +1092,6 @@ function on_cs_join_private_room(msg,guid,game_id)
 	tb:on_player_sit_downed(player)
 end
 
-
-function on_ss_join_private_room(msg)
-	local player = base_players[msg.guid]
-	if not player then
-		log.error("guid[%d] not find in game", msg.guid)
-		return
-	end
-
-	if msg.table_id then
-		local needmoney = calcPrivateRoomNeedMoney(msg.first_game_type, msg.private_room_score_type)
-		if not needmoney then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-			})
-			return
-		end
-
-		local money = player.money or 0
-		local bank = player.bank or 0
-		
-		if money + bank < needmoney + def_private_room_bank then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_ALL,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-			})
-			return
-		end
-
-		if bank < def_private_room_bank then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_BANK,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-				balance_money = def_private_room_bank-bank,
-			})
-			return
-		end
-
-		if money < needmoney then
-			onlineguid.send(player, "SC_EnterRoomAndSitDown", {
-				result = enum.GAME_SERVER_RESULT_JOIN_PRIVATE_ROOM_MONEY,
-				game_id = def_game_id,
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				ip_area = player.ip_area,
-				private_room_score_type = msg.private_room_score_type,
-				balance_money = needmoney-money,
-			})
-			return
-		end
-
-		on_cs_change_game(player, {
-				first_game_type = msg.first_game_type,
-				second_game_type = msg.second_game_type,
-				private_room_opt = 2,
-				owner_guid = msg.owner_guid,
-				private_room_score_type = msg.private_room_score_type,
-			})
-	else
-		onlineguid.send(player, "SC_JoinPrivateRoomFailed", {
-			owner_guid = msg.owner_guid,
-			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
-		})
-	end
-end
-
--- 私人房间信息
-function on_CS_PrivateRoomInfo(player, msg)
-	local t = {}
-	for i,v in ipairs(g_PrivateRoomConfig) do
-		local cm = {}
-		for j,u in ipairs(v.room_cfg) do
-			cm[j] = u.cell_money
-		end
-
-		local tb = nil
-		if v.first_game_type == 5 then
-			tb = {3}
-		elseif v.first_game_type == 6 then
-			tb = {2,3,4,5}
-		end
-
-		table.insert(t, {first_game_type = v.first_game_type, table_count = tb, cell_money = cm})
-	end
-
-	onlineguid.send(player, "SC_PrivateRoomInfo", {pb_info = t})
-end
-
 -- 设置昵称
 function on_cs_set_nickname(msg,guid)
 	log.dump(msg)
@@ -1416,7 +1317,7 @@ function on_cs_request_sms_verify_code(msg,guid)
     
 	local verify_code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
 	if verify_code and verify_code ~= "" then
-		local ttl = reddb:ttl(string.format("sms:verify_code:session:%s",session_id))
+		local ttl = reddb:ttl(string.format("sms:verify_code:guid:%s",guid))
         ttl = tonumber(ttl)
 		return enum.LOGIN_RESULT_SMS_REPEATED,ttl
 	end
@@ -1433,7 +1334,7 @@ function on_cs_request_sms_verify_code(msg,guid)
 		return enum.LOGIN_RESULT_TEL_LEN_ERR
 	end
     
-	-- local prefix = string.sub(phone_num,0, 3)
+	local prefix = string.sub(phone_num,0, 3)
 	-- if prefix == "170" or prefix == "171" then
 	-- 	return enum.LOGIN_RESULT_TEL_ERR
 	-- end

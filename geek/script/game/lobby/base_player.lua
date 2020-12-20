@@ -8,10 +8,9 @@ local enum = require "pb_enums"
 local json = require "json"
 local onlineguid = require "netguidopt"
 local util = require "util"
-require "data.item_details_table"
 local club_money_type = require "game.club.club_money_type"
 local channel = require "channel"
-local item_details_table = item_details_table
+local item_details_table = require "data.item_details_table"
 local base_active_android = base_active_android
 local club_partner_commission = require "game.club.club_partner_commission"
 local queue = require "skynet.queue"
@@ -754,41 +753,6 @@ function base_player:change_money(value, opttype, is_savedb, whatever)
 	self:log_money(enum.ITEM_PRICE_TYPE_GOLD,opttype,oldmoney,self.money,self.bank,self.bank)
 	log.info("change_money  end oldmoney[%d] new_money[%d]" , oldmoney, self.money)
 	return ret
-end
-
-
---记录游戏对手
-function base_player:set_player_ip_contrl(player_list)
-	-- body
-	log.info("==================set_player_ip_contrl")
-	local gametype = string.format("%d_%d",def_first_game_type,def_second_game_type)
-	for _,v in ipairs(player_list) do
-		if v.guid ~= self.guid then
-			set_game_times(gametype,self.guid,v.guid,true)
-		end
-	end
-end
-
---增加游戏场数
-function base_player:inc_play_times()
-	-- body
-	log.info("==================inc_play_times")
-	local gametype = string.format("%d_%d",def_first_game_type,def_second_game_type)
-	inc_play_times(gametype,self.guid,true)
-end
-
---判断游戏场次 judge_play_times
-function base_player:judge_play_times(other,GameLimitCdTime)
-	-- body
-	log.info("==================judge_play_times")
-	local gametype = string.format("%d_%d",def_first_game_type,def_second_game_type)
-	if judge_play_times(gametype,self.guid,other.guid,GameLimitCdTime,true) then
-		print(string.format("%d : %d judge_play_times is true",self.guid,other.guid))
-		return true
-	else
-		print(string.format("%d : %d judge_play_times is false",self.guid,other.guid))
-		return false
-	end
 end
 
 --判断游戏IP

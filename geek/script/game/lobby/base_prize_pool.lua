@@ -94,25 +94,6 @@ function base_prize_pool:prize_pool_show(room_id ,table_id)
 	self:broadcast2client(room_id , table_id , "SC_PrizePool_show",{money = self.prizepool.show})
 end
 
--- 广播桌子中所有人消息
-function base_prize_pool:broadcast2client(room_id , table_id, msg_name, msg)
-	if not self.player_list[room_id] then
-		log.info("no ======== room_id")
-		return
-	end
-	if not self.player_list[room_id][table_id] then
-		log.info("no ======== table_id")
-		return
-	end
-	local id, msg = get_msg_id_str(msg_name, msg)
-	for i, p in pairs(self.player_list[room_id][table_id] ) do
-		if p and type(p) == "table" then
-			log.info("============send guid[%d]",p.guid)
-			send2client_pb(p,msg_name,msg)
-		end
-	end
-end
-
 --计算参与的玩家
 function base_prize_pool:prize_pool_players(table_id)
 	if self:prize_pool_is_open() == false then

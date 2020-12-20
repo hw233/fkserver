@@ -107,7 +107,7 @@ function player_manager.update_notice(msg)
 		}
 
 		table.insert(msg_data.pb_msg_data,notify)
-		send2client_pb(self,"SC_NewMarquee",msg_data)
+		-- send2client_pb(self,"SC_NewMarquee",msg_data)
 		return
 	end
 
@@ -126,7 +126,7 @@ function player_manager.update_notice(msg)
 	}
 
 	table.insert(msg_data.pb_msg_data,notify)
-	send2client_pb(self,"SC_NewMsgData",msg_data)
+	-- send2client_pb(self,"SC_NewMsgData",msg_data)
 end
 
 -- 游戏中奖公告，需要客户端组装消息内容

@@ -5,8 +5,9 @@ require "game.net_func"
 require "functions"
 require "game.timer_manager"
 local log = require "log"
-local json = require "cjson"
+local json = require "json"
 local enum = require "pb_enums"
+local channel = require "channel"
 
 local def_first_game_type = def_first_game_type
 local def_second_game_type = def_second_game_type
