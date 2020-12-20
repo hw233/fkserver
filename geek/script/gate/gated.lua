@@ -55,8 +55,8 @@ local function afk(fd)
         return
     end
 
-    logout(u.guid)
     pcall(skynet.call,u.agent, "lua", "afk")
+    logout(u.guid)
 end
 
 local function login(fd,guid,server,conf)
@@ -151,13 +151,7 @@ function CMD.start(conf)
     }
 
     function server.disconnect_handler(c)
-        local u = fduser[c.fd]
-        if u and u.agent then
-            pcall(skynet.call,u.agent, "lua", "afk")
-            logout(u.guid)
-        else
-            pcall(skynet.call,loginservice,"lua","afk",c.fd)
-        end
+        afk(c.fd)
     end
 
     function server.request_handler(msgstr,session)

@@ -37,7 +37,6 @@ function CMD.login(source, u)
     fd = u.fd
     addr = u.addr
     conf = u.conf
-    channel.subscribe("guid."..tostring(guid),skynet.self())
 end
 
 local function afk(...)
@@ -52,7 +51,6 @@ end
 
 function CMD.logout(...)
 	log.warning("%s is logout", guid)
-	logout()
 end
 
 function CMD.afk(...)
