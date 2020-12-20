@@ -4,6 +4,7 @@ local room = g_room
 local base_players = require "game.lobby.base_players"
 local log = require "log"
 local enum = require "pb_enums"
+local channel = require "channel"
 
 require "game.net_func"
 

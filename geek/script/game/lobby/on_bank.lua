@@ -5,10 +5,7 @@ local send2client_pb = send2client_pb
 
 local base_players = require "game.lobby.base_players"
 local enum = require "pb_enums"
-
-
-local get_db_status = get_db_status
-
+local channel = require "channel"
 
 -- 设置银行密码
 function on_cs_bank_set_password(msg,guid)
@@ -59,27 +56,6 @@ function  on_cl_ResetBankPW( msg,guid)
 	print ("...................... on_cl_ResetBankPW", player.guid)
 end
 
-function  on_ds_ResetPw( msg )
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in center", msg.guid)
-		return
-	end
-	-- body
-	if msg.bank_password_new == "******" then
-		log.info("guid[%d] clear bankpassword success", msg.guid)
-		player.bank_password = nil
-		player.has_bank_password = false
-	else
-		player.bank_password = msg.bank_password_new
-	end
-	send2client_pb(player,"SC_ResetBankPW", {
-		guid = player.guid,
-		result = msg.result,
-	})
-	print ("...................... on_ds_ResetPw", player.guid)
-end
-
 -- 修改银行密码
 function on_cs_bank_change_password(msg,guid)
 	local player = base_players[guid]
@@ -99,20 +75,6 @@ function on_cs_bank_change_password(msg,guid)
 	print ("...................... on_cs_bank_change_password", player.guid)
 end
 
--- 修改银行密码结果
-function on_ds_bank_change_password(msg)
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in center", msg.guid)
-		return
-	end
-	
-	player.bank_password = msg.bank_password
-
-	send2client_pb(player, "SC_BankChangePassword", {
-		result = msg.result,
-	})
-end
 
 -- 登录银行
 function on_cs_bank_login(msg,guid)
@@ -130,25 +92,6 @@ function on_cs_bank_login(msg,guid)
 	})
 	
 	print "...................... on_cs_bank_login"
-end
-
--- 登录银行返回
-function on_ds_bank_login(msg)
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in center", msg.guid)
-		return
-	end
-
-	if msg.result == enum.BANK_OPT_RESULT_SUCCESS then
-		player.bank_login = true
-	end
-
-	send2client_pb(player, "SC_BankLogin", {
-			result = msg.result,
-		})
-		
-	print ("...................... on_ds_bank_login", msg.guid, msg.result)
 end
 
 local room_mgr = g_room
@@ -191,12 +134,6 @@ function on_cs_bank_deposit(msg,guid)
 			result = enum.BANK_OPT_RESULT_MONEY_ERR,
 		})
 		return
-	end
-
-	if get_db_status() == 0 then
-		send2client_pb(player, "SC_BankDeposit", {
-			result = enum.BANK_OPT_RESULT_BANK_MAINTAIN,
-		})
 	end
 	
 	player.money = money - money_
@@ -279,12 +216,6 @@ function on_cs_bank_draw(msg,guid)
 		})
 		return
 	end
-	
-	if get_db_status() == 0 then
-		send2client_pb(player, "SC_BankDraw", {
-			result = enum.BANK_OPT_RESULT_BANK_MAINTAIN,
-		})
-	end
 
 	local money_ = msg and msg.money or 0
 	local bank = player.bank
@@ -337,76 +268,4 @@ function on_cs_bank_draw(msg,guid)
 	-- 	ip = player.ip,
 	-- 	gameid = def_game_id,
 	-- })
-end
-
-function on_ds_changebank(msg)
-	-- body
-	log.info(string.format("guid = [%d], old_bank = [%s], new_bank = [%s] change_bank = [%s] optType = [%s] retcode[%d]",
-						   msg.guid, tostring(msg.oldbankmoeny), tostring(msg.newbankmoney), tostring(msg.changemoney), tostring(msg.optType) ,tostring(msg.retcode)))
-	local player = base_players[msg.guid]
-	if not player then
-		log.warning("guid[%d] not find in game", msg.guid)
-		if (tonumber(msg.optType) == 1  and tonumber(msg.retcode) == 1 ) 			-- 取钱成功 但玩家不在线 则回存
-			or (tonumber(msg.optType) == 2 and tonumber(msg.retcode) ~= 1) then		-- 存钱失败 但玩家不在线 则回存
-			log.info("guid[%d] optType[%d] changemoney[%d] gameid[%d]", msg.guid, 3, msg.changemoney , def_game_id)
-			channel.publish("db.?","msg","SD_ChangeBank",{
-				guid = msg.guid,
-				changemoney = msg.changemoney,
-				optType = 3,
-			})
-		end
-		return
-	end
-	if tonumber(msg.optType) == 1 then
-		if tonumber(msg.retcode) == 1 then
-			local oldmoeny_ = player.money
-			player.money = oldmoeny_ + msg.changemoney
-			-- 更新存储开关
-			player.flag_base_info = true
-			local newmoney = player.money
-			-- 更新玩家自身银行记录
-			player.bank = msg.newbankmoney
-			log.info("BankDraw Success guid[%d] oldmoeny[%d] newmoney[%d] oldbank[%d] newbank[%d]", player.guid, oldmoeny_, newmoney, msg.oldbankmoeny , player.bank)
-			-- 记录日志
-			channel.publish("db.?","msg","SD_BankLog_New", {
-				guid = player.guid,
-				nickname = player.nickname,
-				phone = player.phone,
-				opt_type = 1,
-				money = msg.changemoney,
-				old_money = oldmoeny_,
-				new_money = player.money,
-				old_bank = msg.oldbankmoeny,
-				new_bank = player.bank,
-				ip = player.ip,
-				gameid = def_game_id,
-			})
-			send2client_pb(player, "SC_BankDraw", {
-				result = enum.BANK_OPT_RESULT_SUCCESS,
-				money = msg.changemoney,
-			})
-		else
-		 	send2client_pb(player, "SC_BankDraw", {
-		 		result = enum.BANK_OPT_RESULT_MONEY_ERR,
-		 	})
-		end
-	elseif tonumber(msg.optType) == 2 then
-		if tonumber(msg.retcode) == 1 then
-			send2client_pb(player, "SC_BankDeposit", {
-				result = enum.BANK_OPT_RESULT_SUCCESS,
-				money = msg.changemoney,
-			})
-			return
-		else
-			local playermoney = player.money
-			player.money = playermoney + msg.changemoney
-			player.flag_base_info = true
-			log.info(" guid [%d] playermoney[%d] updater [%d]", player.guid, playermoney, player.money)
-			send2client_pb(player, "SC_BankDeposit", {
-				result = enum.BANK_OPT_RESULT_MONEY_ERR,
-			})
-			return
-		end
-	end
-	print("====================================03")
 end

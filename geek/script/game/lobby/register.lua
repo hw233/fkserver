@@ -2,7 +2,7 @@
 local skynet = require "skynetproto"
 local serviceconf = require "serviceconf"
 require "functions"
-
+local channel = require "channel"
 
 function query_many_ox_config_data()
 	channel.publish("db.?","msg","SD_QueryOxConfigData", {
@@ -31,23 +31,8 @@ skynet.start(function()
 	--------------------------------------------------------------------
 	register_dispatcher("CG_GameServerCfg",on_cs_game_server_cfg)
 	register_dispatcher("CS_GameServerCfg",on_cs_game_server_cfg)
-	-- 注册cfg发过来的消息分派函数
-	register_dispatcher("SS_JoinPrivateRoom",on_ss_join_private_room)
-	-- 注册DB发过来的消息分派函数
-	register_dispatcher("DS_Player_Append_Info",on_ds_player_append_info)
-	register_dispatcher("DS_ResetAccount",on_ds_reset_account)
-	register_dispatcher("DS_SetPassword",on_ds_set_password)
-	register_dispatcher("DS_SetNickname",on_ds_set_nickname)
-	register_dispatcher("DS_BankChangePassword",on_ds_bank_change_password)
-	register_dispatcher("DS_ResetPW",on_ds_ResetPw)
-	register_dispatcher("DS_LoadAndroidData",on_ds_load_android_data)
-	register_dispatcher("DS_QueryPlayerMsgData",on_ds_QueryPlayerMsgData)
 
-	register_dispatcher("DS_BandAlipay",on_ds_bandalipay)
-	register_dispatcher("DS_BandAlipayNum",on_ds_bandalipaynum)
 	--register_dispatcher("DS_OxConfigData",on_ds_LoadOxConfigData)
-	register_dispatcher("DS_QueryPlayerInviteReward",on_ds_load_player_invite_reward)
-	register_dispatcher("DS_QueryChannelInviteCfg",on_ds_load_channel_invite_cfg)
 	--------------------------------------------------------------------
 	-- 注册Login发过来的消息分派函数
 	register_dispatcher("LS_LoginNotify",on_ls_login_notify)
@@ -57,7 +42,6 @@ skynet.start(function()
 	register_dispatcher("LS_NewNotice",on_new_notice)
 	register_dispatcher("LS_GameNotice",on_game_notice)
 	register_dispatcher("LS_DelMessage",on_ls_DelMessage)
-	register_dispatcher("LS_BankcardEdit",on_ls_BankcardEdit)
 
 	--------------------------------------------------------------------
 	-- 注册客户端发过来的消息分派函?
@@ -67,9 +51,6 @@ skynet.start(function()
 	register_dispatcher("CS_JoinRoom",on_cs_join_private_room)
 	register_dispatcher("CS_CreateRoom",on_cs_create_private_room)
 	register_dispatcher("CS_PrivateRoomInfo",on_CS_PrivateRoomInfo)
-	register_dispatcher("CS_ResetAccount",on_cs_reset_account)
-	register_dispatcher("CS_SetPassword",on_cs_set_password)
-	register_dispatcher("CS_SetPasswordBySms",on_cs_set_password_by_sms)
 	register_dispatcher("CS_SetNickname",on_cs_set_nickname)
 	register_dispatcher("CS_ChangeHeaderIcon",on_cs_change_header_icon)
 	register_dispatcher("CS_BankSetPassword",on_cs_bank_set_password)
@@ -104,7 +85,6 @@ skynet.start(function()
 	register_dispatcher("CS_QueryPlayerMsgData",on_cs_QueryPlayerMsgData)
 	register_dispatcher("CS_QueryPlayerMarquee",on_cs_QueryPlayerMarquee)
 	register_dispatcher("CS_SetMsgReadFlag",on_cs_SetMsgReadFlag)
-	register_dispatcher("CS_BandAlipay",on_cs_bandalipay)
 	register_dispatcher("CS_Trustee",on_cs_trusteeship)
 	register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
 	

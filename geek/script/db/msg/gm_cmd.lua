@@ -7,29 +7,6 @@ local reddb = redisopt.default
 
 local enum = require "pb_enums"
 
-function gm_change_money(guid,money,log_type)
-	print("gm_change_money comming......")
-	local db = dbpot.game
-
-	local data = db:query("SELECT money,bank from t_player WHERE guid = %d;",guid)
-	if not data.errno and #data > 0 then	
-		local old_money = data[1].money
-		local old_bank = data[1].bank
-		if(money < 0) then
-			local tempMoney = old_money + money
-			if tempMoney < 0 then
-				return false
-			end
-		end
-		local new_money = old_money + money
-		db:query("UPDATE t_player SET money=%d WHERE guid=%d;",new_money,guid)
-		-- 加钱日志存档
-		dbopt.log:query("INSERT INTO t_log_money SET guid = %d,old_money=%d,new_money=%d,old_bank=%d,new_bank=%d,opt_type=%d;",
-			guid,old_money,new_money,old_bank,old_bank,log_type or enum.LOG_MONEY_OPT_TYPE_GM)
-	end
-	return true
-end
-
 function gm_change_bank_money(guid,bank_money,log_type)
 	print("gm_change_bank_money comming......")
     local db = dbopt.game

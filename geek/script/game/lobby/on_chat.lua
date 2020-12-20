@@ -7,8 +7,8 @@ local log = require "log"
 require "game.net_func"
 
 local base_player = require "game.lobby.base_player"
+local channel = require "channel"
 
-local base_room = require "game.lobby.base_room"
 local room = g_room
 
 -- 世界聊天

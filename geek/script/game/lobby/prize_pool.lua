@@ -2,6 +2,8 @@
 local redisopt = require "redisopt"
 local log = require "log"
 local timer = require "timer"
+local channel = require "channel"
+
 local def_get_redis_bonus = 10 + math.random(1,5) -- 定时获取一次奖池
 local def_wirte_db_bonus  = 60 + math.random(1,10)-- 定时写数据库
 local MAX_BONUS = 999999

@@ -718,101 +718,6 @@ function on_cl_login_by_sms(msg,session)
     return sms_login(msg)
 end
 
-function on_L_KickClient(msg)  
-	local account_ = msg.reply_account
-	local platform_id = msg.platform_id
-	local userdata = msg.user_data
-	if userdata == 1 then
-        local info = get_player_login_info_temp(account_key)
-        if info then
-            log.info( "[%s] reg account, guid = %d", account_key, info )
-            local gameid = util.find_lightest_weight_game_server(1)
-            if gameid == 0 then
-                local session_id = info.session_id
-                local gate_id = info.gate_id
-
-                sendpb2guids(session_id,gate_id,"LC_Login",{
-                    result = enum.LOGIN_RESULT_NO_DEFAULT_LOBBY,
-                })
-                
-                reddb.hdel("player:login:info",account_key)
-                reddb.hdel("player:login:info:guid",info.guid)
-
-                log.warning( "no default lobby" )
-                return
-            end
-
-            reddb.hdel("player:login:info:temp",account_key)
-
-            reddb.hset("player_online_gameid",info.guid,gameid)
-            reddb.hset("player_session_gate",string.format("%d@%d",info.session_id,info.gate_id),info.account)
-            reddb.hset("player:login:info",account_key,json.encode(info))
-            reddb.hset("player:login:info:guid",info.guid,json.encode(info))
-
-            channel.pcall("game."..tostring(gameid),"LS_LoginNotify",{
-                player_login_info = info,
-            })
-        end
-	elseif userdata == 2 then
-		local info = get_player_login_info_temp(account_key)        
-        if info then
-            log.info( "[%s] login account, guid = %d", account_key, info.guid )
-
-            reddb.hdel("player:login:info:temp",account_key)
-
-            reddb.hset("player:login:info",account_key,json.encode(info))
-            reddb.hset("player:login:info:guid",info.guid,json.encode(info))
-            channel.publish("db.?","msg","LD_VerifyAccount",{
-                verify_account = {
-                    account = info.account,
-                    password = info.password,
-                },
-                session_id = info.session_id, 
-                gate_id = info.gate_id, 
-                ip = info.ip, 
-                phone = info.phone, 
-                phone_type = info.phone_type, 
-                version = info.version, 
-                channel_id = info.channel_id, 
-                package_name = info.package_name, 
-                imei = info.imei, 
-                deprecated_imei = info.deprecated_imei, 
-                platform_id = info.platform_id, 
-            })
-        end
-	elseif userdata == 3 then
-        local info = get_player_login_info_temp(account_key)
-        if info then
-            log.info( "[%s] loginsms account, guid = %d", account_key, info.guid)
-
-            reddb.hdel("player:login:info:temp",account_key)
-
-            reddb.hset("player:login:info",account_key,json.encode(info))
-            reddb.hset("player:login:info:guid",info.guid,json.encode(info))
-
-            channel.publish("db.?","msg","LD_SmsLogin",{
-                account = info.account,
-                session_id = info.session_id,
-                gate_id = info.gate_id,
-                phone = info.phone,
-                phone_type = info.phone_type,
-                version = info.version,
-                channel_id = info.channel_id,
-                package_name = info.package_name,
-                imei = info.imei,
-                ip = info.ip,
-                ip_area = info.ip_area,
-                deprecated_imei = info.deprecated_imei,
-                platform_id = info.platform_id,
-                shared_id = info.shared_id,
-                unique_id = info.unique_id,
-            })
-        end
-	end
-
-	log.info( "login step login[online]->L_KickClient,account=%s,userdata=%d", account_key, userdata )
-end
-
 function on_cs_request_sms_verify_code(msg,session_id)
     if not session_id then
         return enum.LOGIN_RESULT_SMS_FAILED
@@ -838,7 +743,7 @@ function on_cs_request_sms_verify_code(msg,session_id)
         return enum.LOGIN_RESULT_TEL_LEN_ERR
     end
 
-    -- local prefix = string.sub(phone_num,1, 3)
+    local prefix = string.sub(phone_num,1, 3)
     -- if prefix == "170" or prefix == "171" then
     --     return enum.LOGIN_RESULT_TEL_ERR
     -- end
@@ -871,22 +776,5 @@ end
 
 function on_cs_chat_world(msg)  
     channel.publish("gate.*","msg","CS_ChatWorld",msg)
-end
-
-function on_gl_NewNotice(msg)  
-    write_gm_msg( msg.retid,msg.asyncid, msg.result )
-end
-
-function on_SL_GameNotice(msg)  
-    local platform_ids = {}
-    if msg.platform_id then
-        table.insert(platform_ids,msg.platform_id)
-    else
-    end
-
-    channel.publish("gate.*","msg","LS_GameNotice",{
-        pb_game_notice = msg.pb_game_notice,
-        platform_ids = platform_ids,
-    })
 end
 

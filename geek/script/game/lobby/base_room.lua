@@ -14,6 +14,7 @@ local queue = require "skynet.queue"
 local common = require "game.common"
 local game_util = require "game.util"
 local club_utils = require "game.club.club_utils"
+local club_money = require "game.club.club_money"
 
 require "game.net_func"
 local timer_manager = require "game.timer_manager"
@@ -208,7 +209,7 @@ function base_room:enter_room_and_sit_down(player)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
-	log.info("base_room:enter_room_and_sit_down: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d] get_db_status[%d]",def_game_name,def_game_id,self.game_switch_is_open,get_db_status())
+	log.info("base_room:enter_room_and_sit_down: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d]",def_game_name,def_game_id,self.game_switch_is_open)
 	log.info("player guid[%d], player vip = [%d]",player.guid, player.vip)
 	if self.game_switch_is_open == 1 then --游戏进入维护阶段
 		if player and player.vip ~= 100 then	
@@ -584,8 +585,8 @@ function base_room:auto_enter_room(player)
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
-	log.info("base_room:auto_enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d] get_db_status[%d]",def_game_name,def_game_id,self.game_switch_is_open,get_db_status())
-	if  self.game_switch_is_open == 1 or get_db_status() == 0 then --游戏进入维护阶段
+	log.info("base_room:auto_enter_room: game_name = [%s],game_id =[%d], single_game_switch_is_open = [%d]",def_game_name,def_game_id,self.game_switch_is_open)
+	if  self.game_switch_is_open == 1 then --游戏进入维护阶段
 		if player.vip ~= 100 then	
 			send2client_pb(player, "SC_GameMaintain", {
 					result = enum.GAME_SERVER_RESULT_MAINTAIN,

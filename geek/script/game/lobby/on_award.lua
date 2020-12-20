@@ -7,12 +7,10 @@ local login_award_table = login_award_table
 local online_award_table = online_award_table
 
 local enum = require "pb_enums"
+local channel = require "channel"
 
 require "game.net_func"
 local send2client_pb = send2client_pb
-
-local base_player = require "game.lobby.base_player"
-
 
 local relief_payment_money = 2000			-- 救济一次领取多少钱
 local relief_payment_money_limit = 1000		-- 救济金要多少钱以下才能领取

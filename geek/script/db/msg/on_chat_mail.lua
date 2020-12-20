@@ -1,11 +1,9 @@
 -- 聊天，邮件消息处理
 local dbopt = require "dbopt"
 local json = require "cjson"
-
-local find_player = find_player
+local log = require "log"
 
 local def_expiration_time = 30*24*60*60 -- 邮件30天过期
-
 
 -- 发送邮件
 function on_sd_send_mail(game_id, msg)
