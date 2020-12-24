@@ -1163,36 +1163,42 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
-		local result =  self:can_sit_down(player,chair_id,reconnect)
-		if result ~= enum.ERROR_NONE then
-			return result
-		end
+		local result = player:lockcall(function()
+			local result =  self:can_sit_down(player,chair_id,reconnect)
+			if result ~= enum.ERROR_NONE then
+				return result
+			end
 
-		player.table_id = self.table_id_
-		player.chair_id = chair_id
-		self.players[chair_id] = player
-		log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
-				player.guid,player.table_id,player.chair_id)
+			player.table_id = self.table_id_
+			player.chair_id = chair_id
+			self.players[chair_id] = player
+			log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
+					player.guid,player.table_id,player.chair_id)
 
-		self.player_count = self.player_count + 1
-		
-		if not player:is_android() then
-			for i, p in ipairs(self.players) do
-				if p == false then
-					-- 主动机器人坐下
-					player:on_notify_android_sit_down(def_game_id, self.table_id_, i)
+			self.player_count = self.player_count + 1
+			
+			if not player:is_android() then
+				for i, p in ipairs(self.players) do
+					if p == false then
+						-- 主动机器人坐下
+						player:on_notify_android_sit_down(def_game_id, self.table_id_, i)
+					end
 				end
 			end
-		end
 
-		reddb:hmset("player:online:guid:"..tostring(player.guid),{
-			table = self.table_id_,
-			chair = chair_id,
-		})
+			reddb:hmset("player:online:guid:"..tostring(player.guid),{
+				table = self.table_id_,
+				chair = chair_id,
+			})
 
-		if self:is_private() then
-			reddb:set("player:table:"..tostring(player.guid),self.private_id)
-			reddb:sadd("table:player:"..tostring(self.private_id),player.guid)
+			if self:is_private() then
+				reddb:set("player:table:"..tostring(player.guid),self.private_id)
+				reddb:sadd("table:player:"..tostring(self.private_id),player.guid)
+			end
+		end)
+
+		if result then
+			return result
 		end
 
 		self:on_player_sit_down(player,chair_id,reconnect)
