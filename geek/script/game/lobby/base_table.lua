@@ -1211,8 +1211,6 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 	end)
 end
 
-
-
 function base_table:on_private_pre_dismiss(reason)
 	
 end
@@ -1503,14 +1501,13 @@ function base_table:player_stand_up(player, reason)
 				self:delay_kickout(player,enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT)
 				return enum.GAME_SERVER_RESULT_WAIT_LATER
 			end
+
 			log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
-			local chairid = player.chair_id
-			local p = self.players[chairid]
 			local list_guid = table.concat(table.extract(self.players,"guid"),",")
-			log.info("set guid[%s] table_id[%s] is false player_list [%s]",guid,table_id,chairid , list_guid)
+			log.info("set guid[%s] table_id[%s] is false player_list [%s]",guid,self:id(),chair_id , list_guid)
 			self.player_count = self.player_count - 1
-			if self:is_ready(chairid) then
-				self:cancel_ready(chairid)
+			if self:is_ready(chair_id) then
+				self:cancel_ready(chair_id)
 			end
 
 			self:on_player_stand_up(player,reason)
@@ -1522,7 +1519,16 @@ function base_table:player_stand_up(player, reason)
 			player.table_id = nil
 			player.chair_id = nil
 
-			self.players[chairid] = nil
+			self.players[chair_id] = nil
+
+			player:lockcall(function()
+				reddb:hdel("player:online:guid:"..tostring(guid),"global_table")
+				reddb:hdel("player:online:guid:"..tostring(guid),"table")
+				reddb:hdel("player:online:guid:"..tostring(guid),"chair")
+				reddb:del("player:table:"..tostring(guid))
+				reddb:srem("table:player:"..tostring(self.private_id),guid)
+				onlineguid[guid] = nil
+			end)
 
 			self:on_player_stand_uped(player,reason)
 
@@ -1539,13 +1545,6 @@ function base_table:player_stand_up(player, reason)
 					self:check_start()
 				end
 			end
-
-			reddb:hdel("player:online:guid:"..tostring(guid),"global_table")
-			reddb:hdel("player:online:guid:"..tostring(guid),"table")
-			reddb:hdel("player:online:guid:"..tostring(guid),"chair")
-			reddb:del("player:table:"..tostring(guid))
-			reddb:srem("table:player:"..tostring(self.private_id),guid)
-			onlineguid[guid] = nil
 
 			return enum.ERROR_NONE
 		end
