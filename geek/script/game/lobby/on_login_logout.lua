@@ -848,29 +848,29 @@ end
 
 function on_cs_reconnect(guid)
 	local player = base_players[guid]
-	local onlineinfo = onlineguid[guid]
-	if not onlineinfo then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
-		})
-		return
-	end
+	local result,table_id,chair_id,private_table = player:lockcall(function()
+		local onlineinfo = onlineguid[guid]
+		if not onlineinfo then
+			return enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE
+		end
 
-	if not onlineinfo.table or not onlineinfo.chair then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR,
-		})
-		return
-	end
+		if not onlineinfo.table or not onlineinfo.chair then
+			return enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR
+		end
 
-	local table_id = onlineinfo.table
-	local chair_id = onlineinfo.chair
-	local private_table = base_private_table[onlineinfo.global_table]
-	if not private_table then
+		local table_id = onlineinfo.table
+		local chair_id = onlineinfo.chair
+		local private_table = base_private_table[onlineinfo.global_table]
+		if not private_table then
+			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+		end
+		return nil,table_id,chair_id,private_table
+	end)
+
+	if result then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
+			result = result
 		})
-		return
 	end
 
 	local club_id = private_table.club_id
@@ -878,12 +878,12 @@ function on_cs_reconnect(guid)
 	local tb = g_room:find_table(table_id)
 	if not tb then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,
+			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 		})
 		return
 	end
-
-	local result = tb:player_sit_down(player, chair_id,true)
+	
+	result = tb:player_sit_down(player, chair_id,true)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
 			table_id,guid,chair_id,result)
@@ -936,41 +936,42 @@ end
 -- 加入私人房间
 function on_cs_join_private_room(msg,guid,game_id)
 	local player = base_players[guid]
-	local reconnect = msg.reconnect and msg.reconnect ~= 0
-	local global_table_id = msg.table_id
-	local os = onlineguid[guid]
-	if reconnect then
-		if not os then
-			onlineguid.send(guid,"SC_JoinRoom",{
-				result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
-			})
-			return
+
+	local result,os,private_table = player:lockcall(function()
+		local reconnect = msg.reconnect and msg.reconnect ~= 0
+		local global_table_id = msg.table_id
+		local os = onlineguid[guid]
+		if reconnect then
+			if not os then
+				return enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE
+			end
+			global_table_id = os.global_table
 		end
-		global_table_id = os.global_table
-	end
 
-	if not global_table_id then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_TABLE_NOT_EXISTS,
-		})
-		return
-	end
+		if not global_table_id then
+			return enum.ERROR_TABLE_NOT_EXISTS
+		end
 
-	local private_table = base_private_table[global_table_id]
-	if not private_table then
+		local private_table = base_private_table[global_table_id]
+		if not private_table then
+			return enum.ERROR_TABLE_NOT_EXISTS
+		end
+
+		return nil,os,private_table
+	end)
+
+	if result then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_TABLE_NOT_EXISTS,
+			result = result,
 		})
 		return
 	end
 
 	local room_id = private_table.room_id
 	if not room_id then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_TABLE_NOT_EXISTS,
-		})
-		return
+		return enum.ERROR_TABLE_NOT_EXISTS
 	end
+
 
 	if def_game_id ~= room_id then
 		onlineguid[guid] = nil
