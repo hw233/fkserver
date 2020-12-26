@@ -1193,4 +1193,8 @@ function base_room:check_room_fee(rule,club,player)
 	return enum.ERROR_NONE
 end
 
+function base_room:reload_conf()
+	self.conf = channel.call("config.?","msg","query_service_conf",def_game_id)
+end
+
 return base_room

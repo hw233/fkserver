@@ -16,15 +16,15 @@ LOG_NAME = "config"
 
 local globalconf = {}
 
-local services = {}
-local clusters = {}
-local dbs = {}
-local redises = {}
 
 local online_service = {}
 
-local function load_service_cfg()
-    local confs = dbopt.config:query("SELECT * FROM t_service_cfg WHERE is_launch != 0;")
+local function load_service_cfg(id)
+    local sql = "SELECT * FROM t_service_cfg WHERE is_launch != 0"
+    if id then
+        sql = sql .. string.format(" AND id = %s",id)
+    end
+    local confs = dbopt.config:query(sql)
     for _,conf in pairs(confs) do
         if conf.conf and type(conf.conf) == "string" and conf.conf ~= "" then
             conf.conf = json.decode(conf.conf)
@@ -37,8 +37,24 @@ local function load_service_cfg()
     return confs
 end
 
-local function load_cluster_cfg()
-    local confs = dbopt.config:query("SELECT * FROM t_cluster_cfg WHERE is_launch != 0;")
+local services = setmetatable({},{
+    __index = function(t,id)
+        local confs = load_service_cfg(id)
+        if not confs or #confs == 0 then
+            return
+        end
+
+        t[id] = confs[1]
+        return confs[1]
+    end
+})
+
+local function load_cluster_cfg(id)
+    local sql = "SELECT * FROM t_cluster_cfg WHERE is_launch != 0"
+    if id then
+        sql = sql .. string.format(" AND id = %s",id)
+    end
+    local confs = dbopt.config:query(sql)
     for _,conf in pairs(confs) do
         conf.conf = conf.conf and conf.conf ~= "" and json.decode(conf.conf) or nil
     end
@@ -46,15 +62,60 @@ local function load_cluster_cfg()
     return confs
 end
 
-local function load_redis_cfg()
-    local r = dbopt.config:query("SELECT * FROM t_redis_cfg;")
+local clusters = setmetatable({},{
+    __index = function(t,id)
+        local confs = load_cluster_cfg(id)
+        if not confs or #confs == 0 then
+            return
+        end
+
+        t[id] = confs[1]
+        return confs[1]
+    end
+})
+
+local function load_redis_cfg(id)
+    local sql = "SELECT * FROM t_redis_cfg"
+    if id then
+        sql = sql .. string.format(" WHERE id = %s",id)
+    end
+    local r = dbopt.config:query(sql)
     return r
 end
 
-local function load_db_cfg()
-    local r = dbopt.config:query("SELECT * FROM t_db_cfg;")
+local redises = setmetatable({},{
+    __index = function(t,id)
+        local confs = load_redis_cfg(id)
+        if not confs or #confs == 0 then
+            return
+        end
+
+        t[id] = confs[1]
+        return confs[1]
+    end
+})
+
+local function load_db_cfg(id)
+    local sql = "SELECT * FROM t_db_cfg"
+    if id then
+        sql = sql .. string.format(" WHERE id = %s OR name = %s",id,id)
+    end
+
+    local r = dbopt.config:query(sql)
     return r
 end
+
+local dbs = setmetatable({},{
+    __index = function(t,id)
+        local confs = load_db_cfg(id)
+        if not confs or #confs == 0 then
+            return
+        end
+
+        t[id] = confs[1]
+        return confs[1]
+    end
+})
 
 local function load_global()
     local globalcfg = dbopt.config:query("SELECT * FROM t_global_cfg;")
@@ -66,6 +127,26 @@ local function load_global()
 end
 
 local MSG = {}
+
+function MSG.reload_service(id)
+    services[id] = nil
+end
+
+function MSG.reload_global()
+    load_global()
+end
+
+function MSG.reload_cluster(id)
+    clusters[id] = nil
+end
+
+function MSG.reload_redis(id)
+    redises[id] = nil
+end
+
+function MSG.reload_db(id)
+    dbs[id] = nil
+end
 
 function MSG.global_conf()
     return globalconf
@@ -180,7 +261,6 @@ local function setup_default_redis_value()
 end
 
 skynet.start(function()
-    
     skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
         if not f then
@@ -194,8 +274,7 @@ skynet.start(function()
 
     msgopt.register_handle(MSG)
     skynet.dispatch("msg",function(_,_,cmd,...)
-        local msg,sz = skynet.pack(msgopt.on_msg(cmd,...))
-        skynet.ret(msg,sz)
+        skynet.retpack(msgopt.on_msg(cmd,...))
 	end)
 
     dbopt.open(bootconf.service.conf.db)
