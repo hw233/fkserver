@@ -10,6 +10,7 @@ local cards_util = require "game.zhajinhua.base.cards_util"
 local channel = require "channel"
 require "data.zhajinhua_data"
 require "random_mt19937"
+local player_winlose = require "game.lobby.player_winlose"
 
 local table = table
 local string = string
@@ -390,12 +391,47 @@ function zhajinhua_table:deal_cards()
 	-- 	[4] = {2,3,64}
 	-- }
 
-	table.foreach(self.gamers,function(p,chair)
-		local cards = dealer:deal_cards(3)
-		log.info("table_id[%s]:player guid[%s] --------------> cards:[%s]",self.table_id_,p.guid,table.concat(cards,","))
-		p.cards_type = cards_util.get_cards_type(cards)
-		p.cards = cards
-	end)
+	local coeff = self.room_.conf.cards_coeff or 5000
+
+	if math.random(1,10000) > coeff then
+		local chair_cards = table.series(self.gamers,function()
+			local cards = dealer:deal_cards(3)
+			return {
+				cards = cards,
+				type = cards_util.get_cards_type(cards)
+			}
+		end)
+
+		table.sort(chair_cards,function(l,r)
+			return cards_util.compare(l.type,r.type)
+		end)
+
+		local money_id = self:get_money_id()
+		local gamers = table.series(self.gamers,function(p)
+			return {
+				player = p,
+				winlose = player_winlose[p.guid][money_id] or 0
+			}
+		end)
+
+		table.sort(gamers,function(l,r) 
+			return l.winlose < r.winlose
+		end)
+
+		for i,c in pairs(chair_cards) do
+			local p = gamers[i].player
+			log.info("table_id[%s]:player guid[%s] --------------> sorted cards:[%s]",self.table_id_,p.guid,table.concat(c.cards,","))
+			p.cards = c.cards
+			p.cards_type = c.type
+		end
+	else
+		table.foreach(self.gamers,function(p,chair)
+			local cards = dealer:deal_cards(3)
+			log.info("table_id[%s]:player guid[%s] --------------> cards:[%s]",self.table_id_,p.guid,table.concat(cards,","))
+			p.cards_type = cards_util.get_cards_type(cards)
+			p.cards = cards
+		end)
+	end
 end
 
 function zhajinhua_table:ding_zhuang(winner)
