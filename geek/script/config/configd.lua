@@ -118,7 +118,7 @@ local dbs = setmetatable({},{
 })
 
 local function load_global()
-    local globalcfg = dbopt.config:query("SELECT * FROM t_global_cfg;")
+    local globalcfg = dbopt.config:query("SELECT * FROM t_global_cfg WHERE `key` = 'default';")
     if #globalcfg == 0 then
         return
     end
