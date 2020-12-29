@@ -13,6 +13,8 @@ local enum = require "pb_enums"
 require "functions"
 local log = require "log"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "gate.agent"
 
 local gate,protocol,inserverid = ...

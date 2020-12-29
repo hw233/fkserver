@@ -11,6 +11,8 @@ local enum = require "pb_enums"
 local redisopt = require "redisopt"
 local reddb = redisopt.default
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "game"
 
 local private_table_elapsed_seconds = 60 * 60 * 4

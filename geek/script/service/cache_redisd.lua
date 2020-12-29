@@ -4,6 +4,8 @@ local log = require "log"
 local timer = require "timer"
 local queue = require "skynet.queue"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "redis_cached"
 
 local redisd = ".redisd"

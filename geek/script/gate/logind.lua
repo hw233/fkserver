@@ -13,6 +13,8 @@ require "functions"
 local log = require "log"
 local datacenter = require "skynet.datacenter"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "gate.logind"
 
 local gateservice,gateid,protocol = ...

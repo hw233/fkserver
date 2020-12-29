@@ -4,6 +4,8 @@ local log = require "log"
 local channel = require "channel"
 require "login.msg.runtime"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "login"
 
 local MSG = {}

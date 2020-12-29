@@ -5,6 +5,8 @@ local log = require "log"
 local json = require "json"
 local util = require "util"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "broker"
 
 local sconf

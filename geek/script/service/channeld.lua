@@ -6,6 +6,8 @@ local cluster = require "cluster"
 local table = table
 local string = string
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "channeld"
 
 local nodemetaindex = {}

@@ -9,6 +9,8 @@ local md5 = require "md5.core"
 local log = require "log"
 require "functions"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "gm.agent"
 
 local protocol = ...

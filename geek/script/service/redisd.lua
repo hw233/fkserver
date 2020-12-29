@@ -3,6 +3,8 @@ local redis = require "skynet.db.redis"
 local log = require "log"
 local channel = require "channel"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "redisd"
 
 require "functions"

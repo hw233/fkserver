@@ -9,6 +9,8 @@ local channel = require "channel"
 require "skynet.manager"
 require "functions"
 
+collectgarbage("setpause", 100)
+
 LOG_NAME = "gate"
 
 local loginservice = nil

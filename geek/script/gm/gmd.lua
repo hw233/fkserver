@@ -16,6 +16,8 @@ local base_notices = require "game.notice.base_notices"
 local util = require "util"
 require "functions"
 
+collectgarbage("setpause", 100)
+
 
 local reddb = redisopt.default
 
