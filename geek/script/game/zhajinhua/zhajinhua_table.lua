@@ -393,7 +393,7 @@ function zhajinhua_table:deal_cards()
 
 	local coeff = self.room_.conf.cards_coeff or 5000
 
-	if math.random(1,10000) > coeff then
+	if math.random(1,10000) < coeff then
 		local chair_cards = table.series(self.gamers,function()
 			local cards = dealer:deal_cards(3)
 			return {
