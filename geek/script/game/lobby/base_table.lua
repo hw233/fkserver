@@ -1158,57 +1158,49 @@ end
 
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
-	return self:lockcall(function() 
-		if not self:is_alive() then
-			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	if not self:is_alive() then
+		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+	end
+
+	local result =  self:can_sit_down(player,chair_id,reconnect)
+	if result ~= enum.ERROR_NONE then
+		return result
+	end
+
+	player.table_id = self.table_id_
+	player.chair_id = chair_id
+	self.players[chair_id] = player
+	log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
+			player.guid,player.table_id,player.chair_id)
+
+	self.player_count = self.player_count + 1
+	
+	if not player:is_android() then
+		for i, p in ipairs(self.players) do
+			if p == false then
+				-- 主动机器人坐下
+				player:on_notify_android_sit_down(def_game_id, self.table_id_, i)
+			end
 		end
+	end
 
-		local result = player:lockcall(function()
-			local result =  self:can_sit_down(player,chair_id,reconnect)
-			if result ~= enum.ERROR_NONE then
-				return result
-			end
+	reddb:hmset("player:online:guid:"..tostring(player.guid),{
+		table = self.table_id_,
+		chair = chair_id,
+	})
 
-			player.table_id = self.table_id_
-			player.chair_id = chair_id
-			self.players[chair_id] = player
-			log.info("base_table:player_sit_down, guid %s, table_id %s, chair_id %s",
-					player.guid,player.table_id,player.chair_id)
+	if self:is_private() then
+		reddb:set("player:table:"..tostring(player.guid),self.private_id)
+		reddb:sadd("table:player:"..tostring(self.private_id),player.guid)
+	end
 
-			self.player_count = self.player_count + 1
-			
-			if not player:is_android() then
-				for i, p in ipairs(self.players) do
-					if p == false then
-						-- 主动机器人坐下
-						player:on_notify_android_sit_down(def_game_id, self.table_id_, i)
-					end
-				end
-			end
+	self:on_player_sit_down(player,chair_id,reconnect)
 
-			reddb:hmset("player:online:guid:"..tostring(player.guid),{
-				table = self.table_id_,
-				chair = chair_id,
-			})
+	self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
 
-			if self:is_private() then
-				reddb:set("player:table:"..tostring(player.guid),self.private_id)
-				reddb:sadd("table:player:"..tostring(self.private_id),player.guid)
-			end
-		end)
+	onlineguid[player.guid] = nil
 
-		if result then
-			return result
-		end
-
-		self:on_player_sit_down(player,chair_id,reconnect)
-
-		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
-
-		onlineguid[player.guid] = nil
-
-		return enum.GAME_SERVER_RESULT_SUCCESS
-	end)
+	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 function base_table:on_private_pre_dismiss(reason)
@@ -1475,86 +1467,82 @@ end
 
 -- 玩家站起
 function base_table:player_stand_up(player, reason)
-	return self:lockcall(function()
-		local guid = player.guid
-		local table_id = player.table_id
-		local chair_id = player.chair_id
-		log.info("base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s",
-				guid,table_id,chair_id,reason)
+	local guid = player.guid
+	local table_id = player.table_id
+	local chair_id = player.chair_id
+	log.info("base_table:player_stand_up, guid %s, table_id %s, chair_id %s, reason %s",
+			guid,table_id,chair_id,reason)
+	
+	if not chair_id or not table_id then
+		log.error("player_stand_up got nil table_id or chair_id,%s,%s",table_id,chair_id)
+		return not table_id and 
+			enum.GAME_SERVER_RESULT_NOT_FIND_TABLE or 
+			enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
+	end
+
+	if self:can_stand_up(player, reason) then
+		local player_count = table.nums(self.players)
 		
-		if not chair_id or not table_id then
-			log.error("player_stand_up got nil table_id or chair_id,%s,%s",table_id,chair_id)
-			return not table_id and 
-				enum.GAME_SERVER_RESULT_NOT_FIND_TABLE or 
-				enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-		end
-
-		if self:can_stand_up(player, reason) then
-			local player_count = table.nums(self.players)
-			
-			-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
-			if 	self:is_private() and 
-				self:is_round_free() and 
-				reason == enum.STANDUP_REASON_OFFLINE
-			then
-				self:on_offline(player)
-				self:delay_kickout(player,enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT)
-				return enum.GAME_SERVER_RESULT_WAIT_LATER
-			end
-
-			log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
-			local list_guid = table.concat(table.extract(self.players,"guid"),",")
-			log.info("set guid[%s] table_id[%s] is false player_list [%s]",guid,self:id(),chair_id , list_guid)
-			self.player_count = self.player_count - 1
-			if self:is_ready(chair_id) then
-				self:cancel_ready(chair_id)
-			end
-
-			self:on_player_stand_up(player,reason)
-
-			if self:is_private() and player == self.conf.owner and player_count > 1 then
-				self:transfer_owner()
-			end
-
-			player.table_id = nil
-			player.chair_id = nil
-
-			self.players[chair_id] = nil
-
-			player:lockcall(function()
-				reddb:hdel("player:online:guid:"..tostring(guid),"global_table")
-				reddb:hdel("player:online:guid:"..tostring(guid),"table")
-				reddb:hdel("player:online:guid:"..tostring(guid),"chair")
-				reddb:del("player:table:"..tostring(guid))
-				reddb:srem("table:player:"..tostring(self.private_id),guid)
-				onlineguid[guid] = nil
-			end)
-
-			self:on_player_stand_uped(player,reason)
-
-			if 	player_count == 1 then
-				self:do_dismiss(dismiss_reason[reason])
-			else
-				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
-				if 	reason == enum.STANDUP_REASON_OFFLINE or
-					reason == enum.STANDUP_REASON_NORMAL or
-					reason == enum.STANDUP_REASON_FORCE or
-					reason == enum.STANDUP_REASON_BANKRUPCY or
-					reason == enum.STANDUP_REASON_NO_READY_TIMEOUT
-				then
-					self:check_start()
-				end
-			end
-
-			return enum.ERROR_NONE
-		end
-
-		if reason == enum.STANDUP_REASON_OFFLINE then
+		-- 玩家掉线不直接解散,针对邀请玩家进入房间情况
+		if 	self:is_private() and 
+			self:is_round_free() and 
+			reason == enum.STANDUP_REASON_OFFLINE
+		then
 			self:on_offline(player)
+			self:delay_kickout(player,enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT)
+			return enum.GAME_SERVER_RESULT_WAIT_LATER
 		end
 
-		return enum.GAME_SERVER_RESULT_IN_GAME
-	end)
+		log.info("base_table:player_stand_up table_id:%s,guid:%s,can_stand_up true.",self:id(),guid)
+		local list_guid = table.concat(table.extract(self.players,"guid"),",")
+		log.info("set guid[%s] table_id[%s] is false player_list [%s]",guid,self:id(),chair_id , list_guid)
+		self.player_count = self.player_count - 1
+		if self:is_ready(chair_id) then
+			self:cancel_ready(chair_id)
+		end
+
+		self:on_player_stand_up(player,reason)
+
+		if self:is_private() and player == self.conf.owner and player_count > 1 then
+			self:transfer_owner()
+		end
+
+		player.table_id = nil
+		player.chair_id = nil
+
+		self.players[chair_id] = nil
+
+		reddb:hdel("player:online:guid:"..tostring(guid),"global_table")
+		reddb:hdel("player:online:guid:"..tostring(guid),"table")
+		reddb:hdel("player:online:guid:"..tostring(guid),"chair")
+		reddb:del("player:table:"..tostring(guid))
+		reddb:srem("table:player:"..tostring(self.private_id),guid)
+		onlineguid[guid] = nil
+
+		self:on_player_stand_uped(player,reason)
+
+		if 	player_count == 1 then
+			self:do_dismiss(dismiss_reason[reason])
+		else
+			self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
+			if 	reason == enum.STANDUP_REASON_OFFLINE or
+				reason == enum.STANDUP_REASON_NORMAL or
+				reason == enum.STANDUP_REASON_FORCE or
+				reason == enum.STANDUP_REASON_BANKRUPCY or
+				reason == enum.STANDUP_REASON_NO_READY_TIMEOUT
+			then
+				self:check_start()
+			end
+		end
+
+		return enum.ERROR_NONE
+	end
+
+	if reason == enum.STANDUP_REASON_OFFLINE then
+		self:on_offline(player)
+	end
+
+	return enum.GAME_SERVER_RESULT_IN_GAME
 end
 
 function base_table:notify_sit_down(player,chair_id)

@@ -459,17 +459,7 @@ function base_room:join_private_table(player,private_table,chair_count)
 		log.info("join private table:%d,%d not found",private_table.table_id,table_id)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
-
-	-- if not self:check_private_limit(player,chair_count,private_table.rule) then
-	-- 	log.info("join private table:%d,%d money limit:%d",private_table.table_id,table_id,player.guid)
-	-- 	return enum.GAME_SERVER_RESULT_ROOM_LIMIT
-	-- end
-
-	-- if self.cur_player_count_ > self.player_count_limit then
-	-- 	log.warning("join private table,room is full,%s:%d",def_game_name,def_game_id)
-	-- 	return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-	-- end
-
+	
 	local chair_id = tb:get_free_chair_id()
 	if not chair_id then
 		log.info("join private table:%d,%d without free chair",private_table.table_id,table_id)
@@ -627,20 +617,18 @@ function base_room:enter_room(player,reconnect)
 		def_game_name,def_game_id,guid,reconnect,player.online)
 
 	if reconnect then
-		player:lockcall(function() 
-			local s = onlineguid[guid]
-			log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
-				guid,def_game_id,reconnect,s.table,s.chair)
-			
-			reddb:hmset("player:online:guid:"..tostring(guid),{
-				first_game_type = def_first_game_type,
-				second_game_type = def_second_game_type,
-				server = def_game_id,
-			})
+		local s = onlineguid[guid]
+		log.info("base_room:enter_room %s,game_id:%s,reconnect:%s,table:%s,chair:%s",
+			guid,def_game_id,reconnect,s.table,s.chair)
+		
+		reddb:hmset("player:online:guid:"..tostring(guid),{
+			first_game_type = def_first_game_type,
+			second_game_type = def_second_game_type,
+			server = def_game_id,
+		})
 
-			player.table_id = s.table
-			player.chair_id = s.chair
-		end)
+		player.table_id = s.table
+		player.chair_id = s.chair
 	else
 		self:player_login_server(player)
 	end
@@ -678,8 +666,8 @@ function base_room:is_play(player)
 end
 
 function base_room:kickout_room(player,reason)
-	local guid = player.guid
-	local result,table_id,tb = player:lockcall(function()
+	return player:lockcall(function()
+		local guid = player.guid
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
@@ -696,28 +684,22 @@ function base_room:kickout_room(player,reason)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
-		return nil,table_id,tb
+		reason = reason or enum.STANDUP_REASON_NORMAL
+		result = tb:player_stand_up(player,reason)
+		log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,result,reason)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
+		self:player_kickout_room(player)
+
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end)
-
-	if result then
-		return result
-	end
-
-	reason = reason or enum.STANDUP_REASON_NORMAL
-	result = tb:player_stand_up(player,reason)
-	log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,result,reason)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	self:player_kickout_room(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 function base_room:kickout_server(player,reason)
-	local guid = player.guid
-	local result,table_id,tb = player:lockcall(function()
+	return player:lockcall(function()
+		local guid = player.guid
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
@@ -735,23 +717,17 @@ function base_room:kickout_server(player,reason)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
-		return nil,table_id,tb
+		reason = reason or enum.STANDUP_REASON_NORMAL
+		result = tb:player_stand_up(player,reason)
+		log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result[%s]",guid,table_id,reason,result)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
+		self:player_kickout_server(player)
+
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end)
-
-	if result then
-		return result
-	end
-
-	reason = reason or enum.STANDUP_REASON_NORMAL
-	result = tb:player_stand_up(player,reason)
-	log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result[%s]",guid,table_id,reason,result)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	self:player_kickout_server(player)
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 function base_room:exit_room(player,reason)
@@ -787,8 +763,8 @@ end
 
 -- 退出服务器
 function base_room:exit_server(player,offline)
-	local guid = player.guid
-	local result,table_id,tb = player:lockcall(function()
+	return player:lockcall(function()
+		local guid = player.guid
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:exit_server guid[%d],table_id:%s,chair_id:%s,offline:%s",
@@ -805,28 +781,22 @@ function base_room:exit_server(player,offline)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
-		return nil,table_id,tb
+		local reason = offline and enum.STANDUP_REASON_OFFLINE or enum.STANDUP_REASON_NORMAL
+		local result = tb:player_stand_up(player,reason)
+		log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result [%s]",
+			guid,table_id,reason,result)
+		if result ~= enum.ERROR_NONE then
+			return result
+		end
+
+		if offline then
+			self:player_logout_server(player)
+		else
+			self:player_exit_room(player)
+		end
+
+		return enum.GAME_SERVER_RESULT_SUCCESS
 	end)
-
-	if result then
-		return result
-	end
-
-	local reason = offline and enum.STANDUP_REASON_OFFLINE or enum.STANDUP_REASON_NORMAL
-	local result = tb:player_stand_up(player,reason)
-	log.info("base_room:exit_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result [%s]",
-		guid,table_id,reason,result)
-	if result ~= enum.ERROR_NONE then
-		return result
-	end
-
-	if offline then
-		self:player_logout_server(player)
-	else
-		self:player_exit_room(player)
-	end
-
-	return enum.GAME_SERVER_RESULT_SUCCESS
 end
 
 -- 快速坐下
@@ -932,135 +902,125 @@ end
 
 -- 玩家进入房间
 function base_room:player_enter_room(player)
-	player:lockcall(function()
-		self.players[player.guid] = player
-		self.cur_player_count_ = self.cur_player_count_ + 1
-		log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s,player_count:%s",
-		player.guid,def_first_game_type,def_game_id,self.cur_player_count_)
+	self.players[player.guid] = player
+	self.cur_player_count_ = self.cur_player_count_ + 1
+	log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s,player_count:%s",
+	player.guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
-		local online_key = string.format("player:online:guid:%d",player.guid)
-		reddb:hmset(online_key,{
-			first_game_type = def_first_game_type,
-			second_game_type = def_second_game_type,
-			server = def_game_id,
-		})
-	
-		onlineguid[player.guid] = nil
-	end)
+	local online_key = string.format("player:online:guid:%d",player.guid)
+	reddb:hmset(online_key,{
+		first_game_type = def_first_game_type,
+		second_game_type = def_second_game_type,
+		server = def_game_id,
+	})
+
+	onlineguid[player.guid] = nil
 end
 
 -- 玩家退出房间
 function base_room:player_exit_room(player)
 	local guid = player.guid
-	player:lockcall(function()
-		log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
-		if player.online and not common.is_in_lobby(guid)then
-			if common.is_player_in_lobby(guid) then
-				log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
-					guid,def_game_id,player.online)
-				return true
-			end
-			common.switch_to_lobby(guid)
-
-			self.cur_player_count_ = self.cur_player_count_ - 1
-			log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
-			base_players[guid] = nil
-			onlineguid[guid] = nil
-			self.players[guid] = nil
-		else
-			self:player_logout_server(player)
+	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
+	if player.online and not common.is_in_lobby(guid)then
+		if common.is_player_in_lobby(guid) then
+			log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
+				guid,def_game_id,player.online)
+			return true
 		end
-	end)
+		common.switch_to_lobby(guid)
+
+		self.cur_player_count_ = self.cur_player_count_ - 1
+		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
+		base_players[guid] = nil
+		onlineguid[guid] = nil
+		self.players[guid] = nil
+	else
+		self:player_logout_server(player)
+	end
 end
 
 function base_room:player_kickout_room(player)
 	local guid = player.guid
-	player:lockcall(function()
-		log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
-		if player.online and not common.is_in_lobby() then
-			if common.is_player_in_lobby(guid) then
-				log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
-					guid,def_game_id,player.online)
-				return true
-			end
-
-			common.switch_to_lobby(guid)
-
-			self.cur_player_count_ = self.cur_player_count_ - 1
-
-			log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
-			self.players[guid] = nil
-			base_players[guid] = nil
-			onlineguid[guid] = nil
-		else
-			self:player_kickout_server(player)
+	log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
+	if player.online and not common.is_in_lobby() then
+		if common.is_player_in_lobby(guid) then
+			log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
+				guid,def_game_id,player.online)
+			return true
 		end
-	end)
+
+		common.switch_to_lobby(guid)
+
+		self.cur_player_count_ = self.cur_player_count_ - 1
+
+		log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
+		self.players[guid] = nil
+		base_players[guid] = nil
+		onlineguid[guid] = nil
+	else
+		self:player_kickout_server(player)
+	end
 end
 
 function base_room:player_login_server(player)
 	local guid = player.guid
-	player:lockcall(function()
-		reddb:hmset("player:online:guid:"..tostring(guid),{
-			first_game_type = def_first_game_type,
-			second_game_type = def_second_game_type,
-			server = def_game_id,
-		})
+	reddb:hmset("player:online:guid:"..tostring(guid),{
+		first_game_type = def_first_game_type,
+		second_game_type = def_second_game_type,
+		server = def_game_id,
+	})
 
-		reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
-			1,def_game_id)
-		reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
-			1,def_game_id)
-		reddb:incr("player:online:count")
-		self.cur_player_count_ = self.cur_player_count_ + 1
-		self.players[guid] = player
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		1,def_game_id)
+	reddb:incr("player:online:count")
+	self.cur_player_count_ = self.cur_player_count_ + 1
+	self.players[guid] = player
 
-		log.info("base_room:player_login_server  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
-	end)
+	log.info("base_room:player_login_server  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
 end
 
 function base_room:player_logout_server(player)
 	local guid = player.guid
-	player:lockcall(function()
-		self.players[guid] = nil
-		self.cur_player_count_ = self.cur_player_count_ - 1
+	self.players[guid] = nil
+	self.cur_player_count_ = self.cur_player_count_ - 1
 
-		log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,player_count %s.",
-			guid,def_first_game_type,def_game_id,self.cur_player_count_)
+	log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,player_count %s.",
+		guid,def_first_game_type,def_game_id,self.cur_player_count_)
 
-		local s = onlineguid[guid]
-		if not s then
-			log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,got nil online session",
-				guid,def_first_game_type,def_game_id)
-			base_players[guid] = nil
-			onlineguid[guid] = nil
-			return
-		end
-
-		reddb:del("player:online:guid:"..tostring(guid))
-		reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
-			-1,def_game_id)
-		reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
-			-1,def_game_id)
-		reddb:decr("player:online:count")
-
+	local s = onlineguid[guid]
+	if not s then
+		log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,got nil online session",
+			guid,def_first_game_type,def_game_id)
 		base_players[guid] = nil
 		onlineguid[guid] = nil
+		return
+	end
 
-		channel.publish("db.?","msg","S_Logout", {
-			account = player.account,
-			guid = guid,
-			login_time = player.login_time,
-			logout_time = os.time(),
-			phone = player.phone,
-			phone_type = player.phone_type,
-			version = player.version,
-			channel_id = player.channel_id,
-			package_name = player.package_name,
-			imei = player.imei,
-			ip = player.ip,
-		})
-	end)
+	reddb:del("player:online:guid:"..tostring(guid))
+	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
+		-1,def_game_id)
+	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
+		-1,def_game_id)
+	reddb:decr("player:online:count")
+
+	base_players[guid] = nil
+	onlineguid[guid] = nil
+
+	channel.publish("db.?","msg","S_Logout", {
+		account = player.account,
+		guid = guid,
+		login_time = player.login_time,
+		logout_time = os.time(),
+		phone = player.phone,
+		phone_type = player.phone_type,
+		version = player.version,
+		channel_id = player.channel_id,
+		package_name = player.package_name,
+		imei = player.imei,
+		ip = player.ip,
+	})
 end
 
 function base_room:player_kickout_server(player)

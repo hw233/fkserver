@@ -137,29 +137,31 @@ function on_ls_login_notify(guid,reconnect)
 		return
 	end
 
-	local s = onlineguid[guid]
-	log.info("set player.online = true,guid:%d",guid)
-	player.online = true
-	local repeat_login = s and s.server == def_game_id
-	if reconnect or repeat_login then
-		-- 重连/重复登陆
-		log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
-			guid,def_game_id,reconnect,repeat_login)
-		g_room:enter_room(player,true)
-		return
-	end
+	player:lockcall(function()
+		local s = onlineguid[guid]
+		log.info("set player.online = true,guid:%d",guid)
+		player.online = true
+		local repeat_login = s and s.server == def_game_id
+		if reconnect or repeat_login then
+			-- 重连/重复登陆
+			log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
+				guid,def_game_id,reconnect,repeat_login)
+			g_room:enter_room(player,true)
+			return
+		end
 
-	log.info("ip_area =%s",player.ip_area)
+		log.info("ip_area =%s",player.ip_area)
 
-	if s and s.server then
-		log.error("on_ls_login_notify guid:%s,game_id:%s,server:%s,login but session not nil",
-			guid,def_game_id,s.server)
-	end
-	
-	log.info("login step game->LC_Login,account=%s", player.account)
-	
-	player.login_time = os.time()
-	g_room:enter_server(player)
+		if s and s.server then
+			log.error("on_ls_login_notify guid:%s,game_id:%s,server:%s,login but session not nil",
+				guid,def_game_id,s.server)
+		end
+		
+		log.info("login step game->LC_Login,account=%s", player.account)
+		
+		player.login_time = os.time()
+		g_room:enter_server(player)
+	end)
 end
 
 -- 登录验证框
@@ -676,202 +678,204 @@ function on_cs_create_private_room(msg,guid,game_id)
 	local template_id = msg.template_id
 	local player = base_players[guid]
 
-	if game_util.is_global_in_maintain() and not player:is_vip() then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.LOGIN_RESULT_MAINTAIN,
-		})
-		return
-	end
-
-	local os = onlineguid[guid]
-	if os.table then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.GAME_SERVER_RESULT_IN_ROOM,
-		})
-		return
-	end
-
-	
-	if player.table_id then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.GAME_SERVER_RESULT_IN_ROOM,
-		})
-		return
-	end
-
-	if player.chair_id then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
-		})
-		return
-	end
-
-	if not rule and not template_id then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.ERROR_PARAMETER_ERROR,
-		})
-		return
-	end
-
-	local template
-	if template_id and template_id ~= 0 then
-		template = table_template[template_id]
-		if not template then
+	player:lockcall(function()
+		if game_util.is_global_in_maintain() and not player:is_vip() then
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERROR_TEMPLATE_NOT_EXISTS
+				result = enum.LOGIN_RESULT_MAINTAIN,
 			})
 			return
 		end
 
-		rule = template.rule
-		game_type = template.game_id
-	else
-		local ok
-		ok,rule = pcall(json.decode,rule)
-		if not ok or not rule then 
+		local os = onlineguid[guid]
+		if os.table then
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.GAME_SERVER_RESULT_IN_ROOM,
+			})
+			return
+		end
+
+		if player.table_id then
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.GAME_SERVER_RESULT_IN_ROOM,
+			})
+			return
+		end
+
+		if player.chair_id then
+			onlineguid.send(guid,"SC_CreateRoom",{
+				result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
+			})
+			return
+		end
+
+		if not rule and not template_id then
 			onlineguid.send(guid,"SC_CreateRoom",{
 				result = enum.ERROR_PARAMETER_ERROR,
 			})
 			return
 		end
-	end
 
-	local club
-	if club_id and club_id ~= 0 then
-		club = base_clubs[club_id]
-		if not club then 
+		local template
+		if template_id and template_id ~= 0 then
+			template = table_template[template_id]
+			if not template then
+				onlineguid.send(guid,"SC_CreateRoom",{
+					result = enum.ERROR_TEMPLATE_NOT_EXISTS
+				})
+				return
+			end
+
+			rule = template.rule
+			game_type = template.game_id
+		else
+			local ok
+			ok,rule = pcall(json.decode,rule)
+			if not ok or not rule then 
+				onlineguid.send(guid,"SC_CreateRoom",{
+					result = enum.ERROR_PARAMETER_ERROR,
+				})
+				return
+			end
+		end
+
+		local club
+		if club_id and club_id ~= 0 then
+			club = base_clubs[club_id]
+			if not club then 
+				onlineguid.send(guid,"SC_CreateRoom",{
+					result = enum.ERROR_CLUB_NOT_FOUND,
+				})
+				return
+			end
+		end
+		
+		if def_first_game_type ~= game_type then
+			local room_id = common.find_best_room(game_type)
+			if not room_id then
+				log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
+				onlineguid.send(guid,"SC_CreateRoom",{
+					result = enum.GAME_SERVER_RESULT_NO_GAME_SERVER,
+					game_type = game_type,
+				})
+				return
+			end
+
+			channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid,def_game_id)
+			return
+		end
+
+		if game_util.is_game_in_maintain() then
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERROR_CLUB_NOT_FOUND,
+				result = enum.GAME_SERVER_RESULT_MAINTAIN,
 			})
 			return
 		end
-	end
-	
-	if def_first_game_type ~= game_type then
-		local room_id = common.find_best_room(game_type)
-		if not room_id then
-			log.warning("on_cs_create_private_room did not find room,game_type:%s,room_id:%s",game_type,room_id)
+
+		log.dump(rule)
+
+		local result,round,chair_count,pay_option,_ = check_rule(rule)
+		if result ~= enum.ERROR_NONE  then
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.GAME_SERVER_RESULT_NO_GAME_SERVER,
+				result = result,
 				game_type = game_type,
 			})
 			return
 		end
 
-		channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid,def_game_id)
-		return
-	end
+		local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
+		if pay_option == enum.PAY_OPTION_BOSS then
+			if not club then
+				onlineguid.send(guid,"SC_CreateRoom",{
+					result = enum.ERROR_CLUB_NOT_FOUND,
+				})
+				return
+			end
 
-	if game_util.is_game_in_maintain() then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = enum.GAME_SERVER_RESULT_MAINTAIN,
-		})
-		return
-	end
+			log.dump(template)
+			
+			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
+		elseif pay_option == enum.PAY_OPTION_AA then
+			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
+		elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
+			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
+		else
+			result = enum.ERROR_OPERATION_INVALID
+		end
 
-	log.dump(rule)
-
-	local result,round,chair_count,pay_option,_ = check_rule(rule)
-	if result ~= enum.ERROR_NONE  then
-		onlineguid.send(guid,"SC_CreateRoom",{
-			result = result,
-			game_type = game_type,
-		})
-		return
-	end
-
-	local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
-	if pay_option == enum.PAY_OPTION_BOSS then
-		if not club then
+		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 			onlineguid.send(guid,"SC_CreateRoom",{
-				result = enum.ERROR_CLUB_NOT_FOUND,
+				result = result,
 			})
 			return
 		end
 
-		log.dump(template)
-		
-		result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
-	elseif pay_option == enum.PAY_OPTION_AA then
-		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
-	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
-		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
-	else
-		result = enum.ERROR_OPERATION_INVALID
-	end
+		if game_id then
+			common.switch_from(guid,game_id)
+		end
 
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		local money_id = club_id and club_money_type[club_id] or -1
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = result,
+			info = {
+				game_type = game_type,
+				club_id = club_id,
+				table_id = global_table_id,
+				rule = json.encode(rule),
+				owner = guid,
+			},
+			seat_list = {{
+				chair_id = player.chair_id,
+				player_info = {
+					icon = player.icon,
+					guid = player.guid,
+					nickname = player.nickname,
+					sex = player.sex,
+				},
+				longitude = player.gps_longitude,
+				latitude = player.gps_latitude,
+				ready = tb.ready_list[player.chair_id] and true or false,
+				online = true,
+				money = {
+					money_id = money_id,
+					count = player:get_money(money_id),
+				},
+			}},
+			round_info = tb and {
+				round_id = tb:hold_ext_game_id()
+			} or nil,
 		})
-		return
-	end
 
-	if game_id then
-		common.switch_from(guid,game_id)
-	end
-
-	local money_id = club_id and club_money_type[club_id] or -1
-	onlineguid.send(guid,"SC_CreateRoom",{
-		result = result,
-		info = {
-			game_type = game_type,
-			club_id = club_id,
-			table_id = global_table_id,
-			rule = json.encode(rule),
-			owner = guid,
-		},
-		seat_list = {{
-			chair_id = player.chair_id,
-			player_info = {
-				icon = player.icon,
-				guid = player.guid,
-				nickname = player.nickname,
-				sex = player.sex,
-			},
-			longitude = player.gps_longitude,
-			latitude = player.gps_latitude,
-			ready = tb.ready_list[player.chair_id] and true or false,
-			online = true,
-			money = {
-				money_id = money_id,
-				count = player:get_money(money_id),
-			},
-		}},
-		round_info = tb and {
-			round_id = tb:hold_ext_game_id()
-		} or nil,
-	})
-
-	tb:on_player_sit_downed(player)
+		tb:on_player_sit_downed(player)
+	end)
 end
 
 function on_cs_reconnect(guid)
 	local player = base_players[guid]
-	local result,table_id,chair_id,private_table = player:lockcall(function()
-		local onlineinfo = onlineguid[guid]
-		if not onlineinfo then
-			return enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE
-		end
-
-		if not onlineinfo.table or not onlineinfo.chair then
-			return enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR
-		end
-
-		local table_id = onlineinfo.table
-		local chair_id = onlineinfo.chair
-		local private_table = base_private_table[onlineinfo.global_table]
-		if not private_table then
-			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
-		end
-		return nil,table_id,chair_id,private_table
-	end)
-
-	if result then
+	local onlineinfo = onlineguid[guid]
+	if not onlineinfo then
 		onlineguid.send(guid,"SC_JoinRoom",{
-			result = result
+			result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE
 		})
+		return 
 	end
+
+	if not onlineinfo.table or not onlineinfo.chair then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR
+		})
+		return
+	end
+
+	local table_id = onlineinfo.table
+	local chair_id = onlineinfo.chair
+	local private_table = base_private_table[onlineinfo.global_table]
+	if not private_table then
+		onlineguid.send(guid,"SC_JoinRoom",{
+			result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+		})
+		return
+	end
+
 
 	local club_id = private_table.club_id
 	local money_id = club_id and club_money_type[club_id] or -1
@@ -937,7 +941,7 @@ end
 function on_cs_join_private_room(msg,guid,game_id)
 	local player = base_players[guid]
 
-	local result,os,private_table = player:lockcall(function()
+	player:lockcall(function()
 		local reconnect = msg.reconnect and msg.reconnect ~= 0
 		local global_table_id = msg.table_id
 		local os = onlineguid[guid]
@@ -949,148 +953,145 @@ function on_cs_join_private_room(msg,guid,game_id)
 		end
 
 		if not global_table_id then
-			return enum.ERROR_TABLE_NOT_EXISTS
-		end
-
-		local private_table = base_private_table[global_table_id]
-		if not private_table then
-			return enum.ERROR_TABLE_NOT_EXISTS
-		end
-
-		return nil,os,private_table
-	end)
-
-	if result then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = result,
-		})
-		return
-	end
-
-	local room_id = private_table.room_id
-	if not room_id then
-		return enum.ERROR_TABLE_NOT_EXISTS
-	end
-
-
-	if def_game_id ~= room_id then
-		onlineguid[guid] = nil
-
-		channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid,def_game_id)
-		base_players[guid] = nil
-		return
-	end
-
-	player.inactive = nil
-
-	if os and os.table or os.chair and os.server == def_game_id then
-		on_cs_reconnect(guid)
-		return
-	end
-
-	if game_util.is_global_in_maintain() and not player:is_vip() then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.LOGIN_RESULT_MAINTAIN,
-		})
-		return
-	end
-
-	if game_util.is_game_in_maintain() then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.GAME_SERVER_RESULT_MAINTAIN,
-		})
-		return
-	end
-
-	if not private_table.rule then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_TABLE_NOT_EXISTS,
-		})
-		return
-	end
-
-	local rule = private_table.rule
-	local result,_,chair_count,pay_option,_ = check_rule(rule)
-	if result ~= enum.ERROR_NONE  then
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = result,
-		})
-		return
-	end
-
-	local tb
-	local club_id = private_table.club_id
-	log.dump(private_table)
-	local club = club_id and base_clubs[club_id] or nil
-	if pay_option == enum.PAY_OPTION_BOSS then
-		if not club then
 			onlineguid.send(guid,"SC_JoinRoom",{
-				result = enum.ERROR_CLUB_NOT_FOUND,
+				result = enum.ERROR_TABLE_NOT_EXISTS,
 			})
 			return
 		end
 
-		result,tb = club:join_table(player,private_table,chair_count)
-	elseif pay_option == enum.PAY_OPTION_AA then
-		result,tb = g_room:join_private_table(player,private_table,chair_count)
-	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
-		result,tb = g_room:join_private_table(player,private_table,chair_count)
-	else
-		result = enum.ERROR_PARAMETER_ERROR
-	end
+		local private_table = base_private_table[global_table_id]
+		if not private_table then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.ERROR_TABLE_NOT_EXISTS,
+			})
+			return
+		end
 
-	local money_id = club_id and club_money_type[club_id] or -1
-	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-		log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
+		local room_id = private_table.room_id
+		if not room_id then
+			return enum.ERROR_TABLE_NOT_EXISTS
+		end
+
+
+		if def_game_id ~= room_id then
+			onlineguid[guid] = nil
+
+			channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid,def_game_id)
+			base_players[guid] = nil
+			return
+		end
+
+		player.inactive = nil
+
+		if os and os.table or os.chair and os.server == def_game_id then
+			on_cs_reconnect(guid)
+			return
+		end
+
+		if game_util.is_global_in_maintain() and not player:is_vip() then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.LOGIN_RESULT_MAINTAIN,
+			})
+			return
+		end
+
+		if game_util.is_game_in_maintain() then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.GAME_SERVER_RESULT_MAINTAIN,
+			})
+			return
+		end
+
+		if not private_table.rule then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.ERROR_TABLE_NOT_EXISTS,
+			})
+			return
+		end
+
+		local rule = private_table.rule
+		local result,_,chair_count,pay_option,_ = check_rule(rule)
+		if result ~= enum.ERROR_NONE  then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = result,
+			})
+			return
+		end
+
+		local tb
+		local club_id = private_table.club_id
+		log.dump(private_table)
+		local club = club_id and base_clubs[club_id] or nil
+		if pay_option == enum.PAY_OPTION_BOSS then
+			if not club then
+				onlineguid.send(guid,"SC_JoinRoom",{
+					result = enum.ERROR_CLUB_NOT_FOUND,
+				})
+				return
+			end
+
+			result,tb = club:join_table(player,private_table,chair_count)
+		elseif pay_option == enum.PAY_OPTION_AA then
+			result,tb = g_room:join_private_table(player,private_table,chair_count)
+		elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
+			result,tb = g_room:join_private_table(player,private_table,chair_count)
+		else
+			result = enum.ERROR_PARAMETER_ERROR
+		end
+
+		local money_id = club_id and club_money_type[club_id] or -1
+		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+			log.warning("on_cs_join_private_room faild!guid:%s,%s",guid,result)
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = result,
+			})
+			return
+		end
+
+		if game_id then
+			common.switch_from(guid,game_id)
+		end
+		
+		local seats = table.series(tb.players,function(p) 
+			return {
+				chair_id = p.chair_id,
+				player_info = {
+					icon = p.icon,
+					guid = p.guid,
+					nickname = p.nickname,
+					sex = p.sex,
+				},
+				longitude = p.gps_longitude,
+				latitude = p.gps_latitude,
+				ready = tb.ready_list[p.chair_id] and true or false,
+				online = not p.inactive and true or false, 
+				money = {
+					money_id = money_id,
+					count = p:get_money(money_id),
+				},
+				is_trustee = p.trustee and true or false,
+			}
+		end)
+
+		log.dump(seats)
+
 		onlineguid.send(guid,"SC_JoinRoom",{
 			result = result,
+			info = {
+				game_type = private_table.game_type,
+				club_id = private_table.club_id,
+				table_id = private_table.table_id,
+				rule = json.encode(private_table.rule),
+				owner = private_table.owner,
+			},
+			seat_list = seats,
+			round_info = tb and {
+				round_id = tb:hold_ext_game_id(),
+			} or nil,
 		})
-		return
-	end
 
-	if game_id then
-		common.switch_from(guid,game_id)
-	end
-	
-	local seats = table.series(tb.players,function(p) 
-		return {
-			chair_id = p.chair_id,
-			player_info = {
-				icon = p.icon,
-				guid = p.guid,
-				nickname = p.nickname,
-				sex = p.sex,
-			},
-			longitude = p.gps_longitude,
-			latitude = p.gps_latitude,
-			ready = tb.ready_list[p.chair_id] and true or false,
-			online = not p.inactive and true or false, 
-			money = {
-				money_id = money_id,
-				count = p:get_money(money_id),
-			},
-			is_trustee = p.trustee and true or false,
-		}
+		tb:on_player_sit_downed(player)
 	end)
-
-	log.dump(seats)
-
-	onlineguid.send(guid,"SC_JoinRoom",{
-		result = result,
-		info = {
-			game_type = private_table.game_type,
-			club_id = private_table.club_id,
-			table_id = private_table.table_id,
-			rule = json.encode(private_table.rule),
-			owner = private_table.owner,
-		},
-		seat_list = seats,
-		round_info = tb and {
-			round_id = tb:hold_ext_game_id(),
-		} or nil,
-	})
-
-	tb:on_player_sit_downed(player)
 end
 
 -- 设置昵称
