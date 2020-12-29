@@ -1,4 +1,5 @@
 require "functions"
+local chronos = require "chronos"
 
 local card_dealer = class("card_dealer")
 
@@ -12,11 +13,12 @@ function card_dealer:init(cards)
 end
 
 function card_dealer:shuffle()
-	math.randomseed(os.time())
+	math.randomseed(chronos.nanotime() * 10000)
 	for _ = 1,10 do math.random() end
 
+    local j = 1
     for i = #self.cards,1,-1 do
-        local j = math.random(i)
+        j = math.random(i)
         if i ~= j then self.cards[j],self.cards[i] = self.cards[i],self.cards[j] end
     end
 
