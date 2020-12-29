@@ -208,7 +208,7 @@ function utils.compare(left,right,with_color)
 		end
 	end
 
-	if lt == CARDS_TYPE.CT_235 then
+	if lt == CARDS_TYPE.CT235 then
 		if with_color then return lcolors[lvals[1][3]][1] < rcolors[rvals[1][3]][1] end
 		return false
 	end
