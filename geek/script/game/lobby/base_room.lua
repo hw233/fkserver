@@ -351,7 +351,7 @@ function base_room:play_once_again(player)
 		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
-	local tb = g_room:find_table_by_player(player)
+	local tb = self:find_table_by_player(player)
 	if not tb then
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
@@ -1129,7 +1129,7 @@ function base_room:check_room_fee(rule,club,player)
 	end
 
 	local payopt = rule.pay.option
-	local roomfee = g_room:get_private_fee(rule)
+	local roomfee = self:get_private_fee(rule)
 	if payopt == enum.PAY_OPTION_AA or payopt == enum.PAY_OPTION_ROOM_OWNER then
 		if player:check_money_limit(roomfee,0) then
 			return enum.ERROR_LESS_ROOM_CARD
