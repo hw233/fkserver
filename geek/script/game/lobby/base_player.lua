@@ -452,6 +452,8 @@ function base_player:incr_money(item,why,why_ext)
 		money = math.floor(item.money),
 		money_id = item.money_id,
 		where = where,
+		new_money = newmoney,
+		old_money = oldmoney,
 	}},why,why_ext)
 
 	-- if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
