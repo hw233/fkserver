@@ -378,32 +378,35 @@ def player_daily_win_lose():
 
 def player_daily_big_win_count():
     sql = """
-        SELECT guid,club,game_id,round,SUM(delta_money) money,date FROM 
-        (
-            SELECT guid,r.club,r.game_id,r.round,new_money - old_money delta_money,(r.start_time - @timezone) div 86400 * 86400 + @timezone date FROM 
-                t_log_money m
-            JOIN
-                t_log_game g
-            ON m.reason_ext = g.round_id
-            JOIN
-                t_log_round r
-            ON g.ext_round_id = r.round
-            WHERE r.start_time >= {} AND r.start_time < {} AND m.money_id > 0
-        ) d
-        GROUP BY club,game_id,guid,round,date;
+        INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
+        SELECT guid,club,game_id,COUNT(idx) count,date 
+        FROM (
+            SELECT guid,club,game_id,date,RANK() OVER(
+                PARTITION BY club,game_id,round,date
+                ORDER BY SUM(delta_money) DESC
+            ) AS idx FROM 
+            (
+                SELECT guid,r.club,r.game_id,r.round,new_money - old_money delta_money,(r.start_time - @timezone) div 86400 * 86400 + @timezone date FROM 
+                    t_log_money m
+                JOIN
+                    t_log_game g
+                ON m.reason_ext = g.round_id
+                JOIN
+                    t_log_round r
+                ON g.ext_round_id = r.round
+                WHERE r.start_time >= {} AND r.start_time < {} AND m.money_id > 0
+            ) d
+            GROUP BY club,game_id,round,date,guid
+        ) x
+        WHERE idx = 1
+        GROUP BY club,game_id,guid,date
+        ON DUPLICATE KEY UPDATE count = VALUES(count);
     """.format(
         floor_today_time(now_timestamp),
         floor_next_time(now_timestamp)
     )
     db_engine.execute("SET @timezone = {};".format(time.timezone))
-    data = pd.read_sql_query(sql,db_engine)
-    bigwins = data.groupby('round').apply(lambda t: t[t['money'] == t['money'].max()])
-    bigwins = bigwins.groupby(['club','guid','game_id','date']).count().reset_index()
-    bigwins.rename(columns = {"round":"count"},inplace=True)
-    bigwins[['club','guid','game_id','count','date']].to_sql(
-        't_log_player_daily_big_win_count',db_engine,schema = 'log',if_exists='append',
-        index=False,chunksize=1000,method=pd_insert_or_update('count')
-    )
+    db_engine.execute(sql)
     pass
 
 def coin_hour_change():
@@ -433,14 +436,14 @@ def club_room_card_hour_cost():
         (
             SELECT money_id,reason,club,game_id,SUM(delta_money) amount,time FROM 
             (
-                    SELECT money_id,reason,club,new_money - old_money delta_money,game_id,m.created_time DIV (3600 * 1000) * 3600 time 
-                    FROM 
-                        t_log_money m
-                    LEFT JOIN
-                        (SELECT game_id,round,club FROM t_log_round) r
-                    ON r.round = m.reason_ext
-                    WHERE m.money_id = 0 AND
-                    m.created_time >= {} AND m.created_time < {}
+                SELECT money_id,reason,club,new_money - old_money delta_money,game_id,m.created_time DIV (3600 * 1000) * 3600 time 
+                FROM 
+                    t_log_money m
+                LEFT JOIN
+                    (SELECT game_id,round,club FROM t_log_round) r
+                ON r.round = m.reason_ext
+                WHERE m.money_id = 0 AND
+                m.created_time >= {} AND m.created_time < {}
             ) d
             GROUP BY money_id,reason,club,game_id,time
         ) d1
