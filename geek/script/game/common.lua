@@ -7,6 +7,9 @@ local util = require "util"
 
 local reddb  = redisopt.default
 
+local string = string
+local table = table
+
 local common = {}
 
 local function get_room_player_count(room_id)
@@ -64,9 +67,9 @@ function common.switch_to_lobby(guid)
 	log.info("%s switch_to_lobby from %s to %s",guid,def_game_id,room_id)
 	channel.call("game."..tostring(room_id),"msg","SS_ChangeGame",guid)
 	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
-		1,def_game_id)
+		-1,def_game_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
-		1,def_game_id)
+		-1,def_game_id)
 
 	base_players[guid].online = nil
 	onlineguid[guid] = nil
