@@ -1298,11 +1298,15 @@ function base_table:transfer_owner()
 			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
 		end
 
+		local payopt = self.rule.pay.option
+		local roomfee = self:get_private_fee(self.rule)
 		local function next_player(owner)
 			local chair_id = owner.chair_id
-			for i = chair_id,chair_id + self.chair_count - 2 do
+			for i = chair_id + 1,chair_id + self.chair_count - 2 do
 				local p = self.players[i % self.chair_count + 1]
-				if p then
+				if p and (
+					payopt ~= enum.PAY_OPTION_ROOM_OWNER or not p:check_money_limit(roomfee,0)
+				) then
 					return p
 				end
 			end
@@ -1316,7 +1320,7 @@ function base_table:transfer_owner()
 		local new_owner = next_player(old_owner)
 		if not new_owner then
 			log.warning("base_table:transfer_owner %s,%s,old:%s, new owner not found",self.private_id,self.table_id_,old_owner.guid)
-			return enum.GAME_SERVER_RESULT_CREATE_PRIVATE_ROOM_CHAIR
+			return enum.ERROR_LESS_ROOM_CARD
 		end
 
 		log.info("base_table:transfer_owner %s,%s,old:%s,new:%s",self.private_id,self.table_id_,old_owner.guid,new_owner.guid)
@@ -1332,7 +1336,7 @@ function base_table:transfer_owner()
 			new_owner = new_owner.guid,
 		})
 
-		return enum.GAME_SERVER_RESULT_SUCCESS
+		return enum.ERROR_NONE
 	end)
 end
 
@@ -1503,8 +1507,9 @@ function base_table:player_stand_up(player, reason)
 
 		self:on_player_stand_up(player,reason)
 
+		local transfer_result
 		if self:is_private() and player == self.conf.owner and player_count > 1 then
-			self:transfer_owner()
+			transfer_result = self:transfer_owner()
 		end
 
 		player.table_id = nil
@@ -1521,7 +1526,9 @@ function base_table:player_stand_up(player, reason)
 
 		self:on_player_stand_uped(player,reason)
 
-		if 	player_count == 1 then
+		if transfer_result and transfer_result ~= enum.ERROR_NONE then
+			self:interrupt_dismiss(enum.STANDUP_REASON_LESS_ROOM_FEE)
+		elseif 	player_count == 1 then
 			self:do_dismiss(dismiss_reason[reason])
 		else
 			self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
