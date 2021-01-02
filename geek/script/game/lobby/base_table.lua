@@ -1273,9 +1273,9 @@ function base_table:do_dismiss(reason)
 		end
 
 		base_private_table[self.private_id] = nil
-
-		self.room_:del_table(self.private_id)
 		
+		self.room_:del_table(self.private_id)
+
 		self:on_private_dismissed()
 
 		self:clear()
@@ -1302,7 +1302,7 @@ function base_table:transfer_owner()
 		local roomfee = self:get_private_fee(self.rule)
 		local function next_player(owner)
 			local chair_id = owner.chair_id
-			for i = chair_id + 1,chair_id + self.chair_count - 2 do
+			for i = chair_id,chair_id + self.chair_count - 2 do
 				local p = self.players[i % self.chair_count + 1]
 				if p and (
 					payopt ~= enum.PAY_OPTION_ROOM_OWNER or not p:check_money_limit(roomfee,0)
