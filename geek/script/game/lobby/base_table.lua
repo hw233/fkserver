@@ -745,9 +745,9 @@ function base_table:cancel_kickout_no_ready_timer()
 	if not self.kickout_no_ready_timer then
 		return
 	end
-
+	
+	log.info("base_table:cancel_kickout_no_ready_timer table_id:%s,timer:%s",self.table_id_,self.kickout_no_ready_timer.id)
 	self:cancel_clock_ex(self.kickout_no_ready_timer.id)
-	log.info("base_table:cancel_kickout_timer_when_no_ready table_id:%s,timer:%s",self.table_id_,self.kickout_no_ready_timer.id)
 	self.kickout_no_ready_timer:kill()
 	self.kickout_no_ready_timer = nil
 end
