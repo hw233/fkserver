@@ -3,9 +3,10 @@ local sc = require "skynet.socketchannel"
 local socket = require "skynet.socket"
 local cluster = require "skynet.cluster.core"
 
-local log = require "log"
-
 require "functions"
+
+collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 local ignoreret = skynet.ignoreret
 
