@@ -7,6 +7,7 @@ local table = table
 local string = string
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "channeld"
 

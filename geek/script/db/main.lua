@@ -7,7 +7,7 @@ local log = require "log"
 require "functions"
 
 collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 5000)
+collectgarbage("setstepmul", 1000)
 
 require "hotfix"
 

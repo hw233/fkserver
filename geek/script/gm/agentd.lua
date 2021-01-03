@@ -10,6 +10,7 @@ local log = require "log"
 require "functions"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "gm.agent"
 

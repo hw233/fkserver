@@ -4,6 +4,7 @@ local log = require "log"
 local channel = require "channel"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "redisd"
 

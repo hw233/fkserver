@@ -10,6 +10,7 @@ require "skynet.manager"
 require "functions"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "gate"
 

@@ -6,6 +6,7 @@ local json = require "json"
 local util = require "util"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "broker"
 

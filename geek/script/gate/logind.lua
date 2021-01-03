@@ -14,6 +14,7 @@ local log = require "log"
 local datacenter = require "skynet.datacenter"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "gate.logind"
 

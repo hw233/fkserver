@@ -17,6 +17,7 @@ local util = require "util"
 require "functions"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 
 local reddb = redisopt.default

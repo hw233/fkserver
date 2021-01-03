@@ -7,6 +7,7 @@ local mysql = require "skynet.db.mysql"
 LOG_NAME = "mysqld"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 local table = table
 local assert = assert

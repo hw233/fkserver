@@ -5,6 +5,7 @@ local timer = require "timer"
 local queue = require "skynet.queue"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "redis_cached"
 

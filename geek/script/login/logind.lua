@@ -5,6 +5,7 @@ local channel = require "channel"
 require "login.msg.runtime"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "login"
 

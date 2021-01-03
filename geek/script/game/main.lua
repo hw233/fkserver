@@ -12,6 +12,7 @@ local redisopt = require "redisopt"
 local reddb = redisopt.default
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "game"
 

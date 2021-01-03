@@ -14,6 +14,7 @@ require "functions"
 local log = require "log"
 
 collectgarbage("setpause", 100)
+collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "gate.agent"
 
