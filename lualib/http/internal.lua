@@ -1,6 +1,7 @@
 local table = table
 local type = type
-local sockethelper = require "http.sockethelper"
+
+local socket_error = setmetatable({} , { __tostring = function() return "[Socket Error]" end })
 
 local M = {}
 
@@ -171,7 +172,7 @@ function M.request(interface, method, host, url, recvheader, header, content)
 	local tmpline = {}
 	local body = M.recvheader(read, tmpline, "")
 	if not body then
-		error(sockethelper.socket_error)
+		error(socket_error)
 	end
 
 	local statusline = tmpline[1]
