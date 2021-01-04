@@ -13,7 +13,7 @@ function card_dealer:init(cards)
 end
 
 function card_dealer:shuffle()
-	math.randomseed(chronos.nanotime() * 10000)
+	math.randomseed(math.floor(chronos.nanotime() * 10000))
 	for _ = 1,10 do math.random() end
 
     local j = 1
