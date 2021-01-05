@@ -87,17 +87,17 @@ local function dispatch_request(_,_,addr, session,msg, sz, padding, is_push)
 		local addr = register_name["@" .. name]
 		if addr then
 			ok = true
-			msg, sz = skynet.pack(addr)
+			msg, sz = skynet.packstring(addr)
 		else
 			ok = false
 			msg = "name not found"
 		end
     else
-        local orgaddr = addr
         if cluster.isname(addr) then
 			addr = register_name[addr]
 		end
 		local proto,msgstr = skynet.unpack(msg,sz)
+		skynet.trash(msg, sz)
 		msg,sz = skynet.fromstring(msgstr)
 		if addr then
 			if is_push then

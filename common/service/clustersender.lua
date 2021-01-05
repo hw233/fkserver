@@ -15,7 +15,9 @@ local waiting = {}
 local function send_request(addr,proto,msg,sz)
 	-- msg is a local pointer, cluster.packrequest will free it
 	local current_session = session
-	msg,sz = skynet.pack(proto,skynet.tostring(msg,sz))
+	local msgstr = skynet.tostring(msg,sz)
+	skynet.trash(msg,sz)
+	msg,sz = skynet.pack(proto,msgstr)
 	local request, new_session, padding = cluster.packrequest(addr, session, msg, sz)
 	session = new_session
 
@@ -63,7 +65,9 @@ function command.push(addr, proto, msg,sz)
 	if channel == nil then
 		wait()
 	end
-	msg,sz = skynet.pack(proto,skynet.tostring(msg,sz))
+	local msgstr = skynet.tostring(msg,sz)
+	skynet.trash(msg,sz)
+	msg,sz = skynet.pack(proto,msgstr)
 	local request, new_session, padding = cluster.packpush(addr, session, msg, sz)
 	if padding then	-- is multi push
 		session = new_session
