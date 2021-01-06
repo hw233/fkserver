@@ -1,7 +1,4 @@
 -- 登陆，退出，切换服务器消息处理
-require "data.login_award_table"
-local login_award_table = login_award_table
-
 local common = require "game.common"
 require "game.net_func"
 
@@ -10,11 +7,8 @@ local base_players = require "game.lobby.base_players"
 local base_emails = require "game.lobby.base_emails"
 
 require "game.lobby.base_android"
-local base_active_android = base_active_android
-local base_passive_android = base_passive_android
 
 local channel = require "channel"
-local android_manager = require "game.lobby.android_manager"
 local log = require "log"
 local redisopt = require "redisopt"
 local json = require "json"
@@ -25,20 +19,14 @@ local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
 local player_money = require "game.lobby.player_money"
-local club_utils = require "game.club.club_utils"
 local club_money_type = require "game.club.club_money_type"
 require "functions"
-local def_save_db_time = 60 -- 1分钟存次档
-local timer = require "timer"
 local runtime_conf = require "game.runtime_conf"
 local game_util = require "game.util"
 
 local reddb = redisopt.default
 
 --local base_room = require "game.lobby.base_room"
-
-local def_register_money = get_register_money()
-local def_private_room_bank = get_private_room_bank()
 
 -- 登陆验证框相关
 local validatebox_ch = {}
@@ -74,26 +62,6 @@ function on_ls_AlipayEdit(msg)
 		player.alipay_name = msg.alipay_name		
 	end
 	onlineguid.send(player,  "SC_AlipayEdit" , notify)
-end
-
---普通消息，不需要客户端组装消息内容
-function on_new_notice(msg)
-	if msg then
-		base_players:update_notice_everyone(msg)
-	end
-end
-
---游戏中奖公告，需要客户端组装消息内容
-function on_game_notice(msg)
-	if msg then
-		base_player:update_game_notice_everyone(msg)
-	end
-end
-
-function  on_ls_DelMessage(msg)
-	if msg then
-		base_players:delete_notice_everyone(msg)
-	end
 end
 
 function on_cs_update_location_gps(msg,guid)
@@ -273,35 +241,6 @@ function kickout(guid,reason)
 	end
 	g_room:kickout_server(player,reason)
 end
-
--- 跨天了
-local function next_day(player)
-	local next_login_award_day = player.login_award_day + 1
-	if login_award_table[next_login_award_day] then
-		player.login_award_day = next_login_award_day
-	end
-	
-	player.online_award_time = 0
-	player.online_award_num = 0
-	player.relief_payment_count = 0
-
-	player.flag_base_info = true
-
-	player.online_award_start_time = os.time()
-end
-
-local channel_cfg = {}
-function channel_invite_cfg(channel_id)
-	if channel_cfg then
-		for k,v in pairs(channel_cfg) do
-			if v.channel_id == channel_id then
-				return v
-			end
-		end
-	end
-	return nil
-end
-
 
 -- 请求玩家信息
 function on_cs_request_player_info(msg,guid)
@@ -1138,116 +1077,6 @@ function on_cs_change_header_icon(player, msg)
 	onlineguid.send(player,"SC_ChangeHeaderIcon", {
 		header_icon = msg.header_icon,
 	})
-end
-
--- 添加机器人
-local function add_android(opt_type, room_id, android_list)
-	if opt_type == enum.GM_ANDROID_ADD_ACTIVE then
-		for _, v in ipairs(android_list) do
-			local a = base_active_android:new()
-			a:init(room_id, v.guid, v.account, v.nickname)
-		end
-	elseif opt_type == enum.GM_ANDROID_ADD_PASSIVE then
-		for _, v in ipairs(android_list) do
-			local a = base_passive_android:new()
-			a:init(room_id, v.guid, v.account, v.nickname)
-		end
-	end
-end
-
--- gm命令操作回调
-function on_gm_android_opt(opt_type_, roomid_, num_)
-	log.info "on_gm_android_opt .........................."
-
-	if not g_room:find_room(roomid_) then
-		log.error("on_gm_android_opt room not find")
-		return
-	end
-
-	if opt_type_ == enum.GM_ANDROID_ADD_ACTIVE or opt_type_ == enum.GM_ANDROID_ADD_PASSIVE then
-		local a = android_manager:create_android(def_game_id, num_)
-		local n = #a
-		if n > 0 then
-			add_android(opt_type_, roomid_, a)
-		end
-
-		if n ~= num_ then
-			channel.publish("db.?","msg","SD_LoadAndroidData", {
-				opt_type = opt_type_,
-				room_id = roomid_,
-				guid = android_manager:get_max_guid(),
-				count = num_ - n,
-				})
-		end
-	elseif opt_type_ == enum.GM_ANDROID_SUB_ACTIVE then
-		base_active_android:sub_android(roomid_, num_)
-	elseif opt_type_ == enum.GM_ANDROID_SUB_PASSIVE then
-		base_passive_android:sub_android(roomid_, num_)
-	end
-end
-
-function on_cs_QueryPlayerMsgData( player, msg )
-	log.info ("on_ds_QueryPlayerMsgData .........................."..player.guid)
-	channel.call("db.?","SD_QueryPlayerMsgData", {
-		guid = player.guid,
-		platform_id = player.platform_id,
-	})
-end
-
-function on_ds_QueryPlayerMarquee(msg)
-	log.info ("on_ds_QueryPlayerMarquee .........................."..msg.guid)
-
-	local player = base_players[msg.guid]
-	if player then
-		if msg.pb_msg_data then
-			--player.msg_data_info = msg.pb_msg_data.pb_msg_data_info
-			if msg.first then
-				onlineguid.send(player,"SC_QueryPlayerMarquee",{
-					pb_msg_data = msg.pb_msg_data.pb_msg_data_info
-				})
-			else
-				onlineguid.send(player,"SC_NewMarquee",{
-					pb_msg_data = msg.pb_msg_data.pb_msg_data_info
-				})
-			end
-		else
-			onlineguid.send(player,"SC_QueryPlayerMarquee")
-		end
-	else
-		log.info("on_ds_QueryPlayerMarquee not find player , guid : " ..msg.guid)
-	end
-end
-
-function on_cs_QueryPlayerMarquee( player, msg )
-	log.info ("on_cs_QueryPlayerMarquee .........................."..player.guid)
-	channel.call("db.?","SD_QueryPlayerMarquee", {
-		guid = player.guid,
-		platform_id = player.platform_id,
-	})
-end
-
-function on_cs_SetMsgReadFlag( player, msg )
-	log.info ("on_cs_SetMsgReadFlag .........................."..player.guid)
-	channel.call("db.?","SD_SetMsgReadFlag", {
-		guid = player.guid,
-		id = msg.id,
-		msg_type = msg.msg_type,
-	})
-end
-
-function  on_ds_LoadOxConfigData(msg)
-	--log.info("on_ds_LoadOxConfigData...................................test ")
-	--ox_table:reload_many_ox_DB_config(msg)
-end
-
-
-
-function on_ds_bandbankcardnum(msg)	
-	log.info("on_ds_bandbankcardnum-------------------->player guid[%d] change_bankcard_num[%d]",msg.guid,msg.band_card_num)
-	local player = base_players[msg.guid]
-	if player then	
-		player.change_bankcard_num = msg.band_card_num
-	end
 end
 
 function on_cs_bind_phone(msg,guid)

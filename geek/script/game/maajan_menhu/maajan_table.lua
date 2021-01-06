@@ -2213,12 +2213,6 @@ function maajan_table:tile_count_2_tiles(counts,excludes)
     return tiles
 end
 
-function maajan_table:load_lua_cfg()
-	local maajan_config = self.room_.room_cfg
-	self.mj_min_scale = maajan_config.mj_min_scale
-end
-
-
 function maajan_table:notify_offline(player)
     if self.do_logic_update then
         player.deposit = true

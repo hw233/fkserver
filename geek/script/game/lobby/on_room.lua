@@ -178,18 +178,6 @@ function on_cs_read_game_info(msg,guid)
 	send2client_pb(player,  "SC_ReadGameInfo", nil)
 end
 
---请求玩家数据
-function on_cs_reconnection_play_msg( msg,guid )
-	local player = base_players[guid]
-	local tb = g_room:find_table_by_player(player)
-	if tb then
-		tb:on_reconnect(player)
-	else
-		send2client_pb(player,  "SC_ReconnectionPlay", {find_table = false})
-		log.error("guid[%d] stand up", player.guid)
-	end
-end
-
 --解散房间
 function on_cs_dismiss_table_req(msg,guid)
 	local player = base_players[guid]

@@ -2213,10 +2213,6 @@ function maajan_table:tile_count_2_tiles(counts,excludes)
     return tiles
 end
 
-function maajan_table:load_lua_cfg()
-	
-end
-
 function maajan_table:is_play(...)
 	return self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE and self.cur_state_FSM ~= FSM_S.PER_BEGIN
 end

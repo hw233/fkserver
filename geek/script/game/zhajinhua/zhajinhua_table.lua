@@ -743,10 +743,6 @@ function zhajinhua_table:reconnect(player)
 	base_table.reconnect(self,player)
 end
 
-function zhajinhua_table:load_lua_cfg()
-
-end
-
 --玩家游戲結束后亮牌給所有玩家
 function zhajinhua_table:show_cards_to_all(player,info)
 	if info.cards ~= nil then

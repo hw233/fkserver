@@ -1,27 +1,14 @@
 -- 玩家数据消息处理
 local log = require "log"
-local onlineguid = require "netguidopt"
 local dbopt = require "dbopt"
 local redisopt = require "redisopt"
 local json = require "json"
-local channel = require "channel"
-local reddb = redisopt.default
 local enum = require "pb_enums"
 local queue = require "skynet.queue"
 local timer = require "timer"
 local skynet = require "skynet"
 
 local money_lock = queue()
-
-local server_start_time =  os.time()
-
-local def_save_db_time = 60 -- 1分钟存次档
-local def_offline_cache_time = 600 -- 离线玩家数据缓存10分钟
-
-function on_SD_OnlineAccount(game_id, msg)
-	dbopt.account:batchquery("REPLACE INTO t_online_account SET guid=%d, first_game_type=%d, second_game_type=%d, game_id=%d, in_game=%d", 
-		msg.guid, msg.first_game_type, msg.second_game_type, msg.gamer_id, msg.in_game)
-end
 
 -- 玩家退出
 function on_s_logout(msg)

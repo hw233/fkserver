@@ -1,15 +1,11 @@
 
 local base_table = require "game.lobby.base_table"
-local base_prize_pool = require "game.lobby.base_prize_pool"
-local base_bonus = require "game.lobby.base_bonus"
 local json = require "json"
 local enum = require "pb_enums"
 local base_players = require "game.lobby.base_players"
 local base_private_table = require "game.lobby.base_private_table"
 local onlineguid = require "netguidopt"
 local channel = require "channel"
-local serviceconf = require "serviceconf"
-local nameservice = require "nameservice"
 local queue = require "skynet.queue"
 local common = require "game.common"
 local game_util = require "game.util"
@@ -17,17 +13,12 @@ local club_utils = require "game.club.club_utils"
 local club_money = require "game.club.club_money"
 
 require "game.net_func"
-local timer_manager = require "game.timer_manager"
 
 require "msgopt"
 local log = require "log"
 local redisopt = require "redisopt"
 
 local reddb = redisopt.default
-
-local table_expire_seconds = 60 * 60 * 5
-
-local timer = require "timer"
 
 -- 房间
 local base_room = {}
@@ -74,17 +65,6 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.room_cfg = conf.room_cfg
 	self.game_switch_is_open = conf.game_switch_is_open
 
-	-- log.info("base_room:init:self.game_switch_is_open = [%s]~~~~~~~~~~~~~~~~~:",self.game_switch_is_open)
-
-	-- for i = 1, table_count do
-	-- 	local t = self:create_table()
-	-- 	t:init(self, i, chair_count)
-	-- 	if self.room_cfg ~= nil then
-	-- 		t:load_lua_cfg()
-	-- 	end
-	-- 	self.tables[i] = t
-	-- end
-
 	self.players = {}
 	self.cur_player_count_ = 0 -- 当前玩家人数
 
@@ -107,22 +87,6 @@ function base_room:lockcall(fn,...)
 	return self.lock(fn,...)
 end
 
--- gm重新更新配置, room_lua_cfg
-function base_room:gm_update_cfg(tb, room_lua_cfg)
-	local old_count = #self.room_list_
-	for i,v in ipairs(tb) do
-		if i <= old_count then
-			print("change----gm_update_cfg", v.table_count, self.chair_count, v.money_limit, v.cell_money,v.game_switch_is_open)
-			self.room_list_[i]:gm_update_cfg(self,v.table_count, self.chair_count, v.money_limit, v.cell_money, v, room_lua_cfg)
-		else
-			local r = self:create_room()
-			print("Init----gm_update_cfg", v.table_count, self.chair_count, v.money_limit, v.cell_money)
-			r:init(self, v.table_count, self.chair_count, self.ready_mode, v.money_limit, v.cell_money, v, room_lua_cfg)
-			self.room_list_[i] = r
-		end
-	end
-end
-
 -- 创建桌子
 function base_room:create_table()
 	return base_table:new()
@@ -139,7 +103,6 @@ function base_room:foreach_by_player(func)
 		func(p)
 	end
 end
-
 
 function base_room:get_room_cell_money()
 	return self.cell_score
@@ -161,16 +124,6 @@ end
 -- 得到房间分限制
 function base_room:get_room_limit()
 	return self.room_limit
-end
-
--- 找到房间中玩家
-function base_room:find_player_list()
-	return self.players
-end
-
--- 得到玩家
-function base_room:get_player(chair_id)
-	return self.players[chair_id]
 end
 
 -- 得到桌子列表

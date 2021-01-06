@@ -5,7 +5,6 @@ require "game.lobby.base_android"
 local player_money = require "game.lobby.player_money"
 local log  = require "log"
 local enum = require "pb_enums"
-local json = require "json"
 local onlineguid = require "netguidopt"
 local util = require "util"
 local club_money_type = require "game.club.club_money_type"
@@ -22,42 +21,18 @@ local redisopt = require "redisopt"
 local reddb = redisopt.default
 
 -- 玩家
-local base_player = setmetatable({
-	player_count = 0,
-},{
+local base_player = setmetatable({},{
 	__index = base_character,
 })
 
 -- 初始化
 function base_player:init(guid_, account_, nickname_)
 	base_character.init(self,guid_,account_,nickname_)
-	self.game_end_event = {}
 	log.info("set player[%d] in_game true" ,self.guid)
-	self.player_count = self.player_count + 1
-end
-
-function base_player:has_club_rights()
-	return self.rights and self.rights.club ~= nil
 end
 
 function base_player:is_android()
 	return self.guid < 0
-end
-
--- 删除
-function base_player:del()
-	self.player_count = self.player_count - 1
-end
-
--- 注册账号
-function base_player:reset_account(account_, nickname_)
-	self.account = account_
-	self.nickname = nickname_
-end
-
---发送pb消息
-function base_player:send_pb(msgname,msg)
-	send2client_pb(self,msgname,msg)
 end
 
 -- 检查房间限制
@@ -323,54 +298,9 @@ function base_player:on_notify_android_sit_down(room_id_, table_id_, chair_id_)
 	end
 end
 
-
-
 --------------------------------------------------------------
 -- 以上继承于base_character
 --------------------------------------------------------------
-
-
-
--- 得到玩家数量
-function base_player:get_count()
-	return self.player_count
-end
-
-
-
--- 玩家存档发送到db
-function base_player:save()
-	--if self.flag_save_db or self.flag_base_info or self.flag_item_bag then
-	-- if self.flag_base_info then
-	-- 	log.info("base_player:save , guid [%d]  money [%d]",self.guid,self.money)
-	-- 	self.flag_base_info = false
-	-- 	channel.publish("db.?","msg","SD_SavePlayerData", {
-	-- 		guid = self.guid,
-	-- 		pb_base_info = self.pb_base_info,
-	-- 	})
-	-- end
-end
-
-
-function base_player:delete_notice(msg)
-	-- body
-	local notify = {
-		msg_id = msg.msg_id,
-		msg_type = msg.msg_type,
-	}
-	send2client_pb(self,"SC_DeletMsg",notify)
-end
-
--- 玩家存档到redis
-function base_player:save2redis()
-	if self.flag_base_info then
-		self.flag_base_info = false
-		if self.pb_base_info then
-			
-		end
-		self.flag_save_db = true
-	end
-end
 
 -- 得到等级
 function base_player:get_level()
@@ -455,21 +385,6 @@ function base_player:incr_money(item,why,why_ext)
 		new_money = newmoney,
 		old_money = oldmoney,
 	}},why,why_ext)
-
-	-- if table.nums(changes) == 0 or table.nums(changes[1]) == 0 then
-	-- 	log.error("db incrmoney error,guid[%d] money_id[%d] oldmoney[%d]",self.guid,item.money_id,oldmoney)
-	-- end
-	
-	-- local dboldmoney = changes[1].oldmoney
-	-- local dbnewmoney = changes[1].newmoney
-	
-	-- if dboldmoney ~= oldmoney then
-	-- 	log.error("db incrmoney error,guid[%s] money_id[%s] oldmoney[%s] dboldmoney[%s]",self.guid,item.money_id,oldmoney,dboldmoney)
-	-- end
-
-	-- if dbnewmoney ~= newmoney then
-	-- 	log.error("db incrmoney error,guid[%s] money_id[%s] newmoney[%s] dbnewmoney[%s]",self.guid,item.money_id,newmoney,dbnewmoney)
-	-- end
 
 	self:notify_money(item.money_id)
 	return oldmoney,newmoney

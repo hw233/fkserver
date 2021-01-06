@@ -462,10 +462,6 @@ function pdk_table:on_process_over(reason)
     })
 end
 
-function pdk_table:load_lua_cfg()
-	
-end
-
 function pdk_table:next_chair()
 	local chair = self.cur_discard_chair
 	repeat

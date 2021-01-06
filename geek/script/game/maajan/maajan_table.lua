@@ -33,12 +33,6 @@ function maajan_table:init(room, table_id, chair_count)
     self.quan_feng = 13
 end
 
-function maajan_table:load_lua_cfg()
-    dump(self.room_.room_cfg)
-	local maajan_config = json.decode(self.room_.room_cfg)
-	self.mj_min_scale = maajan_config.mj_min_scale
-end
-
 function maajan_table:start(player_count,is_test)
 	local bRet = base_table.start(self,player_count)
 	for k,v in pairs(self.players) do

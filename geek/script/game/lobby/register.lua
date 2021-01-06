@@ -1,19 +1,5 @@
 -- 注册消息
 local skynet = require "skynetproto"
-local serviceconf = require "serviceconf"
-require "functions"
-local channel = require "channel"
-
-function query_many_ox_config_data()
-	channel.publish("db.?","msg","SD_QueryOxConfigData", {
-		cur_time = os.time(),
-	})
-end
-
-function on_gm_update_cfg()
-	local conf = serviceconf[def_game_id]
-	g_room:gm_update_cfg(conf.game_cfg)
-end
 
 skynet.start(function()
 	require "game.lobby.on_login_logout"
@@ -25,23 +11,15 @@ skynet.start(function()
 	require "game.club.on_club"
 	require "game.lobby.on_template"
 
-	local show_log = not (b_register_dispatcher_hide_log or false)
-	b_register_dispatcher_hide_log = true
-
 	--------------------------------------------------------------------
 	register_dispatcher("CG_GameServerCfg",on_cs_game_server_cfg)
 	register_dispatcher("CS_GameServerCfg",on_cs_game_server_cfg)
 
-	--register_dispatcher("DS_OxConfigData",on_ds_LoadOxConfigData)
-	--------------------------------------------------------------------
 	-- 注册Login发过来的消息分派函数
 	register_dispatcher("LS_LoginNotify",on_ls_login_notify)
 	register_dispatcher("S_Logout",on_s_logout)
 	register_dispatcher("SS_ChangeGame",on_ss_change_game)
 	register_dispatcher("SS_ChangeTo",on_ss_change_to)
-	register_dispatcher("LS_NewNotice",on_new_notice)
-	register_dispatcher("LS_GameNotice",on_game_notice)
-	register_dispatcher("LS_DelMessage",on_ls_DelMessage)
 
 	--------------------------------------------------------------------
 	-- 注册客户端发过来的消息分派函?
@@ -80,10 +58,6 @@ skynet.start(function()
 	register_dispatcher("CS_ChatTable",on_cs_chat_table)
 	register_dispatcher("CS_ChangeTable",on_cs_change_table)
 	register_dispatcher("CS_Exit",on_cs_exit)
-	register_dispatcher("CS_ReconnectionPlay",on_cs_reconnection_play_msg)
-	register_dispatcher("CS_QueryPlayerMsgData",on_cs_QueryPlayerMsgData)
-	register_dispatcher("CS_QueryPlayerMarquee",on_cs_QueryPlayerMarquee)
-	register_dispatcher("CS_SetMsgReadFlag",on_cs_SetMsgReadFlag)
 	register_dispatcher("CS_Trustee",on_cs_trusteeship)
 	register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
 	

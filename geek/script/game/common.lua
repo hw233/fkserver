@@ -12,10 +12,6 @@ local table = table
 
 local common = {}
 
-local function get_room_player_count(room_id)
-	return channel.call("game."..tostring(room_id),"lua","get_player_count")
-end
-
 function common.find_best_room(first_game_type,second_game_type)
 	return util.find_lightest_weight_game_server(first_game_type,second_game_type)
 end
