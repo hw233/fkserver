@@ -1158,7 +1158,7 @@ end
 
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
-	if not self:is_alive() then
+	if not self:is_alive() or self.dismissing then
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
@@ -1365,6 +1365,7 @@ function base_table:id()
 end
 
 function base_table:interrupt_dismiss(reason)
+	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
 
@@ -1378,9 +1379,11 @@ function base_table:interrupt_dismiss(reason)
 		p:forced_exit(reason)
 	end)
 	self:do_dismiss(dreason)
+	self.dismissing = nil
 end
 
 function base_table:normal_dismiss(reason)
+	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
 
@@ -1390,6 +1393,7 @@ function base_table:normal_dismiss(reason)
 		p:forced_exit(reason)
 	end)
 	self:do_dismiss(tb_dismiss_reason)
+	self.dismissing = nil
 end
 
 function base_table:delay_normal_dismiss(reason)
