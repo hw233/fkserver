@@ -2312,7 +2312,8 @@ function base_table:kill_timer(timer)
 end
 
 function base_table:kickout_player(player,kicker)
-	if 	kicker.guid ~= self.conf.owner_guid then
+	if 	kicker.guid ~= self.conf.owner_guid or 
+		self.rule.option.owner_kickout_player == false then
 		return enum.ERROR_PLAYER_NO_RIGHT
 	end
 
