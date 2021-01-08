@@ -213,23 +213,16 @@ function on_s_logout(msg)
 	logout(msg.guid)
 end
 
-function on_cs_logout(guid,fd)
+function on_cs_logout(guid)
 	guid = tonumber(guid)
 	log.info("on_cs_logout %s",guid)
 	local player = base_players[guid]
 	if not player then
 		log.warning("on_cs_logout got nil player.")
-		onlineguid.send(guid,"SC_Logout",{
-			result = enum.ERROR_PLAYER_NOT_EXIST
-		})
-		return
+		return enum.ERROR_PLAYER_NOT_EXIST
 	end
 
-	local os = onlineguid[guid]
-	local result = g_room:kickout_server(player,enum.STANDUP_REASON_NORMAL)
-	channel.publish("gate."..tostring(os.gate),"lua","sc_logout",guid,{
-		result = result,
-	})
+	return g_room:kickout_server(player,enum.STANDUP_REASON_NORMAL)
 end
 
 function kickout(guid,reason)
