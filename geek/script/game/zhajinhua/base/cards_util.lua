@@ -135,7 +135,7 @@ local function single_full_compare_vals(lvals,rvals)
 		return -1
 	end
 	
-	return -1
+	return 0
 end
 
 function utils.compare(left,right,with_color)
@@ -216,19 +216,11 @@ function utils.compare(left,right,with_color)
 	return comp > 0
 end
 
--- local t1 = utils.get_cards_type({5,46,28})
--- local t2 = utils.get_cards_type({68,51,73})
--- local t3 = utils.get_cards_type({2,65,63})
--- local t4 = utils.get_cards_type({8,7,45})
--- local t5 = utils.get_cards_type({6,30,25})
+-- local t1 = utils.get_cards_type({32,13,4})
+-- log.dump(t1)
+-- local t2 = utils.get_cards_type({33,44,52})
+-- log.dump(t2)
 
--- local all = {t1,t2,t3,t4,t5}
--- log.dump(all)
--- local test = table.sort(all,function(l,r)
--- 	log.dump(l.vals)
--- 	log.dump(r.vals)
--- 	return utils.compare(l,r,true,true)
--- end)
--- log.dump(all)
+-- log.dump(utils.compare(t1,t2,true))
 
 return utils
