@@ -34,6 +34,8 @@ local function check_login_session(fd)
     return logining[fd]
 end
 
+local send2client = netmsgopt.send
+
 local CMD = {}
 
 function CMD.afk(fd)
@@ -52,14 +54,14 @@ function MSG.C_RequestPublicKey(msg,session)
     if not rsa_public_key then
         rsa_public_key = skynet.call(".utild","lua","get_rsa_public_key")
     end
-    netmsgopt.send(session.fd,"C_PublicKey",{
+    send2client(session.fd,"C_PublicKey",{
         public_key = crypt.hexencode(rsa_public_key)
     })
 end
 
 function MSG.CS_RequestSmsVerifyCode(msg,session)
     local result,timeout = channel.call("login.?","msg","CS_RequestSmsVerifyCode",msg,session.fd)
-    netmsgopt.send(session.fd,"SC_RequestSmsVerifyCode",{
+    send2client(session.fd,"SC_RequestSmsVerifyCode",{
         result = result,
         phone_number = msg.phone_number,
         timeout = timeout,
@@ -107,7 +109,7 @@ function MSG.CL_RegAccount(msg,session)
 
     log.dump(info)
 
-    netmsgopt.send(session.fd,"LC_Login",info)
+    send2client(session.fd,"LC_Login",info)
 end
 
 
@@ -171,7 +173,7 @@ local function login_by_account(msg,session)
 
     if not msg.password  or type(msg.password) ~= "string"then
         log.error( "no password, CL_Login")
-        netmsgopt.send(fd,"LC_Login",{
+        send2client(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
         })
         return false
@@ -182,7 +184,7 @@ local function login_by_account(msg,session)
     log.info( "================= CryptoManager::rsa_decrypt ==================2 %s", msg.account )
     if not password then
         log.error("password error %s", msg.password)
-        netmsgopt.send(fd,"LC_Login",{
+        send2client(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
         })
         return true
@@ -224,7 +226,7 @@ end
 function MSG.CL_Auth(msg,session)
     local fd = session.fd
     if logining[fd] then
-        netmsgopt.send(fd,"LC_Auth",{
+        send2client(fd,"LC_Auth",{
             result = enum.LOGIN_RESULT_LOGIN_QUQUE,
         })
         return true
@@ -232,7 +234,7 @@ function MSG.CL_Auth(msg,session)
 
     if  (not msg.code or msg.code == "") or
         (not msg.auth_platform or msg.auth_platform == "") then
-        netmsgopt.send(fd,"LC_Auth",{
+        send2client(fd,"LC_Auth",{
             result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
         })
         return
@@ -245,7 +247,7 @@ function MSG.CL_Auth(msg,session)
     log.dump(result)
     log.dump(userinfo)
     if not ok then
-        netmsgopt.send(fd,"LC_Auth",{
+        send2client(fd,"LC_Auth",{
             result = enum.LOGIN_RESULT_MAINTAIN,
         })
         logining[fd] = nil
@@ -255,7 +257,7 @@ function MSG.CL_Auth(msg,session)
     if  ok and
         result ~= enum.LOGIN_RESULT_SUCCESS and 
         result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
-        netmsgopt.send(fd,"LC_Auth",{
+        send2client(fd,"LC_Auth",{
             result = result,
             errmsg = userinfo,
         })
@@ -281,7 +283,7 @@ function MSG.CL_Login(msg,session)
     local fd = session.fd
     
     if logining[fd] then
-        netmsgopt.send(fd,"LC_Login",{
+        send2client(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_LOGIN_QUQUE,
         })
         return true
@@ -292,7 +294,7 @@ function MSG.CL_Login(msg,session)
     end
 
     if not check_key_field(msg.account) and  not check_key_field(msg.open_id) and not check_key_field(msg.phone) then
-        netmsgopt.send(fd,"LC_Login",{
+        send2client(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
         })
         return false
@@ -318,13 +320,13 @@ function MSG.CL_Login(msg,session)
     log.dump(res)
 
     if not ok then
-        netmsgopt.send(fd,"LC_Login",{
+        send2client(fd,"LC_Login",{
             result = enum.LOGIN_RESULT_MAINTAIN
         })
         return
     end
 
-	netmsgopt.send(fd,"LC_Login",res)
+	send2client(fd,"LC_Login",res)
 end
 
 -- function MSG.CL_LoginBySms(msg,session)
@@ -343,7 +345,7 @@ end
 --     end
 
 --     if logining[fd] then
---         netmsgopt.send(fd,"LC_Login",{
+--         send2client(fd,"LC_Login",{
 --             result = LOGIN_RESULT_LOGIN_QUQUE,
 --         } )
 --         return true
@@ -352,7 +354,7 @@ end
 --     logining[fd] = true
 
 --     if msg.account ~= tel or not sms_no_  or not msg.sms_no ~= sms_no_ then
---         netmsgopt.send(fd,"LC_Login",{
+--         send2client(fd,"LC_Login",{
 --             result = LOGIN_RESULT_SMS_FAILED,
 --         } )
 --         logining[fd] = nil
@@ -393,12 +395,12 @@ end
 
 --     logining[fd] = nil
 
---     netmsgopt.send(session.fd,msg.guid,"LC_Login",res)
+--     send2client(session.fd,msg.guid,"LC_Login",res)
 --     return true
 -- end
 
 function MSG.CS_HeartBeat(_,session)
-    netmsgopt.send(session.fd,"SC_HeartBeat",{
+    send2client(session.fd,"SC_HeartBeat",{
         severTime = os.time(),
     })
 end
@@ -428,7 +430,7 @@ function MSG.CG_GameServerCfg(msg,session)
 		log.info( "GC_GameServerCfg[%s] ==> %s", p.game_name, p.title )
     end
 
-	netmsgopt.send(session.fd,"GC_GameServerCfg",{
+	send2client(session.fd,"GC_GameServerCfg",{
         pb_cfg = pbconf,
     })
 

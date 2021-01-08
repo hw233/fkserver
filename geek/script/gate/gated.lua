@@ -15,7 +15,8 @@ collectgarbage("setstepmul", 1000)
 LOG_NAME = "gate"
 
 local loginservice = nil
-local protocol = nil
+local agentservice = {}
+local balance = 0
 
 local onlineguid = {}
 local fduser = {}
@@ -28,25 +29,36 @@ local LOGIN_HANDLE = {
 
 local CMD = {}
 
+local function balanceagent()
+    local agent = agentservice[(balance % #agentservice) + 1]
+    balance = balance + 1
+    return agent
+end
+
+local function send2fdclient(id,msgname,msg)
+    local u = fduser[id]
+    if not u then
+        log.error("send2client %s got nil session",id)
+        return
+    end
+    netmsgopt.send(u.fd,msgname,msg)
+end
+
 local function logout(guid)
+    log.warning("%s logout",guid)
     local u = onlineguid[guid]
-    if u and u.guid then
-        log.warning("%s logout",guid)
-        skynet.kill(u.agent)
-        onlineguid[guid] = nil
+    if u and u.fd then
         fduser[u.fd] = nil
-	end
+    end
+    onlineguid[guid] = nil
 end
 
 local function kickout(guid)
     log.info("kickout %s",guid)
     local u = onlineguid[guid]
     if u then
-        skynet.kill(u.agent)
+        skynet.call(u.agent,"lua","kickout",u.guid)
         fduser[u.fd] = nil
-        netmsgopt.send(u.fd,"SC_Logout",{
-            result = 0,
-        })
     end
     onlineguid[guid] = nil
 end
@@ -58,7 +70,7 @@ local function afk(fd)
         return
     end
 
-    pcall(skynet.call,u.agent, "lua", "afk")
+    pcall(skynet.call,u.agent, "lua", "afk",u.guid)
     logout(u.guid)
 end
 
@@ -72,17 +84,23 @@ local function login(fd,guid,server,conf)
         kickout(s.guid)
     end
 
-    local agent = skynet.newservice("gate.agent",skynet.self(),protocol,server)
-	local u = {
-		agent = agent,
+    log.info("login %s:%s",fd,guid)
+
+    local agent = balanceagent()
+    skynet.call(agent, "lua", "login", {
         guid = guid,
         fd = fd,
         ip = msgserver.ip(fd),
         conf = conf,
         server = server,
+    })
+    
+    local u = {
+        agent = agent,
+        guid = guid,
+        fd = fd,
     }
 
-	skynet.call(agent, "lua", "login", u)
     onlineguid[guid] = u
     fduser[fd] = u
 end
@@ -103,12 +121,9 @@ function CMD.maintain(switch)
     skynet.call(loginservice,"lua","maintain",switch)
 end
 
-function CMD.sc_logout(guid)
-    log.info("sc_logout %s",guid)
-    kickout(guid)
-end
-
 function CMD.forward(who,proto,...)
+    log.dump(who)
+    log.dump(proto)
     channel.publish(who,proto,...)
 end
 
@@ -132,7 +147,8 @@ function CMD.start(conf)
     end
 
     local gateconf = sconf.conf
-    protocol = gateconf.protocol
+    local agentcount = gateconf.agentcount or 8
+    local protocol = gateconf.protocol
     netmsgopt.protocol(protocol)
 
     local host,port = gateconf.host,gateconf.port
@@ -142,6 +158,9 @@ function CMD.start(conf)
     end
 
     loginservice = skynet.newservice("gate.logind",skynet.self(),gateid,protocol)
+    for i = 1,agentcount do
+        agentservice[i] = skynet.newservice("gate.agent",skynet.self(),protocol)
+    end
 
     local is_maintain = channel.call("config.?","msg","maintain")
     log.dump(is_maintain)
@@ -181,7 +200,7 @@ function CMD.start(conf)
 
         u.last_live_time = os.time()
 
-        skynet.send(u.agent,"client",msgname,msg)
+        skynet.send(u.agent,"client",msgname,msg,u.guid)
     end
 
     msgserver.start(server)
@@ -207,7 +226,7 @@ local function forward(guid,msgname,msg)
     netmsgopt.send(u.fd,msgname,msg)
 end
 
-local function forwardcommand(guid,...)
+local function forwardcommand(guid,cmd,...)
     local u = onlineguid[guid]
     if not u then
         log.error("forwardcommand %s got nil session.",guid)
@@ -219,7 +238,7 @@ local function forwardcommand(guid,...)
         return
     end
 
-    skynet.send(u.agent,"lua",...)
+    skynet.send(u.agent,"lua",cmd,guid,...)
 end
 
 function FORWARD.forward(who,...)
