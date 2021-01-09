@@ -1,9 +1,6 @@
 local skynet = require "skynetproto"
-local redisopt = require "redisopt"
 local channel = require "channel"
 local netmsgopt = require "netmsgopt"
-local gbk = require "gbk"
-local httpc = require "http.httpc"
 local crypt = require "skynet.crypt"
 local util = require "gate.util"
 local enum = require "pb_enums"
@@ -11,7 +8,6 @@ local serviceconf = require "serviceconf"
 
 require "functions"
 local log = require "log"
-local datacenter = require "skynet.datacenter"
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
