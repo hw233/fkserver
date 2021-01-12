@@ -410,7 +410,7 @@ function zhajinhua_table:deal_cards()
 		local gamers = table.series(self.gamers,function(p)
 			return {
 				player = p,
-				winlose = player_winlose[p.guid][money_id] or 0
+				winlose = tonumber(player_winlose[p.guid][money_id]) or 0
 			}
 		end)
 
