@@ -1960,15 +1960,17 @@ function zhajinhua_table:is_play(player)
 end
 
 function zhajinhua_table:can_stand_up(player,reason)
-	log.info("zhajinhua_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason == enum.STANDUP_REASON_NORMAL or
-		reason == enum.STANDUP_REASON_OFFLINE or 
-		reason == enum.STANDUP_REASON_FORCE or
-		reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT then
-        return not self:is_play(player)
-    end
+	return self:lockcall(function()
+		log.info("zhajinhua_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
+		if reason == enum.STANDUP_REASON_NORMAL or
+			reason == enum.STANDUP_REASON_OFFLINE or 
+			reason == enum.STANDUP_REASON_FORCE or
+			reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT then
+			return not self:is_play(player)
+		end
 
-    return true
+		return true
+	end)
 end
 
 function zhajinhua_table:on_player_sit_downed(player,reconnect)
