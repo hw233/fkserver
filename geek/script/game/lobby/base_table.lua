@@ -1766,16 +1766,18 @@ function base_table:check_ready(player)
 end
 
 function base_table:can_stand_up(player,reason)
-	log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-    if reason == enum.STANDUP_REASON_NORMAL or
-		reason == enum.STANDUP_REASON_OFFLINE or
-		reason == enum.STANDUP_REASON_FORCE or 
-		reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT
-	then
-        return not self:is_play(player) and not self:is_round_gaming()
-	end
+	return self:lockcall(function()
+		log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
+		if reason == enum.STANDUP_REASON_NORMAL or
+			reason == enum.STANDUP_REASON_OFFLINE or
+			reason == enum.STANDUP_REASON_FORCE or 
+			reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT
+		then
+			return not self:is_play(player) and not self:is_round_gaming()
+		end
 
-    return true
+		return true
+	end)
 end
 
 -- 检查开始
