@@ -689,7 +689,7 @@ function land_table:on_game_overed()
 	p.statistics.bomb = (p.statistics.bomb or 0) + (p.bomb or 0)
         if not self.private_id then
             if p.deposit then
-                p:forced_exit(enum.STANDUP_REASON_BANKRUPCY)
+                p:async_force_exit(enum.STANDUP_REASON_BANKRUPCY)
             elseif p:is_android() then
                 self:ready(p)
             end

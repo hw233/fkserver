@@ -79,12 +79,6 @@ function base_room:init(conf,chair_count,ready_mode)
 			return true
 		end,
 	})
-
-	self.lock = queue()
-end
-
-function base_room:lockcall(fn,...)
-	return self.lock(fn,...)
 end
 
 -- 创建桌子
@@ -153,7 +147,7 @@ end
 function base_room:enter_room_and_sit_down(player)
 	log.info("player guid is : %d",player.guid)
 	if player.disable == 1 then
-		log.info("get_table_players_status player is Freeaz forced_exit")
+		log.info("get_table_players_status player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
@@ -169,7 +163,7 @@ function base_room:enter_room_and_sit_down(player)
 			send2client_pb(player, "SC_GameMaintain", {
 					result = enum.GAME_SERVER_RESULT_MAINTAIN,
 					})
-			player:forced_exit()
+			player:async_force_exit()
 			log.warning(string.format("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id))	
 			return 14
 		end
@@ -262,7 +256,7 @@ function base_room:request_dismiss_private_table(requester)
 		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
-	return tb:lockcall(function() return tb:request_dismiss(requester) end)
+	return tb:request_dismiss(requester)
 end
 
 function base_room:commit_dismiss_private_table(player,agree)
@@ -271,7 +265,7 @@ function base_room:commit_dismiss_private_table(player,agree)
 		return enum.ERROR_PLAYER_NOT_IN_GAME
 	end
 
-	return tb:lockcall(function() return tb:commit_dismiss(player,agree) end)
+	return tb:commit_dismiss(player,agree)
 end
 
 function base_room:find_empty_table()
@@ -309,11 +303,7 @@ function base_room:play_once_again(player)
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	local result = tb:lockcall(function() 
-		return tb:play_once_again(player)
-	end)
-
-	return result,tb:hold_ext_game_id()
+	return tb:play_once_again(player),tb:hold_ext_game_id()
 end
 
 -- 创建私人房间
@@ -435,7 +425,7 @@ end
 -- 切换座位
 function base_room:change_chair(player)
 	if player.disable == 1 then
-		print("stand_up_and_exit_room player is Freeaz forced_exit")
+		print("stand_up_and_exit_room player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
@@ -524,7 +514,7 @@ end
 -- 快速进入房间
 function base_room:auto_enter_room(player)
 	if player.disable == 1 then
-		print("auto_enter_room player is Freeaz forced_exit")
+		print("auto_enter_room player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
@@ -562,7 +552,7 @@ end
 function base_room:enter_room(player,reconnect)
 	local guid = player.guid
 	if player.disable == 1 then
-		print("enter_room player is Freeaz forced_exit")
+		print("enter_room player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 
@@ -639,7 +629,7 @@ function base_room:kickout_room(player,reason)
 		end
 
 		reason = reason or enum.STANDUP_REASON_NORMAL
-		result = tb:player_stand_up(player,reason)
+		local result = tb:player_stand_up(player,reason)
 		log.info("base_room:kickout_room,guid[%d] player_stand_up,table_id:%s,can_leave[%s] reason[%s]",guid,table_id,result,reason)
 		if result ~= enum.ERROR_NONE then
 			return result
@@ -673,7 +663,7 @@ function base_room:kickout_server(player,reason)
 		end
 
 		reason = reason or enum.STANDUP_REASON_NORMAL
-		result = tb:player_stand_up(player,reason)
+		local result = tb:player_stand_up(player,reason)
 		log.info("base_room:kickout_server,guid[%d] player_stand_up,table_id:%s,reason[%s],result[%s]",guid,table_id,reason,result)
 		if result ~= enum.ERROR_NONE then
 			return result
@@ -759,7 +749,7 @@ end
 -- 快速坐下
 function base_room:auto_sit_down(player)
 	if player.disable == 1 then
-		print("auto_sit_down player is Freeaz forced_exit")
+		print("auto_sit_down player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	if not player.room_id then
@@ -785,7 +775,7 @@ end
 -- 坐下
 function base_room:sit_down(player, table_id_, chair_id_)
 	if player.disable == 1 then
-		print("sit_down player is Freeaz forced_exit")
+		print("sit_down player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	
@@ -1033,7 +1023,7 @@ end
 function base_room:change_table(player)
 	print("======================base_room:change_table")
 	if player.disable == 1 then
-		print("change_table player is Freeaz forced_exit")
+		print("change_table player is Freeaz force_exit")
 		return enum.GAME_SERVER_RESULT_FREEZEACCOUNT
 	end
 	local tb = self:find_table_by_player(player)

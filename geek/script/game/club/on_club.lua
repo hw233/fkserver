@@ -2910,7 +2910,7 @@ function on_cs_club_kickout_player(msg,kicker_guid)
             return
         end
 
-        result = player:forced_exit(enum.STANDUP_REASON_FORCE)
+        result = player:force_exit(enum.STANDUP_REASON_FORCE)
     else
         if not kickee_table then
             result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE

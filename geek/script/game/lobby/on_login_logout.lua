@@ -357,9 +357,9 @@ function on_cs_change_game(msg,guid)
 		-- 踢用户下线 封停所有功能
 		log.info("on_cs_change_game =======================disable == 1")
 		if not room:is_play(player) then
-			log.info("on_cs_change_game.....................player not in play forced_exit")
+			log.info("on_cs_change_game.....................player not in play force_exit")
 			-- 强行T下线
-			player:forced_exit()
+			player:async_force_exit()
 		end
 		return
 	end
@@ -370,7 +370,7 @@ function on_cs_change_game(msg,guid)
 			onlineguid.send(player, "SC_GameMaintain", {
 				result = enum.GAME_SERVER_RESULT_MAINTAIN,
 			})
-			player:forced_exit()
+			player:async_force_exit()
 			log.warning("GameServer will maintain,exit")
 			return
 		end
@@ -425,7 +425,7 @@ function on_cs_change_game(msg,guid)
 				onlineguid.send(player, "SC_GameMaintain", {
 						result = enum.GAME_SERVER_RESULT_MAINTAIN,
 						})
-				player:forced_exit()
+				player:async_force_exit()
 				log.warning("GameServer game_name = [%s],game_id =[%d], will maintain,exit",def_game_name,def_game_id)
 				return
 			end

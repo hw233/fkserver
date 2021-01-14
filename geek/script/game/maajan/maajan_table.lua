@@ -1400,7 +1400,7 @@ function maajan_table:FSM_event(event_table)
             for i,v in ipairs(self.players) do
                 if v then
                     if v.deposit then
-                        v:forced_exit()
+                        v:async_force_exit()
                     else
                         v:check_forced_exit(room_limit)
                         if v:is_android() then
@@ -1416,7 +1416,7 @@ function maajan_table:FSM_event(event_table)
                         send2client_pb(v, "SC_GameMaintain", {
                         result = GAME_SERVER_RESULT_MAINTAIN,
                         })
-                        v:forced_exit()
+                        v:async_force_exit()
                     end
                 end
             end

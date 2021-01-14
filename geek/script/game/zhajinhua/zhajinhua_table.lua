@@ -494,7 +494,7 @@ function zhajinhua_table:on_process_over(reason)
 	
 	self:foreach(function(p) 
 		if not p.game_status or p.game_status == PLAYER_STATUS.WATCHER then
-			p:forced_exit(enum.STANDUP_REASON_NORMAL)
+			p:async_force_exit(enum.STANDUP_REASON_NORMAL)
 		end
 		p.total_money = nil
 		p.total_score = nil

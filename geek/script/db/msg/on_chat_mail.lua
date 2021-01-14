@@ -3,7 +3,7 @@ local dbopt = require "dbopt"
 local json = require "cjson"
 local log = require "log"
 local channel = require "channel"
-local base_players = require "base_players"
+local base_players = require "game.lobby.base_players"
 
 local def_expiration_time = 30*24*60*60 -- 邮件30天过期
 
