@@ -148,16 +148,7 @@ function maajan_table:tick()
             self.timer[v] = nil
         end
     else
-        self.Maintain_time = self.Maintain_time or os.time()
-        if os.time() - self.Maintain_time > 5 then
-            self.Maintain_time = os.time()
-            for _,v in ipairs(self.players) do
-                if v then
-                    --维护时将准备阶段正在匹配的玩家踢出
-                    local iRet = base_table:on_notify_ready_player_maintain(v)--检查游戏是否维护
-                end
-            end
-        end
+      
 	end
 end
 function maajan_table:clear_deposit_and_time_out(player)

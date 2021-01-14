@@ -99,17 +99,6 @@ function base_table:hold_ext_game_id()
 	return self.ext_round_id
 end
 
-function base_table:start_save_info()
-	log.info("===============start_save_info")
-	for _,v in ipairs(self.players) do
-		-- 添加游戏场次
-		v:inc_play_times()
-		-- 记录对手
-		v:set_player_ip_control(self.players)
-	end
-	log.info("===============start_save_info end")
-end
-
 function base_table:can_enter(player)
 	log.info("base_table:can_enter")
 	return true
@@ -898,11 +887,6 @@ function base_table:get_player(chair_id)
 	return self.players[chair_id]
 end
 
--- 设置玩家
-function base_table:set_player(chair_id, player)
-	self.players[chair_id] = player
-end
-
 -- 得到玩家列表
 function base_table:get_player_list()
 	return self.players
@@ -967,22 +951,6 @@ function base_table:player_bet_flow_log(player,money)
 	channel.publish("db.?","msg","SD_LogBetFlow",msg)
 end
 
-function base_table:player_money_log_when_gaming(player,money_id,old_money,change_money)
-	local nMsg = {
-		guid = player.guid,
-		type = change_money > 0 and 2 or 1,
-		gameid = self.def_game_id,
-		game_name = self.def_game_name,
-		money_id = money_id,
-		old_money = old_money,
-		new_money = player.money,
-		change_money = change_money,
-		id = self.round_id,
-		platform_id = player.platform_id,
-	}
-	channel.publish("db.?","msg","SD_LogGameMoney",nMsg)
-end
-
 function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,money_change,round_id)
 	log.info("==============================base_table:robot_money_log")
 	local nMsg = {
@@ -999,26 +967,6 @@ function base_table:robot_money_log(robot,banker_flag,winorlose,old_money,tax,mo
 	}
 	channel.publish("db.?","msg","SL_Log_Robot_Money",nMsg)
 end
-
---渠道税收分成
-function base_table:channel_invite_taxes(channel_id_p,guid_p,guid_invite_p,tax_p)
-	log.info("ChannelInviteTaxes channel_id:" .. channel_id_p .. " guid:" .. guid_p .. " guid_invite:" .. tostring(guid_invite_p) .. " tax:" .. tax_p)
-	if tax_p == 0 or guid_invite_p == nil or guid_invite_p == 0 then
-		return
-	end
-	local cfg = channel_invite_cfg(channel_id_p)
-	if cfg and cfg.is_invite_open == 1 then
-		log.info("ChannelInviteTaxes step 2--------------------------------")
-		local nMsg = {
-			channel_id = channel_id_p,
-			guid = guid_p,--贡献者
-			guid_invite = guid_invite_p,--受益者
-			val = math.floor(tax_p*cfg.tax_rate/100)
-		}
-		channel.publish("db.?","msg","SL_Channel_Invite_Tax",nMsg)
-	end
-end
-
 
 -- 广播桌子中所有人消息
 function base_table:broadcast2client(msgname, msg,except)
@@ -1805,14 +1753,6 @@ function base_table:check_start(part)
 	end
 end
 
-function base_table:send_playerinfo(player)
-	return true
-end
-
-function base_table:send_info_to_player(player)
-	
-end
-
 function base_table:on_pre_start(player_count)
 	self.round_id = self:get_next_game_id()
 	local money_id = self:get_money_id()
@@ -1984,14 +1924,16 @@ function base_table:balance(moneies,why)
 
 		local club = self.conf.club
 
-		for chair_or_guid,money in pairs(moneies) do
-			if money ~= 0 then
-				money = math.floor(money)
-				local p = self.players[chair_or_guid] or base_players[chair_or_guid]
-				club:incr_member_money(p.guid,money,why,self.round_id)
-				player_winlose.incr_money(p.guid,money_id,money)
+		self:lockcall(function()
+			for chair_or_guid,money in pairs(moneies) do
+				if money ~= 0 then
+					money = math.floor(money)
+					local p = self.players[chair_or_guid] or base_players[chair_or_guid]
+					club:incr_member_money(p.guid,money,why,self.round_id)
+					player_winlose.incr_money(p.guid,money_id,money)
+				end
 			end
-		end
+		end)
 
 		return moneies
 	end
@@ -2106,35 +2048,6 @@ function base_table:start(player_count)
 	return
 end
 
--- 检查是否维护
-function base_table:check_game_maintain()
-	if game_switch == 1 then--游戏将进入维护阶段
-		log.warning("All Game will maintain..game_switch=[%d].....................",game_switch)
-		for i,v in pairs (self.players) do
-			if not v:is_android() and v.vip ~= 100 then
-				send2client_pb(v, "SC_GameMaintain", {
-					result = enum.GAME_SERVER_RESULT_MAINTAIN,
-				})
-				v:forced_exit()
-			end
-		end
-		return true
-	end
-	return false
-end
-
---准备玩家通知维护
-function base_table:on_notify_ready_player_maintain(player)
-	if game_switch == 1 and player.vip ~= 100 then--游戏将进入维护阶段
-		send2client_pb(player, "SC_GameMaintain", {
-		result = enum.GAME_SERVER_RESULT_MAINTAIN,
-		})
-		player:forced_exit()
-		return true
-	end
-	return false
-end
-
 -- 清除准备
 function base_table:clear_ready()
 	self.ready_list = {}
@@ -2195,20 +2108,6 @@ function base_table:private_clear()
 	self.rule = nil
 	self.conf = nil
 	self.private_id = nil
-end
-
-function base_table:send_maintain_player()
-	local iRet = false
-	for i,v in pairs(self.players) do
-		if  not v:is_android() and v.vip ~= 100 then
-			send2client_pb(v, "SC_GameMaintain", {
-			result = enum.GAME_SERVER_RESULT_MAINTAIN,
-			})
-			v:forced_exit()
-			iRet = true
-		end
-	end
-	return iRet
 end
 
 function base_table:notify_bankruptcy(code)
