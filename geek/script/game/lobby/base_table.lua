@@ -700,8 +700,9 @@ function base_table:begin_kickout_no_ready_timer(timeout,fn)
 	end
 
 	self.kickout_no_ready_timer = self:new_timer(timeout,fn)
-	self:begin_clock_ex(timeout,self.kickout_no_ready_timer.id)
-	log.info("base_table:begin_kickout_no_ready_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.kickout_no_ready_timer.id,timeout)
+	local timer_id = self.kickout_no_ready_timer.id
+	self:begin_clock_ex(timeout,timer_id)
+	log.info("base_table:begin_kickout_no_ready_timer table_id:%s,timer:%s,timout:%s",self.table_id_,timer_id,timeout)
 end
 
 function base_table:sync_kickout_no_ready_timer(player)
@@ -710,17 +711,17 @@ function base_table:sync_kickout_no_ready_timer(player)
 	end
 
 	local remain_time = math.floor(self.kickout_no_ready_timer.remainder)
-	local id = self.kickout_no_ready_timer.id
+	local timer_id = self.kickout_no_ready_timer.id
 	if player then
 		send2client_pb(player,"SC_StartTimer",{
-			id = id,
+			id = timer_id,
 			left_time = remain_time,
 		})
 		return
 	end
 
 	self:broadcast2client("SC_StartTimer",{
-		id = id,
+		id = timer_id,
 		left_time = remain_time,
 	})
 end
@@ -730,10 +731,13 @@ function base_table:cancel_kickout_no_ready_timer()
 		return
 	end
 	
-	log.info("base_table:cancel_kickout_no_ready_timer table_id:%s,timer:%s",self.table_id_,self.kickout_no_ready_timer.id)
-	self:cancel_clock_ex(self.kickout_no_ready_timer.id)
+	-- kill和设置nil提前,防止cancel_clock_ex时,延迟太长,无法同步
+	local timer_id = self.kickout_no_ready_timer.id
+	log.info("base_table:cancel_kickout_no_ready_timer table_id:%s,timer:%s",self.table_id_,timer_id)
 	self.kickout_no_ready_timer:kill()
 	self.kickout_no_ready_timer = nil
+
+	self:cancel_clock_ex(timer_id)
 end
 
 function base_table:begin_ready_timer(timeout,fn)
