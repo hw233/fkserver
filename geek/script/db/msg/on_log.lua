@@ -80,8 +80,8 @@ function on_sd_log_ext_game_round_end(msg)
 
     json.encode_sparse_array(true)  
     local ret = dbopt.log:query([[
-        UPDATE t_log_round SET end_time = unix_timestamp(),log = '%s' WHERE round = '%s';
-    ]],log and json.encode(log) or "",round)
+        UPDATE t_log_round SET end_time = %s,log = '%s' WHERE round = '%s';
+    ]],os.time(),log and json.encode(log) or "",round)
     if ret.errno then
         log.error("UPDATE t_log_round error:%s:%s",ret.errno,ret.err)
         return
