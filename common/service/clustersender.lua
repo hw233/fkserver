@@ -2,7 +2,6 @@ local skynet = require "skynetproto"
 local sc = require "skynet.socketchannel"
 local socket = require "skynet.socket"
 local cluster = require "skynet.cluster.core"
-local log = require "log"
 
 local channel
 local session = 1
@@ -40,8 +39,6 @@ local function wait()
 	table.insert(waiting, co)
 	skynet.wait(co)
 end
-
-local log = require "log"
 
 function command.req(...)
 	if channel == nil then
