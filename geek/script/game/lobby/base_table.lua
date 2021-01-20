@@ -2037,19 +2037,20 @@ end
 
 -- 开始游戏
 function base_table:start(player_count)
-	player_count = player_count or table.nums(self.players)
-	log.info("base_table:start %s,%s",self.chair_count,player_count)
-	self:cancel_delay_dismiss()
-	-- self:cancel_all_delay_kickout()
+	return self:lockcall(function()
+		player_count = player_count or table.nums(self.players)
+		log.info("base_table:start %s,%s",self.chair_count,player_count)
+		self:cancel_delay_dismiss()
+		-- self:cancel_all_delay_kickout()
 
-	if not self:is_round_gaming() then
-		self:on_process_start(player_count)
-	end
+		if not self:is_round_gaming() then
+			self:on_process_start(player_count)
+		end
 
-	self:on_pre_start(player_count)
+		self:on_pre_start(player_count)
 
-	self:on_started(player_count)
-	return
+		self:on_started(player_count)
+	end)
 end
 
 -- 清除准备
