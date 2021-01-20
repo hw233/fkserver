@@ -21,26 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]
 
-function printLog(tag, fmt, ...)
-    local t = {
-        "[",
-        string.upper(tostring(tag)),
-        "] ",
-        string.format(tostring(fmt), ...)
-    }
-    print(table.concat(t))
-end
-
-function printError(fmt, ...)
-    printLog("ERR", fmt, ...)
-    print(debug.traceback("", 2))
-end
-
-function printInfo(fmt, ...)
-    if type(DEBUG) ~= "number" or DEBUG < 2 then return end
-    printLog("INFO", fmt, ...)
-end
-
 local function dump_value_(v)
     if type(v) == "string" then
         v = "\"" .. v .. "\""
@@ -105,10 +85,6 @@ function dump(value,nesting,desciption)
     end
 end
 
-function printf(fmt, ...)
-    print(string.format(tostring(fmt), ...))
-end
-
 function checknumber(value, base)
     return tonumber(value, base) or 0
 end
@@ -133,22 +109,13 @@ end
 
 local setmetatableindex_
 setmetatableindex_ = function(t, index)
-    if type(t) == "userdata" then
-        local peer = tolua.getpeer(t)
-        if not peer then
-            peer = {}
-            tolua.setpeer(t, peer)
-        end
-        setmetatableindex_(peer, index)
-    else
-        local mt = getmetatable(t)
-        if not mt then mt = {} end
-        if not mt.__index then
-            mt.__index = index
-            setmetatable(t, mt)
-        elseif mt.__index ~= index then
-            setmetatableindex_(mt, index)
-        end
+    local mt = getmetatable(t)
+    if not mt then mt = {} end
+    if not mt.__index then
+        mt.__index = index
+        setmetatable(t, mt)
+    elseif mt.__index ~= index then
+        setmetatableindex_(mt, index)
     end
 end
 setmetatableindex = setmetatableindex_
@@ -245,37 +212,6 @@ function class(classname, ...)
     return cls
 end
 
-local iskindof_
-iskindof_ = function(cls, name)
-    local __index = rawget(cls, "__index")
-    if type(__index) == "table" and rawget(__index, "__cname") == name then return true end
-
-    if rawget(cls, "__cname") == name then return true end
-    local __supers = rawget(cls, "__supers")
-    if not __supers then return false end
-    for _, super in ipairs(__supers) do
-        if iskindof_(super, name) then return true end
-    end
-    return false
-end
-
-function iskindof(obj, classname)
-    local t = type(obj)
-    if t ~= "table" and t ~= "userdata" then return false end
-
-    local mt
-    if t == "userdata" then
-        if tolua.iskindof(obj, classname) then return true end
-        mt = tolua.getpeer(obj)
-    else
-        mt = getmetatable(obj)
-    end
-    if mt then
-        return iskindof_(mt, classname)
-    end
-    return false
-end
-
 function import(moduleName, currentModuleName)
     local currentModuleNameParts
     local moduleFullName = moduleName
@@ -303,12 +239,6 @@ function import(moduleName, currentModuleName)
     end
 
     return require(moduleFullName)
-end
-
-function handler(obj, method)
-    return function(...)
-        return method(obj, ...)
-    end
 end
 
 function math.newrandomseed()
