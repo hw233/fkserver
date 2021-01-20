@@ -30,9 +30,8 @@ local LOGIN_HANDLE = {
 local CMD = {}
 
 local function balanceagent()
-    local agent = agentservice[(balance % #agentservice) + 1]
-    balance = balance + 1
-    return agent
+    balance = (balance % #agentservice) + 1
+    return agentservice[balance]
 end
 
 local function send2fdclient(id,msgname,msg)
