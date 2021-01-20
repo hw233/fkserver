@@ -1,8 +1,6 @@
 local skynet = require "skynetproto"
-local redis = require "skynet.db.redis"
 local log = require "log"
 local timer = require "timer"
-local queue = require "skynet.queue"
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
@@ -11,19 +9,37 @@ LOG_NAME = "redis_cached"
 
 local redisd = ".redisd"
 
+local table = table
+local tinsert = table.insert
+local tremove = table.remove
+
 local cache = {}
+local cachequeue = {}
 
 local default_elapsed_time = 5
 
-local lock = queue()
+local function cache_push(key,value)
+	cache[key] = value
+	tinsert(cachequeue,key)
+end
 
 local function elapsed_cache_key()
 	local time = os.time()
-	for key,c in pairs(cache) do
-		if time - c.time > default_elapsed_time then
+	local key
+	local c
+	for _ = 1,10000 do
+		key = cachequeue[1]
+		c = cache[key]
+		if c then
+			if time - c.time < default_elapsed_time then
+				break
+			end
+			
 			log.info("del cache key %s",key)
 			cache[key] = nil
 		end
+
+		tremove(cachequeue,1)
 	end
 
 	timer.timeout(default_elapsed_time,elapsed_cache_key)
@@ -50,8 +66,8 @@ end
 local function expand(tb)
 	local list = {}
 	for k,v in pairs(tb) do
-		table.insert(list,k)
-		table.insert(list,v)
+		tinsert(list,k)
+		tinsert(list,v)
 	end
 
 	return list
@@ -86,7 +102,8 @@ local function hash_get(db,cmd,key,...)
 	for i = 1,#data,2 do
 		cvalue[data[i]] = data[i + 1]
 	end
-	cache[key] = { value = cvalue,time = os.time()}
+
+	cache_push(key,{ value = cvalue,time = os.time()})
 
 	return data
 end
@@ -124,7 +141,7 @@ local function hash_batch_get(db,cmd,key,...)
 		
 		local values = {}
 		for _,f in ipairs(fields) do
-			table.insert(values,cvalue[f])
+			tinsert(values,cvalue[f])
 		end
 		return values
 	end
@@ -163,10 +180,10 @@ local function string_get(db,cmd,...)
 	if #uncache_keys > 0 then
 		local uncache_values = do_redis_command(db,"mget",table.unpack(uncache_keys))
 		for i,key in pairs(uncache_keys) do
-			cache[key] = {
+			cache_push(key,{
 				value = uncache_values[i],
 				time = os.time(),
-			}
+			})
 		end
 	end
 	
@@ -211,10 +228,10 @@ local function set_get(db,cmd,key,...)
 	end
 
 	local val = do_redis_command(db,cmd,key,...)
-	cache[key] = {
+	cache_push(key,{
 		time = os.time(),
 		value = table.map(val,function(v) return v,true end),
-	}
+	})
 	return val
 end
 
