@@ -2,7 +2,6 @@ local skynet = require "skynetproto"
 local assert = assert
 local log = require "log"
 
-local protocol = protocol
 local gateserver
 
 local server = {}
