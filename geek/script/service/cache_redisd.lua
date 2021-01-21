@@ -35,7 +35,7 @@ local function elapsed_cache_key()
 				break
 			end
 			
-			log.info("del cache key %s",key)
+			-- log.info("del cache key %s",key)
 			cache[key] = nil
 		end
 
