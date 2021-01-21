@@ -27,7 +27,11 @@ function common.switch_to(guid,room_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		-1,def_game_id)
 
-	base_players[guid].online = nil
+	local player = base_players[guid]
+	player.table_id = nil
+	player.chair_id = nil
+	player.online = nil
+	
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 end
@@ -67,7 +71,11 @@ function common.switch_to_lobby(guid)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		-1,def_game_id)
 
-	base_players[guid].online = nil
+	local player = base_players[guid]
+	player.table_id = nil
+	player.chair_id = nil
+	player.online = nil
+
 	onlineguid[guid] = nil
 	base_players[guid] = nil
 

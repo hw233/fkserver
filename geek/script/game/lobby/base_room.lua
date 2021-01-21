@@ -634,6 +634,7 @@ function base_room:kickout_room(player,reason)
 		local tb = self:find_table_by_player(player)
 		if not tb then
 			log.warning("base_room:kickout_room not found table:%s,guid:%s",table_id,guid)
+			self:player_kickout_room(player)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
@@ -667,6 +668,7 @@ function base_room:kickout_server(player,reason)
 		local tb = self:find_table_by_player(player)
 		if not tb then
 			log.warning("base_room:kickout_server not found table:%s,guid:%s",table_id,guid)
+			self:player_kickout_server(player)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
@@ -698,6 +700,7 @@ function base_room:exit_room(player,reason)
 	local tb = self:find_table_by_player(player)
 	if not tb then
 		log.warning("base_room:exit_room not found table:%s,guid:%s",table_id,guid)
+		self:player_exit_room(player)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 
@@ -731,6 +734,7 @@ function base_room:exit_server(player,offline)
 		local tb = self:find_table_by_player(player)
 		if not tb then
 			log.warning("base_room:exit_server not found table:%s,guid:%s",table_id,guid)
+			self:player_exit_room(player)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
