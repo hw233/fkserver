@@ -1,7 +1,6 @@
 local skynet = require "skynet"
 local httpc = require "http.httpc"
 -- local rsa = require "rsa"
-local datacenter = require "skynet.datacenter"
 local mmdb = require "mmdb"
 local log = require "log"
 require "functions"
