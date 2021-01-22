@@ -329,7 +329,7 @@ function on_sd_query_player_statistics(guids,club,getter,start_date)
         ON cou.guid = com.guid AND cou.club = com.club AND cou.date = com.date
         WHERE cou.date >= %s
         ORDER BY cou.date DESC
-    ]],where_sql,club,where_sql,club,getter,start_date,limit)
+    ]],where_sql,club,where_sql,club,getter,start_date)
 
     return logs
 end
