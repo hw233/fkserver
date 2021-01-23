@@ -51,9 +51,10 @@ function on_sd_log_ext_game_round_start(msg)
     json.encode_sparse_array(true)
     local ret = dbopt.log:query([[
             INSERT INTO t_log_round(round,table_id,club,template,game_id,game_name,rule,start_time,end_time,create_time) 
-            VALUES('%s',%s,%s,%s,%s,'%s','%s',unix_timestamp(),unix_timestamp(),unix_timestamp());
+            VALUES('%s',%s,%s,%s,%s,'%s','%s',%s,%s,%s);
         ]],round,table_id,club or 'NULL',template or "NULL",game_id or 'NULL',game_name or "",
-            rule and json.encode(rule) or ""
+            rule and json.encode(rule) or "",
+            os.time(),os.time(),os.time()
         )
     if ret.errno then
         log.error("INSERT INTO t_log_round error:%s:%s",ret.errno,ret.err)
@@ -62,7 +63,7 @@ function on_sd_log_ext_game_round_start(msg)
 
     local values_sql = table.concat(
         table.series(guids,function(guid)
-            return string.format("(%s,'%s',unix_timestamp())",guid,round)
+            return string.format("(%s,'%s',%s)",guid,round,os.time())
         end),",")
     ret = dbopt.log:query("INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES" .. values_sql .. ";")
     if ret.errno then
@@ -102,8 +103,8 @@ function on_sd_log_ext_game_round_player_join(msg)
     local guid = msg.guid
     local round = msg.ext_round
     local ret = dbopt.log:query(
-        [[INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',unix_timestamp());]],
-        guid,round
+        [[INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',%s);]],
+        guid,round,os.time()
     )
     if ret.errno then
         log.error("INSERT INTO t_log_player_round error:%s:%s",ret.errno,ret.err)
@@ -127,10 +128,11 @@ function on_sl_log_game(msg)
 
     local sqls = table.series(gamelog.players or {},function(p,chair)
         return {
-            [[INSERT IGNORE INTO t_log_player_game(guid,chair_id,round_id,created_time) VALUES(%s,%s,'%s',unix_timestamp())]],
+            [[INSERT IGNORE INTO t_log_player_game(guid,chair_id,round_id,created_time) VALUES(%s,%s,'%s',%s)]],
             p.guid,
             p.chair_id or chair,
-            round_id
+            round_id,
+            os.time()
         }
     end)
 
