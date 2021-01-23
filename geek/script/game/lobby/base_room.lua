@@ -915,7 +915,7 @@ function base_room:player_kickout_room(player)
 		base_players[guid] = nil
 		onlineguid[guid] = nil
 	else
-		self:player_kickout_server(player)
+		self:player_exit_room(player)
 	end
 end
 
