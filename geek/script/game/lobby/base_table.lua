@@ -1311,36 +1311,35 @@ function base_table:id()
 	return self.private_id or self.table_id_
 end
 
+
 function base_table:interrupt_dismiss(reason)
 	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
-
 	local dreason = dismiss_reason[reason]
-	if self:gaming_round() > 0 then
-		self:on_final_game_overed(reason)
-	end
+	--防止玩家锁与桌子锁死锁
+	skynet.fork(function()
+		if self:gaming_round() > 0 then
+			self:on_final_game_overed(reason)
+		end
 
-	self:notify_dismiss(dreason)
-	self:foreach(function(p)
-		p:forced_exit(reason)
+		self:notify_dismiss(dreason)
+		self:foreach(function(p) p:force_exit(reason) end)
+		self.dismissing = nil
 	end)
-	self:do_dismiss(dreason)
-	self.dismissing = nil
 end
 
 function base_table:normal_dismiss(reason)
 	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
-
-	local tb_dismiss_reason = dismiss_reason[reason]
-	self:notify_dismiss(tb_dismiss_reason)
-	self:foreach(function(p)
-		p:forced_exit(reason)
+	local dreason = dismiss_reason[reason]
+	--防止玩家锁与桌子锁死锁
+	skynet.fork(function()
+		self:notify_dismiss(dreason)
+		self:foreach(function(p) p:force_exit(reason) end)
+		self.dismissing = nil
 	end)
-	self:do_dismiss(tb_dismiss_reason)
-	self.dismissing = nil
 end
 
 function base_table:delay_normal_dismiss(reason)
