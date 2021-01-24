@@ -379,9 +379,9 @@ def player_daily_win_lose():
 def player_daily_big_win_count():
     sql = """
         INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
-        SELECT guid,club,game_id,COUNT(idx) count,date 
+        SELECT guid,ifnull(club,0),ifnull(game_id,0),COUNT(idx) count,date 
         FROM (
-            SELECT guid,ifnull(club,0),ifnull(game_id,0),date,RANK() OVER(
+            SELECT guid,club,game_id,date,RANK() OVER(
                 PARTITION BY club,game_id,round,date
                 ORDER BY SUM(delta_money) DESC
             ) AS idx FROM 
