@@ -381,7 +381,7 @@ def player_daily_big_win_count():
         INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
         SELECT guid,club,game_id,COUNT(idx) count,date 
         FROM (
-            SELECT guid,club,game_id,date,RANK() OVER(
+            SELECT guid,ifnull(club,0),ifnull(game_id,0),date,RANK() OVER(
                 PARTITION BY club,game_id,round,date
                 ORDER BY SUM(delta_money) DESC
             ) AS idx FROM 
@@ -434,7 +434,7 @@ def club_room_card_hour_cost():
         INSERT INTO t_log_club_coin_hour_change(money_id,reason,club,game_id,amount,time)
         SELECT * FROM 
         (
-            SELECT money_id,reason,club,game_id,SUM(delta_money) amount,time FROM 
+            SELECT money_id,reason,ifnull(club,0),ifnull(game_id,0),SUM(delta_money) amount,time FROM 
             (
                 SELECT money_id,reason,club,new_money - old_money delta_money,game_id,m.created_time DIV (3600 * 1000) * 3600 time 
                 FROM 
