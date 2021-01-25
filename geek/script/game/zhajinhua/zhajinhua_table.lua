@@ -67,7 +67,7 @@ function zhajinhua_table:init(room, table_id, chair_count)
 end
 
 function zhajinhua_table:player_money(player)
-	local p = type(p) == "table" and player or self.players[player]
+	local p = type(player) == "table" and player or self.players[player]
 	return self.old_moneies[p.guid]
 end
 
