@@ -62,11 +62,26 @@ local dismiss_reason = {
 	[enum.STANDUP_REASON_BLOCK_GAMING] = enum.DISMISS_REASON_ROUND_END,
 	[enum.STANDUP_REASON_CLUB_CLOSE] = enum.DISMISS_REASON_ROUND_END,
 	[enum.STANDUP_REASON_LESS_ROOM_FEE] = enum.DISMISS_REASON_LESS_ROOM_FEE,
+	[enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT] = enum.DISMISS_REASON_NORMAL,
 }
 
--- local base_prize_pool = require "game.lobby.base_prize_pool"
--- 奖池
--- global_prize_pool = global_prize_pool or base_prize_pool:new()
+local tranfer_owner_reason = {
+	[enum.STANDUP_REASON_OFFLINE] = true,
+	[enum.STANDUP_REASON_NORMAL] = true,
+	[enum.STANDUP_REASON_DISMISS] = false,
+	[enum.STANDUP_REASON_FORCE] = true,
+	[enum.STANDUP_REASON_ADMIN_DISMISS_FORCE] = false,
+	[enum.STANDUP_REASON_DISMISS_REQUEST] = false,
+	[enum.STANDUP_REASON_DISMISS_TRUSTEE] = false,
+	[enum.STANDUP_REASON_BANKRUPCY] = true,
+	[enum.STANDUP_REASON_TABLE_TIMEOUT] = false,
+	[enum.STANDUP_REASON_MAINTAIN] = false,
+	[enum.STANDUP_REASON_ROUND_END] = true,
+	[enum.STANDUP_REASON_BLOCK_GAMING] = true,
+	[enum.STANDUP_REASON_CLUB_CLOSE] = false,
+	[enum.STANDUP_REASON_LESS_ROOM_FEE] = false,
+	[enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT] = true,
+}
 
 local base_table = {}
 -- 创建
@@ -1403,6 +1418,9 @@ function base_table:broadcast_sync_table_info_2_club(type,roominfo)
 	})
 end
 
+
+
+
 -- 玩家站起
 function base_table:player_stand_up(player, reason)
 	return self:lockcall(function()
@@ -1443,8 +1461,10 @@ function base_table:player_stand_up(player, reason)
 			self:on_player_stand_up(player,reason)
 
 			local transfer_result
-			if self:is_private() and player == self.conf.owner and player_count > 1 then
-				transfer_result = self:transfer_owner()
+			if self:is_private() and tranfer_owner_reason[reason] then
+				if player == self.conf.owner and player_count > 1 then
+					transfer_result = self:transfer_owner()
+				end
 			end
 
 			player.table_id = nil
@@ -1463,7 +1483,7 @@ function base_table:player_stand_up(player, reason)
 
 			if transfer_result and transfer_result ~= enum.ERROR_NONE then
 				self:interrupt_dismiss(enum.STANDUP_REASON_LESS_ROOM_FEE)
-			elseif 	player_count == 1 then
+			elseif player_count == 1 then
 				self:do_dismiss(dismiss_reason[reason])
 			else
 				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
@@ -1701,18 +1721,16 @@ function base_table:check_ready(player)
 end
 
 function base_table:can_stand_up(player,reason)
-	return self:lockcall(function()
-		log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
-		if reason == enum.STANDUP_REASON_NORMAL or
-			reason == enum.STANDUP_REASON_OFFLINE or
-			reason == enum.STANDUP_REASON_FORCE or 
-			reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT
-		then
-			return not self:is_play(player) and not self:is_round_gaming()
-		end
+	log.info("base_table:can_stand_up guid:%s,reason:%s",player.guid,reason)
+	if reason == enum.STANDUP_REASON_NORMAL or
+		reason == enum.STANDUP_REASON_OFFLINE or
+		reason == enum.STANDUP_REASON_FORCE or 
+		reason == enum.STANDUP_REASON_DELAY_KICKOUT_TIMEOUT
+	then
+		return not self:is_play(player) and not self:is_round_gaming()
+	end
 
-		return true
-	end)
+	return true
 end
 
 -- 检查开始
