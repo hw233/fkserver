@@ -134,8 +134,6 @@ end
 
 
 function zhajinhua_table:on_started(player_count)
-	if self:is_play() then return end
-
 	base_table.on_started(self,player_count)
 	self.base_score = (self.rule and self.rule.play) and self.rule.play.base_score or self.cell_score_	
 	self.all_score = 0  --总金币
