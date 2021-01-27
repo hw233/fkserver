@@ -12,10 +12,10 @@ collectgarbage("setstepmul", 1000)
 local table = table
 local assert = assert
 local string = string
+local tinsert = table.insert
+local tremove = table.remove
 
 local query_ttl_time = 3
-
-local max_pool_connections = 128
 
 local connection = {}
 
@@ -83,18 +83,13 @@ function new_connection_pool(conf)
 end
 
 function connection_pool.wait(pool)
-	-- 自动扩充保持连接数
-	-- if pool.__min < max_pool_connections then
-	-- 	pool.__min = pool.__min * 2
-	-- end
-
 	local co = coroutine.running()
-	table.insert(pool.__waiting,co)
+	tinsert(pool.__waiting,co)
 	skynet.wait()
 end
 
 function connection_pool.wakeup(pool)
-	local co = table.remove(pool.__waiting,1)
+	local co = tremove(pool.__waiting,1)
 	if co then
 		skynet.wakeup(co)
 	end
@@ -103,7 +98,7 @@ end
 function connection_pool.close(pool)
 	local conn
 	repeat
-		conn = table.remove(pool.__free,1)
+		conn = tremove(pool.__free,1)
 		if conn then
 			conn:close()
 		end
@@ -111,8 +106,8 @@ function connection_pool.close(pool)
 end
 
 function connection_pool.occupy(pool)
-	for i = 1,1000 do
-		local conn = table.remove(pool.__free,1)
+	for _ = 1,1000 do
+		local conn = tremove(pool.__free,1)
 		if conn then
 			return conn
 		end
@@ -122,21 +117,27 @@ function connection_pool.occupy(pool)
 		if ok and conn then
 			return conn
 		end
-
-		log.dump(conn)
 		
 		pool:wait()
 	end
 end
 
-function connection_pool.release(pool,conn)
-	if #pool.__free > pool.__min then
-		conn:close()
-	else
-		table.insert(pool.__free,conn)
+local function reserve_guard(pool)
+	local conn
+	while #pool.__free > pool.__min do
+		conn = tremove(pool.__free,1)
+		if conn then
+			conn:close()
+		end
 	end
+end
+
+function connection_pool.release(pool,conn)
+	tinsert(pool.__free,conn)
 
 	pool:wakeup()
+
+	reserve_guard(pool)
 end
 
 function connection_pool.query(pool,fmtsql,...)
