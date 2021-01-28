@@ -4,6 +4,9 @@ local channel = require "channel"
 
 local reddb = redisopt.default
 
+local table = table
+local string = string
+local tinsert = table.insert
 
 local onlineguid = setmetatable({},{
     __index = function(t,guid)
@@ -17,27 +20,16 @@ local onlineguid = setmetatable({},{
     end
 })
 
-function onlineguid.send(guids,msgname,msg)
+function onlineguid.send(guid,msgname,msg)
     msg = msg or {}
-    local function guidsend(player_or_guid,msgname,msg)
-        local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
-        local s = onlineguid[guid]
-        if not s or not s.gate then 
-            log.warning("send2guid %d not online.",guid)
-            return
-        end
-  
-        channel.publish("gate."..s.gate,"client",guid,"forward",msgname,msg)
-    end
-
-    if type(guids) == "number" then
-        guidsend(guids,msgname,msg)
+    guid = type(guid) == "table" and guid.guid or guid
+    local s = onlineguid[guid]
+    if not s or not s.gate then 
+        log.warning("send2guid %d not online.",guid)
         return
     end
 
-    for _,guid in pairs(guids) do
-        guidsend(guid,msgname,msg)
-    end
+    channel.publish("gate."..s.gate,"client",guid,"forward",msgname,msg)
 end
 
 function onlineguid.control(player_or_guid,msgname,msg)
@@ -59,7 +51,7 @@ function onlineguid.broadcast(guids,msgname,msg)
         local s = onlineguid[guid]
         if s and s.gate then
             gateguids[s.gate] = gateguids[s.gate] or {}
-            table.insert(gateguids[s.gate],guid)
+            tinsert(gateguids[s.gate],guid)
         end
     end
 
