@@ -34,6 +34,7 @@ local player_request = require "game.club.player_request"
 local club_block_groups = require "game.club.block.groups"
 local club_notice = require "game.notice.club_notice"
 local club_block_group_players = require "game.club.block.group_players"
+local bc = require "broadcast"
 
 local reddb = redisopt.default
 
@@ -55,7 +56,7 @@ local function broadcast(clubid,msgname,msg,except)
     end
 
     if table.nums(guids) ~= 0 then
-        onlineguid.broadcast(guids,msgname,msg)
+        bc.broadcast2partial(guids,msgname,msg)
     end
 end
 
