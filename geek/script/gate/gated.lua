@@ -4,7 +4,7 @@
 local skynet = require "skynetproto"
 local msgserver = require "gate.msgserver"
 local log = require "log"
-local netmsgopt = require "netmsgopt"
+local protocolnetmsg = require "gate.netmsgopt"
 local channel = require "channel"
 require "skynet.manager"
 require "functions"
@@ -21,6 +21,7 @@ local balance = 0
 local onlineguid = {}
 local fduser = {}
 local heartbeat_check_time = 12
+local netmsgopt
 
 local LOGIN_HANDLE = {
     CL_Auth = true,
@@ -148,7 +149,7 @@ function CMD.start(conf)
     local gateconf = sconf.conf
     local agentcount = gateconf.agentcount or 8
     local protocol = gateconf.protocol
-    netmsgopt.protocol(protocol)
+    netmsgopt = protocolnetmsg[protocol]
 
     local host,port = gateconf.host,gateconf.port
     if not port then

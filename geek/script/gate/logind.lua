@@ -1,6 +1,6 @@
 local skynet = require "skynetproto"
 local channel = require "channel"
-local netmsgopt = require "netmsgopt"
+local protocolnetmsg = require "gate.netmsgopt"
 local crypt = require "skynet.crypt"
 local util = require "gate.util"
 local enum = require "pb_enums"
@@ -16,14 +16,12 @@ LOG_NAME = "gate.logind"
 
 local gateservice,gateid,protocol = ...
 log.info("gate.logind protocol %s",protocol)
-netmsgopt.protocol(protocol)
+local netmsgopt = protocolnetmsg[protocol]
 gateid = tonumber(gateid)
 gateservice = tonumber(gateservice)
 
 local rsa_public_key
 local logining = {}
-local sms = {}
-local sms_time_limit
 local is_maintain
 
 local function check_login_session(fd)
@@ -324,76 +322,6 @@ function MSG.CL_Login(msg,session)
 
 	send2client(fd,"LC_Login",res)
 end
-
--- function MSG.CL_LoginBySms(msg,session)
---     local password_
---     local platform_id = msg.platform_id
---     local imei_
---     local deprecated_imei_ = msg.deprecated_imei
---     local fd = session.fd
---     local account_ = msg.account
---     local imei_ = msg.imei
---     local ip = session.ip
-
---     if not msg.account or type(msg.account ~= "string") then
---         log.error( "no account, LoginBySms")
---         return false
---     end
-
---     if logining[fd] then
---         send2client(fd,"LC_Login",{
---             result = LOGIN_RESULT_LOGIN_QUQUE,
---         } )
---         return true
---     end
-
---     logining[fd] = true
-
---     if msg.account ~= tel or not sms_no_  or not msg.sms_no ~= sms_no_ then
---         send2client(fd,"LC_Login",{
---             result = LOGIN_RESULT_SMS_FAILED,
---         } )
---         logining[fd] = nil
---         return
---     end
-
---     -- 保存账号
---     msg.ip_area =  util.geo_lookup(ip)
---     msg.ip =  ip
---     log.info( "ip = %s", msg.ip )
---     log.info( "ip_area = %s", msg.ip_area )
---     local res = channel.call("login.?","msg","CL_LoginBySms",msg,serviceid)
-
---     if not check_login_session(session.fd) then --已断开连接
---         return
---     end
-
---     if res.ret == LOGIN_RESULT_SUCCESS then
---         skynet.call(gateservice,"lua","login",session.fd,res.guid,res.game_id,res)
---     end
-
---     --保存imei
---     if not imei_ or type(imei_) ~= "string" then
---         log.error( "not has imei" )
---         return false
---     end
-
---     if not deprecated_imei_ or type(deprecated_imei_) ~= "string" then
---         log.error( "no deprecated_imei, id=%d")
---         return false
---     end
-
---     if not platform_id or type(platform_id) ~= "string" then
---         platform_id = "0"
---         msg.platform_id = "0"
---     end
---     password_ = ""
-
---     logining[fd] = nil
-
---     send2client(session.fd,msg.guid,"LC_Login",res)
---     return true
--- end
 
 function MSG.CS_HeartBeat(_,session)
     send2client(session.fd,"SC_HeartBeat",{

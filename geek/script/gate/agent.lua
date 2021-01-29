@@ -1,6 +1,6 @@
 local skynet = require "skynetproto"
 local channel = require "channel"
-local netmsgopt = require "netmsgopt"
+local protonetmsg = require "gate.netmsgopt"
 local enum = require "pb_enums"
 require "functions"
 local log = require "log"
@@ -13,7 +13,7 @@ LOG_NAME = "gate.agent"
 local gate,protocol = ...
 gate = tonumber(gate)
 log.info("gate.agent protocol %s",protocol)
-netmsgopt.protocol(protocol)
+local netmsgopt = protonetmsg[protocol]
 
 local rsa_public_key
 
