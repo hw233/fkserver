@@ -9,8 +9,6 @@ require "functions"
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
 
-require "hotfix"
-
 LOG_NAME = "db"
 
 local sconf

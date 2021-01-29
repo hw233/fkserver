@@ -11,8 +11,6 @@ local trigger_interval = 10 * 60
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 5000)
 
-require "hotfix"
-
 LOG_NAME = "statistics"
 
 local sconf

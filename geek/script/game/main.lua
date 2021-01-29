@@ -73,7 +73,6 @@ function CMD.start(conf)
 	require "game.mail.register"
 	require "game.reddot.register"
 	require "game.notice.register"
-	require "hotfix"
 	require "game.lobby.base_android"
 	require "game.lobby.gm_cmd"
 
