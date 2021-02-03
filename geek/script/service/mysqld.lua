@@ -143,7 +143,13 @@ end
 function connection_pool.query(pool,fmtsql,...)
 	local starttime = skynet.time()
 	local conn = pool:occupy()
-	local res = conn:query(fmtsql,...)
+	local ok,res = pcall(conn.query,conn,fmtsql,...)
+	if not ok then
+		log.error("msyqld connection_pool query got error,%s",res)
+		pool:release(conn)
+		error(res)
+		return
+	end
 	pool:release(conn)
 	local delta = skynet.time() - starttime
 	if delta > query_ttl_time then
