@@ -507,6 +507,12 @@ function base_table:do_commission(taxes)
 		club = club_id,
 	})
 
+	channel.publish("statistics.?","msg","SS_PlayerCommissionContributes",{
+		contributions = contributions,
+		template = template_id,
+		club = club_id,
+	})
+
 	for guid,commission in pairs(commissions) do
 		commission = math.floor(commission + 0.0000001)
 		if commission > 0 then
@@ -2020,7 +2026,7 @@ function base_table:on_process_over(reason,l)
 		log.info("base_table:on_process_over [%s] got nil template.",self.private_id)
 	end
 
-	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",{
+	local msg = {
 		club = club_id,
 		template = template_id,
 		game_id = def_first_game_type,
@@ -2029,7 +2035,10 @@ function base_table:on_process_over(reason,l)
 		guids = table.series(self.players,function(p) return p.guid end),
 		table_id = self.private_id,
 		log = l,
-	})
+	}
+
+	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",msg)
+	channel.publish("statistics.?","msg","SS_GameRoundEnd",msg)
 
 	self.ext_round_status = EXT_ROUND_STATUS.END
 end
