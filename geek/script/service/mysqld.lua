@@ -3,6 +3,7 @@ require "functions"
 local log = require "log"
 local skynet = require "skynetproto"
 local mysql = require "skynet.db.mysql"
+local channel = require "channel"
 
 LOG_NAME = "mysqld"
 
@@ -181,8 +182,24 @@ function connection_pool.finish_transaction(pool,transid)
 	pool.__trans[transid] = nil
 end
 
-local dbconfs= {}
-local dbpools = {}
+local dbconfs = setmetatable({},{
+	__index = function(t,name)
+		local confs = channel.call("config.?","msg","query_database_conf")
+		for _,conf in pairs(confs) do
+			rawset(t,conf.name,conf)
+		end
+
+		return rawget(t,name)
+	end
+})
+
+local dbpools = setmetatable({},{
+	__index = function(t,name)
+		local pool = new_connection_pool(dbconfs[name])
+		t[name] = pool
+		return pool
+	end
+})
 
 local function opendb(conf)
 	local name = conf.name
@@ -200,12 +217,6 @@ local function closedb(name)
 		dbpools[name] = nil
 	end
 end
-
-setmetatable(dbpools,{__index = function(t,name)
-	local pool = new_connection_pool(dbconfs[name])
-	t[name] = pool
-	return pool
-end})
 
 local CMD = {}
 

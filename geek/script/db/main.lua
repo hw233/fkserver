@@ -33,10 +33,10 @@ function CMD.start(conf)
 end
 
 skynet.start(function()
-    local dbconf = channel.call("config.?","msg","query_database_conf")
-    for _,c in pairs(dbconf) do
-        dbopt.open(c)
-    end
+    -- local dbconf = channel.call("config.?","msg","query_database_conf")
+    -- for _,c in pairs(dbconf) do
+    --     dbopt.open(c)
+    -- end
 
     skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]
