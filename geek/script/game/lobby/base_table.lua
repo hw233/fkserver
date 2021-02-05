@@ -253,6 +253,14 @@ end
 
 function base_table:request_dismiss(player)
 	return self:lockcall(function()
+		log.info("player %s request dismiss table_id %s",player.guid,self:id())
+		if not self:is_alive() then
+			send2client_pb(player.guid,"SC_DismissTableReq",{
+				result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+			})
+			return
+		end
+
 		if self.dismiss_request then
 			send2client_pb(player.guid,"SC_DismissTableReq",{
 				result = enum.ERROR_OPERATION_REPEATED
@@ -1119,13 +1127,13 @@ function base_table:on_player_sit_downed(player,reconnect)
 end
 
 function base_table:is_alive()
-	return self.room_:is_table_exists(self.table_id_)
+	return self.room_:is_table_exists(self.table_id_) and not self.dismissing
 end
 
 -- 玩家坐下
 function base_table:player_sit_down(player, chair_id,reconnect)
 	return self:lockcall(function()
-		if not self:is_alive() or self.dismissing then
+		if not self:is_alive() then
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
@@ -1208,6 +1216,7 @@ function base_table:do_dismiss(reason)
 			return enum.ERROR_OPERATION_INVALID
 		end
 
+		self:clear_dismiss_request()
 		self:cancel_delay_dismiss()
 		self:cancel_ready_timer()
 		self:cancel_all_delay_kickout()
@@ -1328,6 +1337,7 @@ function base_table:interrupt_dismiss(reason)
 	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
+	self:clear_dismiss_request()
 	local dreason = dismiss_reason[reason]
 	--防止玩家锁与桌子锁死锁
 	skynet.fork(function()
@@ -1345,6 +1355,7 @@ function base_table:normal_dismiss(reason)
 	self.dismissing = true
 	-- 解散时，清理准备列表，避免游戏check_start再开始
 	self:clear_ready()
+	self:clear_dismiss_request()
 	local dreason = dismiss_reason[reason]
 	--防止玩家锁与桌子锁死锁
 	skynet.fork(function()
@@ -1679,6 +1690,10 @@ function base_table:ready(player)
 	end
 
 	self:lockcall(function()
+		if not self:is_alive() then
+			return
+		end
+
 		if self.ready_list[player.chair_id] then
 			log.warning("chair_id[%d] ready already,guid[%d]", player.chair_id,player.guid)
 			return true
