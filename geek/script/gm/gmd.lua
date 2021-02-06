@@ -24,8 +24,6 @@ local reddb = redisopt.default
 
 local gmd = {}
 
-local global_sign = global_sign
-
 local function recharge_team(team_id,coin_type,count)
     -- local team = base_clubs[team_id]
     -- if not team then
@@ -802,13 +800,6 @@ function gmd.edit_notice(data)
         return {
             errcode = error.PARAMETER_ERROR,
             errstr = "invalid ttl.",
-        }
-    end
-
-    if expireat and expireat <= os.time() then
-        return {
-            errcode = error.PARAMETER_ERROR,
-            errstr = "invalid expireat.",
         }
     end
 

@@ -444,7 +444,7 @@ local function account_login(msg,gate)
         last_login_imei = imei,
         last_login_ip = player.login_ip,
         login_ip = ip,
-        login_time = os.now(),
+        login_time = os.time(),
     })
 
     channel.publish("db.?","msg","LD_LogLogin",{
