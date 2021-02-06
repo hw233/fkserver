@@ -63,7 +63,8 @@ end
 local function task()
     coin_hour_change()
     club_room_card_hour_cost()
-    timermgr:calllater(loopinterval,task)
+    local interval = loopinterval - (os.time() % loopinterval)
+    timermgr:calllater(interval,task)
 end
 
 skynet.start(function()
