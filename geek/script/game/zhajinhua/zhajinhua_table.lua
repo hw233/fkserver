@@ -153,6 +153,7 @@ function zhajinhua_table:on_started(player_count)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:stop_start_ticker()
+	self:clear_action()
 
 	for i,_ in pairs(self.gamers)  do
 		self.show_cards_to[i] = {}
@@ -1050,6 +1051,7 @@ function zhajinhua_table:follow(player)
 		return
 	end
 
+	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
@@ -1098,6 +1100,7 @@ function zhajinhua_table:all_in(player)
 		return
 	end
 
+	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
@@ -1135,6 +1138,8 @@ function zhajinhua_table:add_score(player,msg)
 		})
 		return
 	end
+
+	self:clear_action()
 
 	local score = msg.score
 	log.info("table_id[%s] player guid[%s]--------> add score[%s]",self.table_id_,player.guid,score)
@@ -1260,6 +1265,8 @@ function zhajinhua_table:give_up(player)
 		return
 	end
 
+	self:clear_action()
+
 	local chair_id = player.chair_id
 	log.info("table_id[%s]:player guid[%s]------> give_up", self.table_id_,player.guid)
 
@@ -1317,6 +1324,17 @@ function zhajinhua_table:check_player_action(player_or_chair,action)
 
 	log.warning("zhajinhua_table:check_player_action invalid operation,chair:%s,action:%s",chair,action)
 end
+
+function zhajinhua_table:clear_action(chair)
+	local chair = type(chair) == "table" and chair.chair_id or chair
+	if not chair then
+		self.waiting_actions = {}
+		return
+	end
+
+	self.waiting_actions[chair] = nil
+end
+
 -- 看牌
 function zhajinhua_table:look_card(player)
 	if not self.gamers[player.chair_id] or
@@ -1327,6 +1345,7 @@ function zhajinhua_table:look_card(player)
 		return
 	end
 
+	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
@@ -1375,6 +1394,8 @@ function zhajinhua_table:compare(player, msg)
 		return
 	end
 
+	self:clear_action()
+	
 	local compare_with = msg.compare_with
 
 	local chair_id = player.chair_id
