@@ -176,4 +176,6 @@ skynet.start(function()
 
     local prepare = require("statistics.prepare")
     prepare()
+
+    require "statistics.money"
 end)
