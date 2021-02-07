@@ -74,7 +74,6 @@ function CMD.start(conf)
 	require "game.reddot.register"
 	require "game.notice.register"
 	require "game.lobby.base_android"
-	require "game.lobby.gm_cmd"
 
 	init_server_online_count()
 end
