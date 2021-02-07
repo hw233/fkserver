@@ -1116,7 +1116,8 @@ function zhajinhua_table:all_in(player)
 	})
 
 	if self:is_end() then
-		self:calllater(1.5,function() 
+		self:wait_compare_animate(1.5,function() 
+			self:compare_animate_done()
 			self:game_balance()
 		end)
 		return
@@ -1383,6 +1384,22 @@ function zhajinhua_table:cs_look_card(player,msg)
 end
 
 
+function zhajinhua_table:wait_compare_animate(timeout,fn)
+	if self.compare_waiting_timer then
+		self.compare_waiting_timer:kill()
+	end
+	self.compare_waiting_timer = self:new_timer(timeout,fn)
+end
+
+function zhajinhua_table:compare_animate_done()
+	if not self.compare_waiting_timer then
+		return
+	end
+
+	self.compare_waiting_timer:kill()
+	self.compare_waiting_timer = nil
+end
+
 -- 终
  -- 比牌
 function zhajinhua_table:compare(player, msg)
@@ -1469,13 +1486,15 @@ function zhajinhua_table:compare(player, msg)
 
 	if self:is_end() then
 		log.info("table_id[%s]:------------->This Game Is  Over!",self.table_id_)
-		self:calllater(compare_anim_timeout,function() --比牌动画延时
+		self:wait_compare_animate(compare_anim_timeout,function() --比牌动画延时
+			self:compare_animate_done()
 			self:game_balance()
 		end)
 		return
 	end
 
-	self:calllater(compare_anim_timeout,function()
+	self:wait_compare_animate(compare_anim_timeout,function()
+		self:compare_animate_done()
 		self:next_turn()
 	end)
 end
@@ -1537,6 +1556,7 @@ end
 function zhajinhua_table:game_balance(winner)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
+	self:compare_animate_done()
 	
 	if not winner then
 		local winners = table.select(self.gamers,function(p) return not p.death end,true)
