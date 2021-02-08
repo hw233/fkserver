@@ -61,8 +61,10 @@ local function club_room_card_hour_cost()
 end
 
 local function task()
+    log.info("start statistics task ...")
     coin_hour_change()
     club_room_card_hour_cost()
+    log.info("end statistics task")
     local interval = loopinterval - (os.time() % loopinterval)
     timermgr:calllater(interval,task)
 end
