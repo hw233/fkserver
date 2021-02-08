@@ -15,8 +15,8 @@ collectgarbage("setstepmul", 5000)
 
 LOG_NAME = "statistics"
 
-local function today_timestamp()
-    local now = os.date("*t")
+local function timestamp_date(time)
+    local now = os.date("*t",time or os.time())
     return os.time({
         year = now.year,
         month = now.month,
@@ -48,18 +48,31 @@ function MSG.SS_GameRoundEnd(msg)
     local game_id = msg.game_id
     local balance = msg.log.balance
     local club = msg.club
+    local round = msg.ext_round
 
-    local date = today_timestamp()
-    local maxguid,_ = table.max(balance)
+    local maxguid,maxmoney = table.max(balance)
     local logdb = dbopt.log
-    logdb:query(
-        [[
-        INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
-        VALUES(%s,%s,%s,1,%s)
-        ON DUPLICATE KEY UPDATE count = count + 1
-        ]],
-        maxguid,club or 0,game_id,date
-    )
+
+    local res = logdb:query("SELECT * FROM t_log_round WHERE round = '%s';",round)
+    if res.errno then
+        log.error("%s",res.err)
+        return
+    end
+
+    local start_time = res.start_time
+
+    local date = timestamp_date(tonumber(start_time))
+
+    if maxmoney > 0 then
+        logdb:query(
+            [[
+            INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
+            VALUES(%s,%s,%s,1,%s)
+            ON DUPLICATE KEY UPDATE count = count + 1
+            ]],
+            maxguid,club or 0,game_id,date
+        )
+    end
     
     local playerbatchsqls = {}
     for guid,money in pairs(balance or {}) do
@@ -132,7 +145,7 @@ function MSG.SS_PlayerCommissionContributes(msg)
         return
     end
 
-    local date = today_timestamp()
+    local date = timestamp_date()
 
     local batchsqls = table.series(contributions,function(s)
         return {
