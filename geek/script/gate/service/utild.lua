@@ -41,7 +41,7 @@ function CMD.geo_lookup(ip)
 end
 
 skynet.start(function()
-    geodb = mmdb.read(geodb_path)
+    -- geodb = mmdb.read(geodb_path)
     skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]
         if f then
