@@ -1441,6 +1441,10 @@ end
 -- 玩家站起
 function base_table:player_stand_up(player, reason)
 	return self:lockcall(function()
+		if not self:is_alive() then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+		
 		local guid = player.guid
 		local table_id = player.table_id
 		local chair_id = player.chair_id
