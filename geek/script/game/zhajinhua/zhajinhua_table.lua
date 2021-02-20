@@ -1140,7 +1140,7 @@ function zhajinhua_table:add_score(player,msg)
 		return
 	end
 
-	self:clear_action()
+	
 
 	local score = msg.score
 	log.info("table_id[%s] player guid[%s]--------> add score[%s]",self.table_id_,player.guid,score)
@@ -1169,6 +1169,7 @@ function zhajinhua_table:add_score(player,msg)
 		return
 	end
 
+	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
@@ -1266,8 +1267,6 @@ function zhajinhua_table:give_up(player)
 		return
 	end
 
-	self:clear_action()
-
 	local chair_id = player.chair_id
 	log.info("table_id[%s]:player guid[%s]------> give_up", self.table_id_,player.guid)
 
@@ -1284,6 +1283,7 @@ function zhajinhua_table:give_up(player)
 			self.table_id_, player.guid, player.charid , self.cur_chair)
 	end
 
+	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
@@ -1411,8 +1411,6 @@ function zhajinhua_table:compare(player, msg)
 		return
 	end
 
-	self:clear_action()
-	
 	local compare_with = msg.compare_with
 
 	local chair_id = player.chair_id
@@ -1435,6 +1433,8 @@ function zhajinhua_table:compare(player, msg)
 		})
 		return
 	end
+
+	self:clear_action()
 
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
