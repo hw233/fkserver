@@ -59,8 +59,12 @@ function MSG.SS_GameRoundEnd(msg)
         return
     end
 
-    local start_time = res.start_time
+    if not res[1] or not res[1].start_time then
+        log.error("SS_GameRoundEnd query start time got nil,round:%s",round)
+        return
+    end
 
+    local start_time = res[1].start_time
     local date = timestamp_date(tonumber(start_time))
 
     if maxmoney > 0 then
