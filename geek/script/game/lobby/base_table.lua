@@ -1202,7 +1202,7 @@ end
 
 function base_table:do_dismiss(reason)
 	return self:lockcall(function()
-		if not self:is_alive() then
+		if not self:exists() then
 			log.trace("base_table do_dismiss but table:%s is not live,reason:%s",self:id(),reason)
 		end
 
@@ -1436,12 +1436,14 @@ function base_table:broadcast_sync_table_info_2_club(type,roominfo)
 end
 
 
-
+function base_table:exists()
+	return self.room_:is_table_exists(self.table_id_)
+end
 
 -- 玩家站起
 function base_table:player_stand_up(player, reason)
 	return self:lockcall(function()
-		if not self:is_alive() then
+		if not self:exists() then
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 		
