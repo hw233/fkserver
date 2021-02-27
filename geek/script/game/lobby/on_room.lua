@@ -106,29 +106,34 @@ function on_cs_ready(msg,guid)
 		return
 	end
 
-	if player.disable == 1 then
-		log.info("player is Freeaz force_exit")
-		-- 强行T下线
-		player:async_force_exit()
-		return
-	end
+	player:lockcall(function()
+		if player.disable == 1 then
+			log.info("player is Freeaz force_exit")
+			-- 强行T下线
+			player:async_force_exit()
+			return
+		end
 
-	if not player.table_id then
-		log.warning("on_cs_ready table_id is:%s",player.table_id)
-		return
-	end
+		-- double check 玩家是否已经离开(已准备未开始可以离开)
+		if not player.online then
+			return
+		end
 
-	log.info("on_cs_ready guid:%s,table_id:%s,chair_id:%s",guid,player.table_id,player.chair_id)
+		if not player.table_id then
+			log.warning("on_cs_ready table_id is:%s",player.table_id)
+			return
+		end
 
-	local tb = g_room:find_table_by_player(player)
-	if not tb then
-		log.warning("on_cs_ready not find table,guid:%s",player.guid)
-		return
-	end
+		log.info("on_cs_ready guid:%s,table_id:%s,chair_id:%s",guid,player.table_id,player.chair_id)
 
-	tb:lockcall(function() return tb:ready(player) end)
+		local tb = g_room:find_table_by_player(player)
+		if not tb then
+			log.warning("on_cs_ready not find table,guid:%s",player.guid)
+			return
+		end
 
-	log.info("test .................. on_cs_ready")
+		tb:ready(player)
+	end)
 end
 
 function on_cs_change_table(msg,guid)
