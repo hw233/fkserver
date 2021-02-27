@@ -136,11 +136,10 @@ tree.club.team["%d+"] = "set"
 tree.club.team["%d+"]["%d+"] = "number"
 
 
-
-tree.club.template.commission.default["%d+"]["%d+"] = "number_hash"
-tree.club.template.commission.default["%d+"]["%d+"]["%d+"] = "number"
-tree.club.template.commission["%d+"]["%d+"] = "number_hash"
-tree.club.template.commission["%d+"]["%d+"]["%d+"] = "number"
+tree.club.commission.template.default["%d+"]["%d+"] = "number_hash"
+tree.club.commission.template.default["%d+"]["%d+"]["%d+"] = "json"
+tree.club.commission.template["%d+"]["%d+"] = "number_hash"
+tree.club.commission.template["%d+"]["%d+"]["%d+"] = "json"
 
 tree.club.partner.conf["%d+"]["%d+"] = "hash"
 tree.club.partner.conf["%d+"]["%d+"] = {

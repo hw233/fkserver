@@ -396,7 +396,7 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local real_games =  club_utils.get_game_list(guid,club_id)
     local root = club_utils.root(club)
-    local tables = club_utils.deep_get_club_tables(root)
+    local tables = club_utils.get_club_tables(root)
 
     local online_count = 0
     local total_count = 0

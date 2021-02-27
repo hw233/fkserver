@@ -250,6 +250,7 @@ function base_club:del()
     if self.parent then
         reddb:srem(string.format("club:team:%d",self.parent),self.id)
     end
+    reddb:srem("club:all",self.id)
     channel.publish("db.?","msg","SD_DelClub",{ club_id = self.id})
 
     return enum.ERROR_NONE

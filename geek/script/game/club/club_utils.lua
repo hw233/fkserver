@@ -24,6 +24,10 @@ local club_commission = require "game.club.club_commission"
 local redisopt = require "redisopt"
 local g_util = require "util"
 
+local table = table
+
+local tinsert = table.insert
+
 local reddb = redisopt.default
 
 require "functions"
@@ -74,16 +78,6 @@ function utils.get_game_list(guid,club_id)
 	return {}
 end
 
-local function get_club_templates(club,getter_role)
-    if not club then return {} end
-
-    local ctt = club_template[club.id] or {}
-    local templates = table.series(ctt,function(_,tid) return table_template[tid] end)
-
-    table.unionto(templates,get_club_templates(base_clubs[club.parent],getter_role) or {})
-
-    return templates
-end
 
 local function is_template_visiable(club,template)
     local conf = club_team_template_conf[club.id][template.template_id]
@@ -96,17 +90,20 @@ local function is_template_visiable(club,template)
 end
 
 function utils.get_visiable_club_templates(club,getter_role)
-    local templates = get_club_templates(club,getter_role)
-    return table.series(templates,function(template)
+    local tids = club_template[club.id]
+    return table.series(tids,function(_,tid)
+        local template = table_template[tid]
         local visiable = is_template_visiable(club,template)
         if  visiable or
-            getter_role == enum.CRT_BOSS or getter_role == enum.CRT_ADMIN then
+            getter_role == enum.CRT_BOSS or
+            getter_role == enum.CRT_ADMIN
+        then
             return template
         end
     end)
 end
 
-local function get_club_tables(club)
+function utils.get_club_tables(club)
     if not club then return {} end
     local ct = club_table[club.id] or {}
     local tables = table.series(ct,function(_,tid)
@@ -115,18 +112,6 @@ local function get_club_tables(club)
         local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
         return tableinfo
     end)
-
-    return tables
-end
-
-function utils.deep_get_club_tables(club,getter_role)
-    local tables = get_club_tables(club,getter_role)
-    for teamid,_ in pairs(club_team[club.id]) do
-        local team = base_clubs[teamid]
-        if team then
-            table.unionto(tables,utils.deep_get_club_tables(team,getter_role))
-        end
-    end
 
     return tables
 end
@@ -227,7 +212,7 @@ local function is_member_in_gaming(c)
 end
 
 function utils.deep_is_member_in_gaming(c,money_id)
-    local gaming = is_member_in_gaming(c,money_id)
+    local gaming = is_member_in_gaming(c)
     if gaming then return true end
     local teamids = club_team[c.id]
     return table.logic_or(teamids,function(_,teamid)
@@ -253,50 +238,6 @@ function utils.deep_dismiss_club(c,money_id)
         local team = base_clubs[teamid]
         return team and utils.deep_dismiss_club(team,money_id)
     end)
-end
-
-function utils.recusive_get_club_templates(club)
-    if not club then return end
-
-    local templates = table.series(club_template[club.id],function(_,tid) return table_template[tid] end)
-    table.unionto(templates,utils.recusive_get_club_templates(base_clubs[club.parent]) or {})
-
-    return templates
-end
-
-function utils.get_club_team_template_conf(club,template)
-    if not club then
-        return
-    end
-
-    local conf = club_team_template_conf[club.id][template.id]
-    if not conf then
-        return utils.get_club_team_template_conf(base_clubs[club.parent],template)
-    end
-
-    return conf
-end
-
-function utils.calc_club_template_commission(club,template)
-    if not template or not template.rule or not template.rule.union then
-        return 0
-    end
-
-    local function get_bigwin_commission(big_win)
-        for _,s in pairs(big_win) do
-            if s[2] and s[2] ~= 0 then
-                return s[2]
-            end
-        end
-
-        return 0
-    end
-
-    local tax = template.rule.union.tax
-    local commission = tax and tax.AA or get_bigwin_commission(tax.big_win)
-    local commission_rate = utils.calc_club_template_commission_rate(club,template)
-    commission = commission * commission_rate
-    return math.floor(commission)
 end
 
 function utils.calc_club_template_commission_rate(club,template)
@@ -329,32 +270,44 @@ function utils.get_real_club_template_conf(club,template)
     return conf
 end
 
-function utils.get_real_club_template_commission_rate(club,template)
-    if not club or not club.parent or club.parent == 0 then
-        return 1
+function utils.get_template_commission_conf(club_id,template_id,team_id)
+    local conf = club_partner_template_commission[club_id][template_id][team_id]
+    if not conf or table.nums(conf) == 0 then
+        local parent = club_member_partner[club_id][team_id]
+        if not parent or parent == 0 then
+            return nil
+        end
+
+        conf = club_partner_template_default_commission[club_id][template_id][parent]
     end
 
-    local conf = utils.get_real_club_template_conf(club,template)
+    return conf
+end
+
+function utils.get_template_commission_fixed(club_id,template_id,team_id)
+    local conf = utils.get_template_commission_conf(club_id,template_id,team_id)
+    if not conf then
+        return {}
+    end
+
+    if conf.percent then
+        return nil
+    end
+
+    return conf
+end
+
+function utils.get_template_commission_percentage(club_id,template_id,team_id)
+    local conf = utils.get_template_commission_conf(club_id,template_id,team_id)
     if not conf then
         return 0
     end
 
-    local rate = (conf and conf.commission_rate or 0) / 10000
-    return rate
-end
-
-
-function utils.get_real_partner_template_commission_rate(club_id,template_id,partner_id)
-    local commission_rate = club_partner_template_commission[club_id][template_id][partner_id]
-    if not commission_rate then
-        partner_id = club_member_partner[club_id][partner_id]
-        if not partner_id then
-            return 10000
-        end
-        commission_rate = club_partner_template_default_commission[club_id][template_id][partner_id]
+    if not conf.percent then
+        return nil
     end
 
-    return commission_rate or 0
+    return tonumber(conf.percent) / 10000
 end
 
 function utils.role_team_id(club,guid)
@@ -367,6 +320,89 @@ function utils.role_team_id(club,guid)
     if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
         return guid
     end
+end
+
+function utils.team_tree(club_id,leavesguid)
+    local root
+    local teams = {}
+    for _,guid in pairs(leavesguid) do
+        local lastteam = guid
+        teams[lastteam] = teams[lastteam] or {}
+        local team = club_member_partner[club_id][guid]
+        while team and team ~= 0 do
+            teams[team] = teams[team] or {}
+            teams[team][lastteam] = teams[lastteam] or {}
+            lastteam = team
+            team = club_member_partner[club_id][team]
+        end
+
+        root = root or teams[lastteam]
+    end
+
+    return {
+        root = teams[root]
+    }
+end
+
+function utils.father_tree(club_id,guids)
+    local fathers = {}
+    for _,guid in pairs(guids) do
+        local f = guid
+        while f and f ~= 0 do
+            if fathers[f] then break end
+            local tf = club_member_partner[club_id][f]
+            fathers[f] = tf
+            f = tf
+        end
+    end
+
+    return fathers
+end
+
+function utils.father_branch(club_id,fathers,guid)
+    local branch = {}
+    local f
+    local myrole = club_role[club_id][guid]
+    if myrole == enum.CRT_PARTNER or myrole == enum.CRT_BOSS then
+        f = guid
+        tinsert(branch,1,guid)
+    else
+        f = fathers[guid]
+    end
+    while f and f ~= 0 do
+        tinsert(branch,1,f)
+        f = fathers[f]
+    end
+    return branch
+end
+
+function utils.team_branch(club_id,guid)
+    local team_ids = {}
+    local role = club_role[club_id][guid]
+    if role == enum.CRT_BOSS or role == enum.CRT_PARTNER then
+        table.insert(team_ids,1,guid)
+    end
+
+    local team_id = club_member_partner[club_id][guid]
+    while team_id and team_id ~= 0 do
+        table.insert(team_ids,1,team_id)
+        team_id = club_member_partner[club_id][team_id]
+    end
+
+    return team_ids
+end
+
+function utils.seek_commission(conf,tax)
+    local s0 = 0
+    for _,s in pairs(conf) do
+        if tax > s0 and tax <= s.range then
+            return s.value
+        end
+
+        s0 = s.range
+    end
+
+    return 0
 end
 
 return utils

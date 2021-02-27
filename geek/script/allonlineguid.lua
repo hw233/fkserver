@@ -14,7 +14,6 @@ local allonlineguid = setmetatable({},{
 		end
 
 		local is = reddb:sismember("player:online:all",guid)
-		t[guid] = is
 		return is
 	end,
 })

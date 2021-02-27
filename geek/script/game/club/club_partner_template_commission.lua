@@ -1,34 +1,26 @@
 local redisopt = require "redisopt"
 local reddb  = redisopt.default
-local log = require "log"
+local strfmt = string.format
 
 local club_partner_template_commission_rate = {}
 
 setmetatable(club_partner_template_commission_rate,{
-    __index = function(club,club_id)
-        local c_templates = setmetatable({},{
-            __index = function(template,template_id)
-                local m = setmetatable({},{
-                    __index = function(_,partner)
-                        if not partner then
-                            local cms = reddb:hgetall(string.format("club:template:commission:%s:%s",club_id,template_id))
-                            if not cms or table.nums(cms) == 0 then
-                                return {}
-                            end
-                            return cms
-                        end
-                        local commission = reddb:hget(string.format("club:template:commission:%s:%s",club_id,template_id),partner)
-                        return commission and tonumber(commission) or nil
+    __index = function(t1,club_id)
+        local club = setmetatable({},{
+            __index = function(t2,template_id)
+                local template = setmetatable({},{
+                    __index = function(_,self_id)
+                        return reddb:hget(strfmt("club:commission:template:%s:%s",club_id,template_id),self_id)
                     end
                 })
 
-                template[template_id] = m
-                return m
+                t2[template_id] = template
+                return template
             end
         })
-        club[club_id] = c_templates
+        t1[club_id] = club
 
-        return c_templates
+        return club
     end,
 })
 

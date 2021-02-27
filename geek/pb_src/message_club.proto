@@ -560,3 +560,16 @@ message S2C_CLUB_EDIT_TEAM_CONFIG {
     int32 partner = 3;
     string conf = 4;
 }
+
+message C2S_RESET_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14121;}
+    int32   club_id = 1;
+    int32   template_id  = 2;
+    int32   team_id = 3;
+    int32   partner_id = 4;
+}
+
+message S2C_RESET_CLUB_TEMPLATE_COMMISSION{
+    enum MsgID {NIL = 0;ID = 14122;}
+    int32   result = 1;
+}

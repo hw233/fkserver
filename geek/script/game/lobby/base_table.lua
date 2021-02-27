@@ -35,6 +35,7 @@ local base_rule = require "game.lobby.base_rule"
 
 local table = table
 local string = string
+local tinsert = table.insert
 
 local dismiss_request_timeout = 60
 local auto_dismiss_timeout = 2 * 60
@@ -447,6 +448,7 @@ function base_table:do_commission(taxes)
 		return
 	end
 
+	
 	local club = self.conf.club
 	if not club then
 		log.error("base_table:do_commission [%d] got private club.",self.private_id)
@@ -465,62 +467,96 @@ function base_table:do_commission(taxes)
 		return
 	end
 
-	local function get_club_partner_template_commission_rate(c_id,t_id,partner_id)
-		local commission_rate = club_partner_template_commission[c_id][t_id][partner_id]
-		if not commission_rate then
-			partner_id = club_member_partner[c_id][partner_id]
-			if not partner_id then
-				return 1
-			end
-			commission_rate = club_partner_template_default_commission[c_id][t_id][partner_id]
-		end
-	
-		return commission_rate and commission_rate / 10000 or 0
+	local club_id = self.club_id
+	local rule = self.rule
+	local taxconf = rule.union and rule.union.tax or nil
+	if not taxconf and type(taxconf) ~= "table" then
+		log.error("base_table:do_commission got nil tax config,club:%s template:%s",club_id,template_id)
+		return
 	end
 
-	local club_id = club.id
+	local fathertree = club_utils.father_tree(club_id,table.keys(taxes))
+	local teamsconf = table.map(fathertree,function(_,team_id)
+		return team_id,club_utils.get_template_commission_conf(club_id,template_id,team_id)
+	end)
+
+	local function percentage_commission(conf,commission)
+		local rate = conf and (tonumber(conf.percent) or 0) / 10000 or 0
+		return math.floor(rate * commission)
+	end
+
+	local function fixed_commission(conf,commission)
+		conf = (conf and not conf.percent) and conf or {}
+		local value = club_utils.seek_commission(conf,commission)
+		if value > commission then value = commission end
+		return value
+	end
+
 	local commissions = {}
 	local contributions = {}
-	for guid,tax in pairs(taxes) do
-		local last_rate = 0
-		local p_guid = guid
-		local s_guid = guid
-		local remain = tax
-		while p_guid and p_guid ~= 0 do
-			local commission_rate = get_club_partner_template_commission_rate(club_id,template_id,p_guid)
-			local commission = math.ceil(tax * (commission_rate - last_rate))
-			last_rate = commission_rate
+	
+	local function do_branch_commission(guid,tax)
+		local branch = club_utils.father_branch(club_id,fathertree,guid)
+		local commission = tax
+		for i = 1,#branch do
+			local myself = branch[i]
+			local son = branch[i + 1]
+			local my_commission
+			if not son then
+				son = myself
+				my_commission = commission
+				commission = 0
+			else
+				local conf = teamsconf[son]
+				local son_commission 
+				if taxconf.percentage_commission then
+					son_commission = percentage_commission(conf,commission)
+				else
+					son_commission = fixed_commission(conf,commission)
+				end
+				my_commission = commission - (son_commission or 0)
+				commission = son_commission
+			end
+			
+			commissions[myself] = (commissions[myself] or 0) + my_commission
 
-			commission = remain < commission and remain or commission
-			remain = remain - commission
-			commissions[p_guid] = (commissions[p_guid] or 0) + commission
-
-			if commission > 0 then
-				table.insert(contributions,{
-					parent = p_guid,
-					son = s_guid,
-					commission = commission,
+			if my_commission > 0 then
+				tinsert(contributions,{
+					parent = myself,
+					son = son,
+					commission = my_commission,
 				})
 			end
 
-			log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,p_guid,commission)
+			log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,myself,commission)
 
-			s_guid = p_guid
-			p_guid = club_member_partner[club_id][p_guid]
+			if commission <= 0 then return end
+		end
+		log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,son_team,commission)
+	end
+
+	for guid,tax in pairs(taxes) do
+		if tax > 0 then
+			do_branch_commission(guid,tax)
 		end
 	end
-	
-	channel.publish("db.?","msg","SD_LogPlayerCommissionContributes",{
-		contributions = contributions,
-		template = template_id,
-		club = club_id,
-	})
 
-	channel.publish("statistics.?","msg","SS_PlayerCommissionContributes",{
-		contributions = contributions,
-		template = template_id,
-		club = club_id,
-	})
+	log.dump(contributions)
+	log.dump(commissions)
+
+	if #contributions > 0 then
+		channel.publish("db.?","msg","SD_LogPlayerCommissionContributes",{
+			contributions = contributions,
+			template = template_id,
+			club = club_id,
+		})
+
+		channel.publish("statistics.?","msg","SS_PlayerCommissionContributes",{
+			contributions = contributions,
+			template = template_id,
+			club = club_id,
+		})
+	end
 
 	for guid,commission in pairs(commissions) do
 		commission = math.floor(commission + 0.0000001)
@@ -575,7 +611,8 @@ function base_table:cost_tax(winlose)
 		self:notify_game_money()
 	end
 
-	if taxconf.AA and not winlose then
+	local AA = tonumber(taxconf.AA)
+	if AA and AA > 0 and not winlose then
 		if self:gaming_round() > 1 then
 			return
 		end
@@ -1238,6 +1275,7 @@ function base_table:do_dismiss(reason)
 		reddb:del("table:info:"..private_table_id)
 		reddb:del("player:table:"..private_table_owner)
 		reddb:del("table:player:"..private_table_id)
+		reddb:srem("table:all",private_table_id)
 		
 		if club_id then
 			reddb:srem("club:table:"..club_id,private_table_id)
