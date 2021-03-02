@@ -185,40 +185,42 @@ end
 
 -- 站起并离开房间
 function base_room:stand_up_and_exit_room(player,reason)
-	if not player.table_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
-	
-	if not player.chair_id then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
+	return player:lockcall(function()
+		if not player.table_id then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+		
+		if not player.chair_id then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		end
 
-	local tb = self.tables[player.table_id]
-	if not tb then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
-	end
+		local tb = self.tables[player.table_id]
+		if not tb then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
 
-	local chair = tb:get_player(player.chair_id)
-	if not chair then
-		return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
-	end
+		local chair = tb:get_player(player.chair_id)
+		if not chair then
+			return enum.GAME_SERVER_RESULT_NOT_FIND_CHAIR
+		end
 
-	if chair.guid ~= player.guid then
-		return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
-	end
+		if chair.guid ~= player.guid then
+			return enum.GAME_SERVER_RESULT_OHTER_ON_CHAIR
+		end
 
-	local tableid = player.table_id
-	local chairid = player.chair_id
-	local result = tb:player_stand_up(player, reason)
-	if result ~= enum.ERROR_NONE then
-		log.info("base_room:stand_up_and_exit_room player_stand_up guid %s, table_id %s,chair %s,reason %s,%s,failed",
-			chair.guid,tableid, chairid,reason,result)
-		return result
-	end
+		local tableid = player.table_id
+		local chairid = player.chair_id
+		local result = tb:player_stand_up(player, reason)
+		if result ~= enum.ERROR_NONE then
+			log.info("base_room:stand_up_and_exit_room player_stand_up guid %s, table_id %s,chair %s,reason %s,%s,failed",
+				chair.guid,tableid, chairid,reason,result)
+			return result
+		end
 
-	local roomid = player.room_id
-	self:player_exit_room(player)
-	return enum.GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
+		local roomid = player.room_id
+		self:player_exit_room(player)
+		return enum.GAME_SERVER_RESULT_SUCCESS, roomid, tableid, chairid
+	end)
 end
 
 function base_room:check_entry_table_limit(player,rule,club)
