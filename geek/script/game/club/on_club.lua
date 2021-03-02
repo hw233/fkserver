@@ -780,9 +780,17 @@ local function on_cs_club_blacklist(msg,guid)
     if op == CLUB_OP.FORBID_GAME then
         reddb:sadd("club:blacklist:gaming:"..tostring(club_id),target_guid)
         club_gaming_blacklist[club_id] = nil
+        channel.publish("db.?","msg","SD_AddIntoClubGamingBlacklist",{
+            club_id = club_id,
+            guid  = target_guid,
+        })
     elseif op == CLUB_OP.CANCEL_FORBID then
         reddb:srem("club:blacklist:gaming:"..tostring(club_id),target_guid)
         club_gaming_blacklist[club_id] = nil
+        channel.publish("db.?","msg","SD_RemoveFromClubGamingBlacklist",{
+            club_id = club_id,
+            guid  = target_guid,
+        })
     end
 
     onlineguid.send(guid,"S2C_CLUB_OP_RES",res)

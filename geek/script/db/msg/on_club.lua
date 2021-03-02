@@ -369,8 +369,24 @@ function on_sd_set_club_role(msg)
 
     local r = dbopt.game:query("INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,%s) ON DUPLICATE KEY UPDATE role = %s;",club_id,guid,role,role)
     if r.errno then
-        if r.errno then
-            log.error("on_sd_set_club_role INSERT INTO t_club_role errno:%d,errstr:%s",r.errno,r.err)
-        end
+        log.error("on_sd_set_club_role INSERT INTO t_club_role errno:%d,errstr:%s",r.errno,r.err)
+    end
+end
+
+function on_sd_add_into_club_gaming_blacklist(msg)
+    local club_id = msg.club_id
+    local guid = msg.guid
+    local r = dbopt.game:query("INSERT IGNORE INTO t_club_gaming_blacklist(club_id,guid) VALUES(%s,%s)",club_id,guid)
+    if r.errno then
+        log.error("on_sd_add_into_club_gaming_blacklist INSERT INTO t_club_gaming_blacklist errno:%d,errstr:%s",r.errno,r.err)
+    end
+end
+
+function on_sd_remove_from_club_gaming_blacklist(msg)
+    local club_id = msg.club_id
+    local guid = msg.guid
+    local r = dbopt.game:query("DELETE FROM t_club_gaming_blacklist WHERE club_id = %s AND guid = %s;",club_id,guid)
+    if r.errno then
+        log.error("on_sd_remove_from_club_gaming_blacklist DELETE FROM t_club_gaming_blacklist errno:%d,errstr:%s",r.errno,r.err)
     end
 end
