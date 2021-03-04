@@ -1936,21 +1936,21 @@ function base_table:balance(moneies,why)
 
 	local money_id = self:get_money_id() or -1
 	if self:is_private() and self.conf.club and self.conf.club.type  == enum.CT_UNION then
-		local minrate = 1
-		for pid,money in pairs(moneies) do
-			local p = self.players[pid] or base_players[pid]
-			local p_money = self.old_moneies and self.old_moneies[pid] or player_money[p.guid][money_id]
-			if p_money + money < 0 then
-				local r = math.abs(p_money) / math.abs(money)
-				if minrate > r then minrate = r end
-			end
-		end
+		-- local minrate = 1
+		-- for pid,money in pairs(moneies) do
+		-- 	local p = self.players[pid] or base_players[pid]
+		-- 	local p_money = self.old_moneies and self.old_moneies[pid] or player_money[p.guid][money_id]
+		-- 	if p_money + money < 0 then
+		-- 		local r = math.abs(p_money) / math.abs(money)
+		-- 		if minrate > r then minrate = r end
+		-- 	end
+		-- end
 
-		for pid,_ in pairs(moneies) do
-			moneies[pid] = math.floor(moneies[pid] * minrate)
-		end
+		-- for pid,_ in pairs(moneies) do
+		-- 	moneies[pid] = math.floor(moneies[pid] * minrate)
+		-- end
 
-		log.dump(moneies)
+		-- log.dump(moneies)
 
 		local club = self.conf.club
 
@@ -2179,6 +2179,8 @@ function base_table:is_bankruptcy(player)
 	if not club or club.type ~= enum.CT_UNION then
 		return
 	end
+
+	log.dump(self.rule.union)
 
 	if not self.rule.union or not self.rule.union.min_score then
 		return
