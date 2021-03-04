@@ -29,10 +29,12 @@ local function elapsed_cache_key()
 	local c
 	for _ = 1,10000 do
 		key = cachequeue[1]
+		if not key then break end
+
 		c = cache[key]
 		if c then
-			if time - c.time < default_elapsed_time then
-				break
+			if time - c.time < default_elapsed_time then 
+				break 
 			end
 			
 			-- log.info("del cache key %s",key)
@@ -55,9 +57,9 @@ local function new_commander(cmd,fn)
 	end
 end
 
-local function fold(list)
-	local tb = {}
-	for i = 1,#tb,2 do
+local function fold(list,tb)
+	tb = tb or {}
+	for i = 1,#list,2 do
 		tb[list[i]] = list[i + 1]
 	end
 	return tb
@@ -77,11 +79,7 @@ end
 local function hash_set(db,cmd,key,...)
 	local c = cache[key]
 	if c then
-		local cvalue = c.value
-		local fvs = {...}
-		for i = 1,#fvs,2 do
-			cvalue[tostring(fvs[i])] = tostring(fvs[i + 1])
-		end
+		fold({...},c.value)
 	end
 
 	return do_redis_command(db,cmd,key,...)
@@ -98,12 +96,7 @@ local function hash_get(db,cmd,key,...)
 	end
 	
 	local data = do_redis_command(db,cmd,key,...)
-	local cvalue = {}
-	for i = 1,#data,2 do
-		cvalue[data[i]] = data[i + 1]
-	end
-
-	cache_push(key,{ value = cvalue,time = os.time()})
+	cache_push(key,{ value = fold(data),time = os.time()})
 
 	return data
 end
@@ -139,10 +132,7 @@ local function hash_batch_get(db,cmd,key,...)
 			end
 		end
 		
-		local values = {}
-		for _,f in ipairs(fields) do
-			tinsert(values,cvalue[f])
-		end
+		local values = table.series(fields,function(f) return cvalue[f] end)
 		return values
 	end
 	
@@ -201,11 +191,7 @@ end
 
 local function string_get_set(db,cmd,key,...)
 	local val = do_redis_command(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		c.value = val
-	end
-
+	cache[key] = nil
 	return val
 end
 
@@ -252,7 +238,7 @@ end
 local function set_pop(db,cmd,key,...)
 	local vals = do_redis_command(db,cmd,key,...)
 	local c = cache[key]
-	if c and vals and #vals > 0 then
+	if c and vals then
 		local cvalue = c.value
 		for _,v in pairs(vals) do
 			cvalue[tostring(v)] = nil
