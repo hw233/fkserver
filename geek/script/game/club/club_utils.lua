@@ -22,6 +22,7 @@ local player_money = require "game.lobby.player_money"
 local club_money = require "game.club.club_money"
 local club_commission = require "game.club.club_commission"
 local redisopt = require "redisopt"
+local g_util = require "util"
 
 local reddb = redisopt.default
 
@@ -58,17 +59,6 @@ function utils.level(club,level)
     return level
 end
 
-function utils.all_game_ids()
-	return table.series(channel.query(),function(_,item)
-		local id = string.match(item,"game.(%d+)")
-		if not id then return end
-		id = tonumber(id)
-		local sconf = serviceconf[id]
-		if not sconf.conf or not sconf.conf.private_conf then return end
-		return sconf.conf.first_game_type
-	end)
-end
-
 function utils.get_game_list(guid,club_id)
     local player = base_players[guid]
     if player then
@@ -77,7 +67,7 @@ function utils.get_game_list(guid,club_id)
 			return conf_games
         end
         
-		conf_games = utils.all_game_ids()
+		conf_games = g_util.alive_game_ids()
 		if conf_games and #conf_games > 0 then
 			return conf_games
 		end

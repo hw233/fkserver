@@ -6,6 +6,7 @@ local crypt = require "skynet.crypt"
 local channel = require "channel"
 local url = require "url"
 local redisopt = require "redisopt"
+local serviceconf = require "serviceconf"
 
 local reddb  = redisopt.default
 
@@ -94,6 +95,17 @@ function util.find_lightest_weight_game_server(first_game_type,second_game_type)
     if #scores > 0 then
         return tonumber(scores[1])
     end
+end
+
+function util.alive_game_ids()
+    return table.series(channel.query(),function(_,item)
+		local id = string.match(item,"game.(%d+)")
+		if not id then return end
+		id = tonumber(id)
+		local sconf = serviceconf[id]
+		if not sconf.conf or not sconf.conf.private_conf then return end
+		return sconf.conf.first_game_type
+	end)
 end
 
 return util

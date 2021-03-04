@@ -23,6 +23,7 @@ local club_money_type = require "game.club.club_money_type"
 require "functions"
 local runtime_conf = require "game.runtime_conf"
 local game_util = require "game.util"
+local g_util = require "util"
 
 local reddb = redisopt.default
 
@@ -1189,17 +1190,6 @@ function on_cs_request_sms_verify_code(msg,guid)
 	})
 end
 
-local function all_game_ids()
-	return table.series(channel.query(),function(_,item)
-		local id = string.match(item,"game.(%d+)")
-		if not id then return end
-		id = tonumber(id)
-		local sconf = serviceconf[id]
-		if not sconf.conf or not sconf.conf.private_conf then return end
-		return sconf.conf.first_game_type
-	end)
-end
-
 function on_cs_game_server_cfg(msg,guid)
 	local player = base_players[guid]
 	if player then
@@ -1212,7 +1202,7 @@ function on_cs_game_server_cfg(msg,guid)
 			return true
 		end
 
-		conf_games = all_game_ids()
+		conf_games = g_util.alive_game_ids()
 		if conf_games and table.nums(conf_games) > 0 then
 			log.dump(conf_games)
 			send2client_pb(guid,"SC_GameServerCfg",{
