@@ -2171,15 +2171,23 @@ function base_table:check_bankruptcy()
 end
 
 function base_table:is_bankruptcy(player)
+	if not self:is_private() then
+		return
+	end
+
 	local club = self.conf.club
 	if not club or club.type ~= enum.CT_UNION then
 		return
 	end
 
+	if not self.rule.union or not self.rule.union.min_score then
+		return
+	end
+
 	local money_id = self:get_money_id()
-	local limit = self:is_private() and self.rule.union and self.rule.union.min_score or 0
+	local limit = self.rule.union.min_score
 	local money = player_money[player.guid][money_id]
-	return money <= 0 or money < limit
+	return money < limit
 end
 
 --检查玩家是否是黑名单列表玩家，若是则返回true，否则返回false
