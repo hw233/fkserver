@@ -617,9 +617,12 @@ function base_room:kickout_room(player,reason)
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
 			guid,table_id,chair_id,reason)
+		-- double check,检查玩家已经退出了，还在执行kickout
 		if not table_id or not chair_id then
 			log.warning("base_room:kickout_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-			self:player_kickout_room(player)
+			if common.is_in_lobby() then
+				self:player_kickout_room(player)
+			end
 			return enum.GAME_SERVER_RESULT_SUCCESS
 		end
 
@@ -650,10 +653,12 @@ function base_room:kickout_server(player,reason)
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
 				guid,table_id,chair_id,reason)
-		
+		-- double check,检查已经退出了还在执行kickout
 		if not table_id or not chair_id then
 			log.warning("base_room:kickout_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-			self:player_kickout_server(player)
+			if common.is_in_lobby() then
+				self:player_kickout_server(player)
+			end
 			return enum.GAME_SERVER_RESULT_SUCCESS
 		end
 
