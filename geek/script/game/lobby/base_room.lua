@@ -247,9 +247,9 @@ function base_room:force_dismiss_table(table_id,reason)
 		return enum.ERROR_TABLE_NOT_EXISTS
 	end
 
-	tb:force_dismiss(enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
+	local result = tb:wait_force_dismiss(enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
 	
-	return enum.ERROR_NONE
+	return result or enum.ERROR_NONE
 end
 
 function base_room:request_dismiss_private_table(requester)

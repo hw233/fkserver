@@ -680,6 +680,10 @@ function base_table:notify_game_money()
 		}))
 end
 
+function base_table:wait_force_dismiss(reason)
+	return self:wait_interrupt_dismiss(reason)
+end
+
 function base_table:force_dismiss(reason)
 	self:interrupt_dismiss(reason)
 end
@@ -1332,6 +1336,33 @@ function base_table:id()
 	return self.private_id or self.table_id_
 end
 
+function base_table:wait_interrupt_dismiss(reason)
+	self.dismissing = true
+	-- 解散时，清理准备列表，避免游戏check_start再开始
+	self:clear_ready()
+	self:clear_dismiss_request()
+	local dreason = dismiss_reason[reason]
+	local co = coroutine.running()
+	local result = enum.ERROR_NONE
+	--防止玩家锁与桌子锁死锁
+	skynet.fork(function()
+		if self:gaming_round() > 0 then
+			self:on_final_game_overed(reason)
+		end
+
+		self:notify_dismiss(dreason)
+		for _,p in pairs(self.players) do
+			local r = p:force_exit(reason)
+			if r ~= enum.ERROR_NONE then
+				result = r
+			end
+		end
+		self.dismissing = nil
+		skynet.wakeup(co)
+	end)
+	skynet.wait(co)
+	return result
+end
 
 function base_table:interrupt_dismiss(reason)
 	self.dismissing = true
