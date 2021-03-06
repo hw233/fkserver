@@ -138,7 +138,7 @@ function on_sd_log_ext_game_round(msg)
     local player_round_sqls = table.series(guids or {},function(guid)
         return {
             "INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',%s);",
-            guid,round,now
+            guid,round,start_time
         }
     end)
 
