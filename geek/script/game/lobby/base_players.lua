@@ -10,6 +10,16 @@ local reddb = redisopt.default
 
 local unused_player_info_elapsed = 30
 
+local queue = require "skynet.queue"
+
+local infolock = setmetatable({},{
+	__index = function(t,guid)
+		local lock = queue()
+		t[guid] = lock
+		return lock
+	end,
+})
+
 local player_manager = {}
 
 setmetatable(player_manager,{
@@ -17,50 +27,41 @@ setmetatable(player_manager,{
         if type(guid) ~= "number" then
             return
         end
-		
-		local p = reddb:hgetall(string.format("player:info:%d",math.floor(guid)))
-		if not p then
-			return nil
-		end
+		return infolock[guid](function()
+			-- double check
+			local p = rawget(t,guid)
+			if p then
+				return p
+			end
 
-		p = table.nums(p) > 0 and p or nil
-		if p then
-			setmetatable(p,{__index = base_player})
-		end
+			p = reddb:hgetall(string.format("player:info:%d",math.floor(guid)))
+			if not p then
+				return nil
+			end
 
-		t[guid] = p
-		return p
+			p = table.nums(p) > 0 and p or nil
+			if p then
+				setmetatable(p,{__index = base_player})
+			end
+
+			t[guid] = p
+			return p
+		end)
 	end,
 })
 
-function player_manager.foreach(func)
-	for _, player in pairs(player_manager) do
-		func(player)
-	end
-end
-
--- 广播所有人消息
-function player_manager.broadcast2client_pb(msg_name, pb)
-	for guid, player in pairs(player_manager) do
-		if player.online then
-			send2client_pb(player, msg_name, pb)
-		end
-	end
-end
-
 timermgr:loop(unused_player_info_elapsed,function()
-	for guid,info in pairs(player_manager) do
-		if type(guid) == "number" then
-			info:lockcall(function() 
-				if 	not info.online and 
-					not info.table_id and 
-					not info.chair_id 
-				then
-					log.info("clean unused player info %s",guid)
-					player_manager[guid] = nil
-				end
-			end)
-		end
+	for guid,p in pairs(player_manager) do
+		p:lockcall(function()
+			if 	not p.online and 
+				not p.table_id and 
+				not p.chair_id 
+			then
+				log.info("clean unused player info %s",guid)
+				player_manager[guid] = nil
+				infolock[guid] = nil 
+			end
+		end)
 	end
 end)
 
