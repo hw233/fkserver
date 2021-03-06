@@ -99,6 +99,68 @@ function on_sd_log_ext_game_round_end(msg)
     end
 end
 
+function on_sd_log_ext_game_round(msg)
+    local guids = msg.guids
+    local round = msg.ext_round
+    local table_id = msg.table_id
+    local club = msg.club
+    local template = msg.template
+    local game_id = msg.game_id
+    local game_name = msg.game_name
+    local rule = msg.rule
+    local round_log = msg.log
+    local balance = round_log.balance
+    local start_time = msg.start_time
+    local end_time = msg.end_time
+
+    log.dump(msg)
+    
+    local now = os.time()
+    local ret = dbopt.log:query([[
+            INSERT INTO t_log_round(round,table_id,club,template,game_id,game_name,rule,log,start_time,end_time,create_time) 
+            VALUES('%s',%s,%s,%s,%s,'%s','%s','%s',%s,%s,UNIX_TIMESTAMP());
+            ]],
+            round,
+            table_id,
+            club or 'NULL',
+            template or "NULL",
+            game_id or 'NULL',
+            game_name or "",
+            rule and json.encode(rule) or "",
+            round_log and json.encode(round_log) or "",
+            start_time,end_time
+        )
+    if ret.errno then
+        log.error("INSERT INTO t_log_round error:%s:%s",ret.errno,ret.err)
+        return
+    end
+
+    local player_round_sqls = table.series(guids or {},function(guid)
+        return {
+            "INSERT IGNORE INTO t_log_player_round(guid,round,create_time) VALUES(%s,'%s',%s);",
+            guid,round,now
+        }
+    end)
+
+    ret = dbopt.log:batchquery(player_round_sqls)
+    if ret.errno then
+        log.error("INSERT INTO t_log_player_round error:%s:%s",ret.errno,ret.err)
+        return
+    end
+
+    local round_money_sqls = table.series(balance or {},function(money,guid)
+        return {
+            "INSERT INTO t_log_round_money(round,guid,money,create_time) VALUES('%s',%s,%s,%s);",
+            round,guid,money,now
+        }
+    end)
+
+    local ret = dbopt.log:batchquery(round_money_sqls)
+    if ret.errno then
+        log.error('INSERT INTO t_log_round_money error:%s',ret.err)
+    end
+end
+
 function on_sd_log_ext_game_round_player_join(msg)
     local guid = msg.guid
     local round = msg.ext_round

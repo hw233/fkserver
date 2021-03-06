@@ -48,23 +48,11 @@ function MSG.SS_GameRoundEnd(msg)
     local game_id = msg.game_id
     local balance = msg.log.balance
     local club = msg.club
-    local round = msg.ext_round
+    local start_time = msg.start_time
 
     local maxguid,maxmoney = table.max(balance)
     local logdb = dbopt.log
 
-    local res = logdb:query("SELECT * FROM t_log_round WHERE round = '%s';",round)
-    if res.errno then
-        log.error("%s",res.err)
-        return
-    end
-
-    if not res[1] or not res[1].start_time then
-        log.error("SS_GameRoundEnd query start time got nil,round:%s",round)
-        return
-    end
-
-    local start_time = res[1].start_time
     local date = timestamp_date(tonumber(start_time))
 
     if maxmoney > 0 then

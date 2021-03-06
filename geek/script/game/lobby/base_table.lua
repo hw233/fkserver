@@ -959,7 +959,7 @@ end
 
 function  base_table:save_game_log(gamelog)
 	log.info("==============================base_table:save_game_log")
-	log.info("%s",json.encode(gamelog or {}))
+	-- log.info("%s",json.encode(gamelog or {}))
 	local nMsg = {
 		game_id = def_first_game_type,
 		game_name = def_game_name,
@@ -2023,31 +2023,7 @@ function base_table:on_process_start(player_count)
 
 	self:clear_trustee_status()
 
-	local private_table = base_private_table[self.private_id]
-	if not private_table then 
-		log.warning("base_table:on_process_start [%d] got nil private table.",self.private_id)
-	end
-
-	local club_id = private_table.club_id
-	if not club_id then
-		log.warning("base_table:on_process_start [%d] got private club.",self.private_id)
-	end
-
-	local template_id = private_table.template
-	if not template_id then
-		log.warning("base_table:on_process_start [%d] got nil template.",self.private_id)
-	end
-
-	channel.publish("db.?","msg","SD_LogExtGameRoundStart",{
-		club = club_id,
-		template = template_id,
-		game_id = def_first_game_type,
-		game_name = def_game_name,
-		ext_round = self.ext_round_id,
-		guids = table.series(self.players,function(p) return p.guid end),
-		table_id = self.private_id,
-		rule = self.rule,
-	})
+	self.ext_round_start_time = os.time()
 end
 
 function base_table:on_process_over(reason,l)
@@ -2087,9 +2063,14 @@ function base_table:on_process_over(reason,l)
 		guids = table.series(self.players,function(p) return p.guid end),
 		table_id = self.private_id,
 		log = l,
+		rule = self.rule,
+		start_time = self.ext_round_start_time,
+		end_time = os.time(),
 	}
 
-	channel.publish("db.?","msg","SD_LogExtGameRoundEnd",msg)
+	self.ext_round_start_time = nil
+
+	channel.publish("db.?","msg","SD_LogExtGameRound",msg)
 	channel.publish("statistics.?","msg","SS_GameRoundEnd",msg)
 
 	self.ext_round_status = EXT_ROUND_STATUS.END

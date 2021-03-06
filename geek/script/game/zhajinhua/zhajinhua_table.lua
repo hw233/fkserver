@@ -2041,12 +2041,12 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 			})
 		end
 
-		if self:is_round_gaming() then
-			channel.publish("db.?","msg","SD_LogExtGameRoundPlayerJoin",{
-				guid = player.guid,
-				ext_round = self.ext_round_id,
-			})
-		end
+		-- if self:is_round_gaming() then
+		-- 	channel.publish("db.?","msg","SD_LogExtGameRoundPlayerJoin",{
+		-- 		guid = player.guid,
+		-- 		ext_round = self.ext_round_id,
+		-- 	})
+		-- end
 	end
 
 	self:sync_kickout_no_ready_timer(player)
