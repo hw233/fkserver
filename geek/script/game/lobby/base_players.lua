@@ -54,13 +54,7 @@ setmetatable(mgr,{
 
 local readwriter = setmetatable({},{
 	__index = function(_,guid)
-		local p = mgr[guid]
-		if not p then return end
-		-- double check,检测获取过程中已经被清除掉
-		return p:lockcall(function()
-			local test = mgr[guid]
-			return p == test and p or test
-		end)
+		return mgr[guid]
 	end,
 	__newindex = function(_,guid,v)
 		if v == nil then
