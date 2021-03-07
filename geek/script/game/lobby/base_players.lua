@@ -20,14 +20,15 @@ local infolock = setmetatable({},{
 	end,
 })
 
-local player_manager = {}
+local mgr = {}
 
-setmetatable(player_manager,{
+setmetatable(mgr,{
 	__index = function(t,guid)
         if type(guid) ~= "number" then
             return
         end
-		return infolock[guid](function()
+		local lock = infolock[guid]
+		return lock(function()
 			-- double check
 			local p = rawget(t,guid)
 			if p then
@@ -50,19 +51,36 @@ setmetatable(player_manager,{
 	end,
 })
 
+
+local readwriter = setmetatable({},{
+	__index = function(_,guid)
+		local p = mgr[guid]
+		-- double check,检测获取过程中已经被清除掉
+		return p:lockcall(function()
+			local test = mgr[guid]
+			return p == test and p or test
+		end)
+	end,
+	__newindex = function(_,guid,v)
+		if v == nil then
+			mgr[guid] = nil
+			infolock[guid] = nil
+		end
+	end
+})
+
 timermgr:loop(unused_player_info_elapsed,function()
-	for guid,p in pairs(player_manager) do
+	for guid,p in pairs(mgr) do
 		p:lockcall(function()
 			if 	not p.online and 
 				not p.table_id and 
 				not p.chair_id 
 			then
 				log.info("clean unused player info %s",guid)
-				player_manager[guid] = nil
-				infolock[guid] = nil 
+				readwriter[guid] = nil
 			end
 		end)
 	end
 end)
 
-return player_manager
+return readwriter
