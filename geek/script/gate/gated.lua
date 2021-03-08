@@ -188,6 +188,12 @@ function CMD.start(conf)
         local msgid,str = netmsgopt.unpack(msgstr)
         local msg = netmsgopt.decode(msgid,str)
         local msgname = netmsgopt.msgname(msgid)
+
+        if not msgname then
+            log.error("gated.dispatch got nil msgname,msgid:%s,msgname:%s",msgid,msgname)
+            return
+        end
+
         if msgname ~= "CS_HeartBeat" then
             log.info("gated.dispatch %s,guid:%s,fd:%s",msgname,u and u.guid,fd)
             log.dump(msg)

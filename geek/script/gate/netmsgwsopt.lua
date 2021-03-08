@@ -64,7 +64,7 @@ end
 function NETMSG.decode(msgid,msgstr)
     local m = msgidmap[msgid]
     if not m then
-        log.error("unkown msgid to decode.")
+        log.error("unkown msgid to decode %s.",msgid)
         return nil
     end
 
@@ -74,7 +74,7 @@ end
 function NETMSG.encode(msgid,msg)
     local m = msgidmap[msgid]
     if not m then
-        log.error("unkown msgid to encode.")
+        log.error("unkown msgid to encode %s.",msgid)
         return nil
     end
 

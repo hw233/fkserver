@@ -7,10 +7,11 @@ local netmsgopt = setmetatable({},{
         local netmsg
         if tolower(protocol) == "ws" then
             netmsg =  require "gate.netmsgwsopt"
-            t[protocol] = netmsg
         else
             netmsg = require "gate.netmsgrawopt"
         end
+
+        t[protocol] = netmsg
 
         return netmsg
     end
