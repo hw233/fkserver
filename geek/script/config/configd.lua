@@ -1,27 +1,29 @@
 local skynet = require "skynetproto"
 local dbopt = require "dbopt"
-local msgopt = require "msgopt"
-local channel = require "channel"
 local bootconf = require "conf.boot"
 local log = require "log"
 local json = require "json"
 require "functions"
 local redisopt = require "redisopt"
-local enum = require "pb_enums"
 local g_common = require "common"
+local timer = require "timer"
 
-local reddb = redisopt.default
+local cache_elapsed_time = 10
 
 LOG_NAME = "config"
 
 local globalconf = {}
 
-
 local online_service = {}
+
+local function cache(tb,conf,id)
+    id = id or conf.id
+    tb[id] = conf
+end
 
 local function load_service_cfg(id)
     local sql = "SELECT * FROM t_service_cfg WHERE is_launch != 0"
-    if id then
+    if id and id ~= "*" then
         sql = sql .. string.format(" AND id = %s",id)
     end
     local confs = dbopt.config:query(sql)
@@ -44,14 +46,21 @@ local services = setmetatable({},{
             return
         end
 
-        t[id] = confs[1]
+        if not id or id == "*" then
+            for _,conf in pairs(confs) do
+                cache(t,conf)
+            end
+            return confs
+        end
+
+        cache(t,confs[1],id)
         return confs[1]
     end
 })
 
 local function load_cluster_cfg(id)
     local sql = "SELECT * FROM t_cluster_cfg WHERE is_launch != 0"
-    if id then
+    if id and id ~= "*" then
         sql = sql .. string.format(" AND id = %s",id)
     end
     local confs = dbopt.config:query(sql)
@@ -69,14 +78,22 @@ local clusters = setmetatable({},{
             return
         end
 
-        t[id] = confs[1]
+        if not id or id == "*" then
+            for _,conf in pairs(confs) do
+                cache(t,conf)
+            end
+            return confs
+        end
+
+        cache(t,confs[1],id)
+
         return confs[1]
     end
 })
 
 local function load_redis_cfg(id)
     local sql = "SELECT * FROM t_redis_cfg"
-    if id then
+    if id and id ~= "*" then
         sql = sql .. string.format(" WHERE id = %s",id)
     end
     local r = dbopt.config:query(sql)
@@ -90,14 +107,21 @@ local redises = setmetatable({},{
             return
         end
 
-        t[id] = confs[1]
+        if not id or id == "*" then
+            for _,conf in pairs(confs) do
+                cache(t,conf)
+            end
+            return confs
+        end
+
+        cache(t,confs[1],id)
         return confs[1]
     end
 })
 
 local function load_db_cfg(id)
     local sql = "SELECT * FROM t_db_cfg"
-    if id then
+    if id and id ~= "*" then
         sql = sql .. string.format(" WHERE id = %s OR name = %s",id,id)
     end
 
@@ -112,7 +136,15 @@ local dbs = setmetatable({},{
             return
         end
 
-        t[id] = confs[1]
+        if not id or id == "*" then
+            for _,conf in pairs(confs) do
+                cache(t,conf)
+            end
+            return confs
+        end
+
+        cache(t,confs[1],id)
+
         return confs[1]
     end
 })
@@ -157,57 +189,18 @@ function MSG.query_php_sign()
 end
 
 function MSG.query_service_conf(id)
-    if not id then return services end
-
     return services[id]
 end
 
 function MSG.query_cluster_conf(id)
-    if not id then return clusters end
-
     return clusters[id]
 end
 
-function MSG.cluster_launch(id)
-    if not id then return end
-
-    dbopt.config:query("UPDATE t_server_cfg SET launched = 1 WHERE id = %d;",id)
-    channel.publish("*.*","lua","cluster_launch",id)
-end
-
-function MSG.cluster_exit(id)
-    if not id then return end
-
-    dbopt.config:query("UPDATE t_server_cfg SET launched = 0 WHERE id = %d;",id)
-    channel.publish("*.*","lua","cluster_exit",id)
-end
-
-function MSG.service_launch(id)
-    if not id then return end
-
-    dbopt.config:query("UPDATE t_service_cfg SET launched = 1 WHERE id = %d;",id)
-    online_service[id] = true
-    channel.publish("*.*","lua","service_launch",id)
-end
-
-function MSG.service_exit(id)
-    if not id then return end
-
-    dbopt.config:query("UPDATE t_service_cfg SET launched = 0 WHERE id = %d;",id)
-    online_service[id] = nil
-    channel.publish("*.*","lua","service_exit",id)
-end
-
 function MSG.query_database_conf(id)
-    log.info("MSG.query_database_conf %s",id)
-    if not id then return dbs end
-
     return dbs[id]
 end
 
 function MSG.query_redis_conf(id)
-    if not id then return redises end
-
     return redises[id]
 end
 
@@ -244,6 +237,7 @@ function CMD.start(conf)
 end
 
 local function clean_when_start()
+    local reddb = redisopt.default
     local key_patterns = {"table:player:*","player:table:*","table:info:*","club:table:*","player:online:*","sms:verify_code:*"}
     for _,pattern in pairs(key_patterns) do
 		local keys = reddb:keys(pattern)
@@ -255,9 +249,34 @@ local function clean_when_start()
 end
 
 local function setup_default_redis_value()
+    local reddb = redisopt.default
     local global_conf = globalconf
     local first_guid = global_conf.first_guid or 100001
     reddb:setnx("player:global:guid",math.floor(first_guid))
+end
+
+local function clean_cache()
+    for id,conf in pairs(services) do
+        log.info("clean service cache id:%s,name:%s",id,conf.name)
+        services[id] = nil
+    end
+
+    for id,conf in pairs(clusters) do
+        log.info("clean cluster cache id:%s,name:%s",id,conf.name)
+        clusters[id] = nil
+    end
+
+    for id,conf in pairs(redises) do
+        log.info("clean redis cache id:%s,name:%s",id,conf.name)
+        redises[id] = nil
+    end
+
+    for id,conf in pairs(dbs) do
+        log.info("clean db cache id:%s,name:%s",id,conf.name)
+        dbs[id] = nil
+    end
+
+    timer.timeout(cache_elapsed_time,clean_cache)
 end
 
 skynet.start(function()
@@ -272,33 +291,25 @@ skynet.start(function()
         skynet.retpack(f(...))
 	end)
 
-    msgopt.register_handle(MSG)
     skynet.dispatch("msg",function(_,_,cmd,...)
-        skynet.retpack(msgopt.on_msg(cmd,...))
+        local f = MSG[cmd]
+        if not f then
+            log.error("unknow msg:%s",cmd)
+            skynet.retpack(nil)
+            return
+        end
+
+        skynet.retpack(f(...))
 	end)
 
     dbopt.open(bootconf.service.conf.db)
 
-    for _,s in pairs(load_service_cfg()) do
-        services[s.id] = s
-    end
-
-    for _,c in pairs(load_cluster_cfg()) do
-        clusters[c.id] = c
-    end
-
-    for _,d in pairs(load_db_cfg()) do
-        dbs[d.name] = d
-    end
-
-    for _,r in pairs(load_redis_cfg()) do
-        redises[r.id] = r
-    end
-
     load_global()
 
-    skynet.timeout(0,function()
+    timer.timeout(0,function()
         clean_when_start()
         -- setup_default_redis_value()
     end)
+
+    timer.timeout(cache_elapsed_time,clean_cache)
 end)
