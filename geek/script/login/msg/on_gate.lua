@@ -4,8 +4,6 @@ local channel = require "channel"
 local onlineguid = require "netguidopt"
 local skynet = require "skynetproto"
 local log = require "log"
-local json = require "json"
-local serviceconf = require "serviceconf"
 local base_players = require "game.lobby.base_players"
 local enum = require "pb_enums"
 local util = require "util"
@@ -13,6 +11,7 @@ local player_money = require "game.lobby.player_money"
 require "functions"
 require "login.msg.runtime"
 local runtime_conf = require "game.runtime_conf"
+local g_common = require "common"
 
 local reddb = redisopt.default
 
@@ -89,7 +88,7 @@ local function reg_account(msg)
 
         local p = base_players[guid]
 
-        if util.is_in_maintain() and not p:is_vip() then
+        if g_common.is_in_maintain() and not p:is_vip() then
             return enum.LOGIN_RESULT_MAINTAIN
         end
 
@@ -582,14 +581,14 @@ function on_cl_login(msg,gate,session_id)
         return info,game_id
     end
 
-    if util.is_in_maintain() and not is_player_vip(info) then
+    if g_common.is_in_maintain() and not is_player_vip(info) then
         return {
             result = enum.LOGIN_RESULT_MAINTAIN
         }
     end
 
     -- 找一个默认大厅服务器
-    game_id = util.find_lightest_weight_game_server(1)
+    game_id = g_common.find_lightest_weight_game_server(1)
     if not game_id then
         log.warning("no default lobby")
         return {
@@ -672,7 +671,7 @@ function on_cl_reg_account(msg,gate)
     log.info("[%s] reg account, guid = %d ,platform_id = %s", info.account, info.guid,info.platform_id)
 
     -- 找一个默认大厅服务器
-    local gameid = util.find_lightest_weight_game_server(1)
+    local gameid = g_common.find_lightest_weight_game_server(1)
     if not gameid then
         log.warning("no default lobby")
         return {

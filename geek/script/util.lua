@@ -5,10 +5,7 @@ local md5 = require "md5.core"
 local crypt = require "skynet.crypt"
 local channel = require "channel"
 local url = require "url"
-local redisopt = require "redisopt"
 local serviceconf = require "serviceconf"
-
-local reddb  = redisopt.default
 
 require "functions"
 
@@ -79,22 +76,6 @@ function util.request_share_params(sid)
 
     local _,param = pcall(json.decode,sharerance.param)
     return param
-end
-
-function util.is_in_maintain()
-    local v = reddb:get("runtime_conf:global:maintain_switch")
-    return (v and v == "true") and true or nil
-end
-
-function util.find_lightest_weight_game_server(first_game_type,second_game_type)
-    local key = second_game_type and 
-        string.format("player:online:count:%d:%d",first_game_type,second_game_type) or 
-        string.format("player:online:count:%d",first_game_type)
-
-    local scores = reddb:zrangebyscore(key,"-inf","+inf","LIMIT","0","1")
-    if #scores > 0 then
-        return tonumber(scores[1])
-    end
 end
 
 function util.alive_game_ids()

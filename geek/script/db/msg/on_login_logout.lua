@@ -1,7 +1,6 @@
 -- 玩家数据消息处理
 local log = require "log"
 local dbopt = require "dbopt"
-local redisopt = require "redisopt"
 local json = require "json"
 local enum = require "pb_enums"
 local queue = require "skynet.queue"

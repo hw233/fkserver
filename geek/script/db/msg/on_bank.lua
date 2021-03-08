@@ -1,14 +1,11 @@
 -- 银行消息处理
 local dbopt = require "dbopt"
-local redisopt = require "redisopt"
 local httpc = require "http.httpc"
 local httpurl = require "http.url"
 local md5 = require "md5"
 local log = require "log"
 local enum = require "pb_enums"
 local channel = require "channel"
-
-local reddb = redisopt.default
 
 -- 设置银行密码
 function on_sd_bank_set_password(msg)

@@ -4,6 +4,7 @@ local redisopt = require "redisopt"
 local base_players = require "game.lobby.base_players"
 local log = require "log"
 local util = require "util"
+local g_common = require "common"
 
 local reddb  = redisopt.default
 
@@ -13,7 +14,7 @@ local table = table
 local common = {}
 
 function common.find_best_room(first_game_type,second_game_type)
-	return util.find_lightest_weight_game_server(first_game_type,second_game_type)
+	return g_common.find_lightest_weight_game_server(first_game_type,second_game_type)
 end
 
 function common.switch_to(guid,room_id)

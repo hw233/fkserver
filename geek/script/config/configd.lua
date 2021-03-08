@@ -8,7 +8,7 @@ local json = require "json"
 require "functions"
 local redisopt = require "redisopt"
 local enum = require "pb_enums"
-local util = require "util"
+local g_common = require "common"
 
 local reddb = redisopt.default
 
@@ -224,7 +224,7 @@ function MSG.query_online_game_conf(game_type,room_type)
 end
 
 function MSG.maintain()
-    return util.is_in_maintain()
+    return g_common.is_in_maintain()
 end
 
 local sconf

@@ -13,7 +13,7 @@ local player_money = require "game.lobby.player_money"
 local club_money = require "game.club.club_money"
 local club_notice = require "game.notice.club_notice"
 local base_notices = require "game.notice.base_notices"
-local util = require "util"
+local g_common = require "common"
 require "functions"
 
 collectgarbage("setpause", 100)
@@ -88,7 +88,7 @@ local function recharge_player(guid,money_id,amount,money,comment,operator)
             operator = operator,
         })
     else
-        local server = util.find_lightest_weight_game_server(1)
+        local server = g_common.find_lightest_weight_game_server(1)
         if not server then
             return {
                 errcode = error.SERVER_ERROR,
