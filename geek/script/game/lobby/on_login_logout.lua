@@ -2,9 +2,7 @@
 local common = require "game.common"
 require "game.net_func"
 
-local base_player = require "game.lobby.base_player"
 local base_players = require "game.lobby.base_players"
-local base_emails = require "game.lobby.base_emails"
 
 require "game.lobby.base_android"
 
@@ -24,6 +22,7 @@ require "functions"
 local runtime_conf = require "game.runtime_conf"
 local game_util = require "game.util"
 local g_util = require "util"
+local base_rule = require "game.lobby.base_rule"
 
 local reddb = redisopt.default
 
@@ -551,59 +550,6 @@ function on_ss_change_game(guid)
 	log.info("on_ss_change_game change step login notify,guid=%s", player.guid)
 end
 
-local function check_pay_option(option)
-	local pay_option_all = {
-		[enum.PAY_OPTION_BOSS] = true,
-		[enum.PAY_OPTION_AA] = true,
-		[enum.PAY_OPTION_ROOM_OWNER] = true,
-	}
-
-	return option ~= nil and pay_option_all[option]
-end
-
-local function check_money_type(money_type)
-	local money_type_all = {
-		[enum.ITEM_PRICE_TYPE_GOLD] = true,
-		[enum.ITEM_PRICE_TYPE_ROOM_CARD] = true,
-	}
-
-	return money_type ~= nil and money_type_all[money_type]
-end
-
-local function get_chair_count(option)
-	local gameconf = g_room.conf
-	return gameconf.private_conf.chair_count_option[option]
-end
-
-local function get_play_round(option)
-	local gameconf = g_room.conf
-	return gameconf.private_conf.round_count_option[option]
-end
-
-local function check_rule(rule)
-	local chair_count = get_chair_count(rule.room.player_count_option + 1)
-	if not chair_count then
-		return enum.ERROR_PARAMETER_ERROR
-	end
-
-	local play_round = get_play_round(rule.round.option + 1)
-	if not play_round then
-		return enum.ERROR_PARAMETER_ERROR
-	end
-
-	local pay_option = rule.pay.option
-	if not check_pay_option(pay_option) then
-		return enum.ERROR_PARAMETER_ERROR
-	end
-
-	local money_type = rule.pay.money_type
-	if not check_money_type(money_type) then
-		return enum.ERROR_PARAMETER_ERROR
-	end
-
-	return enum.ERROR_NONE,play_round,chair_count,pay_option,money_type
-end
-
 function on_cs_create_private_room(msg,guid,game_id)
 	local game_type = msg.game_type
     local club_id = msg.club_id
@@ -706,7 +652,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 
 		log.dump(rule)
 
-		local result,round,chair_count,pay_option,_ = check_rule(rule)
+		local result,round,chair_count,pay_option,_ = base_rule.check(rule)
 		if result ~= enum.ERROR_NONE  then
 			onlineguid.send(guid,"SC_CreateRoom",{
 				result = result,
@@ -943,7 +889,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 		end
 
 		local rule = private_table.rule
-		local result,_,chair_count,pay_option,_ = check_rule(rule)
+		local result,_,chair_count,pay_option,_ = base_rule.check(rule)
 		if result ~= enum.ERROR_NONE  then
 			onlineguid.send(guid,"SC_JoinRoom",{
 				result = result,
