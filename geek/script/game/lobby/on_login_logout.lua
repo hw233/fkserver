@@ -820,7 +820,7 @@ function on_cs_reconnect(guid)
 		return
 	end
 	
-	result = tb:player_sit_down(player, chair_id,true)
+	local result = tb:player_sit_down(player, chair_id,true)
 	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 		log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
 			table_id,guid,chair_id,result)
