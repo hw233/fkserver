@@ -229,9 +229,10 @@ function zhajinhua_table:on_started(player_count)
 		total_round = self.conf.round,
 	})
 
-	log.info("game start ID =%s   guid=%s   timeis:%s", self.table_id_, 
-		table.concat(table.series(self.players,function(p) return p.guid end),","), 
-		os.date("%y%m%d%H%M%S"))
+	log.info("game start ID =%s   guid=%s", self.table_id_, 
+		table.concat(table.series(self.players,function(p) return p.guid end),","))
+	
+	log.dump(self.players,string.format("zhajinhua_table:on_started_%s",self:id()),2)
 
 	self:deal_cards()
 	self:first_turn(self.banker)
@@ -436,7 +437,9 @@ function zhajinhua_table:deal_cards()
 end
 
 function zhajinhua_table:ding_zhuang(winner)
-	return winner and winner.chair_id or self.conf.owner.chair_id
+	local banker = winner and winner.chair_id or self.conf.owner.chair_id
+	log.info("zhajinhua_table:ding_zhuang banker:%s",banker)
+	return banker
 end
 
 function zhajinhua_table:on_private_dismissed(reason)
@@ -586,7 +589,7 @@ end
 
 function zhajinhua_table:first_turn(banker_chair)
 	local reamin = table.sum(self.gamers,function(p) return (not p.death and not p.all_in) and 1 or 0 end)
-	log.info("---------------------------------first_turn %s", reamin)
+	log.info("zhajinhua_table:first_turn table_id:%s,first_turn %s,banker:%s", self:id(),reamin,banker_chair)
 	local c = banker_chair
 	local p
 	repeat
@@ -598,7 +601,7 @@ function zhajinhua_table:first_turn(banker_chair)
 		p = self.gamers[c]
 	until (p and not p.death and not p.all_in)
 	self.cur_chair = c
-	log.info("---------------------------------first_turn end,turn:%s",c )
+	log.info("zhajinhua_table:first_turn table_id:%s first_turn end,turn:%s",self:id(),c)
 	self:start_player_turn(c)
 end
 
