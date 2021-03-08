@@ -364,17 +364,17 @@ function on_cs_change_game(msg,guid)
 		return
 	end
 
-	log.info("game_switch [%d] player.guid[%d] player.vip[%d]",game_switch,player.guid,player.vip)
-	if  game_switch == 1 then --游戏进入维护阶段
-		if player.vip ~= 100 then	
-			onlineguid.send(player, "SC_GameMaintain", {
-				result = enum.GAME_SERVER_RESULT_MAINTAIN,
-			})
-			player:async_force_exit()
-			log.warning("GameServer will maintain,exit")
-			return
-		end
-	end
+	-- log.info("game_switch [%d] player.guid[%d] player.vip[%d]",game_switch,player.guid,player.vip)
+	-- if  game_switch == 1 then --游戏进入维护阶段
+	-- 	if player.vip ~= 100 then	
+	-- 		onlineguid.send(player, "SC_GameMaintain", {
+	-- 			result = enum.GAME_SERVER_RESULT_MAINTAIN,
+	-- 		})
+	-- 		player:async_force_exit()
+	-- 		log.warning("GameServer will maintain,exit")
+	-- 		return
+	-- 	end
+	-- end
 
 	if msg.private_room_opt == 1 and not check_private_table_chair(msg.private_room_chair_count) then
 		onlineguid.send(player, "SC_EnterRoomAndSitDown", {
@@ -551,6 +551,7 @@ function on_ss_change_game(guid)
 end
 
 function on_cs_create_private_room(msg,guid,game_id)
+	log.info("on_cs_create_private_room guid:%s,from:%s",guid,game_id)
 	local game_type = msg.game_type
     local club_id = msg.club_id
 	local rule = msg.rule
@@ -639,7 +640,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 				return
 			end
 
-			channel.publish("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid,def_game_id)
+			channel.call("game."..tostring(room_id),"msg","CS_CreateRoom",msg,guid,def_game_id)
 			return
 		end
 
@@ -818,6 +819,7 @@ end
 
 -- 加入私人房间
 function on_cs_join_private_room(msg,guid,game_id)
+	log.info("on_cs_join_private_room guid:%s,from:%s",guid,game_id)
 	local player = base_players[guid]
 
 	player:lockcall(function()
@@ -851,12 +853,10 @@ function on_cs_join_private_room(msg,guid,game_id)
 			return enum.ERROR_TABLE_NOT_EXISTS
 		end
 
-
 		if def_game_id ~= room_id then
 			onlineguid[guid] = nil
 
-			channel.publish("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid,def_game_id)
-			base_players[guid] = nil
+			channel.call("game."..tostring(room_id),"msg","CS_JoinRoom",msg,guid,def_game_id)
 			return
 		end
 
