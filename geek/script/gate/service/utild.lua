@@ -12,24 +12,12 @@ local geodb_path = "./geek/script/data/GeoLite2-City.mmdb"
 
 local CMD = {}
 
-function CMD.request_sms(guid_or_session)
-    
-end
-
 function CMD.get_rsa_public_key()
     -- return rsa.parse(rsa_public_key).n
 end
 
 function CMD.rsa_decrypt(s)
     -- return rsa.decrypt(rsa_pri_key,s)
-end
-
-function CMD.request_sms(who)
-    
-end
-
-function CMD.verify_sms(who,telephone,sms)
-
 end
 
 function CMD.geo_lookup(ip)
