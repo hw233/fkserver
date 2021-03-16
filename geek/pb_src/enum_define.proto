@@ -177,15 +177,6 @@ enum GAME_SERVER_RESULT {
 	GAME_SERVER_RESULT_WAIT_LATER = 75;	//等待
 }
 
-// GM命令机器人操作
-enum GM_ANDROID_OPT {
-	GM_ANDROID_NIL  = 0;
-	GM_ANDROID_ADD_ACTIVE = 1;								// 加主动机器人
-	GM_ANDROID_SUB_ACTIVE = 2;								// 减主动机器人
-	GM_ANDROID_ADD_PASSIVE = 3;								// 加被动机器人
-	GM_ANDROID_SUB_PASSIVE = 4;								// 减被动机器人
-}
-
 // 钱log操作类型
 enum LOG_MONEY_OPT_TYPE {
 	LOG_MONEY_OPT_TYPE_NIL  = 0;
@@ -259,80 +250,6 @@ enum GAME_READY_MODE {
 	GAME_READY_MODE_NONE = 1;								// 不需要准备
 	GAME_READY_MODE_ALL = 2;                                // 全部准备才开始
 	GAME_READY_MODE_PART = 3;                               // 只要两个人准备就开始
-}
-
-// 支付宝绑定结果
-enum GAME_BAND_ALIPAY {
-	GAME_BAND_ALIPAY_SUCCESS = 0;							// 操作成功
-	GAME_BAND_ALIPAY_CHECK_ERROR = 1;						// 检查错误
-	GAME_BAND_ALIPAY_REPEAT_BAND = 2;					    // 已经绑定
-	GAME_BAND_ALIPAY_DB_ERROR = 3;						    // 插入错误	
-}
-
-enum GMmessageRetCode {
-	GMmessageRetCode_SocketConnectFail 				=0;			//服务器连接失败
-	GMmessageRetCode_Success 						=1;			//成功
-	GMmessageRetCode_GmCommandError					=2;			//gmCommand 命令关键字错误Error
-	GMmessageRetCode_GmParamMiss 					=3;			//gmCommand 命令参数不全
-	GMmessageRetCode_MsgPlayerOffline 				=101;		//消息中入库成功但玩家不在线
-	GMmessageRetCode_MsgDBFaild 					=102;		//消息中入库失败
-	GMmessageRetCode_MsgGameIdnoFind 				=103;		//未找到游戏id
-	GMmessageRetCode_MsgGateDataError 				=104;		//Gate数据解包错误
-	GMmessageRetCode_Msgnofindsession 				=105;		//gate服没找到玩家session
-	GMmessageRetCode_MsgParamMiss					=106;		//消息参数不全
-	GMmessageRetCode_MsgTypeError					=107;		//类型错误
-	GMmessageRetCode_FBParamMiss					=121;		//反馈参数不全
-	GMmessageRetCode_FBPlayerOffline				=122;		//反馈 玩家不在线
-	GMmessageRetCode_FBGateDataError 				=123;		//Gate数据解包错误
-	GMmessageRetCode_DelMsgDBError   				=125;		//删除数据操作失败
-	GMmessageRetCode_ATMoneyParamError 				=130;		//金钱判断错误
-	GMmessageRetCode_ATGameServerNofindPlayer 		=131;		//游戏服未找到对就玩家
-	GMmessageRetCode_ATNotEnoughMoney 				=132;		//扣减时玩家银行金钱不足
-	GMmessageRetCode_ATJudgmentPlayerOnlineError 	=133;		//玩家在线判断出错
-	GMmessageRetCode_ATDB_NoFind_Player 			=134;		//数据库中未找到玩家记录
-	GMmessageRetCode_ATDB_NotData    				=135;		//操作数据库存储过程无data返回
-	GMmessageRetCode_ATChangMoney_DB_Error 			=136;		//数据库报错
-	GMmessageRetCode_ATCantTransfer     			=137;		//AT无转账功能
-	GMmessageRetCode_ATnofindUser        			=138;		//查无此人
-
-	GMmessageRetCode_ATtypeError					=140;		//转账类型错误
-	GMmessageRetCode_PLGameServerNofindPlayer 		=141;		//游戏服未找到对就玩家
-	GMmessageRetCode_PLNotEnoughMoney 				=142;		//扣减时玩家银行金钱不足
-	GMmessageRetCode_PLJudgmentPlayerOnlineError 	=143;		//玩家在线判断出错
-	GMmessageRetCode_PLDB_NoFind_Player 			=144;		//数据库中未找到玩家记录
-	GMmessageRetCode_PLDB_NotData     				=145;		//操作数据库存储过程无data返回
-	GMmessageRetCode_PLChangMoney_DB_Error 			=146;		//数据库报错
-	GMmessageRetCode_PLCantTransfer     			=147;		//PL无转账功能
-	GMmessageRetCode_PLnofindUser        			=148;		//查无此人
-	GMmessageRetCode_AT_PL_onePlayer				=149;		//代理商 与 玩家 是同一人
-    GMmessageRetCode_PL_ISAgent     				=150;		//玩家 是 代理商身份
-	GMmessageRetCode_EditAliPayFail  				= 160;		//修改支付宝信息 失败
-	
-	GMmessageRetCode_FreezeAccountOnLineFaild       = 165;		//玩家封号入库成功但读取在线数据失败
-	GMmessageRetCode_FreezeAccountGameFaild         = 166;		//封号玩家 入库成功 但游戏服处理失败
-
-	GMmessageRetCode_ReChargeWaitOnLine				= 201;		//玩家不在线 登录后进行充值
-	GMmessageRetCode_ReChargenoFindServerid			= 202;		//未找到 serverid
-	GMmessageRetCode_ReChargenoSession  			= 203;		//未找到 session
-	GMmessageRetCode_ReChargenoPlayer   			= 204;		//未找到 player 或 player 缺少info 消息
-	GMmessageRetCode_ReChargeDBSetError   			= 205;		//严重错误 玩家 充值后 订单状态设置 失败
-	GMmessageRetCode_ReChargeError   				= 206;		//调用加钱接口 返回失败
-	
-	GMmessageRetCode_ReChargeNoFind   				= 207;		//找不到订单
-	GMmessageRetCode_ReChargeIsDead   				= 208;		//订单已被处理过
-	
-	GMmessageRetCode_DBRquestError					=999;		//数据库返回错误
-}
-
-enum ChangeMoneyRecode{
-	ChangeMoneyRecode_NIL  = 0;
-	ChangMoney_Success = 1;											//操作成功
-	ChangMoney_NotEnoughMoney = 2;									//扣减时玩家银行金钱不足
-	ChangMoney_GameServerNofindPlayer = 3;							//游戏服未找到对就玩家
-	ChangMoney_JudgmentPlayerOnlineError=4;							//玩家在线判断出错
-	ChangMoney_DB_NoFind_Player = 5;								//数据库中未找到玩家记录
-	ChangMoney_DB_NotData = 6;										//操作数据库存储过程无data返回
-	ChangMoney_DB_Error = 7;										//数据库报错
 }
 
 enum STANDUP_REASON{ 
