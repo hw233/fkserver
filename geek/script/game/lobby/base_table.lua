@@ -33,11 +33,11 @@ local game_util = require "game.util"
 local player_winlose = require "game.lobby.player_winlose"
 
 local table = table
-local strig = string
+local string = string
 
 local dismiss_request_timeout = 60
 local auto_dismiss_timeout = 2 * 60
-local auto_kickout_timeout = 2 * 60
+local auto_kickout_timeout = 5 * 60
 local auto_ready_timeout = 10
 
 local EXT_ROUND_STATUS = {
