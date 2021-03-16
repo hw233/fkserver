@@ -38,9 +38,6 @@ local function checkgameconf(conf)
 	assert(game_conf.tax_open)
 	assert(game_conf.tax_show)
 	assert(game_conf.tax)
-	assert(game_conf.room_cfg)
-	assert(game_conf.switch_is_open)
-	assert(game_conf.platform_id)
 end
 
 local function init_server_online_count()

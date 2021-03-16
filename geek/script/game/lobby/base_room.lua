@@ -35,7 +35,6 @@ local function check_conf(conf)
 	assert(conf.tax_show)
 	assert(conf.tax_open)
 	assert(conf.cell_money)
-	assert(conf.room_cfg)
 end
 
 function base_room:new()
