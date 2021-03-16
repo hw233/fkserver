@@ -31,6 +31,7 @@ local reddb = redisopt.default
 local queue = require "skynet.queue"
 local game_util = require "game.util"
 local player_winlose = require "game.lobby.player_winlose"
+local base_rule = require "game.lobby.base_rule"
 
 local table = table
 local string = string
@@ -897,20 +898,21 @@ function base_table:on_game_overed()
 
 	if self:is_round_gaming() then
 		local is_trustee,_ = self:get_trustee_conf()
-		if not is_trustee then return end
+		if is_trustee then
+			if self:can_dismiss_by_trustee() then
+				self:force_dismiss(enum.STANDUP_REASON_DISMISS_TRUSTEE)
+				return
+			end
 
-		if self:can_dismiss_by_trustee() then
-			self:force_dismiss(enum.STANDUP_REASON_DISMISS_TRUSTEE)
-			return
+			self:incr_trustee_round()
 		end
-
-		self:incr_trustee_round()
 
 		if self:gaming_round() > self:total_round() then
 			return 
 		end
 
-		self:auto_ready(auto_ready_timeout)
+		local ready_timeout = base_rule.ready_timeout(self.rule) or auto_ready_timeout
+		self:auto_ready(ready_timeout)
 	end
 end
 
