@@ -35,6 +35,11 @@ function base_rule.play_round(option)
 	return gameconf.private_conf.round_count_option[option]
 end
 
+function base_rule.is_block_join_when_gaming(rule,tb)
+	local block = rule.option and rule.option.block_join_when_gaming or nil
+	return block and tb:is_round_gaming()
+end
+
 function base_rule.check(rule)
 	local chair_count = base_rule.chair_count(rule.room.player_count_option + 1)
 	if not chair_count then

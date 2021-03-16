@@ -37,6 +37,7 @@ enum ERROR_CODE {
     ERROR_BLOCK_GAMING = 257; //禁止游戏
     ERROR_CLUB_BLOCK = 258; //群/联盟被封禁
     ERROR_CLUB_CLOSE = 259; //群/联盟打烊
+    ERROR_BLOCK_JOIN_WHEN_GAMING = 260; //游戏已开始,禁止加入
 
     ERROR_BANKRUPTCY_WARNING = 500;//破产通知码
     ERROR_PLAYER_NO_RIGHT = 502;//没有权限

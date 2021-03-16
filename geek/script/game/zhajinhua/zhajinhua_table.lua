@@ -7,10 +7,10 @@ local timer_manager = require "game.timer_manager"
 local enum = require "pb_enums"
 local card_dealer = require "card_dealer"
 local cards_util = require "game.zhajinhua.base.cards_util"
-local channel = require "channel"
 require "data.zhajinhua_data"
 require "random_mt19937"
 local player_winlose = require "game.lobby.player_winlose"
+local base_rule = require "game.lobby.base_rule"
 
 local table = table
 local string = string
@@ -1990,6 +1990,10 @@ function zhajinhua_table:can_sit_down(player,chair_id,reconnect)
 	local cheat_check = self:check_cheat_control(player,reconnect)
 	if cheat_check ~= enum.ERROR_NONE then
 		return cheat_check
+	end
+	
+	if base_rule.is_block_join_when_gaming(self.rule,self) then
+		return enum.ERROR_BLOCK_JOIN_WHEN_GAMING
 	end
 
 	return enum.ERROR_NONE
