@@ -663,9 +663,55 @@ function zhajinhua_table:stop_start_ticker()
 	self:cancel_kickout_no_ready_timer()
 end
 
+function zhajinhua_table:owner_check_start(player)
+	log.info("zhajinhua_table:owner_check_start %s,owner:%s,player:%s",
+		self.table_id_,self.owner.guid,player.guid)
+	if not base_rule.is_owner_start_game(self.rule) then
+		return enum.ERROR_OPERATION_INVALID
+	end
+
+	if player.guid ~= self.owner.guid then
+		return enum.ERROR_OPERATION_INVALID
+	end
+
+	if self:is_round_gaming() then
+		return enum.ERROR_OPERATION_INVALID
+	end
+
+	local min_gamer_count = self:get_min_gamer_count()
+	
+	local ready_count = table.sum(self.players,function(_,c) return self.ready_list[c] and 1 or 0 end)
+	if ready_count < min_gamer_count then
+		return enum.ERROR_LESS_READY_PLAYER
+	end
+
+	local player_count = table.nums(self.players)
+	self:start(player_count)
+
+	return enum.ERROR_NONE
+end
+
+function zhajinhua_table:owner_start_game(player)
+	local result = self:lockcall(function()
+		return self:owner_check_start(player)
+	end)
+
+	log.info("zhajinhua_table:owner_start_game %s,owner:%s,result:%s",self.table_id_,player.guid,result)
+	if result ~= enum.ERROR_NONE then
+		send2client_pb(player,"SC_ZhaJinHuaStartGame",{
+			result = result
+		})
+	end
+end
+
 function zhajinhua_table:check_start(part)
 	log.info("zhajinhua_table:check_start %s-----------------",self.table_id_)
 	if self:is_play() then
+		return
+	end
+
+	if base_rule.is_owner_start_game(self.rule)
+		and not self:is_round_gaming() then
 		return
 	end
 

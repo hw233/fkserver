@@ -97,3 +97,13 @@ function on_CS_ZhaJinHuaLastRecord(msg,guid)
 		log.error("guid[%d] on_CS_ZhaJinHuaEnd", player.guid)
 	end
 end
+
+function on_cs_zhajinhua_start_game(_,guid)
+	local player = base_players[guid]
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:owner_start_game(player)
+	else
+		log.error("guid[%d] on_cs_zhajinhua_start_game", guid)
+	end
+end

@@ -241,3 +241,11 @@ message SC_ZhaJinHuaTableGamingInfo{
 	int32 cur_bet_score = 13;			//当前底分
 }
 
+message CS_ZhaJinHuaStartGame {
+	enum MsgID {NIL = 0; ID = 25027; }
+}
+
+message SC_ZhaJinHuaStartGame {
+	enum MsgID {NIL = 0; ID = 25028; }
+	int32 result = 1;
+}

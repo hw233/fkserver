@@ -1301,6 +1301,10 @@ function base_table:transfer_owner()
 		reddb:set("player:table:"..new_owner.guid,private_table_id)
 		private_conf.owner = new_owner
 		private_conf.owner_guid = new_owner.guid
+		private_conf.owner_chair_id = new_owner.chair_id
+		self.owner = new_owner
+		self.owner_guid = new_owner.guid
+		self.owner_chair_id = new_owner.chair_id
 
 		self:broadcast2client("S2C_TRANSFER_ROOM_OWNER_RES",{
 			table_id = self.private_id,
