@@ -45,7 +45,7 @@ function base_rule.is_owner_start_game(rule)
 end
 
 function base_rule.ready_timeout(rule)
-	local timeout_opt = rule.play and rule.play.ready_timeout_option or 1
+	local timeout_opt = rule.play and rule.play.ready_timeout_option or 0
 	local private_conf = g_room.conf.private_conf
 	return private_conf and private_conf.ready_timeout_option and
 			private_conf.ready_timeout_option[timeout_opt + 1] or
