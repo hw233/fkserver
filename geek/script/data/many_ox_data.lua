@@ -1,4 +1,4 @@
-many_ox_room_config = {
+local many_ox_room_config = {
 	[1] = { Ox_FreeTime = 3,
 			Ox_BetTime = 18,
 			Ox_EndTime = 15,
@@ -41,14 +41,4 @@ many_ox_room_config = {
 		}
 }
 
-
-
-
-
-
-
-
-
-
-
-
+return many_ox_room_config

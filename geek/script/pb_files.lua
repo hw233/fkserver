@@ -10,5 +10,6 @@ pb.loadfile("./geek/pb/message_maajan.proto")
 pb.loadfile("./geek/pb/message_pdk.proto")
 pb.loadfile("./geek/pb/message_ddz.proto")
 pb.loadfile("./geek/pb/message_zhajinhua.proto")
+pb.loadfile("./geek/pb/message_ox.proto")
 
 return pb
