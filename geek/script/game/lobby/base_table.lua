@@ -425,7 +425,7 @@ function base_table:do_commission_standalone(guid,commission,contributer)
 		return
 	end
 
-	channel.publish("db.?","msg","SD_LogPlayerCommissionContribute",{
+	channel.publish("db.?","msg","SD_LogPlayerCommissionContributes",{
 		parent = guid,
 		guid = contributer,
 		commission = commission,
