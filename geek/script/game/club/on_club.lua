@@ -72,9 +72,10 @@ local CLUB_OP = {
     DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","DISMISS_CLUB"),
 }
 
-function on_bs_club_create(owner,name,type)
+function on_bs_club_create(owner,name,type,creator)
     local guid = owner
 
+    log.dump(creator)
     local player = base_players[guid]
     if not player then
         log.error("internal error,recv msg but no player.")
@@ -88,11 +89,11 @@ function on_bs_club_create(owner,name,type)
     local id
     if type == 1 then
         id = club_utils.rand_union_club_id()
-        local club = base_club:create(id,name or "","",player,enum.CT_UNION)
+        local club = base_club:create(id,name or "","",player,enum.CT_UNION,nil,creator)
         club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     else
         id = club_utils.rand_group_club_id()
-        base_club:create(id,name or "","",player,enum.CT_DEFAULT)
+        base_club:create(id,name or "","",player,enum.CT_DEFAULT,nil,creator)
     end
 
     return enum.ERROR_NONE,id

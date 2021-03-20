@@ -168,6 +168,9 @@ function gmd.create_club(data)
         }
     end
 
+    local creator = tonumber(data.creator)
+    log.dump(data)
+
     owner_id = math.floor(owner_id)
 
     local type = tonumber(data.type or 0)
@@ -183,7 +186,7 @@ function gmd.create_club(data)
     end
 
     local name = data.club_name
-    local code,club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name,type)
+    local code,club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name,type,creator)
     return {
         errcode = code ~= enum.ERROR_PLAYER_NO_RIGHT and error.SUCCESS or error.PARAMETER_ERROR,
         club_id = club_id,

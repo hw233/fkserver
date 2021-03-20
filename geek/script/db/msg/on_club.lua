@@ -21,10 +21,12 @@ function on_sd_create_club(msg)
         end
     end
 
+    local creator = msg.creator
+
     local transqls = {
         {
-            [[INSERT INTO t_club(id,name,owner,icon,type,parent,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s);]],
-            club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,os.time(),os.time()
+            [[INSERT INTO t_club(id,name,owner,icon,type,parent,creator,created_at,updated_at) VALUES(%s,"%s",%s,"%s",%s,%s,%s,%s,%s);]],
+            club_info.id,club_info.name,club_info.owner,club_info.icon,club_info.type,club_info.parent,creator or "NULL",os.time(),os.time()
         },
         {
             [[INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,4);]],club_info.id,club_info.owner

@@ -75,7 +75,7 @@ local function recusive_broadcast(clubid,msgname,msg,except)
     onlineguid.broadcast(table.keys(guids),msgname,msg)
 end
 
-function base_club:create(id,name,icon,owner,tp,parent)
+function base_club:create(id,name,icon,owner,tp,parent,creator)
     id = tonumber(id)
     local owner_guid = type(owner) == "number" and owner or owner.guid
     local c = {
@@ -87,6 +87,8 @@ function base_club:create(id,name,icon,owner,tp,parent)
         parent = parent or 0,
         status = 0,
     }
+
+    log.dump(creator)
 
     local money_info
     if parent and parent ~= 0 then
@@ -103,6 +105,7 @@ function base_club:create(id,name,icon,owner,tp,parent)
     if not channel.call("db.?","msg","SD_CreateClub",{
         info = c,
         money_info = money_info,
+        creator = creator,
     }) then
         log.error("base_club:create SD_CreateClub failed.")
     end
