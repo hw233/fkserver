@@ -60,6 +60,9 @@ local g_room = g_room
 
 local reddb = redisopt.default
 
+local string = string
+local table = table
+
 local CLUB_OP = {
     ADD_ADMIN    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","ADD_ADMIN"),
     REMOVE_ADMIN    = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","REMOVE_ADMIN"),
@@ -659,7 +662,7 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min)
 
     local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
-    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,owner,yesterday)
+    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner,yesterday)
 
     logs = table.group(logs,function(c) return c.guid end)
 
