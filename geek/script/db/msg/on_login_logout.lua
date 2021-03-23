@@ -1084,16 +1084,19 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 end
 
 
-local function transfer_money_player2player(from_guid,to_guid,money_id,amount,why,why_ext)
+local function transfer_money_player2player(from,to,money_id,why,why_ext)
+	local from_guid = from.guid
+	local to_guid = to.guid
+	local amount = from.new_money - (from.old_money or 0)
 	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		from_guid,to_guid,money_id,amount,why,why_ext)
 	local sqls = {
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],-amount,from_guid,money_id},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],from_guid,money_id},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id},
-		{[[UPDATE t_player_money SET money = money + (%d) WHERE guid = %d AND money_id = %d;]],amount,to_guid,money_id},
-		{[[SELECT money FROM t_player_money WHERE guid = %d AND money_id = %d;]],to_guid,money_id},
+		{
+			[[
+				INSERT INTO t_player_money(guid,money_id,money) VALUES(%s,%s,%s),(%s,%s,%s) 
+				ON DUPLICATE KEY UPDATE money = VALUES(money);
+			]],from_guid,money_id,from.new_money,to_guid,money_id,to.new_money
+		},
 	}
 
 	log.dump(sqls)
@@ -1110,26 +1113,15 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 
 	log.dump(res)
 
-	local old_from_money = res[1] and res[1][1] and res[1][1].money or nil
-	local new_from_money = res[3] and res[3][1] and res[3][1].money or nil
-	local old_to_money = res[4] and res[4][1] and res[4][1].money or nil
-	local new_to_money = res[6] and res[6][1] and res[6][1].money or nil
-
 	local logsqls = {
 		{
 			[[
 				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
+				VALUES(%d,%d,%d,%d,0,%d,'%s',%s),(%d,%d,%d,%d,0,%d,'%s',%s)
 			]],
-			from_guid,money_id,old_from_money,new_from_money,why,why_ext,timer.milliseconds_time()
-		},
-		{
-			[[
-				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-				VALUES(%d,%d,%d,%d,0,%d,'%s',%s);
-			]],
-			to_guid,money_id,old_to_money,new_to_money,why,why_ext,timer.milliseconds_time()
-		},
+			from_guid,money_id,from.old_money or 0,from.new_money,why,why_ext,timer.milliseconds_time(),
+			to_guid,money_id,to.old_money or 0,to.new_money,why,why_ext,timer.milliseconds_time()
+		}
 	}
 
 	log.dump(logsqls)
@@ -1139,12 +1131,12 @@ local function transfer_money_player2player(from_guid,to_guid,money_id,amount,wh
 		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
-	return enum.ERROR_NONE,old_from_money,new_from_money,old_to_money,new_to_money
+	return enum.ERROR_NONE
 end
 
 function on_sd_transfer_money(msg)
-	local from_id = msg.from
-	local to_id = msg.to
+	local from = msg.from
+	local to = msg.to
 	local trans_type = msg.type
 	local money_id = msg.money_id
 	local amount = msg.amount
@@ -1152,19 +1144,19 @@ function on_sd_transfer_money(msg)
 	local why_ext = msg.why_ext
 
 	if trans_type == 1 then
-		return money_lock(transfer_money_club2player,from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_club2player,from,to,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 2 then
-		return money_lock(transfer_money_player2club,from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_player2club,from,to,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 3 then
-		return money_lock(transfer_money_club2club,from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_club2club,from,to,money_id,amount,why,why_ext)
 	end
 
 	if trans_type == 4 then
-		return money_lock(transfer_money_player2player,from_id,to_id,money_id,amount,why,why_ext)
+		return money_lock(transfer_money_player2player,from,to,money_id,why,why_ext)
 	end
 
 	return enum.ERROR_PARAMETER_ERROR
