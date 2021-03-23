@@ -169,7 +169,7 @@ function on_cs_del_notice(msg,guid)
 	reddb:del(string.format("notice:info:%s",id))
 	reddb:srem(string.format("club:notice:%d", club_id), id)
 	reddb:srem("notice:all",id)
-	channel.publish("db.?","msg","SD_DelNotice",{id = id})
+	channel.publish("db.?","msg","SD_RemoveNotice",{id = id})
 
 	base_notices[id] = nil
 	onlineguid.send(guid,"SC_DEL_NOTICE",{
