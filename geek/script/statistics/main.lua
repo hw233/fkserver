@@ -9,6 +9,8 @@ local enum = require "pb_enums"
 local table = table
 local string = string
 local tinsert = table.insert
+local strfmt = string.format
+local tconcat = table.concat
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 5000)
@@ -45,6 +47,7 @@ end
 local MSG = {}
 
 function MSG.SS_GameRoundEnd(msg)
+    log.dump(msg)
     local game_id = msg.game_id
     local balance = msg.log.balance
     local club = msg.club
@@ -54,6 +57,8 @@ function MSG.SS_GameRoundEnd(msg)
     local logdb = dbopt.log
 
     local date = timestamp_date(tonumber(start_time))
+
+    log.dump(date)
 
     if maxmoney > 0 then
         logdb:query(
@@ -66,61 +71,62 @@ function MSG.SS_GameRoundEnd(msg)
         )
     end
     
-    local playerbatchsqls = {}
-    for guid,money in pairs(balance or {}) do
-        tinsert(playerbatchsqls,{
-            [[
-            INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
-            VALUES(%s,%s,%s,%s,%s)  
-            ON DUPLICATE KEY UPDATE money = money + VALUES(money);
-            ]],
-            guid,club or 0,game_id,money,date
-        })
-        tinsert(playerbatchsqls,{
-            [[
-                INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
-                VALUES(%s,%s,%s,1,%s)
-                ON DUPLICATE KEY UPDATE count = count + 1;
-            ]],
-            guid,club or 0,game_id,date
-        })
-    end
+    local winlosevalues = table.series(balance,function(money,guid)
+        return strfmt("(%s,%s,%s,%s,%s)",guid,club or 0,game_id,money,date)
+    end)
 
-    local ret = logdb:batchquery(playerbatchsqls)
+    local countvalues = table.series(balance,function(money,guid)
+        return strfmt("(%s,%s,%s,1,%s)",guid,club or 0,game_id,date)
+    end)
+
+    local sqls = {
+        {
+            strfmt(
+                [[
+                    INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
+                    VALUES %s
+                    ON DUPLICATE KEY UPDATE count = count + 1;
+                ]],
+                tconcat(countvalues,",")
+            )
+        },
+        {
+            strfmt(
+                [[
+                    INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
+                    VALUES %s
+                    ON DUPLICATE KEY UPDATE money = money + VALUES(money);
+                ]],
+                tconcat(winlosevalues,",")
+            )
+        }
+    }
+
+    local ret = logdb:batchquery(sqls)
     if ret.errno then
         log.error('%s',ret.err)
     end
 
     if club and club ~= 0 then
-        local teambatchsqls = {}
+        local values = {}
         for guid,_ in pairs(balance or {}) do
-            local role = club_role[club][guid]
-            if role == enum.CRT_PARTNER or role == enum.CRT_BOSS then
-                tinsert(teambatchsqls,{
-                    [[
-                    INSERT INTO t_log_team_daily_play_count(guid,club,count,date)
-                    VALUES(%s,%s,1,%s)
-                    ON DUPLICATE KEY UPDATE count = count + 1;
-                    ]],
-                    guid,club,date
-                })
-            end
+            tinsert(values,strfmt("(%s,%s,1,%s)",guid,club,date))
             local partner = club_member_partner[club][guid]
             while partner and partner ~= 0 do
-                tinsert(teambatchsqls,{
-                    [[
-                    INSERT INTO t_log_team_daily_play_count(guid,club,count,date)
-                    VALUES(%s,%s,1,%s)
-                    ON DUPLICATE KEY UPDATE count = count + 1;
-                    ]],
-                    partner,club,date
-                })
-
+                tinsert(values,strfmt("(%s,%s,1,%s)",partner,club,date))
                 partner = club_member_partner[club][partner]
             end
         end
 
-        local ret = logdb:batchquery(teambatchsqls)
+        local sql = strfmt(
+            [[
+                INSERT INTO t_log_team_daily_play_count(guid,club,count,date)
+                VALUES %s
+                ON DUPLICATE KEY UPDATE count = count + 1
+            ]],
+            tconcat(values,","))
+
+        local ret = logdb:query(sql)
         if ret.errno then
             log.error('%s',ret.err)
         end

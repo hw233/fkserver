@@ -42,6 +42,8 @@ local club_team_money = require "game.club.club_team_money"
 local club_partner_conf = require "game.club.club_partner_conf"
 local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
 
+local gutil = require "util"
+
 local queue = require "skynet.queue"
 
 local money_locks = setmetatable({},{
@@ -661,7 +663,7 @@ function on_cs_club_query_memeber(msg,guid)
         reddb:zrevrangebyscore(key,score_max,score_min,"limit",page_index * page_size,page_size) or
         reddb:zrevrangebyscore(key,score_max,score_min)
 
-    local yesterday = (math.floor(os.time() / 86400) - 1) * 86400
+    local yesterday = gutil.timestamp_date(os.time() - util.day_seconds())
     local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner,yesterday)
 
     logs = table.group(logs,function(c) return c.guid end)

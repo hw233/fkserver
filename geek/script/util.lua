@@ -89,4 +89,20 @@ function util.alive_game_ids()
 	end)
 end
 
+function util.timestamp_date(time)
+    local d = os.date("*t",time or os.time())
+    return os.time({
+        year = d.year,
+        month = d.month,
+        day = d.day,
+        hour = 0,
+        min = 0,
+        sec = 0,
+    })
+end
+
+function util.day_seconds()
+    return 24 * 60 * 60
+end
+
 return util

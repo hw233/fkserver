@@ -1,8 +1,10 @@
+local club_utils = require "script.game.club.club_utils"
 -- 日志消息处理
 local log = require "log"
 local json = require "json"
 local dbopt = require "dbopt"
 local enum = require "pb_enums"
+local gutil = require "util"
 
 -- 钱日志
 function on_sd_log_money(msg)
@@ -372,13 +374,13 @@ function on_sd_query_player_statistics(guids,club,getter,start_date)
         return {}
     end
 
-    start_date =  start_date or (math.floor(os.time() / 86400) - 1) * 86400
+    start_date =  start_date or gutil.timestamp_date(os.time() - gutil.day_seconds())
 
     local where_sql = table.concat(guids,",")
 
     local logs = dbopt.log:query([[
         SELECT cou.guid,count play_count,commission,cou.date 
-        FROM 
+        FROM    
             (
                 SELECT guid,club,count,date FROM t_log_team_daily_play_count
                 WHERE guid in (%s) AND club = %s
