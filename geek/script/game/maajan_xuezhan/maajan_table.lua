@@ -213,6 +213,9 @@ end
 function maajan_table:on_started(player_count)
     self.start_count = player_count
     base_table.on_started(self,player_count)
+
+    self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang
+
     for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
@@ -235,7 +238,7 @@ function maajan_table:on_started(player_count)
         v.statistics = v.statistics or {}
     end
 
-    self:ding_zhuang()
+    
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
     self.last_chu_pai              = -1 --上次的出牌
     self.mo_pai_count = nil
@@ -2097,7 +2100,8 @@ function maajan_table:on_game_overed()
     self:cancel_clock_timer()
     
     self.game_log = {}
-    self:ding_zhuang()
+
+    self.zhuang = self:ding_zhuang() or self.zhuang
 
     self:clear_ready()
     self:update_state(FSM_S.PER_BEGIN)
@@ -2162,19 +2166,7 @@ function maajan_table:on_process_over(reason)
 end
 
 function maajan_table:ding_zhuang()
-    local function random_zhuang()
-        local max_chair,_ = table.max(self.players,function(_,i) return i end)
-        local chair
-        repeat
-            chair = math.random(1,max_chair)
-            local p = self.players[chair]
-        until p
-
-        return chair
-    end
-
     if not self.zhuang then
-        self.zhuang = random_zhuang()
         return
     end
 
@@ -2185,8 +2177,7 @@ function maajan_table:ding_zhuang()
 
     for _,p in pairs(self.players) do
         if p.multi_pao then
-            self.zhuang = p.chair_id
-            return
+            return p.chair_id
         end
     end
 
@@ -2198,7 +2189,18 @@ function maajan_table:ding_zhuang()
         return false
     end)
 
-    self.zhuang = ps[1].chair_id
+    return ps[1].chair_id
+end
+
+function maajan_table:first_zhuang()
+    local max_chair,_ = table.max(self.players,function(_,i) return i end)
+    local chair
+    repeat
+        chair = math.random(1,max_chair)
+        local p = self.players[chair]
+    until p
+
+    return chair
 end
 
 function maajan_table:tile_count_2_tiles(counts,excludes)
