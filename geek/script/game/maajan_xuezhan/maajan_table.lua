@@ -213,7 +213,7 @@ end
 function maajan_table:on_started(player_count)
     self.start_count = player_count
     base_table.on_started(self,player_count)
-	for _,v in pairs(self.players) do
+    for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
         v.last_action           = nil
@@ -1079,7 +1079,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         end
 
         if action.done.action == ACTION.HU then
-            for _,act in ipairs(actions_to_do) do
+            for _,act in pairs(actions_to_do) do
                 local p = self.players[act.chair_id]
                 p.hu = {
                     time = os.time(),
@@ -2183,11 +2183,11 @@ function maajan_table:ding_zhuang()
         return
     end
 
-    local multi_paos = table.values(table.select(self.players,function(p) return p.multi_pao end))
-    if table.nums(multi_paos) > 0 then
-        local multi_pao_player = multi_paos[1]
-        self.zhuang = multi_pao_player.chair_id
-        return
+    for _,p in pairs(self.players) do
+        if p.multi_pao then
+            self.zhuang = p.chair_id
+            return
+        end
     end
 
     local ps = table.values(self.players)
