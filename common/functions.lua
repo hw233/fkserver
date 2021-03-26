@@ -354,14 +354,33 @@ end
 
 table.count = table.nums
 
-function table.series(tb,fn)
+function table.series(tb,tail,fn)
     local s = {}
-    for k,v in pairs(tb or {}) do
-        if fn then
-            local tmp = fn(v,k)
-            if tmp ~= nil then table.insert(s,tmp) end
+    if type(tb) == "table" then
+        fn = tail
+        for k,v in pairs(tb or {}) do
+            if fn then
+                local tmp = fn(v,k)
+                if tmp ~= nil then table.insert(s,tmp) end
+            else
+                table.insert(s,v)
+            end
+        end
+    elseif type(tb) == "number" then
+        if not fn then return s end
+        local head = tb
+        tail = tail or head
+        if type(fn) == "function" then
+            local v
+            for i = head,tail do
+                v = fn(i)
+                if v ~= nil then table.insert(s,v) end
+            end
         else
-            table.insert(s,v)
+            local v = fn
+            for _ = head,tail do
+                table.insert(s,v)
+            end
         end
     end
 
@@ -658,11 +677,19 @@ function table.decr(tb,key,v)
 	return value
 end
 
-function table.fill(tb,value,head,trail)
+function table.fill(tb,value,head,tail)
 	head	= head or 1
-	trail	= trail or head
+	tail	= tail or head
     tb		= tb or {}
-	for i = head,trail do tb[i] = value end
+    if type(value) == "function" then
+        for i = head,tail do 
+            tb[i] = value(i)
+        end
+    else
+        for i = head,tail do
+            tb[i] = value
+        end
+    end
 	return tb
 end
 
