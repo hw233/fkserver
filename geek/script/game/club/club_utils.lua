@@ -62,18 +62,16 @@ end
 function utils.get_game_list(guid,club_id)
     local player = base_players[guid]
     if player then
+        local alive_games = g_util.alive_game_ids()
+        local alives = table.map(alive_games,function(gameid) return gameid,true end)
 		local conf_games = runtime_conf.get_game_conf(player.channel_id,player.promoter,club_id)
 		if conf_games and #conf_games > 0 then
-			return conf_games
+			return table.series(conf_games,function(gameid) return alives[gameid] and gameid or nil end)
         end
         
-		conf_games = g_util.alive_game_ids()
-		if conf_games and #conf_games > 0 then
-			return conf_games
-		end
+		return alive_games
 	end
-
-	return
+	return {}
 end
 
 local function get_club_templates(club,getter_role)

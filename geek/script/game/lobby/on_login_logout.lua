@@ -1139,23 +1139,19 @@ end
 function on_cs_game_server_cfg(msg,guid)
 	local player = base_players[guid]
 	if player then
+		local alive_games = g_util.alive_game_ids()
+        local alives = table.map(alive_games,function(gameid) return gameid,true end)
 		local conf_games = runtime_conf.get_game_conf(player.channel_id,player.promoter)
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
+		if conf_games and #conf_games > 0 then
 			send2client_pb(guid,"SC_GameServerCfg",{
-				game_sever_info  = conf_games,
+				game_sever_info  = table.series(conf_games,function(gameid) return alives[gameid] and gameid or nil end),
 			})
 			return true
-		end
-
-		conf_games = g_util.alive_game_ids()
-		if conf_games and table.nums(conf_games) > 0 then
-			log.dump(conf_games)
-			send2client_pb(guid,"SC_GameServerCfg",{
-				game_sever_info  = conf_games,
-			})
-			return true
-		end
+        end
+        
+		send2client_pb(guid,"SC_GameServerCfg",{
+			game_sever_info  = alive_games,
+		})
 	end
 
 	return true
