@@ -10,6 +10,6 @@ function cjson.loadfile(filename)
 end
 
 cjson.encode_sparse_array(true)
-
+cjson.decode_json_null_value(false)
 
 return cjson
