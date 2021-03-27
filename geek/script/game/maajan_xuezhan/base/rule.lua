@@ -425,7 +425,10 @@ local function unique_hu_types(base_hu_types)
 		end
 	end
 
-	return table.merge(types,base_hu_types,function(l,r) return (l or r) and 1 or nil end)
+	return table.merge(types,base_hu_types,function(l,r) 
+		local c = (l or 0) + (r or 0)
+		return (c and c > 0) and c or nil
+	end)
 end
 
 local function get_hu_types(pai,cache,sections,in_pai)
@@ -493,7 +496,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	local men_qing =  is_men_qing(pai)
 	local duan_yao = is_duan_yao(pai,in_pai)
 	local gou = gou_count(pai,cache)
-	
+
 	if qi_dui then
 		local base_types = {}
 		if gou > 0 then
@@ -655,20 +658,20 @@ end
 -- }
 
 -- local test_pai = {
--- 	shou_pai = {[3] = 1,[4] = 1,[5] = 1,[7] = 2,[25] = 1,[26] = 1,[26] = 1},
+-- 	shou_pai = {[5] = 2,[6] = 1,[7] = 1,[8] = 1,[25] = 1,[26] = 1,[27] = 1},
 -- 	ming_pai = {
 -- 		{
 -- 			tile = 6,
 -- 			type = SECTION_TYPE.PENG,
 -- 		},
 -- 		{
--- 			tile = 22,
+-- 			tile = 27,
 -- 			type = SECTION_TYPE.PENG,
 -- 		}
 -- 	},
 -- }
 
--- local test_hu = rule.hu(test_pai,nil,nil)
+-- local test_hu = rule.hu(test_pai,nil,27)
 
 -- log.dump(test_hu)
 
