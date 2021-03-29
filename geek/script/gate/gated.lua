@@ -194,10 +194,10 @@ function CMD.start(conf)
             return
         end
 
-        if msgname ~= "CS_HeartBeat" then
-            log.info("gated.dispatch %s,guid:%s,fd:%s",msgname,u and u.guid,fd)
-            log.dump(msg)
-        end
+        -- if msgname ~= "CS_HeartBeat" then
+        --     log.info("gated.dispatch %s,guid:%s,fd:%s",msgname,u and u.guid,fd)
+        --     log.dump(msg)
+        -- end
 
         if not u or not u.guid or LOGIN_HANDLE[msgname] then
             skynet.send(loginservice,"client",msgname,msg,session)
@@ -226,8 +226,8 @@ local function forward(guid,msgname,msg)
         return
     end
 
-    log.info("gated toclient %s:%s,%s",guid,u.fd,msgname)
-    log.dump(msg)
+    -- log.info("gated toclient %s:%s,%s",guid,u.fd,msgname)
+    -- log.dump(msg)
 
     netmsgopt.send(u.fd,msgname,msg)
 end
