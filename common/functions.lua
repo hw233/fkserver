@@ -472,6 +472,14 @@ function table.indexof(array, value, begin)
     return false
 end
 
+function table.find(tb,fn)
+    for k,v in pairs(tb) do
+        if fn(v,k) then
+            return k,v
+        end
+    end
+end
+
 function table.keyof(hashtable, value)
     for k, v in pairs(hashtable or {}) do
         local is = type(value) == "function" and value(v,k) or value == v
