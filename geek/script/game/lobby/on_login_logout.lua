@@ -13,7 +13,6 @@ local redisopt = require "redisopt"
 local json = require "json"
 local onlineguid = require "netguidopt"
 local base_clubs = require "game.club.base_clubs"
-local serviceconf = require "serviceconf"
 local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
 local enum = require "pb_enums"
@@ -1021,9 +1020,9 @@ function on_cs_change_header_icon(player, msg)
 end
 
 function on_cs_bind_account(msg,guid)
-	local password = msg.password
-	local phone = msg.phone_number
-
+	local password = string.match(msg.password,"^%s*(.+)%s*$")
+	local phone = string.match(msg.phone_number,"^%s*(.+)%s*$")
+	
 	if (not password or password == "") and (not phone or phone == "") then
 		onlineguid.send(guid,"SC_RequestBindPhone",{
 			result = enum.ERROR_PARAMETER_ERROR
