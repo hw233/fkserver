@@ -563,7 +563,7 @@ local function account_login(msg,gate)
         end
         
         local strguid = tostring(math.floor(guid))
-        rdpassword = string.sub(strguid,#strguid - 5)
+        rdpassword = string.sub(strguid,-6)
     end
 
     if password ~= rdpassword then
