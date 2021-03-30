@@ -1439,7 +1439,7 @@ function on_bs_bind_phone(msg)
 	end
 
 	local phone_uuid = reddb:get(string.format("player:phone_uuid:%s",phone))
-	if phone_uuid == player.open_id then
+	if phone_uuid and phone_uuid ~= "" and phone_uuid ~= player.open_id then
 		return enum.ERROR_OPERATION_REPEATED
 	end
 
