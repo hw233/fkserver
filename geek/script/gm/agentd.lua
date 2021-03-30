@@ -39,7 +39,7 @@ skynet.start(function()
     assert(appkey)
 
     agent.start(protocol,function(request,response)
-        log.dump(request)
+        -- log.dump(request)
         if not request.url then
             response:write(404,nil,json.encode({
                 errcode = error.REQUEST_INVALID
@@ -77,8 +77,8 @@ skynet.start(function()
             }))
             return
         end
-
-        log.dump(sign)
+        log.dump(cmd)
+        -- log.dump(sign)
         log.dump(data)
 
         if not check_sign_code(sign,data) then
