@@ -1417,3 +1417,40 @@ function on_ss_change_to(guid,room_id)
 
 	log.info("on_ss_change_to change step login notify,guid=%s", guid)
 end
+
+function on_bs_bind_phone(msg)
+	local guid = tonumber(msg.guid)
+	local phone = msg.phone
+	if not phone or phone == "" or not guid then
+		return enum.ERROR_PARAMETER_ERROR
+	end
+
+	local player = base_players[guid]
+	if not player then
+		return enum.ERROR_PLAYER_NOT_EXIST
+	end
+
+	local phonelen = string.len(phone or "")
+	if 	not phone or
+		not string.match(phone,"^%d+$") or 
+		phonelen < 7 or 
+		phonelen > 18 then
+		return enum.LOGIN_RESULT_TEL_ERR
+	end
+
+	local phone_uuid = reddb:get(string.format("player:phone_uuid:%s",phone))
+	if phone_uuid ~= player.open_id then
+		return enum.ERROR_OPERATION_REPEATED
+	end
+
+	reddb:hset(string.format("player:info:%s",guid),"phone",phone)
+	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
+	player.phone = phone
+
+	channel.publish("db.?","msg","SD_BindPhone",{
+		guid = guid,
+		phone = phone,
+	})
+
+	return enum.ERROR_NONE
+end

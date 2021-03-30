@@ -1190,14 +1190,14 @@ function on_sd_update_player_info(msg,guid)
 		msg.icon = nil
 	end
 
-	local sets = table.map(msg,function(v,f) 
-		local fmtv = type(v) == "string" and "'%s'" or '%s'
-		return string.format("%s = %s",f,fmtv),v
+	local sets = table.series(msg,function(v,f) 
+		local v = type(v) == "string" and "'" .. v .. "'" or v
+		return string.format("%s = %s",f,v)
 	end)
 
-	local sql = string.format("UPDATE t_player SET %s  WHERE guid = %s;",table.concat(table.keys(sets),","),guid)
+	local sql = string.format("UPDATE t_player SET %s WHERE guid = %s;",table.concat(sets,","),guid)
 	log.dump(sql)
-	local r = dbopt.game:query(sql,table.unpack(table.values(sets)))
+	local r = dbopt.game:query(sql)
 	if r.errno then
 		log.error("on_sd_update_player_info UPDATE t_player error,%s,%s",r.errno,r.err)
 	end

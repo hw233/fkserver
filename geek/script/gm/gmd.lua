@@ -612,6 +612,16 @@ function gmd.update_player(data)
     local update = data
 
     reddb:hmset("player:info:"..tostring(guid),update)
+
+    log.dump(data)
+    
+    local phone = data.phone
+    if phone and phone ~= "" then
+        channel.call("game.?","msg","BS_BindPhone",{
+            guid = guid,
+            phone = phone,
+        })
+    end
     local ok = channel.pcall("db.?","msg","SD_UpdatePlayerInfo",update,guid)
     return {
         errcode = ok and error.SUCCESS or error.SERVER_ERROR,

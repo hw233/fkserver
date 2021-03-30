@@ -90,4 +90,6 @@ skynet.start(function()
 	register_dispatcher("C2S_VoiceInteractive",on_cs_voice_interactive)
 
 	register_dispatcher("BS_Recharge",on_bs_recharge)
+
+	register_dispatcher("BS_BindPhone",on_bs_bind_phone)
 end)
