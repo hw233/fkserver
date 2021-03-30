@@ -159,62 +159,48 @@ local function login_by_account(msg,session)
     log.dump(msg)
     local fd = session.fd
     local ip = session.ip
-    if not msg.account and type(msg.account) ~= "string" then
+    if not msg.account and type(msg.account) ~= "string" or msg.account == "" then
         return {
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
         }
     end
 
-    if not msg.password  or type(msg.password) ~= "string"then
+    if not msg.password  or type(msg.password) ~= "string" or msg.password == "" then
         log.error( "no password, CL_Login")
-        send2client(fd,"LC_Login",{
+        return {
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
-        })
-        return false
+        }
     end
 
     log.info( "================= CryptoManager::rsa_decrypt ==================1 %s", msg.account )
-    local password = util.rsa_decrypt(crypt.hexdecode(msg.password))
+    local password = msg.password
+    -- local password = util.rsa_decrypt(crypt.hexdecode(msg.password))
     log.info( "================= CryptoManager::rsa_decrypt ==================2 %s", msg.account )
-    if not password then
+    if not password or password == "" then
         log.error("password error %s", msg.password)
-        send2client(fd,"LC_Login",{
+        return {
             result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
-        })
-        return true
+        }
     end
 
     msg.password = password
-
-    if not msg.imei or type(msg.imei) ~= "string" or msg.imei == "" then
-        log.error( "not imei CL_Login" )
-        return false
-    end
-
-    local deprecated_imei_ = (type(msg.deprecated_imei)== "string") and msg.deprecated_imei or ""
-    if deprecated_imei_ == "" then
-        log.error( "no deprecated_imei, CL_Login")
-        return false
-    end
-
     msg.platform_id = (type(msg.platform_id) ~= "string" or msg.platform_id == "") and "0" or msg.platform_id
-    msg.ip_area = util.geo_lookup(ip)
     msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
-    local info,server = channel.call("login.?","msg","CL_Login",msg)
-    local guid = info.guid
-    if info.ret == enum.LOGIN_RESULT_SUCCESS then
+    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
+    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
+        local guid = info.guid
         if not check_login_session(session.fd) then --已断开连接
             channel.publish("service."..tostring(server),"lua","afk",guid)
             return
         end
-        
-        skynet.call(gateservice,"lua","login",session.fd,info.guid,info.game_id,info)
+
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
     end
 
     log.info( "login step gateservice.CL_Login,account=%s, session_id=%d", msg.account, fd )
-    return info
+    return ok,info
 end
 
 function MSG.CL_Auth(msg,session)
@@ -297,7 +283,7 @@ function MSG.CL_Login(msg,session)
     logining[fd] = true
 
     local ok,res
-    if msg.account and msg.account ~= "" then
+    if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
         ok,res = login_by_account(msg,session)
     end
 

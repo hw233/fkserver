@@ -1636,6 +1636,7 @@ message CS_RequestBindPhone {
 	string phone_number = 1;						// 手机号
 	string sms_verify_no = 2;
 	string platform_id = 3;	// 客户端 平台id
+	string password = 4;
 }
 
 // 绑定手机回复

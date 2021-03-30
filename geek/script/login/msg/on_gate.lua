@@ -193,7 +193,7 @@ local function open_id_login(msg,gate)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     guid = tonumber(guid)
     if not guid then
-        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+        return enum.LOGIN_RESULT_ACCOUNT_NOT_EXISTS
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
@@ -538,6 +538,74 @@ local function h5_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
+local function account_login(msg,gate)
+    local guid
+    local has = reddb:exists("player:info:"..tostring(msg.account))
+    if has then
+        guid = tonumber(msg.account)
+    else
+        local open_id = reddb:get(string.format("player:phone_uuid:%s",msg.account))
+        if not open_id or open_id == "" then
+            return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+        end
+        local uuid = reddb:get(string.format("player:account:%s",open_id))
+        if not uuid or uuid == "" then
+            return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+        end
+        guid = tonumber(uuid)
+    end
+
+    local password = msg.password
+    local rdpassword = reddb:get(string.format("player:password:%d",guid))
+    if not rdpassword or rdpassword == "" then
+        if not global_conf.use_default_password then
+            return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+        end
+        
+        local strguid = tostring(math.floor(guid))
+        rdpassword = string.sub(strguid,#strguid - 5)
+    end
+
+    if password ~= rdpassword then
+        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+    end
+
+    reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
+
+    local player = base_players[guid]
+    local info = {
+        guid = player.guid,
+        account = player.open_id,
+        nickname = player.nickname or ("guest_"..tostring(guid)),
+        open_id = player.open_id,
+        sex = player.sex or 1,
+        icon = player.icon or default_open_id_icon,
+        version = player.version,
+        login_ip = player.ip,
+        phone = player.phone or "",
+        level = player.level,
+        imei = player.imei or "",
+        is_guest = true,
+        login_time = os.time(),
+        package_name = player.package_name,
+        phone_type = player.phone_type,
+        role = player.role,
+        ip = player.ip,
+        promoter = player.promoter,
+        channel_id = player.channel_id,
+        vip = player.vip,
+    }
+
+    base_players[guid] = nil
+
+    log.dump(player)
+    if player.status == 0 then
+        return enum.ERROR_PLAYER_IS_LOCKED,info
+    end
+
+    return enum.LOGIN_RESULT_SUCCESS,info
+end
+
 function on_cl_login(msg,gate,session_id)
     local account = (msg.account and msg.account ~= "") and msg.account or msg.open_id
     log.dump(msg)
@@ -550,7 +618,9 @@ function on_cl_login(msg,gate,session_id)
             ret,info = open_id_login(msg,gate)
         end
     elseif msg.phone ~= "" and msg.sms_verify_no ~= "" then
-        ret,info = sms_login(msg,gate,session_id)
+        ret,info = sms_login(msg,gate)
+    elseif msg.password and msg.password ~= "" and msg.account and msg.account ~= "" then
+        ret,info = account_login(msg,gate)
     end
 
     log.dump(info)
@@ -618,6 +688,7 @@ function on_cl_login(msg,gate,session_id)
         package_name = msg.package_name,
     })
     
+    log.dump(gate)
     -- 存入redis
     reddb:hmset("player:online:guid:"..tostring(info.guid),{
         gate = gate,

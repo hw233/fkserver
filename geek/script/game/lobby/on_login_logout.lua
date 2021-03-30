@@ -1020,7 +1020,17 @@ function on_cs_change_header_icon(player, msg)
 	})
 end
 
-function on_cs_bind_phone(msg,guid)
+function on_cs_bind_account(msg,guid)
+	local password = msg.password
+	local phone = msg.phone_number
+
+	if (not password or password == "") and (not phone or phone == "") then
+		onlineguid.send(guid,"SC_RequestBindPhone",{
+			result = enum.ERROR_PARAMETER_ERROR
+		})
+		return
+	end
+
 	local player = base_players[guid]
 	if not player then
 		onlineguid.send(guid,"SC_RequestBindPhone",{
@@ -1029,51 +1039,57 @@ function on_cs_bind_phone(msg,guid)
 		return
 	end
 
-	if player.phone and player.phone ~= "" then
-		onlineguid.send(guid,"SC_RequestBindPhone",{
-			result = enum.ERROR_BIND_ALREADY
-		})
-		return
-	end
+	-- if player.phone and player.phone ~= "" then
+	-- 	onlineguid.send(guid,"SC_RequestBindPhone",{
+	-- 		result = enum.ERROR_BIND_ALREADY
+	-- 	})
+	-- 	return
+	-- end
 
-	local phone = msg.phone_number
-	local phonelen = string.len(phone or "")
-	if 	not phone or
-		not string.match(phone,"^%d+$") or 
-		phonelen < 7 or 
-		phonelen > 18 then
-		onlineguid.send(guid,"SC_RequestBindPhone",{
-			result = enum.LOGIN_RESULT_TEL_ERR
-		})
-		return
-	end
+	if phone and phone ~= "" then
+		local phonelen = string.len(phone or "")
+		if 	not phone or
+			not string.match(phone,"^%d+$") or 
+			phonelen < 7 or 
+			phonelen > 18 then
+			onlineguid.send(guid,"SC_RequestBindPhone",{
+				result = enum.LOGIN_RESULT_TEL_ERR
+			})
+			return
+		end
 
-	local sms_verify_code = msg.sms_verify_no
-	local code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
-	reddb:del(string.format("sms:verify_code:guid:%s",guid))
-	if not code or code == "" then
-		onlineguid.send(guid,"SC_RequestBindPhone",{
-			result = enum.LOGIN_RESULT_SMS_FAILED
-		})
-		return
-	end
-
-	if string.lower(code) ~= string.lower(sms_verify_code) then
-		onlineguid.send(guid,"SC_RequestBindPhone",{
-			result = enum.LOGIN_RESULT_SMS_FAILED
-		})
-		return
-	end
-
+		local sms_verify_code = msg.sms_verify_no
+		if sms_verify_code and sms_verify_code ~= "" then
+			local code = reddb:get(string.format("sms:verify_code:guid:%s",guid))
+			reddb:del(string.format("sms:verify_code:guid:%s",guid))
+			if not code or code == "" then
+				onlineguid.send(guid,"SC_RequestBindPhone",{
+					result = enum.LOGIN_RESULT_SMS_FAILED
+				})
+				return
+			end
 	
-	reddb:hset(string.format("player:info:%s",guid),"phone",phone)
-	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
-	player.phone = phone
+			if string.lower(code) ~= string.lower(sms_verify_code) then
+				onlineguid.send(guid,"SC_RequestBindPhone",{
+					result = enum.LOGIN_RESULT_SMS_FAILED
+				})
+				return
+			end
+		end
 
-	channel.publish("db.?","msg","SD_BindPhone",{
-		guid = guid,
-		phone = phone,
-	})
+		reddb:hset(string.format("player:info:%s",guid),"phone",phone)
+		reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
+		player.phone = phone
+	
+		channel.publish("db.?","msg","SD_BindPhone",{
+			guid = guid,
+			phone = phone,
+		})
+	end
+
+	if password and password ~= "" then
+		reddb:set(string.format("player:password:%s",guid),password)
+	end
 
 	onlineguid.send(guid,"SC_RequestBindPhone",{
 		result = enum.ERROR_NONE,
