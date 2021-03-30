@@ -1419,7 +1419,7 @@ end
 
 function on_bs_bind_phone(msg)
 	local guid = tonumber(msg.guid)
-	local phone = msg.phone
+	local phone = string.match(msg.phone or "","^%s*(.+)%s*$")
 	if not phone or phone == "" or not guid then
 		return enum.ERROR_PARAMETER_ERROR
 	end
