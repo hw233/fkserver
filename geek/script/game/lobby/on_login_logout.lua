@@ -1020,8 +1020,8 @@ function on_cs_change_header_icon(player, msg)
 end
 
 function on_cs_bind_account(msg,guid)
-	local password = string.match(msg.password,"^%s*(.+)%s*$")
-	local phone = string.match(msg.phone_number,"^%s*(.+)%s*$")
+	local password = string.match(msg.password or "","^%s*(.+)%s*$")
+	local phone = string.match(msg.phone_number or "","^%s*(.+)%s*$")
 	
 	if (not password or password == "") and (not phone or phone == "") then
 		onlineguid.send(guid,"SC_RequestBindPhone",{
