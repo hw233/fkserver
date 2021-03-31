@@ -532,7 +532,6 @@ function base_table:do_commission(taxes)
 
 			if commission <= 0 then return end
 		end
-		log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,son_team,commission)
 	end
 
 	for guid,tax in pairs(taxes) do
