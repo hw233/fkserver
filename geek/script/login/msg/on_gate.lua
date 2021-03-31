@@ -308,12 +308,8 @@ local function sms_reg_account(msg)
 end
 
 
-local function sms_login(msg,_,session_id)
+local function sms_login(msg,session_id)
     log.dump(msg)
-    if not session_id then
-        return enum.LOGIN_RESULT_SMS_FAILED
-    end
-
     local phone = msg.phone
     if not phone then
         return enum.LOGIN_RESULT_TEL_ERR
