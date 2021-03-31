@@ -1437,10 +1437,10 @@ function on_bs_bind_phone(msg)
 		return enum.LOGIN_RESULT_TEL_ERR
 	end
 
-	local phone_uuid = reddb:get(string.format("player:phone_uuid:%s",phone))
-	if phone_uuid and phone_uuid ~= "" and phone_uuid ~= player.open_id then
-		return enum.ERROR_OPERATION_REPEATED
-	end
+	-- local phone_uuid = reddb:get(string.format("player:phone_uuid:%s",phone))
+	-- if phone_uuid and phone_uuid ~= "" and phone_uuid ~= player.open_id then
+	-- 	return enum.ERROR_OPERATION_REPEATED
+	-- end
 
 	reddb:hset(string.format("player:info:%s",guid),"phone",phone)
 	reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
