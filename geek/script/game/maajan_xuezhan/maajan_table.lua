@@ -411,6 +411,10 @@ function maajan_table:on_action_qiang_gang_hu(p,msg)
         self:cancel_clock_timer()
     end
 
+    local qiang_hu_count = table.sum(self.waiting_actions,function(waiting)
+        return (waiting.done and waiting.done.action == ACTION.HU) and 1 or 0
+    end)
+
     local chu_pai_player = self:chu_pai_player()
     if act == ACTION.HU then
         p.hu = {
@@ -427,9 +431,7 @@ function maajan_table:on_action_qiang_gang_hu(p,msg)
         p.statistics.hu = (p.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
 
-        if table.nums(actions_to_do) > 1 then
-            chu_pai_player.multi_pao = true
-        end
+        chu_pai_player.multi_pao = qiang_hu_count > 1 or nil
 
         table.decr(chu_pai_player.pai.shou_pai,tile)
 
