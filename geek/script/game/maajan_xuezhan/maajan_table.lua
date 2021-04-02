@@ -441,8 +441,8 @@ function maajan_table:on_action_qiang_gang_hu(p,msg)
             return
         end
 
-        local last_hu_player = nil
-        self:foreach(function(p) if p.hu then last_hu_player = p end end)
+        local _,last_hu_chair = table.max(self.waiting_actions,function(_,c) return c end)
+        local last_hu_player = self.players[last_hu_chair]
         self:next_player_index(last_hu_player)
         self:mo_pai()
         self:done_last_action(p,{action = ACTION.BA_GANG,tile = self.qiang_gang_tile})
@@ -1119,8 +1119,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
             if self.start_count - hu_count == 1 then
                 self:do_balance()
             else
-                local last_hu_player = nil
-                self:foreach(function(p) if p.hu then last_hu_player = p end end)
+                local _,last_hu_chair = table.max(actions_to_do,function(act) return act.chair_id end)
+                local last_hu_player = self.playes[last_hu_chair]
                 self:next_player_index(last_hu_player)
                 self:mo_pai()
             end
