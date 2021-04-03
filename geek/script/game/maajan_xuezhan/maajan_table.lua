@@ -1120,7 +1120,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
                 self:do_balance()
             else
                 local _,last_hu_chair = table.max(actions_to_do,function(act) return act.chair_id end)
-                local last_hu_player = self.playes[last_hu_chair]
+                local last_hu_player = self.players[last_hu_chair]
                 self:next_player_index(last_hu_player)
                 self:mo_pai()
             end
