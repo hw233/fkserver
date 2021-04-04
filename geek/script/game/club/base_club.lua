@@ -549,9 +549,9 @@ function base_club:is_player_bankrupt(template,player)
 end
 
 function base_club:is_block_in_block_group(tb,player)
-    local dgroups = club_block_player_groups[player.guid][self.id]
+    local dgroups = club_block_player_groups[self.id][player.guid]
     local players_groups = table.series(tb.players,function(p) 
-            return club_block_player_groups[p.guid][self.id]
+            return club_block_player_groups[self.id][p.guid]
     end)
     return table.logic_or(players_groups,function(groups)
         return table.logic_or(groups,function(_,g)
