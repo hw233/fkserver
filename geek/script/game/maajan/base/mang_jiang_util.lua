@@ -1,4 +1,6 @@
 local rule = require "game.maajan.base.rule"
+local def = require "game.maajan.base.define"
+
 local mj_util 	= {}
 local switch_table = {}
 
@@ -28,6 +30,8 @@ switch_table["#"] = 24
 switch_table["$"] = 25
 switch_table["%"] = 26
 switch_table["="] = 27
+
+local ACTION = def.ACTION
 
 function mj_util.arrayClone(arraySrc)
 	local arrayDes = {}

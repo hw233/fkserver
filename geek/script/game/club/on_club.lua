@@ -2792,31 +2792,29 @@ function on_cs_search_club_player(msg,guid)
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
-        if not req_role or req_role == 0 or req_role == role then
-            return {
+        return {
+            info = {
+                guid = p.guid,
+                icon = p.icon,
+                nickname = p.nickname,
+                sex = p.sex,
+            },
+            role = role,
+            money = {
+                money_id = money_id,
+                count = player_money[p.guid][money_id] or 0,
+            },
+            extra_data = json.encode({
                 info = {
                     guid = p.guid,
-                    icon = p.icon,
-                    nickname = p.nickname,
-                    sex = p.sex,
+                    player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
+                    money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
                 },
-                role = role,
-                money = {
-                    money_id = money_id,
-                    count = player_money[p.guid][money_id] or 0,
-                },
-                extra_data = json.encode({
-                    info = {
-                        guid = p.guid,
-                        player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
-                        money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
-                    },
-                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
-                }),
-                parent = club_member_partner[club_id][p.guid],
-                block_gaming = club_gaming_blacklist[club_id][p.guid],
-            }
-        end
+                logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
+            }),
+            parent = club_member_partner[club_id][p.guid],
+            block_gaming = club_gaming_blacklist[club_id][p.guid],
+        }
     end)
 
     onlineguid.send(guid,"SC_SEARCH_CLUB_PLAYER",{

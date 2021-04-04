@@ -10,8 +10,6 @@ local enum = require "pb_enums"
 
 local FSM_E     = def.FSM_event
 local FSM_S     = def.FSM_state
-local def_second_game_type = def_second_game_type
-local def_game_name = def_game_name
 
 local maajan_table = base_table:new()
 
@@ -120,10 +118,6 @@ function maajan_table:is_play( ... )
 		return true
 	end
 	return false
-end
-
-function maajan_table:reconnect(player)
-    self:clear_deposit_and_time_out(player)
 end
 
 function maajan_table:tick()
@@ -1256,6 +1250,7 @@ function maajan_table:FSM_event(event_table)
             log.info("FSM_event error cur_state/event is " .. self.cur_state_FSM .. "/" .. event_table.type) 
         end
     elseif self.cur_state_FSM == FSM_S.WAIT_BA_GANG_HU then
+        local act = self.player_action_table
         if event_table.type ~= FSM_E.UPDATE then
             if self.player_action_table.chair_id ~= event_table.chair_id then
                 log.info("WAIT_BA_GANG_HU error , player %d",act.uid)
@@ -1409,21 +1404,6 @@ function maajan_table:FSM_event(event_table)
                     end
                 end
             end
-
-            for i,v in pairs (self.players) do
-                if game_switch == 1 then--游戏将进入维护阶段
-                    if  v and not v:is_android() then 
-                        send2client_pb(v, "SC_GameMaintain", {
-                        result = GAME_SERVER_RESULT_MAINTAIN,
-                        })
-                        v:async_force_exit()
-                    end
-                end
-            end
-			
-			-- test --
-			-- self:start(2,true)
-			-- test --
         else
             log.info("FSM_event error cur_state/event is " .. self.cur_state_FSM .. "/" .. event_table.type) 
         end

@@ -78,13 +78,6 @@ end
 function zhj_android:set_player_ip_control(player_list)
 end
 
---增加游戏场数
-function zhj_android:inc_play_times()
-	log.info("game_android ==================inc_play_times")
-	local gametype = string.format("%d_%d",def_first_game_type,def_second_game_type)
-	inc_play_times(gametype,self.guid,true)
-end
-
 function zhj_android:get_ip(player)	
 	return self.ip
 end
@@ -128,7 +121,6 @@ end
 
 --主动处理消息
 function zhj_android:dispatch_msg(msgname, msg)
-    --log.info("zhj_android[dispatch_msg] msg:%s",msgname)
     if msgname == "SC_ZhaJinHuaStart" then
         if msg.banker_chair_id == self.chair_id then
             self:get_table():start_add_score_timer(random.boost_integer(2,5),self)
