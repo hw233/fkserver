@@ -321,6 +321,14 @@ function base_table:clear_dismiss_request()
 	self.dismiss_request = nil
 end
 
+function base_table:clear_player_dismiss_request(player)
+	if not self.dismiss_request then return end
+	if not self.dismiss_request.commissions then return end
+
+	local commissions = self.dismiss_request.commissions
+	commissions[player.chair_id] = nil
+end
+
 function base_table:commit_dismiss(player,agree)
 	return self:lockcall(function()
 		if not self.dismiss_request then
@@ -1657,6 +1665,7 @@ end
 
 function base_table:on_player_stand_up(player,reason)
 	self:notify_stand_up(player,reason)
+	self:clear_player_dismiss_request(player)
 end
 
 function base_table:on_player_stand_uped(player,reason)
