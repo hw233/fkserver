@@ -114,7 +114,7 @@ function on_ls_login_notify(guid,reconnect)
 			-- 重连/重复登陆
 			log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
 				guid,def_game_id,reconnect,repeat_login)
-			g_room:enter_room(player,true)
+			-- g_room:enter_room(player,true)
 			return
 		end
 
