@@ -48,22 +48,6 @@ local function get_validatebox_ch()
 	return ch
 end
 
-function on_ls_AlipayEdit(msg)
-	local  notify = {
-		guid = msg.guid,
-		alipay_name = msg.alipay_name,
-		alipay_name_y = msg.alipay_name_y,
-		alipay_account = msg.alipay_account,
-		alipay_account_y = msg.alipay_account_y,
-	}
-	local player = base_players[msg.guid]
-	if player  then
-		player.alipay_account = msg.alipay_account
-		player.alipay_name = msg.alipay_name		
-	end
-	onlineguid.send(player,  "SC_AlipayEdit" , notify)
-end
-
 function on_cs_update_location_gps(msg,guid)
 	local player = base_players[guid]
 	if not player then

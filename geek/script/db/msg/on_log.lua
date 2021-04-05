@@ -17,15 +17,6 @@ function on_sd_log_bet_flow(msg)
     dbopt.proxy:query("call update_bet_flow(%d,%d)",msg.guid,msg.money)
 end
 
-function on_sl_channel_invite_tax( msg)
-    dbopt.log:query([[
-        INSERT INTO `log`.`t_log_channel_invite_tax` (`guid`, `guid_contribute`, `val`, `time`)
-        VALUES (%d, %d, %d, NOW())]],msg.guid_invite,msg.guid,msg.val)
-    dbopt.game:query([[
-        INSERT INTO `game`.`t_channel_invite_tax` (`guid`, `val`)
-        VALUES (%d, %d)]],msg.guid_invite,msg.val)
-end
-
 function on_sd_log_game_money( msg)
     if msg.guid >= 0 then
         dbopt.log:query([[
@@ -212,20 +203,6 @@ function on_sl_robot_log_money(msg)
         INSERT INTO `log`.`t_log_game_money_robot` (`guid`, `is_banker`, `winorlose`,`gameid`, `game_name`,`old_money`, `new_money`,`money_change`, `round_id`)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, %d, '%s')]],
         msg.guid,msg.isbanker,msg.winorlose,msg.gameid,msg.game_name,msg.old_money,msg.new_money,msg.money_change,msg.round_id)
-end
-
-function  on_SD_SaveCollapsePlayerLog(msg)
-    local sql = dbopt.log:query([[
-        INSERT INTO `t_log_bankrupt`(`day`,`guid`,`times_bkt`,`bag_id`,`plat_id`) VALUES('%s',%d,1,'%s','%s') ON DUPLICATE KEY UPDATE `times_bkt`=(`times_bkt`+1),`bag_id`=VALUES(`bag_id`),`plat_id`=VALUES(`plat_id`)]],
-        os.date("%Y-%m-%d",os.time()),msg.guid,msg.channel_id,msg.platform_id)
-    dbopt.game:query("UPDATE t_player SET is_collapse=1 WHERE guid=%d;",msg.guid)
-end
-
-function on_SD_LogProxyCostPlayerMoney(msg)
-	dbopt.recharge:query("INSERT INTO \
-			`t_agent_recharge_order`(`transfer_id`,`proxy_guid`,`player_guid`,`transfer_type`,`transfer_money`,`platform_id`,`channel_id`,`seniorpromoter`,`proxy_status`,`player_status`,`updated_at`) \
-			VALUES('%s','%d','%d','%d','%d','%d','%d','%d','1','1',NOW())",
-			msg.transfer_id,msg.proxy_guid,msg.player_guid,msg.transfer_type,msg.transfer_money,msg.platform_id,msg.channel_id,msg.promoter_id)
 end
 
 function on_ld_log_login(msg)
