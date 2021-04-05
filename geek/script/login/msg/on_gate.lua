@@ -12,6 +12,7 @@ require "functions"
 require "login.msg.runtime"
 local runtime_conf = require "game.runtime_conf"
 local g_common = require "common"
+local game_util = require "game.util"
 
 local reddb = redisopt.default
 
@@ -178,6 +179,7 @@ local function reg_account(msg)
             money_id = 0,
             money = register_money,
         },enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+        game_util.log_statistics_money(0,register_money,enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     end
 
     player_money[guid] = nil

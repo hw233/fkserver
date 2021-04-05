@@ -1379,6 +1379,8 @@ function on_bs_recharge(msg)
         money = amount,
 	},enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY,recharge_id)
 
+	game_util.log_statistics_money(money_id,amount,enum.LOG_MONEY_OPT_TYPE_RECHARGE_MONEY)
+
 	return enum.ERROR_NONE
 end
 

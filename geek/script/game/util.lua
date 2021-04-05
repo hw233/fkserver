@@ -1,5 +1,6 @@
 
 local runtime_conf = require "game.runtime_conf"
+local channel = require "channel"
 
 local util = {}
 
@@ -19,6 +20,17 @@ end
 
 function util.is_in_maintain()
     return runtime_conf.is_in_maintain() or runtime_conf.is_in_maintain(def_first_game_type)
+end
+
+function util.log_statistics_money(money_id,money,reason,club)
+    channel.publish("statistics.?","msg","SS_LogMoney",{
+        money_id = money_id,
+        money = money,
+        reason = reason,
+        club = club,
+        game_id = def_first_game_type,
+        time = os.time(),
+    })
 end
 
 return util

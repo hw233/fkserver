@@ -173,9 +173,9 @@ local function incr_player_money(guid,money_id,old_money,new_money,where,why,why
 	local money = math.floor(new_money - old_money)
 	log.info("incr_player_money %s,%s,old:%s,new:%s,%s,%s,%s",guid,money_id,old_money,new_money,money,where,why)
 	local res = dbopt.game:query(
-			[[INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = %s;]],
-			guid,money_id,new_money,where,new_money
-		)
+		[[INSERT INTO t_player_money(guid,money_id,money,`where`) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE money = %s;]],
+		guid,money_id,new_money,where,new_money
+	)
 	if res.errno then
 		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
 		return
@@ -184,29 +184,19 @@ local function incr_player_money(guid,money_id,old_money,new_money,where,why,why
 	log.dump(res)
 
 	-- 单独执行，避免统计时锁表卡住
-	skynet.fork(function()
-		dbopt.log:batchquery([[
-				INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
-				VALUES(%d,%d,%d,%d,%d,%d,'%s',%d);
-			]],
-			guid,money_id,old_money,new_money,where,why,
-			why_ext or '',timer.milliseconds_time()
-		)
-	end)
-	return old_money,new_money
+	dbopt.log:query([[
+			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
+			VALUES(%d,%d,%d,%d,%d,%d,'%s',%d);
+		]],
+		guid,money_id,old_money,new_money,where,why,
+		why_ext or '',timer.milliseconds_time()
+	)
 end
 
 function on_sd_change_player_money(items,why,why_ext)
-	local changes = {}
 	for _,item in pairs(items) do
-		local oldmoney,newmoney = incr_player_money(item.guid,item.money_id,item.old_money,item.new_money,item.where or 0,why,why_ext)
-		table.insert(changes,{
-			oldmoney = oldmoney,
-			newmoney = newmoney,
-		})
+		incr_player_money(item.guid,item.money_id,item.old_money,item.new_money,item.where or 0,why,why_ext)
 	end
-
-	return changes
 end
 
 

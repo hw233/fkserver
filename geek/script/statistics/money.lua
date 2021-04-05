@@ -68,7 +68,3 @@ local function task()
     local interval = loopinterval - (os.time() % loopinterval)
     timermgr:calllater(interval,task)
 end
-
-skynet.start(function()
-    task()
-end)

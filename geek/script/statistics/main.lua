@@ -162,6 +162,23 @@ function MSG.SS_PlayerCommissionContributes(msg)
     end
 end
 
+function MSG.SS_LogMoney(msg)
+    local date = timestamp_date(tonumber(msg.time))
+    dbopt.log:query([[
+            INSERT INTO t_log_coin_hour_change(money_id,reason,amount,date) VALUES(%s,%s,%s,%s)
+            ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount);
+        ]],
+        msg.money_id,msg.reason,msg.money or 0,date
+    )
+
+    dbopt.log:query([[
+            INSERT INTO t_log_club_coin_hour_change(money_id,reason,amount,club,game,date) VALUES(%s,%s,%s,%s,%s,%s)
+            ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount);
+        ]],
+        msg.money_id,msg.reason,msg.money or 0,msg.club or 0,msg.game_id or 0,date
+    )
+end
+
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]

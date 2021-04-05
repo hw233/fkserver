@@ -41,6 +41,7 @@ local club_team_player_count = require "game.club.club_team_player_count"
 local club_team_money = require "game.club.club_team_money"
 local club_partner_conf = require "game.club.club_partner_conf"
 local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
+local game_util = require "game.util"
 
 local gutil = require "util"
 
@@ -102,6 +103,7 @@ function on_bs_club_create(owner,name,type,creator)
         id = club_utils.rand_union_club_id()
         local club = base_club:create(id,name or "","",player,enum.CT_UNION,nil,creator)
         club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+        game_util.log_statistics_money(club_money_type[club.id],global_conf.union_init_money,enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     else
         id = club_utils.rand_group_club_id()
         base_club:create(id,name or "","",player,enum.CT_DEFAULT,nil,creator)
@@ -160,6 +162,7 @@ function on_cs_club_create(msg,guid)
 
     -- 初始送分 金币
     club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
+    game_util.log_statistics_money(club_money_type[club.id],math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,

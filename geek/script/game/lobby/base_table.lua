@@ -253,6 +253,10 @@ function base_table:on_reconnect(player)
 	})
 end
 
+function base_table:log_statistics_money(money_id,money,reason)
+	game_util.log_statistics_money(money_id,money,reason,self.club_id)
+end
+
 function base_table:request_dismiss(player)
 	return self:lockcall(function()
 		log.info("player %s request dismiss table_id %s",player.guid,self:id())
@@ -363,36 +367,6 @@ function base_table:commit_dismiss(player,agree)
 		end
 		self:interrupt_dismiss(enum.STANDUP_REASON_DISMISS_REQUEST)
 	end)
-end
-
-local function get_real_club_template_conf(club,template_id)
-    local conf = club_template_conf[club.id][template_id]
-    if not conf then
-        club = base_clubs[club.parent]
-        if not club then return end
-        conf = club_team_template_conf[club.id][template_id]
-        if not conf then return end
-    end
-
-    return conf
-end
-
-local function calc_club_template_commission_rate(club,template_id)
-    if not club or not club.parent or club.parent == 0 then
-        return 1
-    end
-
-    local conf = get_real_club_template_conf(club,template_id)
-    if not conf then
-        return 0
-    end
-
-    local rate = (conf and conf.commission_rate or 0) / 10000
-    if rate == 0 then
-        return rate
-    end
-
-    return rate * calc_club_template_commission_rate(base_clubs[club.parent],template_id)
 end
 
 function base_table:calc_score_money(score)
@@ -612,6 +586,7 @@ function base_table:cost_tax(winlose)
 			log.dump(change)
 			if change ~= 0 then
 				club:incr_member_money(p.guid,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
+				self:log_statistics_money(money_id,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX)
 			end
 		end
 
@@ -1952,6 +1927,7 @@ function base_table:cost_private_fee()
 				money_id = 0,
 				money = -money_each,
 			}},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
+			self:log_statistics_money(0,-money,enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
 		end
 	elseif pay.option == enum.PAY_OPTION_BOSS then
 		local club_id = club and club.id or nil
@@ -1967,6 +1943,7 @@ function base_table:cost_private_fee()
 			money_id = 0,
 			money = - money,
 		},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
+		self:log_statistics_money(0,-money,enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
 	elseif pay.option == enum.PAY_OPTION_ROOM_OWNER then
 		local owner = self.conf.owner
 		local owner_guid = self.conf.owner_guid
@@ -1979,6 +1956,7 @@ function base_table:cost_private_fee()
 			money_id = 0,
 			money = -money,
 		},enum.LOG_MONEY_OPT_TYPE_ROOM_FEE,self.ext_round_id)
+		self:log_statistics_money(0,-money,enum.LOG_MONEY_OPT_TYPE_ROOM_FEE)
 	else
 		log.error("base_table:cost_private_fee [%d] got wrong pay option.")
 	end
@@ -2044,6 +2022,7 @@ function base_table:balance(moneies,why)
 					local p = self.players[chair_or_guid] or base_players[chair_or_guid]
 					club:incr_member_money(p.guid,money,why,self.round_id)
 					player_winlose.incr_money(p.guid,money_id,money)
+					self:log_statistics_money(money_id,money,why)
 				end
 			end
 		end)
@@ -2061,6 +2040,8 @@ function base_table:balance(moneies,why)
 			},why,self.round_id)
 
 			player_winlose.incr_money(p.guid,money_id,money)
+
+			self:log_statistics_money(money_id,money,why)
 		end
 	end
 

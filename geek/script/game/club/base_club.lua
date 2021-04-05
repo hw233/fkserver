@@ -36,6 +36,7 @@ local club_notice = require "game.notice.club_notice"
 local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
 local bc = require "broadcast"
+local game_util = require "game.util"
 
 local reddb = redisopt.default
 
@@ -960,7 +961,7 @@ function base_club:exchange_team_commission(partner_id,money)
     reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-money)
     self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
     club_partners[self.id][partner_id]:notify_money()
-
+    game_util.log_statistics_money(club_money_type[self.id],money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION,self.id)
     return enum.ERROR_NONE
 end
 
