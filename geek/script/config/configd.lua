@@ -265,8 +265,8 @@ local function clean_when_start()
     for sid,sconf in pairs(services) do
         log.info("redis reset online count session %s",sid)
         if sconf.conf.first_game_type then
-            reddb:set(string.format("player:online:count:%s",sconf.conf.first_game_type),0)
-            reddb:set(string.format("player:online:count:%s:%s",sconf.conf.first_game_type,sconf.conf.second_game_type),0)
+            reddb:set(string.format("player:online:count:%d",sconf.conf.first_game_type),0)
+            reddb:set(string.format("player:online:count:%d:%d",sconf.conf.first_game_type,sconf.conf.second_game_type),0)
         end
     end
 end
