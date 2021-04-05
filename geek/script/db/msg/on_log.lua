@@ -247,22 +247,17 @@ function on_sd_log_club_commission(msg)
 end
 
 function on_sd_log_recharge(msg)
-    local sqls = {
-        {"INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);",
-            msg.source_id,msg.target_id,msg.type,msg.operator,msg.money or "NULL",msg.comment or "",os.time()},
-        {"SELECT LAST_INSERT_ID() AS id;"}
-    }
-
-    log.dump(sqls)
-    local res = dbopt.log:batchquery(sqls)
+    local res = dbopt.log:query([[
+            INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);
+        ]],
+        msg.source_id,msg.target_id,msg.type,msg.operator,msg.money or "NULL",msg.comment or "",os.time()
+    )
     if res.errno then
         log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
         return
     end
 
-    log.dump(res)
-
-    return res[2][1].id
+    return res.insert_id
 end
 
 function on_sd_log_club_commission_contribution(msg)
