@@ -239,7 +239,6 @@ end
 local function clean_when_start()
     local reddb = redisopt.default
     local tables = reddb:smembers("table:all")
-    log.dump(tables)
     for id,_ in pairs(tables) do
         log.info("redis clean table session %s",id)
         reddb:del(string.format("table:info:%s",id))
@@ -248,7 +247,6 @@ local function clean_when_start()
     end
 
     local onlineguids = reddb:smembers("player:online:all")
-    log.dump(onlineguids)
     for guid,_ in pairs(onlineguids) do
         log.info("redis clean guid session %s",guid)
         reddb:del(string.format("player:online:guid:%s",guid))
@@ -257,7 +255,6 @@ local function clean_when_start()
     end
 
     local clubs = reddb:smembers("club:all")
-    log.dump(clubs)
     for cid,_ in pairs(clubs) do
         log.info("redis clean club session %s",cid)
         reddb:del(string.format("club:table:%s",cid))
