@@ -99,7 +99,7 @@ do
 end
 
 function M.init_all()
-	for _, f in ipairs(context[mainthread]) do
+	for _, f in ipairs(context[mainthread] or {}) do
 		f()
 	end
 	context[mainthread] = nil
