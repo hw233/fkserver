@@ -649,7 +649,6 @@ function on_cs_club_query_memeber(msg,guid)
     end
 
     local money_id = club_money_type[club_id]
-    
     local key = (partner and partner ~= 0) and 
         string.format("club:partner:zmember:%s:%s",club_id,partner) or 
         string.format("club:zmember:%s",club_id)
@@ -665,13 +664,16 @@ function on_cs_club_query_memeber(msg,guid)
     local mems = page_size > 0 and 
         reddb:zrevrangebyscore(key,score_max,score_min,"limit",page_index * page_size,page_size) or
         reddb:zrevrangebyscore(key,score_max,score_min)
+    
+    if partner and partner ~= 0 then
+        table.insert(mems,1,partner)
+    end
 
     local yesterday = gutil.timestamp_date(os.time() - util.day_seconds())
     local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner,yesterday)
 
     logs = table.group(logs,function(c) return c.guid end)
 
-    json.encode_sparse_array(true)
     local ms = table.series(mems,function(m)
         local p = base_players[tonumber(m)]
         if not p then return end
