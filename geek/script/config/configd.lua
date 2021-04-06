@@ -241,7 +241,6 @@ local function clean_when_start()
     reddb:del("player:online:all")
     reddb:set("player:online:count",0)
     for sid,sconf in pairs(services) do
-        log.info("redis reset online count session %s",sid)
         if sconf.conf.first_game_type then
             reddb:del(string.format("player:online:count:%d",sconf.conf.first_game_type))
             reddb:del(string.format("player:online:count:%d:%d",sconf.conf.first_game_type,sconf.conf.second_game_type))
@@ -250,7 +249,6 @@ local function clean_when_start()
 
     local tables = reddb:smembers("table:all")
     for id,_ in pairs(tables) do
-        log.info("redis clean table session %s",id)
         reddb:del(string.format("table:info:%s",id))
         reddb:del(string.format("table:player:%s",id))
         reddb:srem("table:all",id)
@@ -258,7 +256,6 @@ local function clean_when_start()
 
     local onlineguids = reddb:smembers("player:online:all")
     for guid,_ in pairs(onlineguids) do
-        log.info("redis clean guid session %s",guid)
         reddb:del(string.format("player:online:guid:%s",guid))
         reddb:del(string.format("player:table:%s",guid))
         reddb:srem("player:online:all",guid)
@@ -266,7 +263,6 @@ local function clean_when_start()
 
     local clubs = reddb:smembers("club:all")
     for cid,_ in pairs(clubs) do
-        log.info("redis clean club session %s",cid)
         reddb:del(string.format("club:table:%s",cid))
     end
 end
