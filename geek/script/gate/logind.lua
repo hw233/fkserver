@@ -5,6 +5,7 @@ local crypt = require "skynet.crypt"
 local util = require "gate.util"
 local enum = require "pb_enums"
 local serviceconf = require "serviceconf"
+local msgopt = require "msgopt"
 
 require "functions"
 local log = require "log"
@@ -348,7 +349,7 @@ function MSG.CG_GameServerCfg(msg,session)
 end
 
 skynet.start(function()
-    netmsgopt.register_handle(MSG)
+    msgopt.register_handle(MSG)
 
     skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
@@ -368,6 +369,6 @@ skynet.start(function()
     }
 
     skynet.dispatch("client",function(_,_,msgname,msg,...)
-        skynet.retpack(netmsgopt.dispatch(msgname,msg,...))
+        skynet.retpack(msgopt.on_msg(msgname,msg,...))
     end)
 end)

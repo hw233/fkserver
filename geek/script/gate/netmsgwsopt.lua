@@ -144,10 +144,4 @@ function NETMSG.send(fd,msgname,msg)
     socketdriver.send(fd,packstr,#packstr)
 end
 
-skynet.start(function()
-    skynet.dispatch("msg",function(_,_,msgid,...) 
-        skynet.retpack(NETMSG.on_msg(msgid,...))
-    end)
-end)
-
 return NETMSG
