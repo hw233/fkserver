@@ -164,19 +164,25 @@ end
 
 function MSG.SS_LogMoney(msg)
     local date = timestamp_date(tonumber(msg.time))
-    dbopt.log:query([[
-            INSERT INTO t_log_coin_hour_change(money_id,reason,amount,date) VALUES(%s,%s,%s,%s)
+    local res = dbopt.log:query([[
+            INSERT INTO t_log_coin_hour_change(money_id,reason,amount,time) VALUES(%s,%s,%s,%s)
             ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount);
         ]],
         msg.money_id,msg.reason,msg.money or 0,date
     )
+    if res.errno then
+        log.error("%s",res.err)
+    end
 
-    dbopt.log:query([[
-            INSERT INTO t_log_club_coin_hour_change(money_id,reason,amount,club,game,date) VALUES(%s,%s,%s,%s,%s,%s)
+    res = dbopt.log:query([[
+            INSERT INTO t_log_club_coin_hour_change(money_id,reason,amount,club,game_id,time) VALUES(%s,%s,%s,%s,%s,%s)
             ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount);
         ]],
         msg.money_id,msg.reason,msg.money or 0,msg.club or 0,msg.game_id or 0,date
     )
+    if res.errno then
+        log.error("%s",res.err)
+    end
 end
 
 skynet.start(function()
