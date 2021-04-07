@@ -4,14 +4,11 @@ local log = require "log"
 local club_member = require "game.club.club_member"
 local onlineguid = require "netguidopt"
 local channel = require "channel"
-local redisopt = require "redisopt"
-
-local reddb = redisopt.default
+local allonlineguid = require "allonlineguid"
 
 local table = table
 local string = string
 local tinsert = table.insert
-local smatch = string.match
 
 local CMD = {}
 
@@ -38,11 +35,8 @@ function CMD.broadcast2club(club,msgname,msg)
 end
 
 function CMD.broadcast2online(msgname,msg)
-	local keys = reddb:keys("player:online:guid:*")
-	local guids = table.series(keys,function(k)
-		return tonumber(smatch(k,"player:online:guid:(%d+)"))
-	end)
-
+	local all = allonlineguid["*"]
+	local guids = table.keys(all)
 	broadcast2guids(guids,msgname,msg or {})
 end
 

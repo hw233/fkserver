@@ -3,13 +3,14 @@ local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
+local log = require "log"
+
 local allonlineguid = setmetatable({},{
 	__index = function(t,guid)
 		if not guid or guid == "*" then
-			local guids = reddb:smembers("player:online:all")
-			for uid,_ in pairs(guids) do
-				t[uid] = true
-			end
+			local guids = table.map(reddb:smembers("player:online:all"),function(v,k) 
+				return tonumber(k),v
+			end)
 			return guids
 		end
 
