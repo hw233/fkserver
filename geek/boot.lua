@@ -15,3 +15,4 @@ cpath = root.."cservice/?.so"
 -- daemon = "./skynet.pid"
 lualoader = "./common/loader.lua"
 profile = true
+enablessl = true
