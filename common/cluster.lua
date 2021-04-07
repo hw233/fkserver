@@ -1,13 +1,12 @@
 local skynet = require "skynet"
-require "functions"
 
 local clusterd
 local cluster = {}
-local channel = {}
+local sender = {}
 local task_queue = {}
 
 local function request_sender(q, node)
-	local ok, c = pcall(skynet.call, clusterd, "lua", "channel", node)
+	local ok, c = pcall(skynet.call, clusterd, "lua", "sender", node)
 	if not ok then
 		skynet.error(c)
 		c = nil
@@ -15,11 +14,12 @@ local function request_sender(q, node)
 	-- run tasks in queue
 	local confirm = coroutine.running()
 	q.confirm = confirm
-	q.channel = c
+	q.sender = c
 	for _, task in ipairs(q) do
 		if type(task) == "table" then
 			if c then
 				skynet.send(c, "lua", "push", table.unpack(task,1,task.n))
+				-- skynet.send(c, "lua", "push", task[1], skynet.pack(table.unpack(task,2,task.n)))
 			end
 		else
 			skynet.wakeup(task)
@@ -27,7 +27,7 @@ local function request_sender(q, node)
 		end
 	end
 	task_queue[node] = nil
-	channel[node] = c
+	sender[node] = c
 end
 
 local function get_queue(t, node)
@@ -40,41 +40,41 @@ end
 setmetatable(task_queue, { __index = get_queue } )
 
 local function get_sender(node)
-	local s = channel[node]
+	local s = sender[node]
 	if not s then
 		local q = task_queue[node]
 		local task = coroutine.running()
 		table.insert(q, task)
 		skynet.wait(task)
 		skynet.wakeup(q.confirm)
-		return q.channel
+		return q.sender
 	end
 	return s
 end
 
-function cluster.call(node, address, proto, ...)
-	return skynet.call(get_sender(node), "lua", "req",  address,proto,skynet.pack(...))
+function cluster.call(node, address,proto, ...)
+	-- skynet.pack(...) will free by cluster.core.packrequest
+	return skynet.call(get_sender(node), "lua", "req",  address,proto, skynet.pack(...))
 end
-
 function cluster.rawcall(node, address, proto, msg,sz)
 	return skynet.rawcall(get_sender(node), "lua", "req",  address,proto,msg,sz)
 end
 
 function cluster.send(node, address, proto, ...)
-	local s = channel[node]
+	local s = sender[node]
 	if not s then
 		table.insert(task_queue[node], table.pack(address,proto, skynet.pack(...)))
 	else
-		skynet.send(channel[node], "lua", "push", address,proto,skynet.pack(...))
+		skynet.send(sender[node], "lua", "push", address,proto,skynet.pack(...))
 	end
 end
 
 function cluster.rawsend(node, address, proto, msg,sz)
-	local s = channel[node]
+	local s = sender[node]
 	if not s then
 		table.insert(task_queue[node], table.pack(address,proto, msg,sz))
 	else
-		skynet.rawsend(channel[node], "lua", "push", address,proto,msg,sz)
+		skynet.rawsend(sender[node], "lua", "push", address,proto,msg,sz)
 	end
 end
 

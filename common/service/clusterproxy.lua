@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local cluster = require "skynet.cluster"
 require "skynet.manager"	-- inject skynet.forward_type
 
 local node, address = ...
@@ -21,12 +22,12 @@ skynet.forward_type( forward_map ,function()
 	if n then
 		address = n
 	end
-	local channel = skynet.call(clusterd, "lua", "channel", node)
+	local sender = skynet.call(clusterd, "lua", "sender", node)
 	skynet.dispatch("system", function (session, source, msg, sz)
 		if session == 0 then
-			skynet.send(channel, "lua", "push", address, msg, sz)
+			skynet.send(sender, "lua", "push", address, msg, sz)
 		else
-			skynet.ret(skynet.rawcall(channel, "lua", skynet.pack("req", address, msg, sz)))
+			skynet.ret(skynet.rawcall(sender, "lua", skynet.pack("req", address, msg, sz)))
 		end
 	end)
 end)

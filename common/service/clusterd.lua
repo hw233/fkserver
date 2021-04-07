@@ -35,7 +35,7 @@ local function open_channel(t, key)
 		local host, port = string.match(address, "([^:]+):(.*)$")
 		c = node_sender[key]
 		if c == nil then
-			c = skynet.newservice("service.clustersender", key, nodename)
+			c = skynet.newservice("service.clustersender", key, nodename, host, port)
 			if node_sender[key] then
 				-- double check
 				skynet.kill(c)
@@ -45,7 +45,7 @@ local function open_channel(t, key)
 			end
 		end
 
-        succ = pcall(skynet.call, c, "lua", "changenode", host, port)
+		succ = pcall(skynet.call, c, "lua", "changenode", host, port)
 
 		if succ then
 			t[key] = c
@@ -60,10 +60,10 @@ local function open_channel(t, key)
 	for _, co in ipairs(ct) do
 		skynet.wakeup(co)
 	end
-	-- assert(succ, err)
 	if node_address[key] ~= address then
 		return open_channel(t,key)
 	end
+	assert(succ, err)
 	return c
 end
 
@@ -89,8 +89,9 @@ local function loadconfig(tmp)
 			assert(address == false or type(address) == "string")
 			if node_address[name] ~= address then
 				-- address changed
-				if rawget(node_channel, name) then
-					node_channel[name] = nil	-- reset connection
+				if node_sender[name] then
+					-- reset connection if node_sender[name] exist
+					node_channel[name] = nil
 					table.insert(reload, name)
 				end
 				node_address[name] = address
@@ -131,7 +132,7 @@ function command.listen(source, addr, port)
 	skynet.ret(skynet.pack(nil))
 end
 
-function command.channel(source, node)
+function command.sender(source, node)
 	skynet.ret(skynet.pack(node_channel[node]))
 end
 
