@@ -15,23 +15,16 @@ local skynet = require "skynetproto"
 local channel = require "channel"
 local club_money_type = require "game.club.club_money_type"
 local player_money = require "game.lobby.player_money"
-local player_club = require "game.lobby.player_club"
-local club_template_conf = require "game.club.club_template_conf"
-local club_team_template_conf = require "game.club.club_team_template_conf"
 local club_utils = require "game.club.club_utils"
 local club_role = require "game.club.club_role"
 local json = require "json"
 local util = require "util"
-local club_partner_commission = require "game.club.club_partner_commission"
-local club_member_partner = require "game.club.club_member_partner"
-local club_partner_template_commission = require "game.club.club_partner_template_commission"
-local club_partner_template_default_commission = require "game.club.club_partner_template_default_commission"
-local club_partners = require "game.club.club_partners"
 local reddb = redisopt.default
 local queue = require "skynet.queue"
 local game_util = require "game.util"
 local player_winlose = require "game.lobby.player_winlose"
 local base_rule = require "game.lobby.base_rule"
+local table_template = require "game.lobby.table_template"
 
 local table = table
 local string = string
@@ -2107,6 +2100,11 @@ function base_table:on_process_over(reason,l)
 	channel.publish("statistics.?","msg","SS_GameRoundEnd",msg)
 
 	self.ext_round_status = EXT_ROUND_STATUS.END
+
+	if template_id and template_id ~= 0 then
+		local template_info = table_template[template_id]
+		self.rule = template_info.rule
+	end
 end
 
 -- 开始游戏
