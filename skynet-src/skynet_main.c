@@ -161,15 +161,6 @@ main(int argc, char *argv[]) {
 	config.logservice = optstring("logservice", "logger");
 	config.profile = optboolean("profile", 1);
 
-	char args[4096] = {0};
-	int i = 2;
-	for(i = 2;i < argc;i++){
-		strcat(args,argv[i]);
-		strcat(args," ");
-	}
-
-	skynet_setenv("arg",args);
-
 	lua_close(L);
 
 	skynet_start(&config);

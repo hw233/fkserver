@@ -1,5 +1,6 @@
 
-cluster=1
+export ROOT=$(cd `dirname $0`; pwd)
+export CLUSTER=$1
 
 if [ $# = 0 ]
 then
@@ -13,7 +14,5 @@ then
 	kill $pids
 fi
 
-cluster=$1
-
-nohup ./skynet geek/boot.lua $cluster &
+nohup $ROOT/skynet $ROOT/geek/boot.lua  &
 echo "启动成功!"

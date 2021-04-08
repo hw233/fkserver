@@ -2,25 +2,15 @@ local skynet = require "skynet"
 require "functions"
 local log = require "log"
 
+clusterid = tonumber(...)
 
-local args = require("argment")
-if #args == 0 then
-    return
-end
-
-local clusterid = tonumber(args[1])
 if not clusterid then
-    log.error("cluster id is nil")
+    log.error("cluster id is %s",clusterid)
     return
 end
-
-skynet.setenv("clusterid",tonumber(clusterid))
-
-
 
 require "bootloader"
 
 skynet.start(function() 
     skynet.newservice("debug_console", 8008)
 end)
-

@@ -7,9 +7,7 @@ local bootconf = require "conf.boot"
 local nameservice = require "nameservice"
 local log = require "log"
 
-
-local clusterid = skynet.getenv("clusterid")
-clusterid = tonumber(clusterid)
+local clusterid = clusterid
 
 
 local servicepath = {
