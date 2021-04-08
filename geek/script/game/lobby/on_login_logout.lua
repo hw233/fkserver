@@ -26,6 +26,10 @@ local base_rule = require "game.lobby.base_rule"
 
 local reddb = redisopt.default
 
+local string = string
+local strfmt = string.format
+
+
 --local base_room = require "game.lobby.base_room"
 
 -- 登陆验证框相关
@@ -160,16 +164,21 @@ end
 
 -- 玩家退出 
 function logout(guid,offline)
-	log.info("===========logout %s,offline:%s",guid,offline)
+	log.info("logout %s,offline:%s",guid,offline)
 	local os = onlineguid[guid]
 	if not os then
 		log.error("logout %s,offline:%s got nil onlinesession.",guid,offline)
 		return
 	end
 
+	if not os.server then
+		log.error("logout %s,offline:%s session server nil,server:%s",guid,offline,def_game_id)
+		return
+	end
+
 	if os.server ~= def_game_id then
 		log.error("logout %s,offline:%s session server %s ~= %s",guid,offline,os.server,def_game_id)
-		-- return
+		return channel.call(strfmt("game.%d",os.server),"msg","S_Logout",guid,offline)
 	end
 
 	local player = base_players[guid]
@@ -192,9 +201,9 @@ function logout(guid,offline)
 	return result
 end
 
-function on_s_logout(msg)
-	log.info ("test .................. on_s_logout")
-	logout(msg.guid)
+function on_s_logout(guid,offline)
+	log.info ("on_s_logout guid:%s,offline:%s",guid,offline)
+	return logout(guid,offline)
 end
 
 function on_cs_logout(guid)

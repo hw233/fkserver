@@ -45,11 +45,7 @@ function on_s_logout(msg)
     if onlineinfo then
         local gameid = onlineinfo.server
         if gameid then
-            channel.publish("game."..tostring(gameid),"msg","S_Logout",{
-                account = account,
-                guid = guid,
-                platform_id = platform_id,
-            })
+            channel.publish("game."..tostring(gameid),"msg","S_Logout",guid)
         end
     end
 
