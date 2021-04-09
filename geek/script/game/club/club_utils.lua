@@ -392,7 +392,11 @@ function utils.team_branch(club_id,guid)
     return team_ids
 end
 
-function utils.seek_commission(conf,tax)
+function utils.roulette_commission(conf,tax)
+    table.sort(conf,function(l,r)
+        return l.range < r.range
+    end)
+
     local s0 = 0
     for _,s in pairs(conf) do
         if tax > s0 and tax <= s.range then
@@ -403,6 +407,26 @@ function utils.seek_commission(conf,tax)
     end
 
     return 0
+end
+
+function utils.percentage_commission(conf,commission)
+	local rate = conf and (tonumber(conf.percent) or 0) / 10000 or 0
+	return math.floor(rate * commission)
+end
+
+function utils.fixed_commission(conf,commission)
+	conf = (conf and not conf.percent) and conf or {}
+	local value = utils.roulette_commission(conf,commission)
+	if value > commission then value = commission end
+	return value
+end
+
+function utils.team_commission(conf,commission,percentage)
+	if percentage then
+		return utils.percentage_commission(conf,commission) or 0
+	else
+		return utils.fixed_commission(conf,commission) or 0
+	end
 end
 
 return utils

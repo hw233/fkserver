@@ -105,4 +105,12 @@ function util.day_seconds()
     return 24 * 60 * 60
 end
 
+function util.roulette_value(roulette,v)
+    for _,s in ipairs(roulette) do
+        if s and #s >= 2 and v <= s[1] or s[1] < 0 then
+            return s[2]
+        end
+    end
+end
+
 return util

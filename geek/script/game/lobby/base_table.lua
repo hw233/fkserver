@@ -18,7 +18,7 @@ local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
 local club_role = require "game.club.club_role"
 local json = require "json"
-local util = require "util"
+local gutil = require "util"
 local reddb = redisopt.default
 local queue = require "skynet.queue"
 local game_util = require "game.util"
@@ -412,33 +412,33 @@ function base_table:do_commission_standalone(guid,commission,contributer)
 	club:incr_team_commission(guid,commission,self.ext_round_id)
 end
 
-function base_table:do_commission(taxes)
+
+function base_table:do_tax_commission(taxes)
 	if not self:is_private() then 
 		return
 	end
 
 	local money_id = self:get_money_id()
 	if not money_id then
-		log.error("base_table:do_commission [%d] got nil private money id.",self.private_id)
+		log.error("base_table:do_tax_commission [%d] got nil private money id.",self.private_id)
 		return
 	end
 
-	
 	local club = self.conf.club
 	if not club then
-		log.error("base_table:do_commission [%d] got private club.",self.private_id)
+		log.error("base_table:do_tax_commission [%d] got private club.",self.private_id)
 		return
 	end
 
 	local private_table = base_private_table[self.private_id]
 	if not private_table then 
-		log.error("base_table:do_commission [%d] got nil private table.",self.private_id)
+		log.error("base_table:do_tax_commission [%d] got nil private table.",self.private_id)
 		return
 	end
 
 	local template_id = private_table.template
 	if not template_id then
-		log.error("base_table:do_commission [%d] got nil template.",self.private_id)
+		log.error("base_table:do_tax_commission [%d] got nil template.",self.private_id)
 		return
 	end
 
@@ -446,53 +446,40 @@ function base_table:do_commission(taxes)
 	local rule = self.rule
 	local taxconf = rule.union and rule.union.tax or nil
 	if not taxconf and type(taxconf) ~= "table" then
-		log.error("base_table:do_commission got nil tax config,club:%s template:%s",club_id,template_id)
+		log.error("base_table:do_tax_commission got nil tax config,club:%s template:%s",club_id,template_id)
 		return
 	end
 
-	local fathertree = club_utils.father_tree(club_id,table.keys(taxes))
-	local teamsconf = table.map(fathertree,function(_,team_id)
+	local tree = club_utils.father_tree(club_id,table.keys(taxes))
+	local teamsconf = table.map(tree,function(_,team_id)
 		return team_id,club_utils.get_template_commission_conf(club_id,template_id,team_id)
 	end)
 
-	local function percentage_commission(conf,commission)
-		local rate = conf and (tonumber(conf.percent) or 0) / 10000 or 0
-		return math.floor(rate * commission)
-	end
+	local branches = table.map(taxes,function(_,guid)
+		return guid,club_utils.father_branch(club_id,tree,guid)
+	end)
 
-	local function fixed_commission(conf,commission)
-		conf = (conf and not conf.percent) and conf or {}
-		local value = club_utils.seek_commission(conf,commission)
-		if value > commission then value = commission end
-		return value
-	end
+	local do_percentage = taxconf.percentage_commission
 
 	local commissions = {}
 	local contributions = {}
 	
 	local function do_branch_commission(guid,tax)
-		local branch = club_utils.father_branch(club_id,fathertree,guid)
+		local branch = branches[guid]
 		local commission = tax
+		local i = 1
 		for i = 1,#branch do
 			local myself = branch[i]
-			local son = branch[i + 1]
-			local my_commission
-			if not son then
-				son = myself
-				my_commission = commission
-				commission = 0
+			local son = branch[i + 1] or guid
+			local son_commission
+			if son then
+				son_commission = club_utils.team_commission(teamsconf[son],commission,do_percentage) or 0
 			else
-				local conf = teamsconf[son]
-				local son_commission 
-				if taxconf.percentage_commission then
-					son_commission = percentage_commission(conf,commission)
-				else
-					son_commission = fixed_commission(conf,commission)
-				end
-				my_commission = commission - (son_commission or 0)
-				commission = son_commission
+				son = guid
+				son_commission = 0
 			end
-			
+			local my_commission = commission - son_commission
+			commission = son_commission
 			commissions[myself] = (commissions[myself] or 0) + my_commission
 
 			if my_commission > 0 then
@@ -503,9 +490,158 @@ function base_table:do_commission(taxes)
 				})
 			end
 
-			log.info("base_table:do_commission club:%s,partner:%s,commission:%s",club_id,myself,commission)
+			log.info("base_table:do_tax_commission club:%s,partner:%s,commission:%s",club_id,myself,commission)
 
-			if commission <= 0 then return end
+			if commission <= 0 then
+				break
+			end
+		end
+	end
+
+	for guid,tax in pairs(taxes) do
+		if tax > 0 then
+			do_branch_commission(guid,tax)
+		end
+	end
+
+	log.dump(contributions)
+	log.dump(commissions)
+
+	if #contributions > 0 then
+		channel.publish("db.?","msg","SD_LogPlayerCommissionContributes",{
+			contributions = contributions,
+			template = template_id,
+			club = club_id,
+		})
+
+		channel.publish("statistics.?","msg","SS_PlayerCommissionContributes",{
+			contributions = contributions,
+			template = template_id,
+			club = club_id,
+		})
+	end
+
+	for guid,commission in pairs(commissions) do
+		commission = math.floor(commission + 0.0000001)
+		if commission > 0 then
+			club:incr_team_commission(guid,commission,self.ext_round_id)
+		end
+	end
+end
+
+function base_table:each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
+	local player_count = table.nums(self.players)
+	local eachwin = math.floor(bigwin_tax / player_count)
+	local taxes = table.map(self.players,function(p)
+		return p.guid,eachwin
+	end)
+
+	local total_delta = bigwin_tax - (eachwin * player_count)
+
+	taxes[bigwin_guid] = taxes[bigwin_guid] + total_delta
+
+	return taxes
+end
+
+function base_table:do_bigwin_commission(bigwin_tax,bigwin_guid)
+	if not self:is_private() then 
+		return
+	end
+
+	local money_id = self:get_money_id()
+	if not money_id then
+		log.error("base_table:do_bigwin_commission [%d] got nil private money id.",self.private_id)
+		return
+	end
+
+	local club = self.conf.club
+	if not club then
+		log.error("base_table:do_bigwin_commission [%d] got private club.",self.private_id)
+		return
+	end
+
+	local private_table = base_private_table[self.private_id]
+	if not private_table then 
+		log.error("base_table:do_bigwin_commission [%d] got nil private table.",self.private_id)
+		return
+	end
+
+	local template_id = private_table.template
+	if not template_id then
+		log.error("base_table:do_bigwin_commission [%d] got nil template.",self.private_id)
+		return
+	end
+
+	local club_id = self.club_id
+	local rule = self.rule
+	local taxconf = rule.union and rule.union.tax or nil
+	if not taxconf and type(taxconf) ~= "table" then
+		log.error("base_table:do_bigwin_commission got nil tax config,club:%s template:%s",club_id,template_id)
+		return
+	end
+
+	local min_ensurance = taxconf.min_ensurance or 0
+	min_ensurance = bigwin_tax > min_ensurance and min_ensurance or bigwin_tax
+	bigwin_tax = bigwin_tax - min_ensurance
+	log.dump(min_ensurance)
+	log.dump(bigwin_tax)
+	local taxes = self:each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
+
+	local tree = club_utils.father_tree(club_id,table.keys(taxes))
+	local teamsconf = table.map(tree,function(_,team_id)
+		return team_id,club_utils.get_template_commission_conf(club_id,template_id,team_id)
+	end)
+
+	local branches = table.map(taxes,function(_,guid)
+		return guid,club_utils.father_branch(club_id,tree,guid)
+	end)
+
+	local commissions = {}
+	local contributions = {}
+	if min_ensurance > 0 then
+		local bigwin_branch = branches[bigwin_guid]
+		local team = bigwin_branch[1] or self.owner_guid
+		local son = branches[2] or bigwin_guid
+		commissions[team] = (commissions[team] or 0) + min_ensurance
+		tinsert(contributions,{
+			parent = team,
+			son = son,
+			commission = min_ensurance,
+		})
+	end
+
+	local do_percentage = taxconf.percentage_commission
+	local function do_branch_commission(guid,tax)
+		local branch = branches[guid]
+		local commission = tax
+		for i = 1,#branch do
+			local myself = branch[i]
+			local son = branch[i + 1]
+			local son_commission
+			if son then
+				son_commission = club_utils.team_commission(teamsconf[son],commission,do_percentage) or 0
+			else
+				son = guid
+				son_commission = 0
+			end
+
+			local my_commission = commission - (son_commission or 0)
+			commission = son_commission	
+			commissions[myself] = (commissions[myself] or 0) + my_commission
+
+			if my_commission > 0 then
+				tinsert(contributions,{
+					parent = myself,
+					son = son,
+					commission = my_commission,
+				})
+			end
+
+			log.info("base_table:do_bigwin_commission club:%s,partner:%s,commission:%s",club_id,myself,commission)
+
+			if commission <= 0 then
+				break
+			end
 		end
 	end
 
@@ -576,7 +712,6 @@ function base_table:cost_tax(winlose)
 	local function do_cost_tax_money(taxes)
 		for _,p in pairs(self.players) do
 			local change = taxes[p.guid] or 0
-			log.dump(change)
 			if change ~= 0 then
 				club:incr_member_money(p.guid,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
 				self:log_statistics_money(money_id,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX)
@@ -592,14 +727,12 @@ function base_table:cost_tax(winlose)
 			return
 		end
 
-		local tax = {}
-		for _,p in pairs(self.players) do
-			tax[p.guid] = taxconf.AA
-		end
+		local tax = table.map(self.players,function(p) 
+			return p.guid,taxconf.AA
+		end)
 
-		log.dump(self.round_id)
 		do_cost_tax_money(tax)
-		self:do_commission(tax)
+		self:do_tax_commission(tax)
 		return
 	end
 
@@ -617,7 +750,7 @@ function base_table:cost_tax(winlose)
 		table.sort(bigwin_conf,function(l,r)
 			if l[1] < 0 then return false end
 			if r[1] < 0 then return true end
-			return l[1] < r[1] 
+			return l[1] < r[1]
 		end)
 
 		local bigwin_data = winloselist[1]
@@ -626,19 +759,10 @@ function base_table:cost_tax(winlose)
 			log.warning("base_table:cost_tax [%d] invalid maxwin:%s.",self.private_id,maxwin)
 			return
 		end
-
-		local bigwin_guid
-		local bigwin_tax
-		for _,s in ipairs(bigwin_conf) do
-			if not s or #s < 2 then break end
-			if maxwin <= s[1] or s[1] < 0 then
-				bigwin_tax = s[2] or 0
-				bigwin_guid = bigwin_data.guid
-				break
-			end
-		end
-
-		if not bigwin_tax or not bigwin_guid then
+		
+		local bigwin_guid = bigwin_data.guid
+		local bigwin_tax = gutil.roulette_value(bigwin_conf,maxwin)
+		if not bigwin_tax then
 			log.warning("base_table:cost_tax [%d] invalid bigwin tax,maxwin:%s.",self.private_id,maxwin)
 			return
 		end
@@ -650,28 +774,7 @@ function base_table:cost_tax(winlose)
 			[bigwin_guid] = bigwin_tax,
 		})
 
-		if bigwin_tax <= (taxconf.min_ensurance or 0) then
-			self:do_commission_standalone(club.owner,bigwin_tax,bigwin_guid)
-			return
-		end
-
-		local function each_bigwin_commission_tax(total,win_guid)
-			local player_count = table.nums(self.players)
-			local eachwin = math.floor(bigwin_tax / player_count)
-			local commission_tax = table.map(self.players,function(p)
-				return p.guid,eachwin
-			end)
-
-			local total_delta = bigwin_tax - (eachwin * player_count)
-
-			commission_tax[win_guid] = commission_tax[win_guid] + total_delta
-
-			return commission_tax
-		end
-
-		local commission_tax = each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
-
-		self:do_commission(commission_tax)
+		self:do_bigwin_commission(bigwin_tax,bigwin_guid)
 		return
 	end
 end
@@ -687,7 +790,7 @@ function base_table:notify_game_money()
 		})
 	end
 
-	self:broadcast2client("SYNC_OBJECT",util.format_sync_info(
+	self:broadcast2client("SYNC_OBJECT",gutil.format_sync_info(
 		"GAME",{},{
 			players = player_moneys,
 		}))
