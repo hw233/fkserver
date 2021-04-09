@@ -292,6 +292,16 @@ function on_sd_log_player_commission(msg)
         return
     end
 
+    res = dbopt.game:query([[
+        INSERT INTO t_player_commission(club,guid,money_id,commission)
+        VALUES(%s,%s,%s,%s)
+        ON DUPLICATE KEY UPDATE commission = commission + VALUES(commission);
+        ]],club,guid,money_id,commission or 0)
+    if res.errno then
+        log.error("on_sd_log_player_commission update t_player_commission throw exception.[%d],[%s]",res.errno,res.err)
+        return
+    end
+
     return true
 end
 

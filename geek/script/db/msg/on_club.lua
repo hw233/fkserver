@@ -264,7 +264,7 @@ function on_sd_create_partner(msg)
     
     local res = dbopt.game:query(table.concat({
         string.format([[
-            INSERT INTO t_player_commission(club,guid,money_id,commission) SELECT %s,%s,money_id,0 FROM t_club_money_type WHERE club = %s;
+            INSERT IGNORE INTO t_player_commission(club,guid,money_id,commission) SELECT %s,%s,money_id,0 FROM t_club_money_type WHERE club = %s;
                 ]],club,guid,club),
         string.format([[
             INSERT INTO t_club_role(club,guid,role) VALUES(%s,%s,2) ON DUPLICATE KEY UPDATE role = 2;
