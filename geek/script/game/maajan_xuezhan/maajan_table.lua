@@ -1815,9 +1815,10 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
     end
     
     local remain = self.dealer.remain_count
-    if remain == 0 and (actions[ACTION.AN_GANG] or actions[ACTION.MING_GANG]) then
+    if remain == 0 and (actions[ACTION.AN_GANG] or actions[ACTION.MING_GANG] or actions[ACTION.BA_GANG]) then
         actions[ACTION.AN_GANG] = nil
         actions[ACTION.MING_GANG] = nil
+        actions[ACTION.BA_GANG] = nil
     end
 
     return actions
