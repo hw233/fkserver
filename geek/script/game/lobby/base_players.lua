@@ -71,7 +71,7 @@ timermgr:loop(unused_player_info_elapsed,function()
 				not p.table_id and 
 				not p.chair_id 
 			then
-				log.info("clean unused player info %s",guid)
+				-- log.info("clean unused player info %s",guid)
 				readwriter[guid] = nil
 			end
 		end)
