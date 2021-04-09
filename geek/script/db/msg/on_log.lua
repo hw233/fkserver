@@ -286,7 +286,7 @@ function on_sd_log_player_commission(msg)
     local round_id = msg.round_id
     local money_id = msg.money_id
     local res = dbopt.log:query("INSERT INTO t_log_player_commission(club,guid,money_id,commission,round_id,create_time) VALUES(%d,%d,%d,%d,'%s',%d)",
-        club,guid,money_id,commission,round_id,os.time())
+        club,guid,money_id,commission,round_id or "",os.time())
     if res.errno then
         log.error("on_sd_log_player_commission insert into t_log_player_commission info throw exception.[%d],[%s]",res.errno,res.err)
         return

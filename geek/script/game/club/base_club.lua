@@ -962,22 +962,26 @@ function base_club:exchange_team_commission(partner_id,money)
     self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
     club_partners[self.id][partner_id]:notify_money()
     game_util.log_statistics_money(club_money_type[self.id],money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION,self.id)
+    channel.publish("db.?","msg","SD_LogPlayerCommission",{
+        club = self.id,
+        commission = - money,
+        round_id = "",
+        money_id = club_money_type[self.id],
+        guid = partner_id,
+    })
     return enum.ERROR_NONE
 end
 
 function base_club:incr_team_commission(partner_id,money,round_id)
     if money == 0 then return end
 
-    if not channel.call("db.?","msg","SD_LogPlayerCommission",{
+    channel.publish("db.?","msg","SD_LogPlayerCommission",{
         club = self.id,
         commission = money,
         round_id = round_id or "",
         money_id = club_money_type[self.id],
         guid = partner_id,
-    }) then
-        log.error("base_club:incr_team_commission unknown db error.")
-        return
-    end
+    })
 
     local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.id),partner_id,money)
     newmoney = newmoney and tonumber(newmoney) or 0
