@@ -818,12 +818,12 @@ function on_cs_join_private_room(msg,guid,game_id)
 	player:lockcall(function()
 		local reconnect = msg.reconnect and msg.reconnect ~= 0
 		local global_table_id = msg.table_id
-		local os = onlineguid[guid]
+		local onlineinfo = onlineguid[guid]
 		if reconnect then
-			if not os then
+			if not onlineinfo then
 				return enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE
 			end
-			global_table_id = os.global_table
+			global_table_id = onlineinfo.global_table
 		end
 
 		if not global_table_id then
@@ -855,8 +855,22 @@ function on_cs_join_private_room(msg,guid,game_id)
 
 		player.inactive = nil
 
-		if os and os.table or os.chair and os.server == def_game_id then
+		if reconnect then
+			if not onlineinfo or not onlineinfo.table or not onlineinfo.chair then
+				onlineguid.send(guid,"SC_JoinRoom",{
+					result = enum.GAME_SERVER_RESULT_RECONNECT_NOT_ONLINE,
+				})
+				return
+			end
+			
 			on_cs_reconnect(guid)
+			return
+		end
+
+		if onlineinfo and (onlineinfo.table or onlineinfo.chair) then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR,
+			})
 			return
 		end
 
