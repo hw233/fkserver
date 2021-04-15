@@ -692,6 +692,10 @@ function on_cs_club_query_memeber(msg,guid)
                     money_id = money_id,
                     count = player_money[p.guid][money_id] or 0,
                 },
+                team_money = {
+                    money_id = money_id,
+                    count = club_team_money[club_id][p.guid] or 0,
+                },
                 extra_data = json.encode({
                     info = {
                         guid = p.guid,
