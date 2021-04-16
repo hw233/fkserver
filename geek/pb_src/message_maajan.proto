@@ -144,6 +144,7 @@ enum ACTION{
 	ACTION_FREE_AN_GANG = 0x40000;
 	ACTION_DING_QUE = 0x80000;
 	ACTION_HUAN_PAI = 0x100000;
+	ACTION_QIANG_GANG_HU = 0x200000;
 }
 
 enum SECTION_TYPE {
@@ -359,6 +360,7 @@ message SC_Maajan_Do_Action{
 	int32 chair_id = 1;
 	int32 action = 2;
 	int32 value_tile = 3;
+	int32 target_chair_id = 4; //抢杠等
 }
 
 message CS_Maajan_Action_Discard{
