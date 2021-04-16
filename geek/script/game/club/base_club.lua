@@ -35,8 +35,10 @@ local club_block_groups = require "game.club.block.groups"
 local club_notice = require "game.notice.club_notice"
 local club_block_group_players = require "game.club.block.group_players"
 local club_block_player_groups = require "game.club.block.player_groups"
+local club_member_lock = require "game.club.club_member_lock"
 local bc = require "broadcast"
 local game_util = require "game.util"
+local queue = require "skynet.queue"
 
 local reddb = redisopt.default
 
@@ -74,6 +76,11 @@ end
 local function recusive_broadcast(clubid,msgname,msg,except)
     local guids = recusive_get_members(clubid)
     onlineguid.broadcast(table.keys(guids),msgname,msg)
+end
+
+function base_club:lockcall(fn)
+    self.lock = self.lock or queue()
+    return self.lock(fn)
 end
 
 function base_club:create(id,name,icon,owner,tp,parent,creator)
@@ -151,110 +158,114 @@ function base_club:exit_from_parent()
 end
 
 function base_club:dismiss()
-    local money_id = club_money_type[self.id]
-    reddb:del(string.format("club:money_type:%d",self.id))
+    return self:lockcall(function()
+        local money_id = club_money_type[self.id]
+        reddb:del(string.format("club:money_type:%d",self.id))
 
-    for mid,_ in pairs(club_member[self.id] or {}) do
-        reddb:srem(string.format("player:club:%d:%d",mid,self.type),self.id)
-        if money_id then
-            reddb:hdel(string.format("player:money:%d",mid),money_id)
+        for mid,_ in pairs(club_member[self.id] or {}) do
+            reddb:srem(string.format("player:club:%d:%d",mid,self.type),self.id)
+            if money_id then
+                reddb:hdel(string.format("player:money:%d",mid),money_id)
+            end
         end
-    end
 
-    reddb:del(string.format("club:memeber:%d",self.id))
-    reddb:del(string.format("club:zmemeber:%d",self.id))
-    reddb:del(string.format("club:member:partner:%d",self.id))
-    reddb:del(string.format("club:partner:member:%d",self.id))
-    reddb:del(string.format("club:partner:zmember:%d",self.id))
-    
-    for group_id,_ in pairs(club_block_groups[self.id]) do
-        for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
-            reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
+        reddb:del(string.format("club:memeber:%d",self.id))
+        reddb:del(string.format("club:zmemeber:%d",self.id))
+        reddb:del(string.format("club:member:partner:%d",self.id))
+        reddb:del(string.format("club:partner:member:%d",self.id))
+        reddb:del(string.format("club:partner:zmember:%d",self.id))
+        
+        for group_id,_ in pairs(club_block_groups[self.id]) do
+            for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
+                reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
+            end
+            reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))
         end
-        reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))
-    end
-    reddb:del(string.format("club:block:groups:%d",self.id))
+        reddb:del(string.format("club:block:groups:%d",self.id))
 
-    for req_id,_ in pairs(club_request[self.id]) do
-        reddb:del(string.format("request:%s",req_id))
-        reddb:srem("request:all",req_id)
-    end
+        for req_id,_ in pairs(club_request[self.id]) do
+            reddb:del(string.format("request:%s",req_id))
+            reddb:srem("request:all",req_id)
+        end
 
-    for notice_id,_ in pairs(club_notice[self.id]) do
-        reddb:del(string.format("notice:%s",notice_id))
-    end
+        for notice_id,_ in pairs(club_notice[self.id]) do
+            reddb:del(string.format("notice:%s",notice_id))
+        end
 
-    reddb:del(string.format("club:role:%d",self.id))
-    reddb:hmset(string.format("club:info:%d",self.id),{status = 3})
-    reddb:hdel(string.format("club:money:%d",self.id),money_id)
-    reddb:del(string.format("club:commission:%d",self.id))
-    for tid,_ in pairs(club_template[self.id] or {}) do
-        reddb:del(string.format("template:%d",tid))
-        reddb:del(string.format("team_conf:%d:%d",self.id,tid))
-    end
-    reddb:del(string.format("club:template:%d",self.id))
-    if self.parent then
-        reddb:srem(string.format("club:team:%d",self.parent),self.id)
-    end
-    channel.publish("db.?","msg","SD_DismissClub",{ club_id = self.id})
+        reddb:del(string.format("club:role:%d",self.id))
+        reddb:hmset(string.format("club:info:%d",self.id),{status = 3})
+        reddb:hdel(string.format("club:money:%d",self.id),money_id)
+        reddb:del(string.format("club:commission:%d",self.id))
+        for tid,_ in pairs(club_template[self.id] or {}) do
+            reddb:del(string.format("template:%d",tid))
+            reddb:del(string.format("team_conf:%d:%d",self.id,tid))
+        end
+        reddb:del(string.format("club:template:%d",self.id))
+        if self.parent then
+            reddb:srem(string.format("club:team:%d",self.parent),self.id)
+        end
+        channel.publish("db.?","msg","SD_DismissClub",{ club_id = self.id})
 
-    return enum.ERROR_NONE
+        return enum.ERROR_NONE
+    end)
 end
 
 function base_club:del()
-    local money_id = club_money_type[self.id]
-    reddb:del(string.format("club:money_type:%d",self.id))
-    for mid,_ in pairs(club_member[self.id] or {}) do
-        reddb:srem(string.format("player:club:%d:%d",mid,self.type),self.id)
-        if money_id then
-            reddb:hdel(string.format("player:money:%d",mid),money_id)
+    return self:lockcall(function()
+        local money_id = club_money_type[self.id]
+        reddb:del(string.format("club:money_type:%d",self.id))
+        for mid,_ in pairs(club_member[self.id] or {}) do
+            reddb:srem(string.format("player:club:%d:%d",mid,self.type),self.id)
+            if money_id then
+                reddb:hdel(string.format("player:money:%d",mid),money_id)
+            end
         end
-    end
 
-    reddb:del(string.format("club:memeber:%d",self.id))
-    reddb:del(string.format("club:zmemeber:%d",self.id))
-    reddb:del(string.format("club:member:partner:%d",self.id))
-    reddb:del(string.format("club:partner:member:%d",self.id))
-    reddb:del(string.format("club:partner:zmember:%d",self.id))
-    reddb:del(string.format("club:team_money:%d",self.id))
-    reddb:del(string.format("club:team_player_count:%d",self.id))
+        reddb:del(string.format("club:memeber:%d",self.id))
+        reddb:del(string.format("club:zmemeber:%d",self.id))
+        reddb:del(string.format("club:member:partner:%d",self.id))
+        reddb:del(string.format("club:partner:member:%d",self.id))
+        reddb:del(string.format("club:partner:zmember:%d",self.id))
+        reddb:del(string.format("club:team_money:%d",self.id))
+        reddb:del(string.format("club:team_player_count:%d",self.id))
 
-    for group_id,_ in pairs(club_block_groups[self.id]) do
-        for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
-            reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
+        for group_id,_ in pairs(club_block_groups[self.id]) do
+            for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
+                reddb:del(string.format("club:block:player:group:%s:%s",self.id,guid))
+            end
+            reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))
         end
-        reddb:del(string.format("club:block:group:player:%s:%s",self.id,group_id))
-    end
-    reddb:del(string.format("club:block:groups:%d",self.id))
+        reddb:del(string.format("club:block:groups:%d",self.id))
 
-    for req_id,_ in pairs(club_request[self.id]) do
-        reddb:del(string.format("request:%s",req_id))
-        reddb:srem("request:all",req_id)
-    end
+        for req_id,_ in pairs(club_request[self.id]) do
+            reddb:del(string.format("request:%s",req_id))
+            reddb:srem("request:all",req_id)
+        end
 
-    for notice_id,_ in pairs(club_notice[self.id]) do
-        reddb:del(string.format("notice:%s",notice_id))
-        reddb:srem("notice:all",notice_id)
-    end
+        for notice_id,_ in pairs(club_notice[self.id]) do
+            reddb:del(string.format("notice:%s",notice_id))
+            reddb:srem("notice:all",notice_id)
+        end
 
-    reddb:del(string.format("club:request:%d",self.id))
-    reddb:del(string.format("club:role:%d",self.id))
-    reddb:del(string.format("club:info:%d",self.id))
-    reddb:del(string.format("club:money:%d",self.id))
-    reddb:del(string.format("club:conf:%d",self.id))
-    reddb:del(string.format("club:commission:%d",self.id))
-    for tid,_ in pairs(club_template[self.id] or {}) do
-        reddb:del(string.format("template:%d",tid))
-        reddb:del(string.format("team_conf:%d:%d",self.id,tid))
-    end
-    reddb:del(string.format("club:template:%d",self.id))
-    if self.parent then
-        reddb:srem(string.format("club:team:%d",self.parent),self.id)
-    end
-    reddb:srem("club:all",self.id)
-    channel.publish("db.?","msg","SD_DelClub",{ club_id = self.id})
+        reddb:del(string.format("club:request:%d",self.id))
+        reddb:del(string.format("club:role:%d",self.id))
+        reddb:del(string.format("club:info:%d",self.id))
+        reddb:del(string.format("club:money:%d",self.id))
+        reddb:del(string.format("club:conf:%d",self.id))
+        reddb:del(string.format("club:commission:%d",self.id))
+        for tid,_ in pairs(club_template[self.id] or {}) do
+            reddb:del(string.format("template:%d",tid))
+            reddb:del(string.format("team_conf:%d:%d",self.id,tid))
+        end
+        reddb:del(string.format("club:template:%d",self.id))
+        if self.parent then
+            reddb:srem(string.format("club:team:%d",self.parent),self.id)
+        end
+        reddb:srem("club:all",self.id)
+        channel.publish("db.?","msg","SD_DelClub",{ club_id = self.id})
 
-    return enum.ERROR_NONE
+        return enum.ERROR_NONE
+    end)
 end
 
 function base_club:request_join(guid,inviter)
@@ -344,12 +355,14 @@ function base_club:reject_request(request)
 end
 
 function base_club:join(guid,inviter)
-    channel.publish("db.?","msg","SD_JoinClub",{club_id = self.id,guid = guid})
+    self:lockcall(function()
+        channel.publish("db.?","msg","SD_JoinClub",{club_id = self.id,guid = guid})
 
-    reddb:sadd(string.format("club:member:%s",self.id),guid)
-    reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
-    reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
-    player_club[guid][self.type] = nil
+        reddb:sadd(string.format("club:member:%s",self.id),guid)
+        reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
+        reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
+        player_club[guid][self.type] = nil
+    end)
 end
 
 function base_club:full_join(guid,inviter,team_id)
@@ -366,7 +379,7 @@ function base_club:full_join(guid,inviter,team_id)
     if not inviter_role or inviter_role == enum.CRT_PLAYER then
         return enum.ERROR_PLAYER_NO_RIGHT
     end
-
+    
     if not base_players[team_id] then
         return enum.ERROR_PLAYER_NOT_EXIST
     end
@@ -389,29 +402,33 @@ function base_club:full_join(guid,inviter,team_id)
 end
 
 function base_club:batch_join(guids)
-    for _,guid in pairs(guids) do
-        reddb:sadd(string.format("club:member:%s",self.id),guid)
-        reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
-        reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
-        player_club[guid][self.type] = nil
-    end
+    self:lockcall(function()
+        for _,guid in pairs(guids) do
+            reddb:sadd(string.format("club:member:%s",self.id),guid)
+            reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
+            reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
+            player_club[guid][self.type] = nil
+        end
 
-    channel.publish("db.?","msg","SD_BatchJoinClub",{club_id = self.id,guids = guids})
+        channel.publish("db.?","msg","SD_BatchJoinClub",{club_id = self.id,guids = guids})
+    end)
 end
 
 function base_club:exit(guid)
-    local money_id = club_money_type[self.id]
-    reddb:srem(string.format("club:member:%s",self.id),guid)
-	reddb:zrem(string.format("club:zmember:%s",self.id),guid)
-    reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
-    reddb:hdel(string.format("player:money:%d",guid),money_id)
-    reddb:hdel(string.format("club:role:%d",self.id),guid)
+    self:lockcall(function()
+        local money_id = club_money_type[self.id]
+        reddb:srem(string.format("club:member:%s",self.id),guid)
+        reddb:zrem(string.format("club:zmember:%s",self.id),guid)
+        reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
+        reddb:hdel(string.format("player:money:%d",guid),money_id)
+        reddb:hdel(string.format("club:role:%d",self.id),guid)
 
-    club_member[self.id][guid] = nil
-    player_money[guid][money_id] = nil
-    player_club[guid][self.type] = nil
-    club_role[self.id][guid] = nil
-    channel.publish("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
+        club_member[self.id][guid] = nil
+        player_money[guid][money_id] = nil
+        player_club[guid][self.type] = nil
+        club_role[self.id][guid] = nil
+        channel.publish("db.?","msg","SD_ExitClub",{club_id = self.id,guid = guid})
+    end)
 end
 
 function base_club:full_exit(guid,kicker)
@@ -948,47 +965,51 @@ function base_club:incr_member_redis_money(guid,delta_money)
 end
 
 function base_club:exchange_team_commission(partner_id,money)
-    local commission = club_partner_commission[self.id][partner_id]
-    if money < 0 then money = commission  end
+    return club_member_lock[self.id][partner_id](function()
+        local commission = club_partner_commission[self.id][partner_id]
+        if money < 0 then money = commission  end
 
-    if money == 0 then return enum.ERROR_NONE end
+        if money == 0 then return enum.ERROR_NONE end
 
-    if money < 0 then  return enum.ERROR_PARAMETER_ERROR end
+        if money < 0 then  return enum.ERROR_PARAMETER_ERROR end
 
-    if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
+        if money > commission then return enum.ERROR_LESS_MIN_LIMIT  end
 
-    money = math.floor(money)
-    reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-money)
-    self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
-    club_partners[self.id][partner_id]:notify_money()
-    game_util.log_statistics_money(club_money_type[self.id],money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION,self.id)
-    channel.publish("db.?","msg","SD_LogPlayerCommission",{
-        club = self.id,
-        commission = - money,
-        round_id = "",
-        money_id = club_money_type[self.id],
-        guid = partner_id,
-    })
-    return enum.ERROR_NONE
+        money = math.floor(money)
+        reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-money)
+        self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
+        club_partners[self.id][partner_id]:notify_money()
+        game_util.log_statistics_money(club_money_type[self.id],money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION,self.id)
+        channel.publish("db.?","msg","SD_LogPlayerCommission",{
+            club = self.id,
+            commission = - money,
+            round_id = "",
+            money_id = club_money_type[self.id],
+            guid = partner_id,
+        })
+        return enum.ERROR_NONE
+    end)
 end
 
 function base_club:incr_team_commission(partner_id,money,round_id)
-    if money == 0 then return end
+    return club_member_lock[self.id][partner_id](function()
+        if money == 0 then return end
 
-    channel.publish("db.?","msg","SD_LogPlayerCommission",{
-        club = self.id,
-        commission = money,
-        round_id = round_id or "",
-        money_id = club_money_type[self.id],
-        guid = partner_id,
-    })
+        channel.publish("db.?","msg","SD_LogPlayerCommission",{
+            club = self.id,
+            commission = money,
+            round_id = round_id or "",
+            money_id = club_money_type[self.id],
+            guid = partner_id,
+        })
 
-    local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.id),partner_id,money)
-    newmoney = newmoney and tonumber(newmoney) or 0
-    club_partner_commission[self.id] = nil
+        local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.id),partner_id,money)
+        newmoney = newmoney and tonumber(newmoney) or 0
+        club_partner_commission[self.id] = nil
 
-    club_partners[self.id][partner_id]:notify_money()
-    return newmoney
+        club_partners[self.id][partner_id]:notify_money()
+        return newmoney
+    end)
 end
 
 return base_club

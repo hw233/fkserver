@@ -12,6 +12,7 @@ local player_money = require "game.lobby.player_money"
 local base_players = require "game.lobby.base_players"
 local util = require "util"
 local club_member_partner = require "game.club.club_member_partner"
+local club_member_lock = require "game.club.club_member_lock"
 
 local reddb = redisopt.default
 
@@ -53,79 +54,79 @@ local function recusive_broadcast(clubid,msgname,msg,except)
 end
 
 function club_partner:create(club_id,guid,parent)
-    club_id = tonumber(club_id)
-    guid = type(guid) == "number" and guid or guid.guid
-    
-    if not channel.call("db.?","msg","SD_CreatePartner",{
-        club = club_id,
-        guid = guid,
-        parent = parent,
-    }) then
-        log.error("club_partner:create unknown db error.")
-        return enum.ERROR_INTERNAL_UNKOWN
-    end
-    
-    local cp = {
-        club_id = club_id,
-        guid = guid,
-        parent = parent,
-    }
+    return club_member_lock[self.club_id][self.guid](function()
+        club_id = tonumber(club_id)
+        guid = type(guid) == "number" and guid or guid.guid
+        
+        channel.publish("db.?","msg","SD_CreatePartner",{
+            club = club_id,
+            guid = guid,
+            parent = parent,
+        })
+        
+        local cp = {
+            club_id = club_id,
+            guid = guid,
+            parent = parent,
+        }
 
-    reddb:hset(string.format("club:member:partner:%s",club_id),guid,parent)
-    reddb:hset(string.format("club:role:%s",club_id),guid,enum.CRT_PARTNER)
-    reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
-    reddb:zincrby(string.format("club:partner:zmember:%s:%s",club_id,parent),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
+        reddb:hset(string.format("club:member:partner:%s",club_id),guid,parent)
+        reddb:hset(string.format("club:role:%s",club_id),guid,enum.CRT_PARTNER)
+        reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
+        reddb:zincrby(string.format("club:partner:zmember:%s:%s",club_id,parent),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
 
-    setmetatable(cp,{__index = club_partner})
+        setmetatable(cp,{__index = club_partner})
 
-    return enum.ERROR_NONE,cp
+        return enum.ERROR_NONE,cp
+    end)
 end
 
 function club_partner:join(guid)
-    guid = tonumber(guid)
+    return club_member_lock[self.club_id][self.guid](function()
+        guid = tonumber(guid)
 
-    if not channel.call("db.?","msg","SD_JoinPartner",{
-        club = self.club_id,
-        partner = self.guid,
-        guid = guid,
-    }) then
-        log.error("club_partner:join unknown db error.")
-        return enum.ERROR_INTERNAL_UNKOWN
-    end
+        channel.publish("db.?","msg","SD_JoinPartner",{
+            club = self.club_id,
+            partner = self.guid,
+            guid = guid,
+        })
 
-    reddb:hset(string.format("club:member:partner:%s",self.club_id),guid,self.guid)
-    reddb:sadd(string.format("club:partner:member:%s:%s",self.club_id,self.guid),guid)
-    reddb:zadd(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),enum.CRT_PLAYER,guid)
+        reddb:hset(string.format("club:member:partner:%s",self.club_id),guid,self.guid)
+        reddb:sadd(string.format("club:partner:member:%s:%s",self.club_id,self.guid),guid)
+        reddb:zadd(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),enum.CRT_PLAYER,guid)
 
-    local partner  = self.guid
-    while partner and partner ~= 0 do
-        reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,1)
-        partner = club_member_partner[self.club_id][partner]
-    end
+        local partner  = self.guid
+        while partner and partner ~= 0 do
+            reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,1)
+            partner = club_member_partner[self.club_id][partner]
+        end
 
-    return enum.ERROR_NONE
+        return enum.ERROR_NONE
+    end)
 end
 
 function club_partner:exit(mem)
-    local is_mem = club_partner_member[self.club_id][self.guid][mem]
-    if not is_mem then
-        return enum.ERROR_OPERATION_INVALID
-    end
+    return club_member_lock[self.club_id][self.guid](function()
+        local is_mem = club_partner_member[self.club_id][self.guid][mem]
+        if not is_mem then
+            return enum.ERROR_OPERATION_INVALID
+        end
 
-    reddb:hdel(string.format("club:member:partner:%s",self.club_id),mem)
-    reddb:srem(string.format("club:partner:member:%s:%s",self.club_id,self.guid),mem)
-    reddb:zrem(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),mem)
-    channel.publish("db.?","msg","SD_ExitPartner",{
-        club = self.club_id,guid = mem,partner = self.guid
-    })
+        reddb:hdel(string.format("club:member:partner:%s",self.club_id),mem)
+        reddb:srem(string.format("club:partner:member:%s:%s",self.club_id,self.guid),mem)
+        reddb:zrem(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid),mem)
+        channel.publish("db.?","msg","SD_ExitPartner",{
+            club = self.club_id,guid = mem,partner = self.guid
+        })
 
-    local partner  = self.guid
-    while partner and partner ~= 0 do
-        reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,-1)
-        partner = club_member_partner[self.club_id][partner]
-    end
-    
-    return enum.ERROR_NONE
+        local partner  = self.guid
+        while partner and partner ~= 0 do
+            reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,-1)
+            partner = club_member_partner[self.club_id][partner]
+        end
+        
+        return enum.ERROR_NONE
+    end)
 end
 
 function club_partner:broadcast(msgname,msg,except)
@@ -133,26 +134,25 @@ function club_partner:broadcast(msgname,msg,except)
 end
 
 function club_partner:dismiss()
-    if not channel.call("db.?","msg","SD_DismissPartner",{
-        club = self.club_id,
-        partner = self.guid
-    }) then
-        log.error("club_partner:dismiss unknown db error.")
-        return enum.ERROR_INTERNAL_UNKOWN
-    end
+    return club_member_lock[self.club_id][self.guid](function()
+        channel.publish("db.?","msg","SD_DismissPartner",{
+            club = self.club_id,
+            partner = self.guid
+        })
 
-    for guid,_ in pairs(club_partner_member[self.club_id][self.guid]) do
-        reddb:hdel(string.format("club:member:partner:%s",self.club_id),guid)
-    end
+        for guid,_ in pairs(club_partner_member[self.club_id][self.guid]) do
+            reddb:hdel(string.format("club:member:partner:%s",self.club_id),guid)
+        end
 
-    reddb:zincrby(string.format("club:zmember:%s",self.club_id),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
-    reddb:zincrby(string.format("club:partner:zmember:%s:%s",self.club_id,self.parent),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
-    reddb:del(string.format("club:partner:member:%s:%s",self.club_id,self.guid))
-    reddb:del(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid))
-    reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
-    reddb:hdel(string.format("club:team_player_count:%s",self.club_id),self.guid)
-    reddb:hdel(string.format("club:team_money:%s",self.club_id),self.guid)
-    return enum.ERROR_NONE
+        reddb:zincrby(string.format("club:zmember:%s",self.club_id),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
+        reddb:zincrby(string.format("club:partner:zmember:%s:%s",self.club_id,self.parent),enum.CRT_PLAYER - enum.CRT_PARTNER,self.guid)
+        reddb:del(string.format("club:partner:member:%s:%s",self.club_id,self.guid))
+        reddb:del(string.format("club:partner:zmember:%s:%s",self.club_id,self.guid))
+        reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
+        reddb:hdel(string.format("club:team_player_count:%s",self.club_id),self.guid)
+        reddb:hdel(string.format("club:team_money:%s",self.club_id),self.guid)
+        return enum.ERROR_NONE
+    end)
 end
 
 function club_partner:recusive_broadcast(msgname,msg,except)
