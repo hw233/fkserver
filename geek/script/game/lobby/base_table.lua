@@ -151,6 +151,7 @@ function base_table:init(room, table_id, chair_count)
 end
 
 function base_table:lockcall(fn,...)
+	self.lock = self.lock or queue()
 	return self.lock(fn,...)
 end
 
