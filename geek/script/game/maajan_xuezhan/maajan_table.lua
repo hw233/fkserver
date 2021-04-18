@@ -9,6 +9,7 @@ local enum = require "pb_enums"
 local profile = require "skynet.profile"
 local skynet = require "skynetproto"
 local club_utils = require "game.club.club_utils"
+local timer = require "timer"
 
 require "functions"
 
@@ -435,7 +436,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
         p.hu = {
-            time = os.time(),
+            time = timer.nanotime(),
             tile = action.tile,
             types = self:hu(p,action.tile),
             zi_mo = false,
@@ -898,7 +899,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
         end
 
         player.hu = {
-            time = os.time(),
+            time = timer.nanotime(),
             tile = tile,
             types = self:hu(player,nil,player.mo_pai),
             zi_mo = is_zi_mo,
@@ -1096,7 +1097,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
             for _,act in pairs(actions_to_do) do
                 local p = self.players[act.chair_id]
                 p.hu = {
-                    time = os.time(),
+                    time = timer.nanotime(),
                     tile = tile,
                     types = self:hu(p,tile),
                     zi_mo = false,
@@ -2048,7 +2049,6 @@ function maajan_table:game_balance()
     local typefans,scores = {},{}
     self:foreach(function(p)
         local hu
-        log.dump(p.hu)
         if p.hu then
             hu = self:calculate_hu(p.hu)
         elseif p.jiao then
@@ -2381,7 +2381,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
             type = SECTION_TYPE.AN_GANG,
             tile = tile,
             area = TILE_AREA.MING_TILE,
-            time = os.time()
+            time = timer.nanotime(),
         })
     end
 
@@ -2403,7 +2403,7 @@ function maajan_table:adjust_shou_pai(player, action, tile)
                     tile = tile,
                     area = TILE_AREA.MING_TILE,
                     whoee = s.whoee,
-                    time = os.time(),
+                    time = timer.nanotime(),
                 })
                 ming_pai[k] = nil
                 table.decr(shou_pai,tile)
@@ -2648,10 +2648,8 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
     local types = {}
 
     local chu_pai_player = self:chu_pai_player()
-    if chu_pai_player == player and chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action or 0) then
-        types[HU_TYPE.GANG_SHANG_HUA] = 1
-    end
-
+    
+    
     if self.rule.play.tian_di_hu then
         if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
             types[HU_TYPE.TIAN_HU] = 1
@@ -2666,16 +2664,24 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
         types[HU_TYPE.HAI_DI_LAO_YUE] = 1
     end
 
+    local dgh_dian_pao = self.rule.play.dgh_dian_pao
+    local discarder_last_action = chu_pai_player.last_action
     local is_zi_mo = mo_pai and true or false
-    if self.rule.play.dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
-        is_zi_mo = nil
+    local gang_hua = chu_pai_player == player and discarder_last_action and def.is_action_gang(discarder_last_action.action or 0)
+    if gang_hua then
+        if dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
+            types[HU_TYPE.GANG_SHANG_PAO] = 1
+            is_zi_mo = nil
+        else
+            types[HU_TYPE.GANG_SHANG_HUA] = 1
+        end
     end
 
     if is_zi_mo and self.rule.play.zi_mo_jia_fan then
         types[HU_TYPE.ZI_MO] = 1
     end
 
-    if chu_pai_player ~= player and chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
+    if chu_pai_player ~= player and discarder_last_action and def.is_action_gang(discarder_last_action.action) then
         types[HU_TYPE.GANG_SHANG_PAO] = 1
     end
 

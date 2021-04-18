@@ -2,8 +2,7 @@ local define = {}
 
 local pb = require "pb_files"
 
-
-define.ACTION = {
+local ACTION = {
 	TRUSTEE = pb.enum("ACTION","ACTION_TRUSTEE"),
 	PENG = pb.enum("ACTION","ACTION_PENG"),
 	AN_GANG = pb.enum("ACTION","ACTION_AN_GANG"),
@@ -30,6 +29,8 @@ define.ACTION = {
 	RECONNECT = -2,
 	VOTE = -4,
 }
+
+define.ACTION = ACTION
 
 local TILE_TYPE = {
 	WAN = 0,
@@ -67,11 +68,11 @@ local TILE_AREA = {
 define.TILE_AREA = TILE_AREA
 
 function define.is_action_gang(action)
-	return action & (0x4 | 0x8 | 0x10 | 0x20000) ~= 0
+	return action & (ACTION.AN_GANG | ACTION.MING_GANG | ACTION.BA_GANG | ACTION.FREE_BA_GANG | ACTION.FREE_AN_GANG) ~= 0
 end
 
 function define.is_action_chi(action)
-	return action & (0x80 | 0x100 | 0x200) ~= 0
+	return action & (ACTION.LEFT_CHI | ACTION.MID_CHI | ACTION.RIGHT_CHI) ~= 0
 end
 
 function define.is_section_gang(st)
