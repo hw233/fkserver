@@ -1153,6 +1153,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
                 local hu_action = action.actions[ACTION.HU]
                 if hu_action then
                     player.guo_zhuang_hu = self:max_hu(player.pai,hu_action)
+                    chu_pai_player.guo_zhuang_hu_target = chu_pai_player.guo_zhuang_hu_target or {}
+                    table.insert(chu_pai_player.guo_zhuang_hu_target,player)
                 end
             end
 
@@ -1160,6 +1162,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
                 local peng_action = action.actions[ACTION.PENG]
                 if peng_action then
                     player.guo_shou_peng = peng_action.tile
+                    chu_pai_player.guo_shou_peng_target = chu_pai_player.guo_shou_peng_target or {}
+                    table.insert(chu_pai_player.guo_shou_peng_target,player)
                 end
             end
 
@@ -1248,7 +1252,9 @@ function maajan_table:fake_mo_pai()
     table.incr(shou_pai,mo_pai)
 
     player.guo_zhuang_hu = nil
+    player.guo_zhuang_hu_target = nil
     player.guo_shou_peng = nil
+    player.guo_shou_peng_target = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
@@ -1282,8 +1288,21 @@ function maajan_table:mo_pai()
         return
     end
 
-    player.guo_zhuang_hu = nil
-    player.guo_shou_peng = nil
+    local guo_zhuang_hu_target = player.guo_zhuang_hu_target
+    if guo_zhuang_hu_target then
+        for _,target in pairs(guo_zhuang_hu_target) do
+            target.guo_zhuang_hu = nil
+        end
+        player.guo_zhuang_hu_target = nil
+    end
+    
+    local guo_shou_peng_target = player.guo_shou_peng_target
+    if guo_shou_peng_target then
+        for _,target in pairs(guo_shou_peng_target) do
+            target.guo_shou_peng = nil
+        end
+        player.guo_shou_peng_target = nil
+    end
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     
