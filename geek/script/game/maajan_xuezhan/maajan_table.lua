@@ -451,12 +451,6 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
 
         table.decr(chu_pai_player.pai.shou_pai,tile)
 
-        local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-        if self.start_count - hu_count == 1 then
-            self:do_balance()
-            return
-        end
-
         self:done_last_action(p,{action = act,tile = action.tile})
     end
 
@@ -468,7 +462,12 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
         end
     end)
 
-    self.qiang_gang_actions = nil
+    local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+    if self.start_count - hu_count == 1 then
+        self:do_balance()
+        return
+    end
+
     local _,last_hu_chair = table.max(self.qiang_gang_actions or {},function(_,c) return c end)
     local last_hu_player = self.players[last_hu_chair]
     self:next_player_index(last_hu_player)
