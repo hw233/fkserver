@@ -54,8 +54,8 @@ local function recusive_broadcast(clubid,msgname,msg,except)
 end
 
 function club_partner:create(club_id,guid,parent)
-    return club_member_lock[self.club_id][self.guid](function()
-        club_id = tonumber(club_id)
+    club_id = tonumber(club_id)
+    return club_member_lock[club_id][self.guid](function()
         guid = type(guid) == "number" and guid or guid.guid
         
         channel.publish("db.?","msg","SD_CreatePartner",{
@@ -82,9 +82,8 @@ function club_partner:create(club_id,guid,parent)
 end
 
 function club_partner:join(guid)
+    guid = tonumber(guid)
     return club_member_lock[self.club_id][self.guid](function()
-        guid = tonumber(guid)
-
         channel.publish("db.?","msg","SD_JoinPartner",{
             club = self.club_id,
             partner = self.guid,
