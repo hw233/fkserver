@@ -55,7 +55,7 @@ end
 
 function club_partner:create(club_id,guid,parent)
     club_id = tonumber(club_id)
-    return club_member_lock[club_id][self.guid](function()
+    return club_member_lock[club_id][guid](function()
         guid = type(guid) == "number" and guid or guid.guid
         
         channel.publish("db.?","msg","SD_CreatePartner",{
