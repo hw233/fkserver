@@ -191,7 +191,6 @@ function on_cs_config_club_template_commission(msg,guid)
     })
 end
 
-
 function on_cs_reset_club_teamplate_commission(msg,guid)
     local player = base_players[guid]
     if not player then 
@@ -248,69 +247,6 @@ function on_cs_reset_club_teamplate_commission(msg,guid)
     end
 
     reddb:hdel(strfmt("club:commission:template:%s:%s",club_id,template_id),partner_id)
-
-    onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-        result = enum.ERROR_NONE,
-    })
-end
-
-
-function on_cs_reset_club_teamplate_commission(msg,guid)
-    local player = base_players[guid]
-    if not player then 
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PLAYER_NOT_EXIST
-        })
-        return
-    end
-
-    local club_id = msg.club_id
-    local team_id = msg.team_id
-    local template_id = msg.template_id
-    local partner_id = msg.partner_id
-
-    local club = base_clubs[club_id]
-    if not club then
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_CLUB_NOT_FOUND
-        })
-        return
-    end
-
-    if not club_member[club_id][guid] then
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PLAYER_NO_RIGHT
-        })
-        return
-    end
-
-    local role = club_role[club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PLAYER_NO_RIGHT
-        })
-        return
-    end
-
-    guid = role == enum.CRT_ADMIN and club.owner or guid
-
-    if role == enum.CRT_PARTNER and not club_partners[club_id][partner_id] then
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    local template = table_template[template_id]
-    if not template or not template.rule or not template.rule.union then
-        log.error("on_cs_config_club_template_commission illegal template.")
-        onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
-            result = enum.ERROR_PARAMETER_ERROR
-        })
-        return
-    end
-
-    reddb:hdel(strfmt("club:commission:template:%s:%s:%s",club_id,template_id,guid),partner_id)
 
     onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
         result = enum.ERROR_NONE,
