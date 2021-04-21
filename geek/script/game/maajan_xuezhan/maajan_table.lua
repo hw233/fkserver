@@ -232,6 +232,10 @@ function maajan_table:on_started(player_count)
         v.chu_pai = nil
         v.que = nil
         v.multi_pao = nil
+        v.guo_zhuang_hu = nil
+        v.guo_shou_peng = nil
+        v.guo_zhuang_hu_target = nil
+        v.guo_shou_peng_target = nil
 
         v.statistics = v.statistics or {}
     end
