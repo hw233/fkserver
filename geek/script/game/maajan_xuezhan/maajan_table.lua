@@ -1759,6 +1759,7 @@ function maajan_table:max_hu(pai,tiles)
     if table.nums(fans) > 0 then
         return fans[1]
     end
+    return 0
 end
 
 function maajan_table:hu_fan(pai,tile)
