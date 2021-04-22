@@ -232,10 +232,10 @@ function maajan_table:on_started(player_count)
         v.chu_pai = nil
         v.que = nil
         v.multi_pao = nil
-        v.guo_zhuang_hu = nil
-        v.guo_shou_peng = nil
-        v.guo_zhuang_hu_target = nil
-        v.guo_shou_peng_target = nil
+        v.gzh = nil
+        v.gsp = nil
+        v.gzh_target = nil
+        v.gsp_target = nil
 
         v.statistics = v.statistics or {}
     end
@@ -424,7 +424,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
         self.qiang_gang_actions = nil
         self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile)
         chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
-        chu_pai_player.guo_zhuang_hu = nil
+        chu_pai_player.gzh = nil
         self:log_game_action(chu_pai_player,target_act,tile)
         self:done_last_action(chu_pai_player,{action = target_act,tile = qiang_tile})
         self:mo_pai()
@@ -874,7 +874,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
         self:adjust_shou_pai(player,do_action,tile)
         self:jump_to_player_index(player)
         player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
-        player.guo_zhuang_hu = nil
+        player.gzh = nil
         self:mo_pai()
     end
 
@@ -883,7 +883,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
         self:log_game_action(player,do_action,tile)
         self:jump_to_player_index(player)
         player.statistics.an_gang = (player.statistics.an_gang or 0) + 1
-        player.guo_zhuang_hu = nil
+        player.gzh = nil
         self:mo_pai()
     end
 
@@ -1093,7 +1093,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
             self:jump_to_player_index(player)
             self:mo_pai()
             player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
-            player.guo_zhuang_hu = nil
+            player.gzh = nil
         end
 
         if action.done.action == ACTION.HU then
@@ -1154,19 +1154,16 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         if action.done.action == ACTION.PASS then
             if self.rule.play.guo_zhuang_hu then
                 local hu_action = action.actions[ACTION.HU]
+                log.dump(hu_action)
                 if hu_action then
-                    player.guo_zhuang_hu = self:max_hu(player.pai,hu_action)
-                    chu_pai_player.guo_zhuang_hu_target = chu_pai_player.guo_zhuang_hu_target or {}
-                    table.insert(chu_pai_player.guo_zhuang_hu_target,player)
+                    self:set_gzh_on_pass_hu(player,chu_pai_player,chu_pai_player.chu_pai)
                 end
             end
 
             if self.rule.play.guo_shou_peng then
                 local peng_action = action.actions[ACTION.PENG]
                 if peng_action then
-                    player.guo_shou_peng = peng_action.tile
-                    chu_pai_player.guo_shou_peng_target = chu_pai_player.guo_shou_peng_target or {}
-                    table.insert(chu_pai_player.guo_shou_peng_target,player)
+                    self:set_gsp_on_pass_peng(player,chu_pai_player,chu_pai_player.chu_pai)
                 end
             end
 
@@ -1254,19 +1251,84 @@ function maajan_table:fake_mo_pai()
 
     table.incr(shou_pai,mo_pai)
 
-    player.guo_zhuang_hu = nil
-    player.guo_zhuang_hu_target = nil
-    player.guo_shou_peng = nil
-    player.guo_shou_peng_target = nil
+    player.gzh = nil
+    player.gzh_target = nil
+    player.gsp = nil
+    player.gsp_target = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
+end
+
+function maajan_table:clean_gzh(player)
+    player.gzh = nil
+    player.gzh_target = nil
+end
+
+function maajan_table:set_gzh_on_pass_hu(passer,discarder,tile)
+    passer.gzh = passer.gzh or {}
+    passer.gzh[tile] = self:hu_fan(passer.pai,tile)
+    log.dump(passer.gzh)
+    discarder.gzh_target = discarder.gzh_target or {}
+    discarder.gzh_target[tile] = discarder.gzh_target[tile] or {}
+    table.insert(discarder.gzh_target[tile],passer)
+    log.dump(discarder.gzh_target)
+end
+
+function maajan_table:clean_gzh_on_mo_pai(drawer)
+    if not drawer.gzh_target then return end
+
+    for tile,targets in pairs(drawer.gzh_target) do
+        for _,target in pairs(targets) do
+            if target.gzh then
+                target.gzh[tile] = nil
+                if table.nums(target.gzh) == 0 then target.gzh = nil end
+            end
+        end
+    end
+    drawer.gzh_target = nil
+end
+
+function maajan_table:is_in_gzh(player,tile)
+    return player.gzh and player.gzh[tile]
+end
+
+function maajan_table:clean_gsp(player)
+    player.gsp = nil
+    player.gsp_target = nil
+end
+
+function maajan_table:set_gsp_on_pass_peng(passer,discarder,tile)
+    passer.gsp = passer.gsp or {}
+    passer.gsp[tile] = true
+    discarder.gsp_target = discarder.gsp_target or {}
+    discarder.gsp_target[tile] = passer
+end
+
+function maajan_table:clean_gsp_on_mo_pai(drawer)
+    if not drawer.gsp_target then return end
+
+    for tile,target in pairs(drawer.gsp_target) do
+        if target.gsp then 
+            target.gsp[tile] = nil 
+            if table.nums(target.gsp) == 0 then target.gsp = nil end
+        end
+    end
+
+    drawer.gsp_target = nil
+end
+
+function maajan_table:is_in_gsp(player,tile)
+    return player.gsp and player.gsp[tile]
 end
 
 function maajan_table:mo_pai()
     self:update_state(FSM_S.WAIT_MO_PAI)
     local player = self:chu_pai_player()
     local shou_pai = player.pai.shou_pai
+
+    self:clean_gzh_on_mo_pai(player)
+    self:clean_gsp_on_mo_pai(player)
 
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
@@ -1289,22 +1351,6 @@ function maajan_table:mo_pai()
     if not mo_pai then
         self:do_balance()
         return
-    end
-
-    local guo_zhuang_hu_target = player.guo_zhuang_hu_target
-    if guo_zhuang_hu_target then
-        for _,target in pairs(guo_zhuang_hu_target) do
-            target.guo_zhuang_hu = nil
-        end
-        player.guo_zhuang_hu_target = nil
-    end
-    
-    local guo_shou_peng_target = player.guo_shou_peng_target
-    if guo_shou_peng_target then
-        for _,target in pairs(guo_shou_peng_target) do
-            target.guo_shou_peng = nil
-        end
-        player.guo_shou_peng_target = nil
     end
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
@@ -1432,7 +1478,6 @@ function maajan_table:send_ting_tips(p)
     if not hu_tips or p.trustee then return end
 
     local ting_tiles = self:ting_full(p)
-    log.dump(ting_tiles)
     if table.nums(ting_tiles) > 0 then
         local pai = clone(p.pai)
         local discard_tings = table.series(ting_tiles,function(tiles,discard)
@@ -1441,8 +1486,6 @@ function maajan_table:send_ting_tips(p)
             table.incr(pai.shou_pai,discard)
             return { discard = discard, tiles_info = tings, }
         end)
-
-        log.dump(discard_tings)
 
         send2client_pb(p,"SC_TingTips",{
             ting = discard_tings
@@ -1824,9 +1867,9 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
-    if p.guo_zhuang_hu and actions[ACTION.HU] then
-        local max_hu_fan = self:max_hu(p.pai,actions[ACTION.HU])
-        if max_hu_fan and max_hu_fan <= p.guo_zhuang_hu then
+    if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
+        local max_hu_fan = self:hu_fan(p.pai,in_pai)
+        if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
             actions[ACTION.HU] = nil
         end
     end
@@ -1835,10 +1878,13 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         actions[ACTION.HU] = nil
     end
 
-    if p.guo_shou_peng and actions[ACTION.PENG] then
+    if in_pai and self:is_in_gsp(p,in_pai) and actions[ACTION.PENG] then
         local action = actions[ACTION.PENG]
-        if action[p.guo_shou_peng] then
-            actions[ACTION.PENG][p.guo_shou_peng] = nil
+        for gsp_tile,_ in pairs(p.gsp) do
+            action[gsp_tile] = nil
+        end
+        if table.nums(action) == 0 then
+            actions[ACTION.PENG] = nil
         end
     end
 
@@ -2716,7 +2762,6 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
     local types = {}
     local play_opt = (not private_conf or not private_conf.play) and "xuezhan" or private_conf.play.option
     local hu_types = mj_util.hu(pai,in_pai,mo_pai)
-    log.dump(hu_types)
     local rule_play = self.rule.play
     types = table.series(hu_types,function(ones)
         local ts = {}
