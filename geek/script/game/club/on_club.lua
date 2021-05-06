@@ -669,16 +669,13 @@ function on_cs_club_query_memeber(msg,guid)
         table.insert(mems,1,partner)
     end
 
-    local yesterday = gutil.timestamp_date(os.time() - util.day_seconds())
-    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner,yesterday)
-
-    logs = table.group(logs,function(c) return c.guid end)
-
     local ms = table.series(mems,function(m)
         local p = base_players[tonumber(m)]
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+        local parent_guid = club_member_partner[club_id][p.guid]
+        local parent = base_players[parent_guid]
         if not req_role or req_role == 0 or req_role == role then
             return {
                 info = {
@@ -703,13 +700,18 @@ function on_cs_club_query_memeber(msg,guid)
                         player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
                         money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
                     },
-                    logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
                     conf = {
                         credit = club_partner_conf[club_id][p.guid].credit or 0,
                     },
                 }),
-                parent = club_member_partner[club_id][p.guid],
+                parent = parent_guid,
                 block_gaming = club_gaming_blacklist[club_id][p.guid],
+                parent_info = parent and {
+                    guid = parent_guid,
+                    nickname = parent.nickname,
+                    sex = parent.sex,
+                    icon = parent.icon,
+                } or nil,
             }
         end
     end)
@@ -2791,17 +2793,14 @@ function on_cs_search_club_player(msg,guid)
 
     local money_id = club_money_type[club_id]
 
-    local today = math.floor(os.time() / 86400) * 86400
-    local logs = channel.call("db.?","msg","SD_QueryPlayerStatistics",mems,club_id,partner_id,today)
-
-    logs = table.group(logs,function(c) return c.guid end)
-
     json.encode_sparse_array(true)
     local infos = table.series(mems,function(m)
         local p = base_players[tonumber(m)]
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+        local parent_guid = club_member_partner[club_id][p.guid]
+        local parent = base_players[parent_guid]
         return {
             info = {
                 guid = p.guid,
@@ -2825,10 +2824,15 @@ function on_cs_search_club_player(msg,guid)
                     player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
                     money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
                 },
-                logs = logs[p.guid] and table.values(logs[p.guid]) or nil,
             }),
-            parent = club_member_partner[club_id][p.guid],
+            parent = parent_guid,
             block_gaming = club_gaming_blacklist[club_id][p.guid],
+            parent_info = parent and {
+                guid = parent_guid,
+                nickname = parent.nickname,
+                sex = parent.sex,
+                icon = parent.icon,
+            } or nil,
         }
     end)
 
@@ -2973,4 +2977,84 @@ function on_bs_club_dismiss(club_id)
     end
 
     return club:dismiss()
+end
+
+function on_cs_club_member_info(msg,guid)
+    local club_id = msg.club_id
+    local member = msg.guid
+    
+    if not base_clubs[club_id] then
+        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    if not club_member[club_id][guid] then
+        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+            result = enum.ERROR_OPERATION_INVALID,
+        })
+        return
+    end
+
+    if not club_member[club_id][member] then
+        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+            result = enum.ERROR_MEMBERS_NOT_FOUND,
+        })
+        return
+    end
+
+    local p = base_players[member]
+    if not p then 
+        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+            result = enum.ERROR_MEMBERS_NOT_FOUND,
+        })
+        return
+    end
+
+    local money_id = club_money_type[club_id]
+    local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+    local parent_guid = club_member_partner[club_id][p.guid]
+    local parent = base_players[parent_guid]
+    local info = {
+        info = {
+            guid = p.guid,
+            icon = p.icon,
+            nickname = p.nickname,
+            sex = p.sex,
+        },
+        role = role,
+        money = {
+            money_id = money_id,
+            count = player_money[p.guid][money_id] or 0,
+        },
+        team_money = {
+            money_id = money_id,
+            count = club_team_money[club_id][p.guid] or 0,
+        },
+        commission = club_partner_commission[club_id][p.guid] or 0,
+        extra_data = json.encode({
+            info = {
+                guid = p.guid,
+                player_count = (club_team_player_count[club_id][p.guid] or 0) + 1,
+                money = (club_team_money[club_id][p.guid] or 0) + (player_money[p.guid][money_id] or 0)
+            },
+            conf = {
+                credit = club_partner_conf[club_id][p.guid].credit or 0,
+            },
+        }),
+        parent = parent_guid,
+        block_gaming = club_gaming_blacklist[club_id][p.guid],
+        parent_info = parent and {
+            guid = parent_guid,
+            nickname = parent.nickname,
+            sex = parent.sex,
+            icon = parent.icon,
+        } or nil,
+    }
+
+    send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+        result = enum.ERROR_NONE,
+        info = info,
+    })
 end

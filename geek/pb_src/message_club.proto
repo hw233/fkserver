@@ -571,5 +571,17 @@ message C2S_RESET_CLUB_TEMPLATE_COMMISSION{
 
 message S2C_RESET_CLUB_TEMPLATE_COMMISSION{
     enum MsgID {NIL = 0;ID = 14122;}
-    int32   result = 1;
+    int32  result = 1;
+}
+
+message CS_CLUB_MEMBER_INFO{
+    enum MsgID {NIL = 0;ID = 14123;}
+    int32 guid = 1;
+    int32 club_id = 2;
+}
+
+message SC_CLUB_MEMBER_INFO{
+    enum MsgID {NIL = 0;ID = 14124;}
+    int32 result = 1;
+    CLUB_MEMBER info = 2;
 }

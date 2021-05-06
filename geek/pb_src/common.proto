@@ -125,6 +125,7 @@ message CLUB_MEMBER{
     bool  block_gaming = 6;
     MONEY_INFO team_money = 7;
     int32 commission = 8;
+    PLAYER_BASE_INFO parent_info = 9;
 }
 
 message REQUEST_INFO{

@@ -58,3 +58,5 @@ register_dispatcher("C2S_CLUB_EDIT_TEAM_CONFIG",on_cs_club_edit_team_config)
 register_dispatcher("B2S_CLUB_DEL",on_bs_club_del)
 
 register_dispatcher("B2S_CLUB_DISMISS",on_bs_club_dismiss)
+
+register_dispatcher("CS_CLUB_MEMBER_INFO",on_cs_club_member_info)
