@@ -141,6 +141,13 @@ function on_cs_config_club_template_commission(msg,guid)
         return
     end
 
+    if club_member_partner[club_id][partner_id] ~= guid then
+        onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
     local role = club_role[club_id][guid]
     if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
