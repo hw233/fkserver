@@ -479,6 +479,7 @@ function base_table:do_tax_commission(taxes)
 				son = guid
 				son_commission = 0
 			end
+			son_commission = son_commission > 0 and son_commission or 0
 			son_commission = son_commission < commission and son_commission or commission
 			local my_commission = commission - son_commission
 			commission = son_commission
@@ -626,9 +627,10 @@ function base_table:do_bigwin_commission(bigwin_tax,bigwin_guid)
 				son = guid
 				son_commission = 0
 			end
+			son_commission = son_commission > 0 and son_commission or 0
 			son_commission = son_commission < commission and son_commission or commission
 			local my_commission = commission - son_commission
-			commission = son_commission	
+			commission = son_commission
 			commissions[myself] = (commissions[myself] or 0) + my_commission
 
 			if my_commission > 0 then
