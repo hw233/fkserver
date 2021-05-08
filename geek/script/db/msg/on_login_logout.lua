@@ -181,8 +181,6 @@ local function incr_player_money(guid,money_id,old_money,new_money,where,why,why
 		return
 	end
 
-	log.dump(res)
-
 	-- 单独执行，避免统计时锁表卡住
 	dbopt.log:query([[
 			INSERT INTO t_log_money(guid,money_id,old_money,new_money,`where`,reason,reason_ext,created_time) 
