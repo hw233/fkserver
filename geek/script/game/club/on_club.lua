@@ -42,6 +42,7 @@ local club_team_money = require "game.club.club_team_money"
 local club_partner_conf = require "game.club.club_partner_conf"
 local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
 local game_util = require "game.util"
+local allonlineguid = require "allonlineguid"
 
 local gutil = require "util"
 
@@ -403,14 +404,11 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local online_count = 0
     local total_count = 0
-
+    
     for mem,_ in pairs(club_member[club_id]) do
-        local p = base_players[mem]
-        if p  then
-            total_count = total_count + 1
-            if p.online then
-                online_count = online_count + 1
-            end
+        total_count = total_count + 1
+        if allonlineguid[mem] then
+            online_count = online_count + 1
         end
     end
 
