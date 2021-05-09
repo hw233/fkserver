@@ -1427,6 +1427,10 @@ function maajan_table:on_action_chu_pai(player,msg)
         return
     end
 
+    if self.chu_pai_player_index ~= player.chair_id then
+        return
+    end
+
     local chu_pai_val = msg.tile
 
     if not mj_util.check_tile(chu_pai_val) then
