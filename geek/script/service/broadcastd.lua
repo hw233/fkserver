@@ -5,10 +5,14 @@ local club_member = require "game.club.club_member"
 local onlineguid = require "netguidopt"
 local channel = require "channel"
 local allonlineguid = require "allonlineguid"
+local redisopt = require "redisopt"
+
+local reddb = redisopt.default
 
 local table = table
 local string = string
 local tinsert = table.insert
+local strfmt = string.format
 
 local CMD = {}
 
@@ -30,7 +34,8 @@ local function broadcast2guids(guids,msgname,msg)
 end
 
 function CMD.broadcast2club(club,msgname,msg)
-	local guids = table.keys(club_member[club] or {})
+	local guids = reddb:sinter("player:online:all",strfmt("club:member:%s",club))
+	guids = table.series(guids,tonumber)
 	broadcast2guids(guids,msgname,msg or {})
 end
 
