@@ -585,3 +585,30 @@ message SC_CLUB_MEMBER_INFO{
     int32 result = 1;
     CLUB_MEMBER info = 2;
 }
+
+
+message SYNC_SEAT_INFO { 
+    int32 chair_id = 1; //座位序号
+    PLAYER_BASE_INFO player_info = 2; //玩家信息
+    bool  ready = 3; //准备状态
+    bool  online = 4; //是否掉线
+    bool  is_trustee = 5;
+}
+
+message TABLE_SYNC_INFO{
+    int32   opcode = 1;
+    int32   table_id = 2; //桌号
+    SYNC_SEAT_INFO trigger = 3;
+    string  rule = 4;
+    int32   game_type = 5;
+    int32   template_id = 6;
+    int32   status = 7;
+    int32   cur_round = 8; //当前局数
+}
+
+//桌子有关同步
+message SC_CLUB_SYNC_TABLES{ 
+    enum MsgID {NIL = 0;ID = 14125;}
+    int32 club_id=1;
+    repeated TABLE_SYNC_INFO syncs=2;
+}

@@ -39,6 +39,7 @@ local club_member_lock = require "game.club.club_member_lock"
 local bc = require "broadcast"
 local game_util = require "game.util"
 local queue = require "skynet.queue"
+local club_sync_cache = require "game.club.club_sync_cache"
 
 local reddb = redisopt.default
 
@@ -493,8 +494,26 @@ function base_club:create_table(player,chair_count,round,rule,template)
         })
 
         reddb:sadd("club:table:"..self.id,global_tid)
-        -- reddb:expire("club:table:"..self.id,table_expire_seconds)
         base_private_table[global_tid] = nil
+        
+        club_sync_cache.sync(self.id,{
+            opcode = enum.TSO_CREATE,
+            table_id = global_tid,
+            rule = json.encode(rule),
+            template_id = template.template_id,
+            cur_round = tb:gaming_round(),
+            game_type = template.game_id,
+            trigger = {
+                chair_id = player.chair_id,
+                player_info = {
+                    guid = player.guid,
+                    nickname = player.nickname,
+                    icon = player.icon,
+                    sex = player.sex,
+                },
+                online = true,
+            },
+        })
     end
 
     return result,global_tid,tb

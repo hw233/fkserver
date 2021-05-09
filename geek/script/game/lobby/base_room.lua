@@ -24,9 +24,6 @@ local reddb = redisopt.default
 -- 房间
 local base_room = {}
 
--- 奖池
--- global_prize_pool = global_prize_pool or base_prize_pool:new()
-
 
 local function check_conf(conf)
 	assert(conf.table_count)

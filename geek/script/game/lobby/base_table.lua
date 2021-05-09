@@ -25,6 +25,7 @@ local game_util = require "game.util"
 local player_winlose = require "game.lobby.player_winlose"
 local base_rule = require "game.lobby.base_rule"
 local table_template = require "game.lobby.table_template"
+local club_sync_cache = require "game.club.club_sync_cache"
 
 local table = table
 local string = string
@@ -1287,22 +1288,18 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 
 		self:on_player_sit_down(player,chair_id,reconnect)
 
-		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+		self:broadcast_sync_table_info_2_club({
+			opcode = enum.TSO_JOIN,
 			table_id = self:id(),
-			seat_list = table.series(self.players,function(p,chair_id) 
-				return {
-					chair_id = chair_id,
-					player_info = {
-						guid = p.guid,
-						icon = p.icon,
-						nickname = p.nickname,
-						sex = p.sex,
-					},
-					ready = self.ready_list[chair_id] and true or false,
-					is_trustee = p.trustee and true or false,
+			trigger = {
+				chair_id = chair_id,
+				player_info = {
+					guid = player.guid,
+					nickname = player.nickname,
+					icon = player.icon,
+					sex = player.sex,
 				}
-			end),
-			room_cur_round = self:gaming_round(),
+			},
 		})
 
 		onlineguid[player.guid] = nil
@@ -1363,7 +1360,10 @@ function base_table:do_dismiss(reason)
 		self:cancel_all_delay_kickout()
 		self:on_private_pre_dismiss()
 
-		self:broadcast_sync_table_info_2_club(enum.SYNC_DEL)
+		self:broadcast_sync_table_info_2_club({
+			opcode = enum.TSO_DELETE,
+			table_id = self:id(),
+		})
 
 		log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
 		local private_table_conf = base_private_table[self.private_id]
@@ -1585,7 +1585,7 @@ function base_table:cancel_all_delay_kickout()
 	end)
 end
 
-function base_table:broadcast_sync_table_info_2_club(type,roominfo)
+function base_table:broadcast_sync_table_info_2_club(syncinfo)
 	if not self:is_private() then
 		return
 	end
@@ -1599,13 +1599,7 @@ function base_table:broadcast_sync_table_info_2_club(type,roominfo)
 		return
 	end
 
-	club:broadcast_not_gaming("S2C_SYNC_TABLES_RES",{
-		root_club = club.id,
-		club_id = club.id,
-		room_info = roominfo,
-		sync_table_id = self.private_id,
-		sync_type = type or enum.SYNC_UPDATE,
-	})
+	club_sync_cache.sync(self.club_id,syncinfo)
 end
 
 
@@ -1682,22 +1676,15 @@ function base_table:player_stand_up(player, reason)
 			elseif player_count == 1 then
 				self:do_dismiss(dismiss_reason[reason])
 			else
-				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+				self:broadcast_sync_table_info_2_club({
+					opcode = enum.TSO_LEAVE,
 					table_id = self:id(),
-					seat_list = table.series(self.players,function(p,chair_id) 
-						return {
-							chair_id = chair_id,
-							player_info = {
-								guid = p.guid,
-								icon = p.icon,
-								nickname = p.nickname,
-								sex = p.sex,
-							},
-							ready = self.ready_list[chair_id] and true or false,
-							is_trustee = p.trustee and true or false,
+					trigger = {
+						chair_id = chair_id,
+						player_info = {
+							guid = player.guid,
 						}
-					end),
-					room_cur_round = self:gaming_round(),
+					},
 				})
 
 				if 	reason == enum.STANDUP_REASON_OFFLINE or
@@ -2105,22 +2092,10 @@ function base_table:on_started(player_count)
 	self.cur_round = (self.cur_round or 0) + 1
 
 	if self.club_id then
-		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+		self:broadcast_sync_table_info_2_club({
+			opcode = enum.TSO_STATUS_CHANGE,
 			table_id = self:id(),
-			seat_list = table.series(self.players,function(p,chair_id) 
-				return {
-					chair_id = chair_id,
-					player_info = {
-						guid = p.guid,
-						icon = p.icon,
-						nickname = p.nickname,
-						sex = p.sex,
-					},
-					ready = self.ready_list[chair_id] and true or false,
-					is_trustee = p.trustee and true or false,
-				}
-			end),
-			room_cur_round = self:gaming_round(),
+			cur_round = self:gaming_round(),
 		})
 	end
 
