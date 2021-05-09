@@ -1424,10 +1424,12 @@ end
 
 function maajan_table:on_action_chu_pai(player,msg)
     if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
+        log.error("maajan_table:on_action_chu_pai state error %s",self.cur_state_FSM)
         return
     end
 
     if self.chu_pai_player_index ~= player.chair_id then
+        log.error("maajan_table:on_action_chu_pai chu_pai_player %s ~= %s",player.chair_id,self.chu_pai_player_index)
         return
     end
 
