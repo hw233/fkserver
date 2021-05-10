@@ -1599,7 +1599,7 @@ function base_table:broadcast_sync_table_info_2_club(type,roominfo)
 		return
 	end
 
-	club:recusive_broadcast("S2C_SYNC_TABLES_RES",{
+	club:broadcast_not_gaming("S2C_SYNC_TABLES_RES",{
 		root_club = club.id,
 		club_id = club.id,
 		room_info = roominfo,

@@ -594,9 +594,7 @@ function on_club_create_table(club,player,chair_count,round,rule,template)
     local result,global_table_id,tb = club:create_table(player,chair_count,round,rule,template)
     if result == enum.GAME_SERVER_RESULT_SUCCESS then
         local tableinfo = channel.call("game."..def_game_id,"msg","GetTableStatusInfo",tb.table_id_)
-        local root  = club_utils.root(club)
-        root:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-            root_club = root.id,
+        club:broadcast_not_gaming("S2C_SYNC_TABLES_RES",{
             club_id = club.id,
             room_info = tableinfo,
             sync_table_id = global_table_id,
