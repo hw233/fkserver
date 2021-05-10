@@ -1287,7 +1287,23 @@ function base_table:player_sit_down(player, chair_id,reconnect)
 
 		self:on_player_sit_down(player,chair_id,reconnect)
 
-		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
+		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+			table_id = self:id(),
+			seat_list = table.series(self.players,function(p,chair_id) 
+				return {
+					chair_id = chair_id,
+					player_info = {
+						guid = p.guid,
+						icon = p.icon,
+						nickname = p.nickname,
+						sex = p.sex,
+					},
+					ready = self.ready_list[chair_id] and true or false,
+					is_trustee = p.trustee and true or false,
+				}
+			end),
+			room_cur_round = self:gaming_round(),
+		})
 
 		onlineguid[player.guid] = nil
 
@@ -1666,7 +1682,24 @@ function base_table:player_stand_up(player, reason)
 			elseif player_count == 1 then
 				self:do_dismiss(dismiss_reason[reason])
 			else
-				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,self:global_status_info())
+				self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+					table_id = self:id(),
+					seat_list = table.series(self.players,function(p,chair_id) 
+						return {
+							chair_id = chair_id,
+							player_info = {
+								guid = p.guid,
+								icon = p.icon,
+								nickname = p.nickname,
+								sex = p.sex,
+							},
+							ready = self.ready_list[chair_id] and true or false,
+							is_trustee = p.trustee and true or false,
+						}
+					end),
+					room_cur_round = self:gaming_round(),
+				})
+
 				if 	reason == enum.STANDUP_REASON_OFFLINE or
 					reason == enum.STANDUP_REASON_NORMAL or
 					reason == enum.STANDUP_REASON_FORCE or
@@ -2072,16 +2105,23 @@ function base_table:on_started(player_count)
 	self.cur_round = (self.cur_round or 0) + 1
 
 	if self.club_id then
-		local club = base_clubs[self.club_id]
-		if club then
-			club:recusive_broadcast("S2C_SYNC_TABLES_RES",{
-				root_club = club.id,
-				club_id = club.id,
-				room_info = self:global_status_info(),
-				sync_table_id = self.private_id,
-				sync_type = enum.SYNC_UPDATE,
-			})
-		end
+		self:broadcast_sync_table_info_2_club(enum.SYNC_UPDATE,{
+			table_id = self:id(),
+			seat_list = table.series(self.players,function(p,chair_id) 
+				return {
+					chair_id = chair_id,
+					player_info = {
+						guid = p.guid,
+						icon = p.icon,
+						nickname = p.nickname,
+						sex = p.sex,
+					},
+					ready = self.ready_list[chair_id] and true or false,
+					is_trustee = p.trustee and true or false,
+				}
+			end),
+			room_cur_round = self:gaming_round(),
+		})
 	end
 
 	if self:gaming_round() == 1 then
@@ -2401,7 +2441,7 @@ function base_table:kickout_player(player,kicker)
 	return player:force_exit(enum.STANDUP_REASON_FORCE)
 end
 
-function base_table:global_status_info()
+function base_table:global_status_info(op)
 	local seats = table.series(self.players,function(p,chair_id) 
 		return {
 			chair_id = chair_id,
