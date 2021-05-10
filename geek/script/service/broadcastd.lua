@@ -5,9 +5,6 @@ local club_member = require "game.club.club_member"
 local onlineguid = require "netguidopt"
 local channel = require "channel"
 local allonlineguid = require "allonlineguid"
-local redisopt = require "redisopt"
-
-local reddb = redisopt.default
 
 local table = table
 local string = string
@@ -16,10 +13,12 @@ local strfmt = string.format
 
 local CMD = {}
 
-local function broadcast2guids(guids,msgname,msg)
+local function broadcast2guids(guids,msgname,msg,fn)
 	local guid_session = table.map(guids,function(guid)
 		local session = onlineguid[guid]
-		return guid,session and session.gate or nil
+		if not fn or fn(session) then
+			return guid,session and session.gate or nil
+		end
 	end)
 
 	local gateguids = {}
@@ -34,8 +33,8 @@ local function broadcast2guids(guids,msgname,msg)
 end
 
 function CMD.broadcast2club(club,msgname,msg)
-	local guids = reddb:sinter("player:online:all",strfmt("club:member:%s",club))
-	guids = table.series(guids,tonumber)
+	local guids = club_member[club]
+	guids = table.series(guids,function(_,guid) return tonumber(guid) end)
 	broadcast2guids(guids,msgname,msg or {})
 end
 
@@ -47,6 +46,18 @@ end
 
 function CMD.broadcast2partial(guids,msgname,msg)
 	broadcast2guids(guids,msgname,msg or {})
+end
+
+function CMD.broadcast2not_gaming(guids,msgname,msg)
+	broadcast2guids(guids,msgname,msg or {},function(s) 
+		return not s.table and not s.chair
+	end)
+end
+
+function CMD.broadcast2club_not_gaming(club,msgname,msg)
+	local guids = club_member[club]
+	guids = table.series(guids,function(_,guid) return tonumber(guid) end)
+	CMD.broadcast2not_gaming(guids,msgname,msg)
 end
 
 skynet.start(function()

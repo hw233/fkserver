@@ -16,6 +16,14 @@ function broadcast.broadcast2online(msgname,msg)
 	skynet.send(broadcastd,"lua","broadcast2online",msgname,msg)
 end
 
+function broadcast.broadcast2not_gaming(club,msgname,msg)
+	skynet.send(broadcastd,"lua","broadcast2not_gaming",club,msgname,msg)
+end
+
+function broadcast.broadcast2club_not_gaming(club,msgname,msg)
+	skynet.send(broadcastd,"lua","broadcast2club_not_gaming",club,msgname,msg)
+end
+
 skynet.start(function()
 	broadcastd = skynet.uniqueservice("service.broadcastd")
 end)
