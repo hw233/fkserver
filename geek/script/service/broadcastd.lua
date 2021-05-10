@@ -16,8 +16,8 @@ local CMD = {}
 local function broadcast2guids(guids,msgname,msg,fn)
 	local guid_session = table.map(guids,function(guid)
 		local session = onlineguid[guid]
-		if not fn or fn(session) then
-			return guid,session and session.gate or nil
+		if session and (not fn or fn(session)) then
+			return guid,session.gate
 		end
 	end)
 
