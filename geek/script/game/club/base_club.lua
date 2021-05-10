@@ -64,20 +64,6 @@ local function broadcast(clubid,msgname,msg,except)
     end
 end
 
-local function recusive_get_members(club_id)
-    local guids = club_member[club_id]
-    for teamid,_ in pairs(club_team[club_id]) do
-        table.mergeto(guids,recusive_get_members(teamid))
-    end
-
-    return guids
-end
-
-local function recusive_broadcast(clubid,msgname,msg,except)
-    local guids = recusive_get_members(clubid)
-    onlineguid.broadcast(table.keys(guids),msgname,msg)
-end
-
 function base_club:lockcall(fn)
     self.lock = self.lock or queue()
     return self.lock(fn)
@@ -741,7 +727,11 @@ end
 
 
 function base_club:recusive_broadcast(msgname,msg,except)
-    recusive_broadcast(self.id,msgname,msg,except)
+    bc.broadcast2club(self.id,msgname,msg,except)
+end
+
+function base_club:broadcast_not_gaming(msgname,msg)
+    bc.broadcast2club_not_gaming(self.id,msgname,msg)
 end
 
 function base_club:remove_table_template(template_id)
