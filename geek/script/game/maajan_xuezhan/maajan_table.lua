@@ -202,7 +202,12 @@ function maajan_table:on_private_dismissed()
     base_table.on_private_dismissed(self)
 end
 
-function base_table:check_start()
+function maajan_table:check_start()
+    if self:is_play() then
+        log.error("maajan_table:check_start is gaming %s",self:id())
+        return
+    end
+
     if table.nums(self.ready_list) == self.start_count then
         self:start(self.start_count)
     end
