@@ -532,6 +532,19 @@ function maajan_table:on_reconnect_when_huan_pai(player)
 end
 
 function maajan_table:on_huan_pai(player,msg)
+    if self.cur_state_FSM ~= FSM_S.HUAN_PAI then
+        log.error("maajan_table:on_huan_pai state error state %s,guid:%s",self.cur_state_FSM,player.guid)
+        return
+    end
+
+    if player.pai.huan then
+        log.error("maajan_table:on_huan_pai repeated,guid:%s",player.guid)
+        send2client_pb(player.guid,"SC_HuanPai",{
+            result = enum.ERROR_OPERATION_REPEATED,
+        })
+        return
+    end
+
     local tiles = msg.tiles
     for _,tile in pairs(tiles) do
         local c = player.pai.shou_pai[tile]
@@ -732,6 +745,19 @@ function maajan_table:cancel_clock_timer()
 end
 
 function maajan_table:on_ding_que(player,msg)
+    if self.cur_state_FSM ~= FSM_S.DING_QUE then
+        log.error("maajan_table:on_ding_que error state %s,guid:%s",self.cur_state_FSM,player.guid)
+        return
+    end
+
+    if player.que then
+        log.error("maajan_table:on_ding_que repeated %s,guid:%s",msg.men,player.guid)
+        send2client_pb(player,"SC_DingQue",{
+            result = enum.ERROR_OPERATION_REPEATED
+        })
+        return
+    end
+    
     local men = msg.men
     if not men or men < 0 or men > 3 then
         send2client_pb(player,"SC_DingQue",{
