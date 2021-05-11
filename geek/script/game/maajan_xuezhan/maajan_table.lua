@@ -405,6 +405,11 @@ function maajan_table:on_reconnect_when_action_qiang_gang_hu(p)
 end
 
 function maajan_table:on_action_qiang_gang_hu(player,msg)
+    if self.cur_state_FSM ~= FSM_S.WAIT_QIANG_GANG_HU then
+        log.error("maajan_table:on_action_qiang_gang_hu wrong state %s",self.cur_state_FSM)
+        return
+    end
+    
     local done_action = self:check_action_before_do(self.qiang_gang_actions or {},player,msg)
     if not done_action then 
         log.error("on_action_qiang_gang_hu,no wait qiang gang action,%s,%s",player.guid)
@@ -444,23 +449,24 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
 
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
+        local done_action_tile = action.tile
         p.hu = {
             time = timer.nanotime(),
-            tile = action.tile,
-            types = self:hu(p,action.tile),
+            tile = done_action_tile,
+            types = self:hu(p,done_action_tile),
             zi_mo = false,
             whoee = self.chu_pai_player_index,
             qiang_gang = true,
         }
 
-        self:log_game_action(p,act,tile)
+        self:log_game_action(p,act,done_action_tile)
         self:broadcast_player_hu(p,act,action.target)
         p.statistics.hu = (p.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
 
-        table.decr(chu_pai_player.pai.shou_pai,tile)
+        table.decr(chu_pai_player.pai.shou_pai,done_action_tile)
 
-        self:done_last_action(p,{action = act,tile = action.tile})
+        self:done_last_action(p,{action = act,tile = done_action_tile})
     end
 
     table.foreach(self.qiang_gang_actions or {},function(action,chair)
