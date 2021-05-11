@@ -75,17 +75,22 @@ function MSG.SS_GameRoundEnd(msg)
         return strfmt("(%s,%s,%s,%s,%s)",guid,club or 0,game_id,money,date)
     end)
 
+    local guidcount = table.nums(balance or {})
+    local validcount = 1 / guidcount
+
     local countvalues = table.series(balance,function(money,guid)
-        return strfmt("(%s,%s,%s,1,%s)",guid,club or 0,game_id,date)
+        return strfmt("(%s,%s,%s,1,%s,%s)",guid,club or 0,game_id,validcount,date)
     end)
 
     local sqls = {
         {
             strfmt(
                 [[
-                    INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,date)
+                    INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,valid_count,date)
                     VALUES %s
-                    ON DUPLICATE KEY UPDATE count = count + 1;
+                    ON DUPLICATE KEY UPDATE 
+                    count = count + 1,
+                    valid_count = valid_count + VALUES(valid_count);
                 ]],
                 tconcat(countvalues,",")
             )
@@ -110,19 +115,21 @@ function MSG.SS_GameRoundEnd(msg)
     if club and club ~= 0 then
         local values = {}
         for guid,_ in pairs(balance or {}) do
-            tinsert(values,strfmt("(%s,%s,1,%s)",guid,club,date))
+            tinsert(values,strfmt("(%s,%s,1,%s,%s)",guid,club,validcount,date))
             local partner = club_member_partner[club][guid]
             while partner and partner ~= 0 do
-                tinsert(values,strfmt("(%s,%s,1,%s)",partner,club,date))
+                tinsert(values,strfmt("(%s,%s,1,%s,%s)",partner,club,validcount,date))
                 partner = club_member_partner[club][partner]
             end
         end
 
         local sql = strfmt(
             [[
-                INSERT INTO t_log_team_daily_play_count(guid,club,count,date)
+                INSERT INTO t_log_team_daily_play_count(guid,club,count,valid_count,date)
                 VALUES %s
-                ON DUPLICATE KEY UPDATE count = count + 1
+                ON DUPLICATE KEY UPDATE
+                count = count + 1,
+                valid_count = valid_count + VALUES(valid_count)
             ]],
             tconcat(values,","))
 
