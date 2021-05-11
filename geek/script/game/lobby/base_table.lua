@@ -1444,7 +1444,7 @@ function base_table:do_dismiss(reason)
 	end)
 end
 
-function base_table:transfer_owner()
+function base_table:transfer_owner(player)
 	return self:lockcall(function()
 		log.info("transfer owner:%s,%s",self.conf.private_id,self.conf.owner.guid)
 		if not self.conf or not self:is_private() then
