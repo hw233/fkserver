@@ -1423,8 +1423,8 @@ function maajan_table:is_que(p)
 
     local g = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
     local men_counts = table.map(g,function(gp,men)  return men,table.sum(gp)  end)
-    local men_count = table.sum(men_counts,function(c,men) return (c > 0 and men < 3) and 1 or 0 end)
-    return men_count <= 2
+    local que_men_count = men_counts[p.que] or 0
+    return que_men_count == 0
 end
 
 function maajan_table:ting_full(p)
@@ -1811,10 +1811,8 @@ end
 function maajan_table:prepare_tiles()
     self.dealer:shuffle()
     self.pre_tiles = {
-        -- [1] = {21,21,22,22,23,23,24,24,25,25,25,25,26},
-        -- [2] = {11,12,13,14,15,16,17,18,19,8,8,8,7},
-        -- [3] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
-        -- [4] = {21,21,22,22,23,23,24,24,25,25,26,26,27},
+        -- [1] = {21,21,22,22,23,23,24,24,25,25,26,26,8},
+        -- [2] = {11,12,13,14,15,16,17,18,19,19,19,19,8},
     }
 
     self:foreach(function(p)
