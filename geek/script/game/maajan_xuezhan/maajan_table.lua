@@ -2002,7 +2002,7 @@ function maajan_table:check_action_before_do(waiting_actions,player,msg)
 
     if def.is_action_gang(action) then
         if not actions[action] or not actions[action][tile] then
-            log.error("no action waiting when check_action_before_do,chair_id,action:%s,tile:%s",chair_id,action,tile)
+            log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
             return
         end
     end
