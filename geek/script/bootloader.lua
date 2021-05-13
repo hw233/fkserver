@@ -197,13 +197,9 @@ local function setup()
             if is_bootcluster() then
                 local needservices = cluster_services(serviceconfs,conf)
                 channel.subscribe(needservices)
-                local ok = channel.subscribe(localservices,cluster_name(conf))
-                if not ok then
-                    channel.unsubscribe(table.keys(needservices))
-                end
-            else
-                channel.subscribe(localservices,cluster_name(conf))
             end
+
+            channel.subscribe(localservices,cluster_name(conf))
         end
     end
 end

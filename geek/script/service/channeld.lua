@@ -365,9 +365,10 @@ local function sub_one(service,handle)
     end
 end
 
-function CMD.exchange(_,service,handle)
+function CMD.exchange(_,service,handle,from)
     if type(service) == "table" then
         sub_many(service)
+        from = handle
     else
         sub_one(service,handle)
     end
@@ -383,38 +384,34 @@ function CMD.exchange(_,service,handle)
         end
     end
 
-    return localservices
+    cluster.send(from,"@channel","lua","exchange_rep",localservices)
+end
+
+function CMD.exchange_rep(_,services)
+    sub_many(services)
+    wakeup()
 end
 
 function CMD.subscribe(_,service,handle,remote)
     if type(service) == "table" then
         remote = handle
         if remote then
-            local ok = true
-            ok,service = pcall(cluster.call,remote,"@channel","lua","exchange",service)
-            if not ok then
-                log.error("channeld exchange services: %s",service)
-                return
-            end
+            cluster.send(remote,"@channel","lua","exchange",service,selfprovider.name)
+            return
         end
         sub_many(service)
     else
         assert(service and type(service) == "string")
         assert(handle)
         if remote then
-            local ok,services = pcall(cluster.call,remote,"@channel","lua","exchange",service,handle)
-            if not ok then
-                log.error("channeld exchange services: %s",service)
-                return
-            end
-            sub_many(services)
-        else
-            sub_one(service,handle)
+            cluster.send(remote,"@channel","lua","exchange",service,handle,selfprovider.name)
+            return
         end
+
+        sub_one(service,handle)
     end
 
     wakeup()
-    return true
 end
 
 function CMD.unsubscribe(_,service,remote)
