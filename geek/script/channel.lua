@@ -39,12 +39,12 @@ function channel.publish(id,proto,...)
     return skynet.send(channeld,"lua","publish",id,proto,...)
 end
 
-function channel.subscribe(service,handle,provider)
-    return skynet.call(channeld,"lua","subscribe",service,handle,provider)
+function channel.subscribe(service,handle,remote)
+    return skynet.call(channeld,"lua","subscribe",service,handle,remote)
 end
 
-function channel.unsubscribe(id,provider)
-    return skynet.call(channeld,"lua","unsubscribe",id,provider)
+function channel.unsubscribe(service,remote)
+    return skynet.call(channeld,"lua","unsubscribe",service,remote)
 end
 
 function channel.localprovider(name)

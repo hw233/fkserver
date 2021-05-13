@@ -281,8 +281,8 @@ function CMD.query(_,id)
     return get_service_without_warmdead(id)
 end
 
-function CMD.localprovider(_,name)
-    selfprovider = name
+function CMD.localprovider(_,ctx)
+    selfprovider = ctx
 end
 
 function CMD.providerservice(provider)
@@ -300,35 +300,141 @@ function CMD.providerservice(provider)
     return providers
 end
 
-function CMD.subscribe(source,service,handle,provider)
-    if not provider then
-        handle = handle or source
-        local global = (type(handle) == "string" and handle:match("%@"))
-        put(service,handle,global)
-        address[service] = {
-            addr = handle,
-            global = global,
-        }
-    else
-        cluster.send(provider,"@channel","lua","subscribe",service,selfprovider.."@"..service)
-    end
-
-    log.info("channeld.subscribe provider:%s,id:%s,handle:%s",provider,service,handle)
-
-    wakeup()
+local function do_sub(sid,handle)
+    local global = type(handle) == "string" and handle:match("%@") or nil
+    put(sid,handle,global)
+    address[sid] = {
+        addr = handle,
+        global = global,
+    }
+    log.info("channeld.subscribe %s  %s",sid,handle)
 end
 
-function CMD.unsubscribe(_,service,provider)
-    log.info("channeld.unsubscribe %s,%d",service)
+local function do_unsub(sid)
+    assert(sid and type(sid) == "string")
+    pop(sid)
+    if address[sid] and not address[sid].global then
+        cluster.register(sid)
+    end
+    address[sid] = nil
+end
 
-    if not provider or provider == selfprovider then
-        pop(service)
-        address[service] = nil
+local function sub(sid,handle)
+    local t = type(handle)
+    if t == "number" then
+        log.info("sub %s,%s",sid,handle)
+        do_sub(sid,handle)
+        cluster.register(sid,handle)
         return
     end
 
-    cluster.send(provider,"@channel","lua","unsubscribe",service)
-    cluster.register(service,nil)
+    if t == "string" then
+        do_sub(sid,handle)
+        return
+    end
+
+    if t == "table" then
+        local provider = handle.provider
+        assert(type(provider) == "string")
+        assert(not selfprovider or provider ~= selfprovider.name)
+        assert(type(handle.addr) == "string")
+
+        do_sub(sid,provider.."@"..sid)
+        return provider,handle.addr
+    end
+end
+
+local function sub_many(services)
+    local remotenodes = {}
+    for sid,hdl in pairs(services) do
+        local provider,addr = sub(sid,hdl)
+        if provider and addr then
+            remotenodes[provider] = addr
+        end
+    end
+
+    cluster.reload(remotenodes)
+end
+
+local function sub_one(service,handle)
+    local provider,addr = sub(service,handle)
+    if provider and addr then
+        cluster.reload({
+            [provider] = addr
+        })
+    end
+end
+
+function CMD.exchange(_,service,handle)
+    if type(service) == "table" then
+        sub_many(service)
+    else
+        sub_one(service,handle)
+    end
+
+    local localservices = {}
+    local localprovider = {
+        provider = selfprovider.name,
+        addr = selfprovider.addr,
+    }
+    for sid,c in pairs(address) do
+        if not c.global then
+            localservices[sid] = localprovider
+        end
+    end
+
+    return localservices
+end
+
+function CMD.subscribe(_,service,handle,remote)
+    if type(service) == "table" then
+        remote = handle
+        if remote then
+            local ok = true
+            ok,service = pcall(cluster.call,remote,"@channel","lua","exchange",service)
+            if not ok then
+                log.error("channeld exchange services: %s",service)
+                return
+            end
+        end
+        sub_many(service)
+    else
+        assert(service and type(service) == "string")
+        assert(handle)
+        if remote then
+            local ok,services = pcall(cluster.call,remote,"@channel","lua","exchange",service,handle)
+            if not ok then
+                log.error("channeld exchange services: %s",service)
+                return
+            end
+            sub_many(services)
+        else
+            sub_one(service,handle)
+        end
+    end
+
+    wakeup()
+    return true
+end
+
+function CMD.unsubscribe(_,service,remote)
+    if remote then
+        cluster.send(remote,"@channel","lua","unsubscribe",service)
+        return
+    end
+
+    local t = type(service)
+    if t == "string" then
+        log.info("channeld.unsubscribe %s",service)
+        do_unsub(service)
+        return
+    end
+
+    assert(t == "table")
+    for k,name in pairs(service) do 
+        log.info("channeld.unsubscribe %s",name)
+        do_unsub(name)
+    end
 end
 
 function CMD.rawcall(_,id,proto,msg,sz)
@@ -388,7 +494,7 @@ function CMD.kill(_,id)
                 cluster.register(id,nil)
             else
                 local provider,_ = conf.addr:match("([^@]+)@(.+)")
-                if provider ~= selfprovider then
+                if provider ~= selfprovider.name then
                     table.insert(providers,provider)
                 end
             end
