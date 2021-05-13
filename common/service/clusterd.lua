@@ -176,13 +176,14 @@ local function clearnamecache()
 end
 
 function command.register(source, name, addr)
+	assert(addr ~= nil)
 	assert(register_name[name] == nil)
 	addr = addr or source
-	local old_name = register_name[addr]
-	if old_name then
-		register_name[old_name] = nil
-		clearnamecache()
-	end
+	-- local old_name = register_name[addr]
+	-- if old_name then
+		-- register_name[old_name] = nil
+		-- clearnamecache()
+	-- end
 	register_name[addr] = name
 	register_name[name] = addr
 	skynet.ret(nil)
