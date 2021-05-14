@@ -472,15 +472,6 @@ function on_cs_club_detail_info_req(msg,guid)
         commission = (role == enum.CRT_BOSS or role == enum.CRT_PARTNER) and club_partner_commission[club_id][guid] or 0,
     }
 
-    local function get_fast_templates(cid)
-        if not cid then return {} end
-        local fast_templates = club_fast_template[cid]
-        if table.nums(fast_templates) > 0 then return fast_templates end
-        local c = base_clubs[cid]
-        if not c or not c.parent or c.parent == 0 then return fast_templates end
-        return table.union(fast_templates,get_fast_templates(c.parent))
-    end
-
     local keygames = table.map(real_games,function(g) return g,true end)
     templates = table.select(templates,function(t) return keygames[t.game_id] end)
     
@@ -492,7 +483,6 @@ function on_cs_club_detail_info_req(msg,guid)
         status = club_status,
         table_list = tables,
         gamelist = real_games,
-        fast_templates = get_fast_templates(club_id),
         table_templates = table.series(templates,function(template)
             return {
                 club_id = template.club_id,
