@@ -161,6 +161,9 @@ function base_club:dismiss()
         reddb:del(string.format("club:member:partner:%d",self.id))
         reddb:del(string.format("club:partner:member:%d",self.id))
         reddb:del(string.format("club:partner:zmember:%d",self.id))
+        reddb:del(string.format("club:member:online:count:%d",self.id))
+        reddb:del(string.format("club:member:online:guid:%d",self.id))
+        reddb:del(string.format("club:member:count:%d",self.id))
         
         for group_id,_ in pairs(club_block_groups[self.id]) do
             for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
@@ -215,6 +218,9 @@ function base_club:del()
         reddb:del(string.format("club:partner:zmember:%d",self.id))
         reddb:del(string.format("club:team_money:%d",self.id))
         reddb:del(string.format("club:team_player_count:%d",self.id))
+        reddb:del(string.format("club:member:online:count:%d",self.id))
+        reddb:del(string.format("club:member:online:guid:%d",self.id))
+        reddb:del(string.format("club:member:count:%d",self.id))
 
         for group_id,_ in pairs(club_block_groups[self.id]) do
             for guid,_ in pairs(club_block_group_players[self.id][group_id]) do
@@ -348,6 +354,11 @@ function base_club:join(guid,inviter)
         reddb:sadd(string.format("club:member:%s",self.id),guid)
         reddb:zadd(string.format("club:zmember:%s",self.id),enum.CRT_PLAYER,guid)
         reddb:sadd(string.format("player:club:%d:%d",guid,self.type),self.id)
+        reddb:incr(string.format("club:member:count:%d",self.id))
+        if onlineguid[guid] then
+            reddb:sadd(string.format("club:member:online:guid:%d",self.id),guid)
+            reddb:incr(string.format("club:member:online:count:%d",self.id))
+        end
         player_club[guid][self.type] = nil
     end)
 end
@@ -409,6 +420,12 @@ function base_club:exit(guid)
         reddb:srem(string.format("player:club:%d:%d",guid,self.type),self.id)
         reddb:hdel(string.format("player:money:%d",guid),money_id)
         reddb:hdel(string.format("club:role:%d",self.id),guid)
+        reddb:decr(string.format("club:member:count:%d",self.id))
+        
+        if onlineguid[guid] then
+            reddb:srem(string.format("club:member:online:guid:%d",self.id),guid)
+            reddb:decr(string.format("club:member:online:count:%d",self.id))
+        end
 
         club_member[self.id][guid] = nil
         player_money[guid][money_id] = nil

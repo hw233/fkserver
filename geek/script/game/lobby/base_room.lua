@@ -12,6 +12,7 @@ local game_util = require "game.util"
 local club_utils = require "game.club.club_utils"
 local club_money = require "game.club.club_money"
 local allonlineguid = require "allonlineguid"
+local player_club = require "game.lobby.player_club"
 
 require "game.net_func"
 
@@ -929,6 +930,13 @@ function base_room:player_login_server(player)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		1,def_game_id)
 	reddb:incr("player:online:count")
+
+	local clubs = table.merge(player_club[guid][enum.CT_UNION],player_club[guid][0])
+	for club_id in pairs(clubs) do
+		reddb:sadd(string.format("club:member:online:guid:%s",club_id),guid)
+		reddb:incr(string.format("club:member:online:count:%s",club_id))
+	end
+
 	self.cur_player_count_ = self.cur_player_count_ + 1
 	self.players[guid] = player
 
@@ -958,6 +966,12 @@ function base_room:player_logout_server(player)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		-1,def_game_id)
 	reddb:decr("player:online:count")
+
+	local clubs = table.merge(player_club[guid][enum.CT_UNION],player_club[guid][enum.CT_DEFAULT])
+	for club_id in pairs(clubs) do
+		reddb:srem(string.format("club:member:online:guid:%s",club_id),guid)
+		reddb:decr(string.format("club:member:online:count:%s",club_id))
+	end
 
 	base_players[guid] = nil
 	onlineguid[guid] = nil

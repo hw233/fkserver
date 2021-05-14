@@ -247,13 +247,6 @@ local function clean_when_start()
 
     reddb:del("player:online:all")
     reddb:set("player:online:count",0)
-    
-    -- for sid,sconf in pairs(services) do
-    --     if sconf.conf.first_game_type then
-    --         reddb:del(string.format("player:online:count:%d",sconf.conf.first_game_type))
-    --         reddb:del(string.format("player:online:count:%d:%d",sconf.conf.first_game_type,sconf.conf.second_game_type))
-    --     end
-    -- end
 
     local tables = reddb:smembers("table:all")
     for id,_ in pairs(tables) do
@@ -265,6 +258,8 @@ local function clean_when_start()
     local clubs = reddb:smembers("club:all")
     for cid,_ in pairs(clubs) do
         reddb:del(string.format("club:table:%s",cid))
+        reddb:del(string.format("club:member:online:guid:%s",cid))
+        reddb:del(string.format("club:member:online:count:%s",cid))
     end
 end
 

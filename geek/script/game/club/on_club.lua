@@ -402,15 +402,8 @@ function on_cs_club_detail_info_req(msg,guid)
     local root = club_utils.root(club)
     local tables = club_utils.get_club_tables(root)
 
-    local online_count = 0
-    local total_count = 0
-    
-    for mem,_ in pairs(club_member[club_id]) do
-        total_count = total_count + 1
-        if allonlineguid[mem] then
-            online_count = online_count + 1
-        end
-    end
+    local online_count = reddb:get(string.format("club:member:online:count:%d",club_id)) or 0
+    local total_count = reddb:get(string.format("club:member:count:%d",club_id)) or 0
 
     local function recusive_parent_status(c)
         local parent = c.parent
