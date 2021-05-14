@@ -6,8 +6,11 @@ local cluster = require "cluster"
 local table = table
 local string = string
 
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 1000)
+local tremove = table.remove
+local tinsert = table.insert
+local strgmatch = string.gmatch
+local strfmt = string.format
+local strmatch = string.match
 
 LOG_NAME = "channeld"
 
@@ -166,7 +169,7 @@ end
 
 function nodemetaindex.match(self,id)
     local n = self
-    for model in string.gmatch(id,"[^%:|%.]+") do
+    for model in strgmatch(id,"[^%:|%.]+") do
         n = match_son(n,model)
         if not n then 
             return
@@ -228,6 +231,7 @@ local CMD = {}
 local waiting = {}
 local address = {}
 local selfprovider
+local selfname
 
 local function get_node(id)
     local n = matcher[id]
@@ -238,13 +242,13 @@ local function get_node(id)
     log.warning("channeld get node %s,got nil node,waiting...",id)
     waiting[id] = waiting[id] or {}
     local co = coroutine.running()
-    table.insert(waiting[id],co)
+    tinsert(waiting[id],co)
     skynet.wait()
 
     --double check
     n = matcher[id]
     if not n then
-        error(string.format("channeld wait id %s,got nil",id))
+        error(strfmt("channeld wait id %s,got nil",id))
     end
 
     return n
@@ -256,7 +260,7 @@ local function wakeup()
         if n then
             local co
             repeat
-                co = table.remove(w,1)
+                co = tremove(w,1)
                 if co then
                     skynet.wakeup(co)
                 end
@@ -292,7 +296,7 @@ function CMD.providerservice(provider)
             local p,_ = sconf.addr:match("([^@]+)@.+")
             if not provider or p == provider then
                 providers[p] = providers[p] or {}
-                table.insert(providers[p],id)
+                tinsert(providers[p],id)
             end
         end
     end
@@ -301,11 +305,12 @@ function CMD.providerservice(provider)
 end
 
 local function do_sub(sid,handle)
-    local global = type(handle) == "string" and handle:match("%@") or nil
-    put(sid,handle,global)
+    local provider = type(handle) == "string" and handle:match("[^%@]+") or nil
+    put(sid,handle,provider)
     address[sid] = {
         addr = handle,
-        global = global,
+        global = provider,
+        provider = provider,
     }
     log.info("channeld.subscribe %s  %s",sid,handle)
 end
@@ -491,7 +496,7 @@ function CMD.kill(_,id)
             else
                 local provider,_ = conf.addr:match("([^@]+)@(.+)")
                 if provider ~= selfprovider.name then
-                    table.insert(providers,provider)
+                    tinsert(providers,provider)
                 end
             end
             address[id] = nil
@@ -499,6 +504,39 @@ function CMD.kill(_,id)
     end
     for _,provider in pairs(providers) do
         cluster.send(provider,"@channel","lua","kill",id)
+    end
+end
+
+function CMD.term()
+    log.warning("CHANNELD TERM")
+    local localservices = {}
+    for sid,c in pairs(address) do
+        if not c.global then
+            localservices[sid] = c.addr
+        end
+    end
+
+    for sid,addr in pairs(localservices) do
+        if not strmatch("channel") then
+            local ok,err = pcall(skynet.call,addr,"lua","term")
+            if not ok then
+                log.error("term addr error:%s",err)
+            end
+        end
+    end
+
+    local localnames = {}
+    local otherproviders = {}
+    for sid,c in pairs(address) do
+        if c.global then
+            otherproviders[c.provider] = true
+        else
+            tinsert(localnames,sid)
+        end
+    end
+
+    for provider in pairs(otherproviders) do
+        cluster.send(provider,"@channel","lua","unsubscribe",localnames)
     end
 end
 
@@ -530,7 +568,7 @@ skynet.start(function()
     }
     
     cluster.register("channel",skynet.self())
-    local selfname = "channel." .. math.floor(skynet.time() * 1000) .. math.random(1,10000)
+    selfname = "channel." .. math.floor(skynet.time() * 1000) .. math.random(1,10000)
     sub(selfname,skynet.self())
 end)
 

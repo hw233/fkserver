@@ -5,6 +5,8 @@ local base_players  = require "game.lobby.base_players"
 require "functions"
 local msgopt = require "msgopt"
 local redisopt = require "redisopt"
+local enum = require "pb_enums"
+
 local reddb = redisopt.default
 
 collectgarbage("setpause", 100)
@@ -73,6 +75,14 @@ function CMD.start(conf)
 	require "game.lobby.base_android"
 
 	init_server_online_count()
+end
+
+function CMD.term()
+	local room = g_room
+	local tables = room.tables
+	for _,tb in pairs(tables or {}) do
+		tb:wait_force_dismiss(enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
+	end
 end
 
 function CMD.afk(guid,offline)

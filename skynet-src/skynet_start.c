@@ -38,8 +38,11 @@ static volatile int SIG = 0;
 
 static void
 handle_hup(int signal) {
-	if (signal == SIGHUP) {
-		SIG = 1;
+	switch(signal){
+		case SIGHUP:case SIGTERM:case SIGINT:{
+			SIG = 1;
+			break;
+		}
 	}
 }
 
@@ -114,7 +117,6 @@ thread_monitor(void *p) {
 static void
 signal_hup() {
 	// make log file reopen
-
 	struct skynet_message smsg;
 	smsg.source = 0;
 	smsg.session = 0;
@@ -263,6 +265,7 @@ skynet_start(struct skynet_config * config) {
 	sa.sa_flags = SA_RESTART;
 	sigfillset(&sa.sa_mask);
 	sigaction(SIGHUP, &sa, NULL);
+	sigaction(SIGTERM,&sa,NULL);
 
 	if (config->daemon) {
 		if (daemon_init(config->daemon)) {

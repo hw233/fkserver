@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local chronos = require "chronos"
+local channel = require "channel"
 local log_name_files = {}
 local service_file = {}
 
@@ -8,8 +9,6 @@ os.execute([[
 		mkdir ./log
 	fi
 	]])
-
-local CMD = {}
 
 local function log_file(service)
 	local filename = string.format("./log/%s_%s.log",service,os.date("%Y-%m-%d"))
@@ -22,7 +21,7 @@ local function log_file(service)
     	return log_name_files[filename]
 end
 
-function CMD.do_log(servicename,log)
+local function do_log(_,_,servicename,log)
     local file = log_file(servicename)
     file:write(log.."\n")
     file:flush()
@@ -49,21 +48,20 @@ skynet.register_protocol {
 	name = "SYSTEM",
 	id = skynet.PTYPE_SYSTEM,
 	unpack = function(...) return ... end,
-	dispatch = function()
-		print("SIGHUP")
+	dispatch = function(session,address)
+		log_text_dispatch(_,address,"TERM")
+		local ok,err = pcall(channel.term)
+		if not ok then
+			log_text_dispatch(_,address,err)
+		end
+		require "skynet.manager"
+		skynet.abort()
 	end
 }
 
+skynet.dispatch("lua",do_log)
+
 skynet.start(function()
-	skynet.dispatch("lua", function (_, _, cmd, ...)
-		local f = CMD[cmd]
-		if f then
-			skynet.retpack(f(...))
-		else
-			error("unknown cmd:"..cmd)
-			skynet.retpack(nil)
-		end
-	end)
 end)
 
 

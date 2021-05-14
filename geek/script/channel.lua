@@ -67,6 +67,10 @@ function channel.warmdead(id)
     return skynet.call(channeld,"lua","warmdead",id)
 end
 
+function channel.term()
+    return skynet.call(channeld,"lua","term")
+end
+
 skynet.init(function()
     channeld = skynet.uniqueservice("service.channeld")
 end)
