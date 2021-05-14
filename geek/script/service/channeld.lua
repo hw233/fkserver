@@ -322,7 +322,6 @@ end
 local function sub(sid,handle)
     local t = type(handle)
     if t == "number" then
-        log.info("sub %s,%s",sid,handle)
         do_sub(sid,handle)
         cluster.register(sid,handle)
         return
