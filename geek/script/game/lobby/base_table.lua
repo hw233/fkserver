@@ -2437,7 +2437,6 @@ function base_table:global_status_info(op)
 	    table_id = self.private_id,
 	    seat_list = seats,
 	    room_cur_round = self:gaming_round(),
-	    rule = self:is_private() and json.encode(self.rule) or "",
 	    game_type = def_first_game_type,
 	    template_id = private_conf and private_conf.template,
 	}
