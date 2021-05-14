@@ -105,13 +105,27 @@ end
 
 function utils.get_club_tables(club)
     if not club then return {} end
-    local ct = club_table[club.id] or {}
-    local tables = table.series(ct,function(_,tid)
-        local priv_tb = base_private_table[tid]
-        if not priv_tb then return end
-        local tableinfo = channel.call("game."..priv_tb.room_id,"msg","GetTableStatusInfo",priv_tb.real_table_id)
-        return tableinfo
-    end)
+
+    local table_ids = club_table[club.id] or {}
+
+    local room_table = {}
+    for tid in pairs(table_ids) do
+        local tb = base_private_table[tid]
+        if not tb then return end
+        local room_id = tb.room_id
+        if not room_id then return end
+        room_table[room_id] = room_table[room_id] or {}
+        table.insert(room_table[room_id],tid)
+    end
+
+    local tables = {}
+
+    for room_id,tids in pairs(room_table) do
+        local tb_infos = channel.call("game."..room_id,"msg","GetTableStatusInfos",tids)
+        for _,info in pairs(tb_infos) do
+            table.insert(tables,info)
+        end
+    end
 
     return tables
 end

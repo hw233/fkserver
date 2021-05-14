@@ -54,12 +54,10 @@ register_dispatcher("CS_Exit",on_cs_exit)
 register_dispatcher("CS_Trustee",on_cs_trusteeship)
 register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
 
--- register_dispatcher("SS_JoinPrivateRoom",on_SS_JoinPrivateRoom)
-
 register_dispatcher("CS_DismissTableReq",on_cs_dismiss_table_req)
 register_dispatcher("CS_DismissTableCommit",on_cs_dismiss_table_commit)
 
-register_dispatcher("GetTableStatusInfo",on_s_get_table_status_info)
+register_dispatcher("GetTableStatusInfos",on_s_get_table_status_infos)
 register_dispatcher("C2S_EDIT_TABLE_TEMPLATE",on_cs_edit_table_template)
 register_dispatcher("CS_UpdateLocation",on_cs_update_location_gps)
 

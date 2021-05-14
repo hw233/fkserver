@@ -214,12 +214,10 @@ function on_cs_dismiss_table_commit(msg,guid)
 	end
 end
 
-function on_s_get_table_status_info(table_id)
-	local tb = g_room:find_table(table_id)
-	if not tb then
-		log.warning("can not find table,%s",table_id)
-		return
-	end
-
-	return tb:global_status_info()
+function on_s_get_table_status_infos(table_ids)
+	return table.series(table_ids or {},function(table_id)
+		local tb = g_room:find_table(table_id)
+		if not tb then return end
+		return tb:global_status_info()
+	end)
 end
