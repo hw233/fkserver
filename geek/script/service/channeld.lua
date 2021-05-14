@@ -504,6 +504,15 @@ function CMD.kill(_,id)
 end
 
 skynet.start(function()
+    require "skynet.manager"
+    local handle = skynet.localname ".channeld"
+	if handle then
+		skynet.exit()
+		return
+	end
+
+	skynet.register ".channeld"
+
     skynet.dispatch("lua", function (_, source, cmd, ...)
         local f = CMD[cmd]
         if f then
@@ -520,17 +529,10 @@ skynet.start(function()
         pack = skynet.pack,
         unpack = skynet.unpack,
     }
-
+    
     cluster.register("channel",skynet.self())
-
-    require "skynet.manager"
-    local handle = skynet.localname ".channeld"
-	if handle then
-		skynet.exit()
-		return
-	end
-
-	skynet.register ".channeld"
+    local selfname = "channel." .. math.floor(skynet.time() * 1000) .. math.random(1,10000)
+    sub(selfname,skynet.self())
 end)
 
 
