@@ -12,6 +12,8 @@ setmetatable(table_template,{
             return nil
         end
 
+        t[ttid] = temp
+
         return temp
     end,
 })
