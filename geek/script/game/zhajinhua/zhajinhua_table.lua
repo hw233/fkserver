@@ -203,22 +203,8 @@ function zhajinhua_table:on_started(player_count)
 
 	self.is_compare_card_flag = false
 	self.max_add_score_ = 0
-	-- self.basic_config_coeff = {}
 	self.last_record = {} --上局回放
 	self.black_rate = 0 --黑名单换牌概率
-
-	--basic_config_coeff: 1 基础概率; 2 浮动概率; 3 对子概率; 4 顺子概率; 5 金花概率; 6 顺金概率,7 豹子概率;
-	-- if zhajinhua_room_score[6] ~= nil then
-	-- 	self.basic_config_coeff = zhajinhua_room_score[6]
-	-- 	log.info("zhajinhua_table:basic_config_coeff[%s][%s][%s][%s][%s][%s][%s] ", self.basic_config_coeff[1],self.basic_config_coeff[2],self.basic_config_coeff[3],self.basic_config_coeff[4],self.basic_config_coeff[5],self.basic_config_coeff[6],self.basic_config_coeff[7])
-	-- 	BASIC_COEFF = self.basic_config_coeff[1]
-	-- 	FLOAT_COEFF = self.basic_config_coeff[2]
-	-- 	DUIZI_COEFF = self.basic_config_coeff[3]
-	-- 	SHUNZI_COEFF = self.basic_config_coeff[4]
-	-- 	JINHUA_COEFF = self.basic_config_coeff[5]
-	-- 	SHUNJIN_COEFF = self.basic_config_coeff[6]
-	-- 	BAOZI_COEFF = self.basic_config_coeff[7]
-	-- end
 
 	self.game_status = TABLE_STATUS.PLAY
 	self:broadcast2client("SC_ZhaJinHuaStart", {
@@ -393,7 +379,9 @@ function zhajinhua_table:deal_cards()
 	-- 	[4] = {2,3,64}
 	-- }
 
-	local coeff = self.room_.conf.cards_coeff or 5000
+	local rconf = self.room_.conf
+
+	local coeff = rconf.cards_coeff or 0
 
 	if math.random(1,10000) < coeff then
 		local chair_cards = table.series(self.gamers,function()
@@ -409,19 +397,29 @@ function zhajinhua_table:deal_cards()
 		end)
 
 		local money_id = self:get_money_id()
-		local gamers = table.series(self.gamers,function(p)
+		local winloses = table.map(self.gamers,function(p,chair)
+			return chair,tonumber(player_winlose[p.guid][money_id]) or 0
+		end)
+
+		local _,max_winlose_abs = table.max(winloses,math.abs)
+		local _,max_roundwinlose_abs = table.max(self.gamers,function(p) 
+			return math.abs(p.total_score or 0)
+		end)
+
+		local gamer_coeffes = table.series(self.gamers,function(p,chair)
+			local count_coeff = self:gaming_round() > 0 and (p.winlose_count or 0) / self:gaming_round() or 0
+			local score_coeff = (p.total_score or 0) / max_roundwinlose_abs
+			local winlose_coeff = winloses[chair] / max_winlose_abs
 			return {
-				player = p,
-				winlose = tonumber(player_winlose[p.guid][money_id]) or 0
+				p = p,
+				coeff = count_coeff * 1000 + score_coeff * 800 + winlose_coeff * 300,
 			}
 		end)
 
-		table.sort(gamers,function(l,r) 
-			return l.winlose < r.winlose
-		end)
+		table.sort(gamer_coeffes,function(l,r) return l.coeff < r.coeff end)
 
 		for i,c in pairs(chair_cards) do
-			local p = gamers[i].player
+			local p = gamer_coeffes[i].p
 			log.info("table_id[%s]:player guid[%s] --------------> sorted cards:[%s]",self.table_id_,p.guid,table.concat(c.cards,","))
 			p.cards = c.cards
 			p.cards_type = c.type
@@ -454,6 +452,7 @@ function zhajinhua_table:on_process_start(player_count)
 	self:foreach(function(p)
 		p.total_score = 0
 		p.total_money = 0 
+		p.winlose_count = nil
 	end)
 	base_table.on_process_start(self,player_count)
 end
@@ -503,6 +502,7 @@ function zhajinhua_table:on_process_over(reason)
 		p.total_money = nil
 		p.total_score = nil
 		p.game_status = nil
+		p.winlose_count = nil
 	end)
 end
 
@@ -1637,6 +1637,7 @@ function zhajinhua_table:game_balance(winner)
 	log.dump(moneies)
 
 	table.foreach(self.gamers,function(p,chair)
+		p.winlose_count = (p.winlose_count or 0) +  (p.total_score > 0 and 1 or -1)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.total_money = (p.total_money or 0) + moneies[chair]
 	end)
