@@ -154,6 +154,7 @@ function gateserver.start(conf)
 
     local function close_session(fd)
         log.warning("close_session,fd:%s",fd)
+        socketdriver.close(fd)
         local c = connection[fd]
         if not c then 
             return 
