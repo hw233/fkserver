@@ -1,9 +1,7 @@
 local skynet = require "skynetproto"
 local log = require "log"
 local timer = require "timer"
-
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 1000)
+local queue = require "skynet.queue"
 
 LOG_NAME = "redis_cached"
 
@@ -15,30 +13,51 @@ local tremove = table.remove
 
 local cache = {}
 local cachequeue = {}
+local locks = setmetatable({},{
+	__index = function(t,k)
+		local q = queue()
+		t[k] = q
+		return q
+	end,
+})
 
 local default_elapsed_time = 5
 
 local function cache_push(key,value)
-	cache[key] = value
+	cache[key] = {
+		value = value,
+		time = os.time(),
+	}
 	tinsert(cachequeue,key)
+end
+
+local function check_clean_cache(key,time)
+	local c = cache[key]
+	if c then
+		if time - c.time < default_elapsed_time then 
+			return
+		end
+		
+		-- log.info("del cache key %s",key)
+		cache[key] = nil
+		locks[key] = nil
+	end
+	return true
 end
 
 local function elapsed_cache_key()
 	local time = os.time()
 	local key
-	local c
+	local lock
 	for _ = 1,10000 do
 		key = cachequeue[1]
-		if not key then break end
+		if not key then
+			break
+		end
 
-		c = cache[key]
-		if c then
-			if time - c.time < default_elapsed_time then 
-				break 
-			end
-			
-			-- log.info("del cache key %s",key)
-			cache[key] = nil
+		lock = locks[key]
+		if not lock(check_clean_cache,key,time) then
+			break
 		end
 
 		tremove(cachequeue,1)
@@ -77,87 +96,98 @@ end
 
 
 local function hash_set(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		fold({...},c.value)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			fold({...},c.value)
+		end
 
-	return do_redis_command(db,cmd,key,...)
+		return do_redis_command(db,cmd,key,...)
+	end,...)
 end
 
 local function hash_get(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		assert(type(c) == "table")
-		local cvalue = c.value
-		assert(type(cvalue) == "table")
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			assert(type(c) == "table")
+			local cvalue = c.value
+			assert(type(cvalue) == "table")
 
-		return expand(cvalue)
-	end
-	
-	local data = do_redis_command(db,cmd,key,...)
-	cache_push(key,{ value = fold(data),time = os.time()})
+			return expand(cvalue)
+		end
+		
+		local data = do_redis_command(db,cmd,key,...)
+		
+		cache_push(key,fold(data))
 
-	return data
+		return data
+	end,...)
 end
 
 local function hash_get_set(db,cmd,key,field,...)
-	local val = do_redis_command(db,cmd,key,field,...)
+	return locks[key](function(...)
+		local val = do_redis_command(db,cmd,key,field,...)
 
-	local c = cache[key]
-	if c then
-		local cvalue = c.value
-		cvalue[tostring(field)] = val
-	end
+		local c = cache[key]
+		if c then
+			local cvalue = c.value
+			cvalue[tostring(field)] = val
+		end
 
-	return val
+		return val
+	end,...)
 end
 
 local function hash_batch_get(db,cmd,key,...)
-	local fields = {...}
-	local c = cache[key]
-	if c then
-		assert(type(c) == "table")
-		local cvalue = c.value
-		assert(type(cvalue) == "table")
+	return locks[key](function(...)
+		local fields = {...}
+		local c = cache[key]
+		if c then
+			assert(type(c) == "table")
+			local cvalue = c.value
+			assert(type(cvalue) == "table")
 
-		local uncache_fields = table.series(fields,function(f)
-			if not cvalue[f] then return f end
-		end)
+			local uncache_fields = table.series(fields,function(f)
+				if not cvalue[f] then return f end
+			end)
 
-		if #uncache_fields > 0 then
-			local uncache_values = do_redis_command(db,"hmget",key,table.unpack(uncache_fields))
-			for i,f in pairs(uncache_fields) do
-				cvalue[f] = uncache_values[i]
+			if #uncache_fields > 0 then
+				local uncache_values = do_redis_command(db,"hmget",key,table.unpack(uncache_fields))
+				for i,f in pairs(uncache_fields) do
+					cvalue[f] = uncache_values[i]
+				end
 			end
+			
+			local values = table.series(fields,function(f) return cvalue[f] end)
+			return values
 		end
 		
-		local values = table.series(fields,function(f) return cvalue[f] end)
-		return values
-	end
-	
-	local data = do_redis_command(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		local cvalue = c.value
-		for i,f in pairs(fields) do
-			cvalue[f] = data[i]
+		local data = do_redis_command(db,cmd,key,...)
+		local c = cache[key]
+		if c then
+			local cvalue = c.value
+			for i,f in pairs(fields) do
+				cvalue[f] = data[i]
+			end
 		end
-	end
 
-	return data
+		return data
+	end,...)
 end
 
 local function hash_del(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		local cvalue = c.value
-		for _,f in pairs({...}) do
-			cvalue[tostring(f)] = nil
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			local cvalue = c.value
+			for _,f in pairs({...}) do
+				cvalue[tostring(f)] = nil
+			end
 		end
-	end
 
-	return do_redis_command(db,cmd,key,...)
+		return do_redis_command(db,cmd,key,...)
+	end,...)
 end
 
 local function string_get(db,cmd,...)
@@ -170,10 +200,7 @@ local function string_get(db,cmd,...)
 	if #uncache_keys > 0 then
 		local uncache_values = do_redis_command(db,"mget",table.unpack(uncache_keys))
 		for i,key in pairs(uncache_keys) do
-			cache_push(key,{
-				value = uncache_values[i],
-				time = os.time(),
-			})
+			cache_push(key,uncache_values[i])
 		end
 	end
 	
@@ -190,35 +217,38 @@ local function string_set(db,cmd,...)
 end
 
 local function string_get_set(db,cmd,key,...)
-	local val = do_redis_command(db,cmd,key,...)
-	cache[key] = nil
-	return val
+	return locks[key](function(...)
+		local val = do_redis_command(db,cmd,key,...)
+		cache[key] = nil
+		return val
+	end,...)
 end
 
 local function set_add(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		local cvalue = c.value
-		for _,f in pairs({...}) do
-			cvalue[tostring(f)] = true
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			local cvalue = c.value
+			for _,f in pairs({...}) do
+				cvalue[tostring(f)] = true
+			end
 		end
-	end
-	
-	return do_redis_command(db,cmd,key,...)
+		
+		return do_redis_command(db,cmd,key,...)
+	end,...)
 end
 
 local function set_get(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		return table.keys(c.value)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			return table.keys(c.value)
+		end
 
-	local val = do_redis_command(db,cmd,key,...)
-	cache_push(key,{
-		time = os.time(),
-		value = table.map(val,function(v) return v,true end),
-	})
-	return val
+		local val = do_redis_command(db,cmd,key,...)
+		cache_push(key,table.map(val,function(v) return v,true end))
+		return val
+	end,...)
 end
 
 local function set_move(db,cmd,src,target,member,...)
@@ -236,28 +266,32 @@ local function set_move(db,cmd,src,target,member,...)
 end
 
 local function set_pop(db,cmd,key,...)
-	local vals = do_redis_command(db,cmd,key,...)
-	local c = cache[key]
-	if c and vals then
-		local cvalue = c.value
-		for _,v in pairs(vals) do
-			cvalue[tostring(v)] = nil
+	return locks[key](function(...)
+		local vals = do_redis_command(db,cmd,key,...)
+		local c = cache[key]
+		if c and vals then
+			local cvalue = c.value
+			for _,v in pairs(vals) do
+				cvalue[tostring(v)] = nil
+			end
 		end
-	end
 
-	return vals
+		return vals
+	end,...)
 end
 
 local function set_del(db,cmd,key,...)
-	local c = cache[key]
-	if c then
-		local cvalue = c.value
-		for _,f in pairs({...}) do
-			cvalue[tostring(f)] = nil
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			local cvalue = c.value
+			for _,f in pairs({...}) do
+				cvalue[tostring(f)] = nil
+			end
 		end
-	end
 
-	return do_redis_command(db,cmd,key,...)
+		return do_redis_command(db,cmd,key,...)
+	end,...)
 end
 
 local function key_del(db,cmd,key,...)
@@ -272,39 +306,47 @@ local function key_rename(db,cmd,key1,key2,...)
 end
 
 local function key_expire(db,cmd,key,seconds,...)
-	local c = cache[key]
-	if c then
-		c.time = os.time() + (seconds - default_elapsed_time + 1)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			c.time = os.time() + (seconds - default_elapsed_time + 1)
+		end
 
-	return do_redis_command(db,cmd,key,seconds,...)
+		return do_redis_command(db,cmd,key,seconds,...)
+	end,...)
 end
 
 local function key_expire_at(db,cmd,key,timestamp,...)
-	local c = cache[key]
-	if c then
-		c.time = timestamp - (default_elapsed_time + 1)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			c.time = timestamp - (default_elapsed_time + 1)
+		end
 
-	return do_redis_command(db,cmd,key,timestamp,...)
+		return do_redis_command(db,cmd,key,timestamp,...)
+	end,...)
 end
 
 local function key_pexpire(db,cmd,key,milliseconds,...)
-	local c = cache[key]
-	if c then
-		c.time = os.time() + (math.ceil(milliseconds / 1000) - default_elapsed_time)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			c.time = os.time() + (math.ceil(milliseconds / 1000) - default_elapsed_time)
+		end
 
-	return do_redis_command(db,cmd,key,milliseconds,...)
+		return do_redis_command(db,cmd,key,milliseconds,...)
+	end,...)
 end
 
 local function key_pexpire_at(db,cmd,key,milliseconds_timestamp,...)
-	local c = cache[key]
-	if c then
-		c.time = math.floor(milliseconds_timestamp / 1000) - (default_elapsed_time + 1)
-	end
+	return locks[key](function(...)
+		local c = cache[key]
+		if c then
+			c.time = math.floor(milliseconds_timestamp / 1000) - (default_elapsed_time + 1)
+		end
 
-	return do_redis_command(db,cmd,key,milliseconds_timestamp,...)
+		return do_redis_command(db,cmd,key,milliseconds_timestamp,...)
+	end,...)
 end
 
 
