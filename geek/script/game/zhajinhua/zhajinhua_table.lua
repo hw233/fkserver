@@ -1637,7 +1637,7 @@ function zhajinhua_table:game_balance(winner)
 	log.dump(moneies)
 
 	table.foreach(self.gamers,function(p,chair)
-		p.winlose_count = (p.winlose_count or 0) +  (p.total_score > 0 and 1 or -1)
+		p.winlose_count = (p.winlose_count or 0) +  (scores[chair] > 0 and 1 or -1)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.total_money = (p.total_money or 0) + moneies[chair]
 	end)
