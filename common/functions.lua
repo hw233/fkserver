@@ -762,6 +762,12 @@ function table.agg(tb,init,agg_op)
     return ret
 end
 
+function table.agg1(tb,fn,init)
+    local ret = init or {}
+    for k,v in pairs(tb or {}) do ret = fn(ret,v,k) end
+    return ret
+end
+
 function table.ref_broadcast(tb,func)
     for k,v in pairs(tb or {}) do 
         tb[k] = func(v,k)
