@@ -318,10 +318,12 @@ end
 local function do_unsub(sid)
     assert(sid and type(sid) == "string")
     pop(sid)
-    if address[sid] and not address[sid].global then
+    local ctx = address[sid]
+    if ctx and not ctx.global then
         cluster.register(sid)
     end
     address[sid] = nil
+    log.info("channeld.unsubscribe %s  %s",sid,ctx and ctx.addr)
 end
 
 local function sub(sid,handle)
@@ -517,7 +519,7 @@ function CMD.term()
     end
 
     for sid,addr in pairs(localservices) do
-        if not strmatch("channel") then
+        if sid ~= selfname then
             local ok,err = pcall(skynet.call,addr,"lua","term")
             if not ok then
                 log.error("term addr error:%s",err)
@@ -528,13 +530,15 @@ function CMD.term()
     local localnames = {}
     local otherproviders = {}
     for sid,c in pairs(address) do
-        if c.global then
-            otherproviders[c.provider] = true
-        else
-            tinsert(localnames,sid)
+        if sid ~= selfname then
+            if c.global then
+                otherproviders[c.provider] = true
+            else
+                tinsert(localnames,sid)
+            end
         end
     end
-
+    
     for provider in pairs(otherproviders) do
         cluster.send(provider,"@channel","lua","unsubscribe",localnames)
     end

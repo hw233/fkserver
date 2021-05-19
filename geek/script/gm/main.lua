@@ -53,6 +53,7 @@ skynet.start(function()
             skynet.retpack(f(...))
         else
             log.error("invalid cmd,%s",cmd)
+            skynet.retpack(nil)
         end
     end)
 
