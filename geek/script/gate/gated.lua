@@ -296,6 +296,7 @@ skynet.start(function()
         local f = FORWARD[msg]
         if not f then
             log.error("unknow cmd:%s",msg)
+            skynet.retpack(nil)
             return
         end
 
@@ -308,6 +309,7 @@ skynet.start(function()
             skynet.retpack(f(...))
         else
             log.error("unkown cmd,%s",cmd)
+            skynet.retpack(nil)
         end
     end)
 
