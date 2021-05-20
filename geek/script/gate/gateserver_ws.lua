@@ -294,7 +294,6 @@ function gateserver.start(conf)
         
         if not ok then
             log.error("websocket handshake failed,fd:",fd,addr)
-            connection[fd] = nil
             gateserver.closeclient(fd)
             return
         end
