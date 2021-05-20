@@ -299,10 +299,10 @@ function gateserver.start(conf)
         end
 
         local origin = header.origin or header.Origin
-
-        addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+")
-
-        log.info("websocket redirect addr %s",addr)
+        if origin then
+            addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+")
+            log.info("websocket redirect addr %s",addr)
+        end
 
         handler.connect(fd,addr)
 
