@@ -284,16 +284,28 @@ function gateserver.start(conf)
 
         connection[fd] = c
         client_number = client_number + 1
-        handler.connect(fd,addr)
-        if not ws.handshake({
+
+        gateserver.openclient(fd)
+
+        local ok,_,header = ws.handshake({
             read = readfunc(fd),
             write = writefunc(fd),
-        }) then
+        })
+        
+        if not ok then
             log.error("websocket handshake failed,fd:",fd,addr)
             connection[fd] = nil
-            socketdriver.close(fd)
+            gateserver.closeclient(fd)
             return
         end
+
+        local origin = header.origin or header.Origin
+
+        addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+")
+
+        log.info("websocket redirect addr %s",addr)
+
+        handler.connect(fd,addr)
 
         skynet.fork(dispatch_queue,fd)
     end

@@ -37,7 +37,6 @@ function server.start(conf)
 	end
 
 	function handler.connect(fd, addr)
-		gateserver.openclient(fd)
 		local ip,port = addr:match("([^:]+)%s*:%s*(%d+)")
 		port = tonumber(port)
 		connection[fd] = {
