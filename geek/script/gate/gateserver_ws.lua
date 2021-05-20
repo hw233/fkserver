@@ -300,7 +300,7 @@ function gateserver.start(conf)
 
         local origin = header.origin or header.Origin
         if origin then
-            addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+")
+            addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+") or addr
             log.info("websocket redirect addr %s",addr)
         end
 
