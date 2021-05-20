@@ -129,6 +129,11 @@ local function reg_account(msg)
         promoter = tonumber(param.promoter) or promoter
     until true
 
+    local ip = msg.ip 
+    if ip then
+        reddb:hset("player:info:"..tostring(guid),"login_ip",ip)
+    end
+
     guid = tonumber(random_guid())
     local info = {
         guid = guid,
@@ -185,13 +190,17 @@ end
 
 local function open_id_login(msg,gate)
     log.dump(msg)
-    local ip = msg.ip
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     guid = tonumber(guid)
     if not guid then
         return enum.LOGIN_RESULT_ACCOUNT_NOT_EXISTS
+    end
+
+    local ip = msg.ip 
+    if ip then
+        reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
@@ -206,7 +215,7 @@ local function open_id_login(msg,gate)
         sex = player.sex or 1,
         icon = player.icon or default_open_id_icon,
         version = player.version,
-        login_ip = player.ip,
+        login_ip = ip or player.login_ip,
         phone = player.phone or "",
         level = player.level,
         imei = player.imei or "",
@@ -215,17 +224,13 @@ local function open_id_login(msg,gate)
         package_name = player.package_name,
         phone_type = player.phone_type,
         role = player.role,
-        ip = player.ip,
+        ip = ip or player.login_ip,
         promoter = player.promoter,
         channel_id = player.channel_id,
         vip = player.vip,
     }
 
     base_players[guid] = nil
-
-    if ip then
-        reddb:hset("player:info:"..tostring(guid),"last_login_ip",ip)
-    end
 
     log.dump(info)
     if info.status == 0 then
@@ -306,7 +311,7 @@ local function sms_reg_account(msg)
 end
 
 
-local function sms_login(msg,session_id)
+local function sms_login(msg)
     log.dump(msg)
     local phone = msg.phone
     if not phone then
@@ -323,6 +328,8 @@ local function sms_login(msg,session_id)
     if string.lower(verify_code) ~= string.lower(msg.sms_verify_no) then
         return enum.LOGIN_RESULT_SMS_FAILED
     end
+
+
 
     local ret,info
     local uuid = reddb:get(string.format("player:phone_uuid:%s",msg.phone))
@@ -348,6 +355,10 @@ local function sms_login(msg,session_id)
     else
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
+        local ip = msg.ip 
+        if ip then
+            reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+        end
         reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
         local player = base_players[guid]
         info = {
@@ -358,7 +369,7 @@ local function sms_login(msg,session_id)
             sex = player.sex or 1,
             icon = player.icon or default_open_id_icon,
             version = player.version,
-            login_ip = player.ip,
+            login_ip = ip or player.login_ip,
             phone = player.phone or "",
             level = player.level,
             imei = player.imei or "",
@@ -367,7 +378,7 @@ local function sms_login(msg,session_id)
             package_name = player.package_name,
             phone_type = player.phone_type,
             role = player.role,
-            ip = player.ip,
+            ip = ip or player.login_ip,
             promoter = player.promoter,
             channel_id = player.channel_id,
             vip = player.vip,
@@ -434,12 +445,11 @@ local function account_login(msg,gate)
 
     reddb:hincrby("player:info:"..tostring(guid),"login_count",1)
     reddb:hmset("player:info:"..tostring(guid),{
-        last_login_phone = phone,
-        last_login_phone_type = phone_type,
-        last_login_version = version,
-        last_login_channel_id = channel_id,
-        last_login_imei = imei,
-        last_login_ip = player.login_ip,
+        login_phone = phone,
+        login_phone_type = phone_type,
+        login_version = version,
+        login_channel_id = channel_id,
+        login_imei = imei,
         login_ip = ip,
         login_time = os.time(),
     })
@@ -476,7 +486,7 @@ local function account_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,player
 end
 
-local function h5_login(msg,gate)
+local function h5_login(msg)
     if not runtime_conf.global.h5_login then
         return enum.LOGIN_RESULT_ACCOUNT_DISABLED
     end
@@ -497,6 +507,11 @@ local function h5_login(msg,gate)
 
     guid = tonumber(guid)
 
+    local ip = msg.ip
+    if ip then
+        reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+    end
+
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
     local player = base_players[guid]
     local info = {
@@ -507,7 +522,7 @@ local function h5_login(msg,gate)
         sex = player.sex or 1,
         icon = player.icon or default_open_id_icon,
         version = player.version,
-        login_ip = player.ip,
+        login_ip = msg.ip or player.login_ip,
         phone = player.phone or "",
         level = player.level,
         imei = player.imei or "",
@@ -516,7 +531,7 @@ local function h5_login(msg,gate)
         package_name = player.package_name,
         phone_type = player.phone_type,
         role = player.role,
-        ip = player.ip,
+        ip = msg.ip or player.login_ip,
         promoter = player.promoter,
         channel_id = player.channel_id,
         vip = player.vip,
@@ -564,6 +579,11 @@ local function account_login(msg,gate)
         return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
     end
 
+    local ip = msg.ip
+    if ip then
+        reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+    end
+
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
 
     local player = base_players[guid]
@@ -575,7 +595,7 @@ local function account_login(msg,gate)
         sex = player.sex or 1,
         icon = player.icon or default_open_id_icon,
         version = player.version,
-        login_ip = player.ip,
+        login_ip = ip or player.login_ip,
         phone = player.phone or "",
         level = player.level,
         imei = player.imei or "",
@@ -584,7 +604,7 @@ local function account_login(msg,gate)
         package_name = player.package_name,
         phone_type = player.phone_type,
         role = player.role,
-        ip = player.ip,
+        ip = ip or player.login_ip,
         promoter = player.promoter,
         channel_id = player.channel_id,
         vip = player.vip,
@@ -600,7 +620,7 @@ local function account_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
-function on_cl_login(msg,gate,session_id)
+function on_cl_login(msg,gate)
     local account = (msg.account and msg.account ~= "") and msg.account or msg.open_id
     log.dump(msg)
     local ret,info
@@ -623,6 +643,11 @@ function on_cl_login(msg,gate,session_id)
         return {
             result = ret,
         }
+    end
+
+    local ip = msg.ip 
+    if ip then
+
     end
 
     info = clone(info)
