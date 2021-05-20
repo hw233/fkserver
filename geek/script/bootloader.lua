@@ -53,6 +53,7 @@ end
 local function launchservice(conf)
     local id = conf.name .. "." .. tostring(conf.id)
     local servicename = servicepath[conf.type] or servicepath[conf.name]
+    if not servicename then return end
     local handle = skynet.newservice(servicename,conf.id)
     log.info("new service,id:%s,handle:%s",id,handle)
     skynet.call(handle,"lua","start",conf)
@@ -70,8 +71,10 @@ local function setupservice(clusterservice)
     for _,cs in pairs(clusterservice) do
         if cs.cluster == clusterid and cs.is_launch ~= 0 and cs.id ~= bootconf.service.id then
             local id,handle = launchservice(cs)
-            services[id] = handle
-            services["service."..tostring(cs.id)] = handle
+            if id and handle then
+                services[id] = handle
+                services["service."..tostring(cs.id)] = handle
+            end
         end
     end
 
