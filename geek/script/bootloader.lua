@@ -192,13 +192,14 @@ local function setup()
         }
     end)
 
+    local clusters = table.map(clusterconfs,function(c) 
+        return cluster_name(c),cluster_hostaddr(c)
+    end)
+
+    cluster.reload(clusters)
+
     for _,conf in pairs(clusterconfs) do
         if conf.is_launch ~= 0 and not is_selfcluster(conf.id) then
-            if is_bootcluster() then
-                local needservices = cluster_services(serviceconfs,conf)
-                channel.subscribe(needservices)
-            end
-
             channel.subscribe(localservices,cluster_name(conf))
         end
     end
