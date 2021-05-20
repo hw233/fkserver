@@ -54,7 +54,8 @@ local function launchservice(conf)
     local id = conf.name .. "." .. tostring(conf.id)
     local servicename = servicepath[conf.type] or servicepath[conf.name]
     if not servicename then return end
-    local handle = skynet.newservice(servicename,conf.id)
+    local ok,handle = pcall(skynet.newservice,servicename,conf.id)
+    if not ok then return end
     log.info("new service,id:%s,handle:%s",id,handle)
     skynet.call(handle,"lua","start",conf)
     return id,handle
