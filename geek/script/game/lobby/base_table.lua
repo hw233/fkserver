@@ -915,11 +915,10 @@ end
 
 function base_table:can_kickout_when_round_over(p)
 	local club = self.conf.club
-	return p.inactive or p.trustee or not club or club:can_sit_down(self.rule,p) ~= enum.ERROR_NONE
+	return p.inactive or p.trustee or (club and club:can_sit_down(self.rule,p) ~= enum.ERROR_NONE)
 end
 
 function base_table:kickout_players_when_round_over()
-	local club = self.conf.club
 	self:foreach(function(p)
 		if self:can_kickout_when_round_over(p) then 
 			p:async_force_exit(enum.STANDUP_REASON_NORMAL)
