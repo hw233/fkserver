@@ -78,11 +78,14 @@ function CMD.start(conf)
 end
 
 function CMD.term()
+	log.warning("GAME %s,%d,%d %s TERM",def_game_name,def_first_game_type,def_second_game_type,def_game_id)
 	local room = g_room
 	local tables = room.tables
 	for _,tb in pairs(tables or {}) do
+		log.info("GAME TERM DISMISS TABLE %d",tb:id())
 		tb:wait_force_dismiss(enum.STANDUP_REASON_ADMIN_DISMISS_FORCE)
 	end
+	log.warning("GAME %s,%d,%d %s TERM END",def_game_name,def_first_game_type,def_second_game_type,def_game_id)
 end
 
 function CMD.afk(guid,offline)
