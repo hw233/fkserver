@@ -158,7 +158,7 @@ function log.dump(value,description,nesting)
 end
 
 skynet.init(function()
-	logd =  skynet.localname(".logger")
+	logd =  skynet.localname(".logger") or ".logger"
 end)
 
 return log
