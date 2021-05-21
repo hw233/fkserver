@@ -4,6 +4,13 @@ local channel = require "channel"
 local log_name_files = {}
 local service_file = {}
 
+local string = string
+local strfmt = string.format
+local math = math
+local mfloor = math.floor
+local mceil = math.ceil
+local os = os
+
 os.execute([[
 	if [ ! -d "./log" ];then
 		mkdir ./log
@@ -11,7 +18,7 @@ os.execute([[
 	]])
 
 local function log_file(service)
-	local filename = string.format("./log/%s_%s.log",service,os.date("%Y-%m-%d"))
+	local filename = strfmt("./log/%s_%s.log",service,os.date("%Y-%m-%d"))
 	if not log_name_files[filename] then
 		if service_file[service] then io.close(service_file[service]) end
 		local f = io.open(filename,"a+")
@@ -29,8 +36,8 @@ end
 
 local function log_text_dispatch(_, address, msg)
 	local time = chronos.nanotime()
-	local strtime = string.format("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",math.floor(time)),math.ceil((time % 1) * 1000))
-	local log = string.format("%s %-8s%08x: %s",strtime,"SYSTEM ",address, msg)
+	local strtime = strfmt("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",mfloor(time)),mceil((time % 1) * 1000))
+	local log = strfmt("%s %-8s%08x: %s",strtime,"SYSTEM ",address, msg)
 	local file = log_file("system")
 	file:write(log.."\n")
 	file:flush()
@@ -48,7 +55,7 @@ skynet.register_protocol {
 	name = "SYSTEM",
 	id = skynet.PTYPE_SYSTEM,
 	unpack = function(...) return ... end,
-	dispatch = function(session,address)
+	dispatch = function(_,address)
 		log_text_dispatch(_,address,"TERM")
 		local ok,err = pcall(channel.term)
 		if not ok then
@@ -56,6 +63,7 @@ skynet.register_protocol {
 		end
 		require "skynet.manager"
 		skynet.abort()
+		log_text_dispatch(_,address,"TERM END,ABORTED")
 	end
 }
 

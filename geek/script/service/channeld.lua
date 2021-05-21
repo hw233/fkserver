@@ -542,6 +542,8 @@ function CMD.term()
     for provider in pairs(otherproviders) do
         cluster.send(provider,"@channel","lua","unsubscribe",localnames)
     end
+    
+    log.warning("CHANNELD TERM END")
 end
 
 skynet.start(function()
