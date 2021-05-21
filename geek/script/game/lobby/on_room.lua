@@ -14,17 +14,16 @@ function on_cs_enter_room_and_sit_down(msg,guid)
 	local result_, room_id_, table_id_, chair_id_, tb = g_room:enter_room_and_sit_down(player)
 	player:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, result_, tb)
 	g_room:get_table_players_status(player)
-	log.info ("test .................. on_cs_enter_room_and_sit_down")
-	log.info(string.format("result [%d]",result_))
+	log.info("on_cs_enter_room_and_sit_down guid:%s,room_id:%s,result [%d]",guid,def_game_id,result_)
 end
 
 -- 站起并离开房间
 function on_cs_stand_up_and_exit_room(msg,guid)	
 	local player = base_players[guid]
-	log.info("test .................. on_cs_stand_up_and_exit_room~1")
+	log.info("on_cs_stand_up_and_exit_room %s",guid)
 	local result_, room_id_, table_id_, chair_id_ = g_room:stand_up_and_exit_room(player,enum.STANDUP_REASON_NORMAL)
 	player:on_stand_up_and_exit_room(room_id_, table_id_, chair_id_, result_)
-	log.info("test .................. on_cs_stand_up_and_exit_room result [%s]",result_)
+	log.info("on_cs_stand_up_and_exit_room guid:%s,room_id:%s,result:%s",guid,def_game_id,result_)
 end
 
 -- 切换座位
@@ -33,20 +32,15 @@ function on_cs_change_chair(msg,guid)
 	local result_, table_id_, chair_id_, tb = g_room:change_chair(player)
 	player:on_change_chair(table_id_, chair_id_, result_, tb)
 	
-	log.info ("test .................. on_cs_change_chair")
+	log.info ("on_cs_change_chair guid:%s,room_id:%s",guid,def_game_id)
 end
 
 -- 进入房间
 function on_cs_enter_room(msg,guid)
 	local player = base_players[guid]
 	local result_ = g_room:enter_room(player, msg.room_id)
-	log.info("on_cs_enter_g_room:~~~~~~~~~~~~~~~~~~~~~~result_ = ",result_)
-	if result_ == 14 then --game maintain
-		log.warning(string.format("on_cs_enter_g_room: game_id =[%d], will maintain,exit",def_game_id))	
-	end
+	log.info("on_cs_enter_g_room:guid:%s,room_id:%s,result_ = %s",guid,msg.room_id,result_)
 	player:on_enter_room(msg.room_id, result_)
-	
-	log.info ("test .................. on_cs_enter_room")
 end
 
 -- 离开房间
@@ -55,20 +49,15 @@ function on_cs_exit_room(msg,guid)
 	local result_, room_id_ = g_room:exit_room(player)
 	player:on_exit_room(room_id_, result_)
 	
-	log.info("test .................. on_cs_exit_room")
+	log.info("on_cs_exit_room guid:%s,room_id:%s,result:%s",guid,result_)
 end
 
 -- 快速进入房间
 function on_cs_auto_enter_room(msg,guid)
 	local player = base_players[guid]
 	local result_, room_id_ = g_room:auto_enter_room(player)
-	log.info("on_cs_auto_enter_g_room:~~~~~~~~~~~~~~~~~~~~~~result_ = ",result_)
-	if result_ == 14 then --game maintain
-		log.warning(string.format("on_cs_auto_enter_g_room: game_id =[%d], will maintain,exit",def_game_id))	
-	end
+	log.info("on_cs_auto_enter_g_room,guid:%s,room_id:%s,result_:%s",guid,def_game_id,result_)
 	player:on_enter_room(room_id_, result_)
-
-	log.info ("test .................. on_cs_auto_enter_room")
 end
 
 -- 快速坐下
@@ -77,7 +66,7 @@ function on_cs_auto_sit_down(msg,guid)
 	local result_, table_id_, chair_id_ = g_room:auto_sit_down(player)
 	player:on_sit_down(table_id_, chair_id_, result_)
 	g_room:get_table_players_status(player)
-	log.info ("test .................. on_cs_auto_sit_down")
+	log.info ("on_cs_auto_sit_down guid:%s,room_id:%s,result:%s",guid,def_game_id,result_)
 end
 
 -- 坐下
@@ -86,7 +75,7 @@ function on_cs_sit_down(msg,guid)
 	local result_, table_id_, chair_id_  = g_room:sit_down(player, msg.table_id, msg.chair_id)
 	player:on_sit_down(table_id_, chair_id_, result_)
 	g_room:get_table_players_status(player)
-	log.info ("test .................. on_cs_sit_down")
+	log.info ("on_cs_sit_down guid:%s,room_id:%s,reuslt:%s",guid,def_game_id,result_)
 end
 
 -- 站起
@@ -95,7 +84,7 @@ function on_cs_stand_up(msg,guid)
 	local result_, table_id_, chair_id_  = g_room:stand_up(player)
 	player:on_stand_up(table_id_, chair_id_, result_)
 	
-	log.info ("test .................. on_cs_stand_up")
+	log.info ("on_cs_stand_up guid:%s,room_id:%s,result:%s",guid,def_game_id,result_)
 end
 
 -- 准备开始
