@@ -66,7 +66,7 @@ end
 local function afk(fd)
     local u  = fduser[fd]
     if not u then
-        pcall(skynet.call,loginservice, "lua", "afk",fd)
+        pcall(skynet.send,loginservice, "lua", "afk",fd)
         return
     end
 
@@ -115,6 +115,10 @@ end
 
 function CMD.kickout(guid)
     kickout(guid)
+end
+
+function CMD.afk(guid)
+    afk(guid)
 end
 
 function CMD.maintain(switch)

@@ -5,13 +5,10 @@ local crypt = require "skynet.crypt"
 local util = require "gate.util"
 local enum = require "pb_enums"
 local serviceconf = require "serviceconf"
-local msgopt = require "msgopt"
+local queue = require "skynet.queue"
 
 require "functions"
 local log = require "log"
-
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "gate.logind"
 
@@ -21,13 +18,23 @@ local netmsgopt = protocolnetmsg[protocol]
 gateid = tonumber(gateid)
 gateservice = tonumber(gateservice)
 
-local rsa_public_key
-local logining = {}
-local is_maintain
+local string = string
+local strfmt = string.format
 
-local function check_login_session(fd)
-    return logining[fd]
+local task = {}
+
+function task:lockcall(fn,...)
+    self.__lock = self.__lock or queue()
+    return self.__lock(fn,...)
 end
+
+local tasking = setmetatable({},{
+    __index = function(t,fd)
+        local q = setmetatable({},{__index = task})
+        t[fd] = q
+        return q
+    end,
+})
 
 local send2client = netmsgopt.send
 
@@ -36,23 +43,23 @@ local CMD = {}
 function CMD.afk(fd)
     if not fd then return end
     
-    logining[fd] = nil
-end
+    local l = rawget(tasking,fd)
+    
+    if not l then
+        log.warning("logind afk fd:%s,no logining session.",fd)
+        return
+    end
 
-function CMD.maintain(switch)
-    is_maintain = switch
+    l:lockcall(function()
+        if l.guid then
+            skynet.send(gateservice,"lua","afk",l.guid)
+        end
+        
+        tasking[fd] = nil
+    end)
 end
 
 local MSG = {}
-
-function MSG.C_RequestPublicKey(msg,session)
-    if not rsa_public_key then
-        rsa_public_key = skynet.call(".utild","lua","get_rsa_public_key")
-    end
-    send2client(session.fd,"C_PublicKey",{
-        public_key = crypt.hexencode(rsa_public_key)
-    })
-end
 
 function MSG.CS_RequestSmsVerifyCode(msg,session)
     local result,timeout = channel.call("login.?","msg","CS_RequestSmsVerifyCode",msg,session.fd)
@@ -71,16 +78,6 @@ function MSG.CL_RegAccount(msg,session)
 
     if not msg.pb_regaccount.phone then
         log.error( "no phone, CL_RegAccount")
-        return false
-    end
-
-    if not msg.pb_regaccount.invite_code then
-        log.error( "no invite_code,CL_RegAccount" )
-        return false
-    end
-
-    if not msg.pb_regaccount.invite_type then
-        log.error( "no promote_type, CL_RegAccount")
         return false
     end
 
@@ -116,20 +113,12 @@ local function login_by_sms(msg,session)
     end
 
     msg.ip = session.ip
-    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid,session.fd)
-    local guid = info.guid
-    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
-        if not check_login_session(session.fd) then --已断开连接
-            channel.publish("service."..tostring(server),"lua","afk",guid)
-            return
-        end
 
-        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
-    end
+    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
     log.dump(info)
 
-    return ok,info
+    return ok,info,server
 end
 
 local function login_by_openid(msg,session)
@@ -140,20 +129,12 @@ local function login_by_openid(msg,session)
     end
 
     msg.ip = session.ip
-    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
-    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
-        local guid = info.guid
-        if not check_login_session(session.fd) then --已断开连接
-            channel.publish("service."..tostring(server),"lua","afk",guid)
-            return
-        end
 
-        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
-    end
+    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
     log.dump(info)
 
-    return ok,info
+    return ok,info,server
 end
 
 local function login_by_account(msg,session)
@@ -190,124 +171,113 @@ local function login_by_account(msg,session)
     log.info( "ip = %s", msg.ip )
 
     local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
-    if ok and info.result == enum.LOGIN_RESULT_SUCCESS then
-        local guid = info.guid
-        if not check_login_session(session.fd) then --已断开连接
-            channel.publish("service."..tostring(server),"lua","afk",guid)
+
+    log.info( "login step gateservice.CL_Login,account=%s, session_id=%d", msg.account, fd )
+    return ok,info,server
+end
+
+local function is_valid_str(v)
+    return v and type(v) == "string" and v ~= ""
+end
+
+local function do_cl_login(msg,session)
+    log.dump(msg)
+    local fd = session.fd
+
+    if not is_valid_str(msg.account) and  not is_valid_str(msg.open_id) and not is_valid_str(msg.phone) then
+        send2client(fd,"LC_Login",{
+            result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
+        })
+        return
+    end
+
+    local l = tasking[fd]
+    return l:lockcall(function()
+        local ok,info,server
+        if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
+            ok,info,server = login_by_account(msg,session)
+        elseif msg.open_id and msg.open_id ~= "" then
+            ok,info,server = login_by_openid(msg,session)
+        elseif msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
+            ok,info,server = login_by_sms(msg,session)
+        else
+            log.error("CL_Login invalid parameter")
+            tasking[fd] = nil
             return
         end
 
-        skynet.call(gateservice,"lua","login",session.fd,info.guid,server,info)
-    end
+        log.dump(info)
 
-    log.info( "login step gateservice.CL_Login,account=%s, session_id=%d", msg.account, fd )
-    return ok,info
+        if ok then
+            if info.result == enum.LOGIN_RESULT_SUCCESS then
+                local guid = info.guid
+                skynet.call(gateservice,"lua","login",fd,guid,server,info)
+                -- flag login done session for afk when logining
+                l.guid = guid
+            end
+    
+            send2client(fd,"LC_Login",info)
+        else
+            send2client(fd,"LC_Login",{
+                result = enum.LOGIN_RESULT_MAINTAIN
+            })
+        end
+
+        tasking[fd] = nil
+    end)
 end
 
 function MSG.CL_Auth(msg,session)
     local fd = session.fd
-    if logining[fd] then
-        send2client(fd,"LC_Auth",{
-            result = enum.LOGIN_RESULT_LOGIN_QUQUE,
-        })
-        return true
-    end
+    local l = tasking[fd]
+    return l:lockcall(function()
+        if  (not msg.code or msg.code == "") or
+            (not msg.auth_platform or msg.auth_platform == "") then
+            send2client(fd,"LC_Auth",{
+                result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
+            })
+            tasking[fd] = nil
+            return
+        end
 
-    if  (not msg.code or msg.code == "") or
-        (not msg.auth_platform or msg.auth_platform == "") then
-        send2client(fd,"LC_Auth",{
-            result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
-        })
-        return
-    end
+        msg.ip = session.ip
+        local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
+        log.dump(result)
+        log.dump(userinfo)
+        if not ok then
+            send2client(fd,"LC_Auth",{
+                result = enum.LOGIN_RESULT_MAINTAIN,
+            })
+            tasking[fd] = nil
+            return
+        end
 
-    logining[fd] = true
+        if  ok and
+            result ~= enum.LOGIN_RESULT_SUCCESS and 
+            result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
+            send2client(fd,"LC_Auth",{
+                result = result,
+                errmsg = userinfo,
+            })
+            return
+        end
 
-    msg.ip = session.ip
-    local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
-    log.dump(result)
-    log.dump(userinfo)
-    if not ok then
-        send2client(fd,"LC_Auth",{
-            result = enum.LOGIN_RESULT_MAINTAIN,
-        })
-        logining[fd] = nil
-        return
-    end
+        log.dump(userinfo)
 
-    if  ok and
-        result ~= enum.LOGIN_RESULT_SUCCESS and 
-        result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
-        send2client(fd,"LC_Auth",{
-            result = result,
-            errmsg = userinfo,
-        })
-        logining[fd] = nil
-        return
-    end
-    
-    logining[fd] = nil
+        local do_login_msg = {
+            ip = msg.ip,
+            open_id = userinfo.open_id,
+            package_name = msg.package_name,
+            phone_type = msg.phone_type,
+            version = msg.version,
+        }
 
-    log.dump(userinfo)
-
-    MSG.CL_Login({
-        ip = msg.ip,
-        open_id = userinfo.open_id,
-        package_name = msg.package_name,
-        phone_type = msg.phone_type,
-        version = msg.version,
-    },session)
+        do_cl_login(do_login_msg,session)
+    end)
 end
 
 function MSG.CL_Login(msg,session)
-    log.dump(msg)
-    local fd = session.fd
-    
-    if logining[fd] then
-        send2client(fd,"LC_Login",{
-            result = enum.LOGIN_RESULT_LOGIN_QUQUE,
-        })
-        return true
-    end
-
-    local function check_key_field(field)
-        return field and type(field) == "string" and field ~= ""
-    end
-
-    if not check_key_field(msg.account) and  not check_key_field(msg.open_id) and not check_key_field(msg.phone) then
-        send2client(fd,"LC_Login",{
-            result = enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR,
-        })
-        return false
-    end
-
-    logining[fd] = true
-
-    local ok,res
-    if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
-        ok,res = login_by_account(msg,session)
-    end
-
-    if msg.open_id and msg.open_id ~= "" then
-        ok,res = login_by_openid(msg,session)
-    end
-
-    if msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
-        ok,res = login_by_sms(msg,session)
-    end
-
-    logining[fd] = nil
-
-    log.dump(res)
-
-    if not ok then
-        send2client(fd,"LC_Login",{
-            result = enum.LOGIN_RESULT_MAINTAIN
-        })
-        return
-    end
-
-	send2client(fd,"LC_Login",res)
+    do_cl_login(msg,session)
 end
 
 function MSG.CS_HeartBeat(_,session)
@@ -317,14 +287,6 @@ function MSG.CS_HeartBeat(_,session)
 end
 
 function MSG.CG_GameServerCfg(msg,session)
-    local player_platform_id = "0"
-    
-    if not msg.platform_id then
-        log.warning( "platform_id empty, CG_GameServerCfg, set platform = [0]")
-    else
-        player_platform_id = msg.platform_id
-    end
-
     local gameservices = table.map(channel.list(),function(_,sid)
         local id = string.match(sid,"service.(%d+)")
         if not id then return end
@@ -349,14 +311,13 @@ function MSG.CG_GameServerCfg(msg,session)
 end
 
 skynet.start(function()
-    msgopt.register_handle(MSG)
-
     skynet.dispatch("lua",function(_,_,cmd,...)
         local f = CMD[cmd]
         if f then
             skynet.retpack(f(...))
         else
             log.error("unkown cmd:%s",cmd)
+            skynet.retpack(nil)
             return nil
         end
     end)
@@ -366,9 +327,14 @@ skynet.start(function()
         id = skynet.PTYPE_CLIENT,
         pack = skynet.pack,
         unpack = skynet.unpack,
+        dispatch = function(session,source,msgname,...)
+            local f = MSG[msgname]
+            if f then
+                skynet.retpack(f(...))
+            else
+                log.error("unkown msg:%s",msgname)
+                skynet.retpack(nil)
+            end
+        end,
     }
-
-    skynet.dispatch("client",function(_,_,msgname,msg,...)
-        skynet.retpack(msgopt.on_msg(msgname,msg,...))
-    end)
 end)
