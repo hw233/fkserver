@@ -645,27 +645,30 @@ function on_cl_login(msg,gate)
         }
     end
 
-    local ip = msg.ip 
-    if ip then
-
-    end
-
     info = clone(info)
+
+    local guid = info.guid
 
     -- 重连判断
     --清空online信息，重接最新数据
-    onlineguid[info.guid] = nil
+    onlineguid[guid] = nil
+    
+    local onlineinfo = onlineguid[guid]
 
-    local onlineinfo = onlineguid[info.guid]
+    local old_gate = onlineinfo and onlineinfo.gate
+    if old_gate and old_gate ~= gate then
+        channel.call("gate."..tostring(old_gate),"lua","kickout",guid)
+    end
+
     local game_id = tonumber(onlineinfo.server)
     local first_game_type = tonumber(onlineinfo.first_game_type)
     if game_id  and tonumber(first_game_type) ~= 1 then
-        log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", info.guid, game_id, info.session_id, info.gate_id)
+        log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", guid, game_id, info.session_id, info.gate_id)
         info.result = enum.LOGIN_RESULT_SUCCESS
         info.reconnect = 1
-        reddb:hset("player:online:guid:"..tostring(info.guid),"gate",gate)
+        reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
 
-        channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid,true)
+        channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
 
         log.dump(info)
 
@@ -690,7 +693,7 @@ function on_cl_login(msg,gate)
     end
 
     channel.publish("db.?","msg","LD_LogLogin",{
-        guid = info.guid,
+        guid = guid,
         phone = msg.phone,
         phone_type = msg.phone_type,
         version = msg.version,
@@ -709,20 +712,20 @@ function on_cl_login(msg,gate)
     
     log.dump(gate)
     -- 存入redis
-    reddb:hmset("player:online:guid:"..tostring(info.guid),{
+    reddb:hmset("player:online:guid:"..tostring(guid),{
         gate = gate,
         login = def_game_id,
     })
 
-    reddb:sadd("player:online:all",info.guid)
+    reddb:sadd("player:online:all",guid)
 
-    channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",info.guid)
+    channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",guid)
 
     log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
 
     info.result = enum.LOGIN_RESULT_SUCCESS
 
-    onlineguid[info.guid] = nil
+    onlineguid[guid] = nil
  
     return info,game_id
 end
