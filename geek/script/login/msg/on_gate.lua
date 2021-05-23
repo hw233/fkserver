@@ -188,7 +188,7 @@ local function reg_account(msg)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
-local function open_id_login(msg,gate)
+local function open_id_login(msg)
     log.dump(msg)
     default_open_id_icon = default_open_id_icon or global_conf.default_openid_icon
 
@@ -547,7 +547,7 @@ local function h5_login(msg)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
-local function account_login(msg,gate)
+local function account_login(msg)
     local guid
     local has = reddb:exists("player:info:"..tostring(msg.account))
     if has then
@@ -620,21 +620,25 @@ local function account_login(msg,gate)
     return enum.LOGIN_RESULT_SUCCESS,info
 end
 
+local function is_valid_str(v)
+    return v and type(v) == "string" and v ~= ""
+end
+
 function on_cl_login(msg,gate)
-    local account = (msg.account and msg.account ~= "") and msg.account or msg.open_id
+    local account = is_valid_str(msg.account) and msg.account or msg.open_id
     log.dump(msg)
     local ret,info
 
-    if msg.open_id and msg.open_id ~= "" then
+    if is_valid_str(msg.open_id)then
         if msg.phone_type == "H5" then
-            ret,info = h5_login(msg,gate)
+            ret,info = h5_login(msg)
         else
-            ret,info = open_id_login(msg,gate)
+            ret,info = open_id_login(msg)
         end
-    elseif msg.phone ~= "" and msg.sms_verify_no ~= "" then
-        ret,info = sms_login(msg,gate)
-    elseif msg.password and msg.password ~= "" and msg.account and msg.account ~= "" then
-        ret,info = account_login(msg,gate)
+    elseif is_valid_str(msg.phone) and is_valid_str(msg.sms_verify_no) then
+        ret,info = sms_login(msg)
+    elseif is_valid_str(msg.password) and is_valid_str(msg.account) then
+        ret,info = account_login(msg)
     end
 
     log.dump(info)
