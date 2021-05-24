@@ -179,6 +179,7 @@ function ox_table:on_started(player_count)
 		banker = nil,		 --庄家ID
 		balance = {}, --游戏结算
 		callbanker = {},
+		bet = {},
 		players = table.map(self.players,function(v,i) 
 			return i,{
 				chair_id = i,
@@ -481,6 +482,8 @@ function ox_table:bet(player, msg)
 		end
 
 		player.bet_score = (player.bet_score or 0) + score
+
+		self.gamelog.bet[player.chair_id] = score
 
 		self:broadcast2client("SC_OxAddScore",{
 			result = enum.ERROR_NONE,
