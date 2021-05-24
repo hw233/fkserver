@@ -180,6 +180,7 @@ function ox_table:on_started(player_count)
 		balance = {}, --游戏结算
 		callbanker = {},
 		bet = {},
+		cur_round = self:gaming_round(),
 		players = table.map(self.players,function(v,i) 
 			return i,{
 				chair_id = i,
