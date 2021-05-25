@@ -8,6 +8,7 @@ local protocolnetmsg = require "gate.netmsgopt"
 local channel = require "channel"
 require "skynet.manager"
 require "functions"
+local queue = require "skynet.queue"
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
@@ -22,6 +23,13 @@ local onlineguid = {}
 local fduser = {}
 local heartbeat_check_time = 12
 local netmsgopt
+
+local ctx = {}
+
+function ctx:lockcall(fn,...)
+    self.__lock = self.__lock or queue()
+    return self.__lock(fn,...)
+end
 
 local LOGIN_HANDLE = {
     CL_Auth = true,
@@ -57,8 +65,10 @@ local function kickout(guid)
     log.info("kickout %s",guid)
     local u = onlineguid[guid]
     if u then
-        skynet.call(u.agent,"lua","kickout",u.guid)
-        fduser[u.fd] = nil
+        u:lockcall(function()
+            skynet.call(u.agent,"lua","kickout",u.guid)
+            fduser[u.fd] = nil
+        end)
     end
     onlineguid[guid] = nil
 end
@@ -69,9 +79,15 @@ local function afk(fd)
         pcall(skynet.send,loginservice, "lua", "afk",fd)
         return
     end
-
-    pcall(skynet.call,u.agent, "lua", "afk",u.guid)
-    logout(u.guid)
+    
+    u:lockcall(function()
+        if not fduser[fd] then
+            log.error("afk %s double check nil")
+            return
+        end
+        pcall(skynet.call,u.agent, "lua", "afk",u.guid)
+        logout(u.guid)
+    end)
 end
 
 local function login(fd,guid,server,conf)
@@ -100,6 +116,8 @@ local function login(fd,guid,server,conf)
         guid = guid,
         fd = fd,
     }
+
+    setmetatable(u,{__index = ctx})
 
     onlineguid[guid] = u
     fduser[fd] = u
@@ -208,9 +226,16 @@ function CMD.start(conf)
             return
         end
 
-        u.last_live_time = os.time()
+        u:lockcall(function()
+            if not fduser[fd] then
+                log.error("dispatch double check %s,%s msg:%s nil session",u.guid,fd,msgname)
+                return
+            end
+            
+            u.last_live_time = os.time()
 
-        skynet.send(u.agent,"client",msgname,msg,u.guid)
+            skynet.send(u.agent,"client",msgname,msg,u.guid)
+        end)
     end
 
     msgserver.start(server)

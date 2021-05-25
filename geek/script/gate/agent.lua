@@ -4,6 +4,7 @@ local protonetmsg = require "gate.netmsgopt"
 local enum = require "pb_enums"
 require "functions"
 local log = require "log"
+local queue = require "skynet.queue"
 
 collectgarbage("setpause", 100)
 collectgarbage("setstepmul", 1000)
@@ -19,6 +20,13 @@ local rsa_public_key
 
 local onlineguid = {}
 
+local ctx = {}
+
+function ctx:lockcall(fn,...)
+    self.__lock = self.__lock or queue()
+    return self.__lock(fn,...)
+end
+
 local function send2client(guid,msgname,msg)
     local u = onlineguid[guid]
     if not u or not u.fd then
@@ -32,7 +40,13 @@ end
 local CMD = {}
 
 function CMD.login(u)
-	log.info("%s is login", u.guid)
+    local guid = u.guid
+	log.info("%s is login", guid)
+    if onlineguid[guid] then
+        log.error("double login %s",guid)
+    end
+    
+    setmetatable(u,{__index = ctx})
     onlineguid[u.guid] = u
 end
 
@@ -50,13 +64,25 @@ end
 local function afk(guid)
     log.warning("afk,guid:%s",guid)
     local u = onlineguid[guid]
-    if not u or not u.server then
-        log.warning("afk,guid:%s,not in server,%s",guid,u.server)
+    if not u then
+        log.warning("afk,guid:%s got nil session",guid)
         return
     end
 
-    channel.call("service."..tostring(u.server),"lua","afk",guid,true)
-    onlineguid[guid] = nil
+    if not u.server then
+        log.warning("afk,guid:%s not in server",guid)
+        onlineguid[guid] = nil
+        return
+    end
+
+    u:lockcall(function()
+        if not onlineguid[guid] then
+            log.error("afk,guid:%s double check got nil session",guid)
+            return
+        end
+        channel.call("service."..tostring(u.server),"lua","afk",guid,true)
+        onlineguid[guid] = nil
+    end)
 end
 
 function CMD.logout(guid)
@@ -99,9 +125,7 @@ function MSG.CS_Logout(msg,guid)
 end
 
 function MSG.C_RequestPublicKey(msg,guid)
-    if not rsa_public_key then
-        rsa_public_key = skynet.public_key()
-    end
+    rsa_public_key = rsa_public_key or skynet.public_key()
 
     send2client(guid,"C_PublicKey",{
         public_key = rsa_public_key,
@@ -126,24 +150,30 @@ local function dispatch(msgname,msg,guid)
         return
     end
 
-    channel.publish("service."..tostring(u.server),"msg",msgname,msg,guid)
+    u:lockcall(function()
+        if not onlineguid[guid] then
+            log.error("dispatch forward guid:%s msg:%s server:%s double check got nil session,maybe afk already.",
+                guid,msgname,u.server)
+            return
+        end
+        channel.publish("service."..tostring(u.server),"msg",msgname,msg,guid)
+    end)
 end
+
+skynet.register_protocol {
+    name = "client",
+    id = skynet.PTYPE_CLIENT,
+    unpack = skynet.unpack,
+    pack = skynet.pack,
+    dispatch = function(_,_,...)
+	    skynet.retpack(dispatch(...))
+    end,
+}
 
 skynet.start(function()
 	skynet.dispatch("lua", function(_, _, cmd, ...)
         local f = assert(CMD[cmd])
 		skynet.retpack(f(...))
-    end)
-
-    skynet.register_protocol {
-        name = "client",
-        id = skynet.PTYPE_CLIENT,
-        unpack = skynet.unpack,
-        pack = skynet.pack,
-    }
-
-	skynet.dispatch("client", function(_,_,...)
-	    skynet.retpack(dispatch(...))
     end)
 
     skynet.dispatch("forward",function (_,_,guid,msgname,msg)
