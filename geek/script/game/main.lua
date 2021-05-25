@@ -103,6 +103,12 @@ function CMD.afk(guid,offline)
 	return logout(player.guid,offline)
 end
 
+function CMD.reloadconf()
+	log.info("reloadconf game %s %s ...",def_game_name,def_game_id)
+
+	g_room:reloadconf()
+end
+
 skynet.start(function()
 	skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]

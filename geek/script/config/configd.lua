@@ -236,6 +236,33 @@ function CMD.start(conf)
     sconf = conf
 end
 
+
+local function clean_cache()
+    for id,conf in pairs(services) do
+        log.info("clean service cache id:%s,name:%s",id,conf.name)
+        services[id] = nil
+    end
+
+    for id,conf in pairs(clusters) do
+        log.info("clean cluster cache id:%s,name:%s",id,conf.name)
+        clusters[id] = nil
+    end
+
+    for id,conf in pairs(redises) do
+        log.info("clean redis cache id:%s,name:%s",id,conf.name)
+        redises[id] = nil
+    end
+
+    for id,conf in pairs(dbs) do
+        log.info("clean db cache id:%s,name:%s",id,conf.name)
+        dbs[id] = nil
+    end
+end
+
+function CMD.cleancache()
+    clean_cache()
+end
+
 local function clean_when_start()
     local reddb = redisopt.default
     local onlineguids = reddb:smembers("player:online:all")
@@ -270,29 +297,6 @@ local function setup_default_redis_value()
     reddb:setnx("player:global:guid",math.floor(first_guid))
 end
 
-local function clean_cache()
-    for id,conf in pairs(services) do
-        log.info("clean service cache id:%s,name:%s",id,conf.name)
-        services[id] = nil
-    end
-
-    for id,conf in pairs(clusters) do
-        log.info("clean cluster cache id:%s,name:%s",id,conf.name)
-        clusters[id] = nil
-    end
-
-    for id,conf in pairs(redises) do
-        log.info("clean redis cache id:%s,name:%s",id,conf.name)
-        redises[id] = nil
-    end
-
-    for id,conf in pairs(dbs) do
-        log.info("clean db cache id:%s,name:%s",id,conf.name)
-        dbs[id] = nil
-    end
-
-    timer.timeout(cache_elapsed_time,clean_cache)
-end
 
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...)
@@ -326,5 +330,10 @@ skynet.start(function()
         -- setup_default_redis_value()
     end)
 
-    timer.timeout(cache_elapsed_time,clean_cache)
+    local function clean()
+        clean_cache()
+        timer.timeout(cache_elapsed_time,clean)
+    end
+
+    timer.timeout(cache_elapsed_time,clean)
 end)

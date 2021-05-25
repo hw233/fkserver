@@ -1,5 +1,5 @@
 export ROOT=$(cd `dirname $0`; pwd)
-export CLUSTER=$1
+export CMDLINE="game $*"
 
 # while getopts "Dk" arg
 # do

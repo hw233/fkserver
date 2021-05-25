@@ -1,6 +1,6 @@
 
 export ROOT=$(cd `dirname $0`; pwd)
-export CLUSTER=$1
+export CMDLINE="game $*"
 
 if [ $# = 0 ]
 then

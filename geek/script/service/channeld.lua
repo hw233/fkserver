@@ -273,7 +273,7 @@ end
 local function get_service_without_warmdead(sid)
     local ss = {}
     for id,s in pairs(address) do
-        if not s.warmdead and (not sid or sid == id) then
+        if not s.warmdead and (not sid or sid == id or id:match(sid)) then
             ss[id] = s
         end
     end
