@@ -51,7 +51,7 @@ local function compare(l,r)
 	end
 	
 	local lcards = sorted_pair_values(l.pair)
-	local rcards = sorted_pair_values(l.pair)
+	local rcards = sorted_pair_values(r.pair)
 	local lc1,rc1 = lcards[1],rcards[1]
 	local lv,rv = get_value(lc1),get_value(rc1)
 	if lv ~= rv then
@@ -156,33 +156,6 @@ local function cards_type(cards,opt)
 		end
 	end
 
-	if opt[CARDS_TYPE.OX_TONGHUASHUN] and same_color and seq and #types > 0 then
-		return {
-			type = CARDS_TYPE.OX_TONGHUASHUN,
-			pair = {list},
-		}
-	end
-	
-	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] and #types > 0 then
-		return {
-			type = CARDS_TYPE.OX_HULU,
-			pair = {list},
-		}
-	end
-
-	if opt[CARDS_TYPE.OX_TONGHUA] and same_color and #types > 0 then
-		return {
-			type = CARDS_TYPE.OX_TONGHUA,
-			pair = {list},
-		}
-	end
-
-	if opt[CARDS_TYPE.OX_SHUNZI] and seq and #types > 0 then
-		return {
-			type = CARDS_TYPE.OX_SHUNZI,
-			pair = {list},
-		}
-	end
 
 	if #types == 0 then
 		return {
@@ -193,7 +166,37 @@ local function cards_type(cards,opt)
 
 	tsort(types,compare)
 
-	return types[1]
+	local t = types[1]
+
+	if opt[CARDS_TYPE.OX_TONGHUASHUN] and same_color and seq then
+		return {
+			type = CARDS_TYPE.OX_TONGHUASHUN,
+			pair = t.pair,
+		}
+	end
+	
+	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] then
+		return {
+			type = CARDS_TYPE.OX_HULU,
+			pair = t.pair,
+		}
+	end
+
+	if opt[CARDS_TYPE.OX_TONGHUA] and same_color then
+		return {
+			type = CARDS_TYPE.OX_TONGHUA,
+			pair = t.pair,
+		}
+	end
+
+	if opt[CARDS_TYPE.OX_SHUNZI] and seq then
+		return {
+			type = CARDS_TYPE.OX_SHUNZI,
+			pair = t.pair,
+		}
+	end
+
+	return t
 end
 
 local function pair_type(pair,opt)
@@ -219,15 +222,34 @@ local function pair_type(pair,opt)
 	}
 end
 
--- log.dump(cards_type({1,41,2,3,21},{
--- 	[CARDS_TYPE.OX_JINHUA] = 1,
--- 	[CARDS_TYPE.OX_YINHUA] = 1,
--- 	[CARDS_TYPE.OX_TONGHUASHUN] = 1,
--- 	[CARDS_TYPE.OX_TONGHUA] = 1,
+-- local opt = {
+-- 	[CARDS_TYPE.OX_NONE] = 1,
+-- 	[CARDS_TYPE.OX_1] = 1,
+-- 	[CARDS_TYPE.OX_2] = 1,
+-- 	[CARDS_TYPE.OX_3] = 1,
+-- 	[CARDS_TYPE.OX_4] = 1,
+-- 	[CARDS_TYPE.OX_5] = 1,
+-- 	[CARDS_TYPE.OX_6] = 1,
+-- 	[CARDS_TYPE.OX_7] = 1,
+-- 	[CARDS_TYPE.OX_8] = 1,
+-- 	[CARDS_TYPE.OX_9] = 1,
+-- 	[CARDS_TYPE.OX_10] = 1,
 -- 	[CARDS_TYPE.OX_SHUNZI] = 1,
+-- 	[CARDS_TYPE.OX_TONGHUA] = 1,
+-- 	[CARDS_TYPE.OX_YINHUA] = 1,
+-- 	[CARDS_TYPE.OX_JINHUA] = 1,
 -- 	[CARDS_TYPE.OX_HULU] = 1,
+-- 	[CARDS_TYPE.OX_BOMB] = 1,
 -- 	[CARDS_TYPE.OX_SMALL_5] = 1,
--- }))
+-- 	[CARDS_TYPE.OX_TONGHUASHUN] = 1,
+-- }
+
+-- local ct1 = cards_type({65,47,67,23,63},opt)
+-- log.dump(ct1)
+-- local ct2 = cards_type({62,12,45,30,21},opt)
+-- log.dump(ct2)
+
+-- log.dump(compare(ct1,ct2))
 
 return {
 	cards_type = cards_type,
