@@ -149,6 +149,12 @@ function CMD.forward(who,proto,...)
     channel.publish(who,proto,...)
 end
 
+function CMD.term()
+    for fd,_ in pairs(fduser) do
+        afk(fd)
+    end
+end
+
 local function checkgateconf(conf)
     assert(conf)
     assert(conf.id)
