@@ -298,9 +298,11 @@ function gateserver.start(conf)
             return
         end
 
-        local origin = header.origin or header.Origin
-        if origin then
-            addr = string.match(origin,"%d+%.%d+%.%d+%.%d+:%d+") or addr
+        log.dump(header)
+
+        local real_host = header['X-Real-Host'] or header["x-real-host"]
+        if real_host then
+            addr = string.match(real_host,"%d+%.%d+%.%d+%.%d+:%d+") or addr
             log.info("websocket redirect addr %s",addr)
         end
 
