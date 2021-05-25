@@ -150,9 +150,11 @@ function CMD.forward(who,proto,...)
 end
 
 function CMD.term()
+    log.warning("GATE TERM")
     for fd,_ in pairs(fduser) do
         afk(fd)
     end
+    log.warning("GATE TERM END")
 end
 
 local function checkgateconf(conf)
