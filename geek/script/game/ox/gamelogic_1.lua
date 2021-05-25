@@ -41,7 +41,11 @@ local function sorted_pair_values(p)
 		end
 	end
 
-	tsort(cards,function(l,r) return get_value(l) > get_value(r) end)
+	tsort(cards,function(l,r) 
+		local lv,rv = get_value(l),get_value(r)
+		if rv ~= lv then return lv > rv end
+		return get_color(l) < get_color(r)
+	end)
 	return cards
 end
 
