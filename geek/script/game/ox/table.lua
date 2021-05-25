@@ -311,17 +311,19 @@ function ox_table:allow_call_banker()
 	end
 
 	self.status = TABLE_STATUS.CALLBANKER
-	self:broadcast2client("SC_AllowCallBanker",{
-		timeout = CALLBANKER_TIMEOUT,
-	})
-	self:begin_timer(CALLBANKER_TIMEOUT,function()
-		self:cancel_timer()
-		table.foreach(self.gamers,function(p)
-			if not p.callbanker then
-				self:call_banker(p,{times = 0})
-			end
+	self:broadcast2client("SC_AllowCallBanker",{})
+
+	local trustee_type,seconds = self:get_trustee_conf()
+	if trustee_type then
+		self:begin_timer(seconds or CALLBANKER_TIMEOUT,function()
+			self:cancel_timer()
+			table.foreach(self.gamers,function(p)
+				if not p.callbanker then
+					self:call_banker(p,{times = 0})
+				end
+			end)
 		end)
-	end)
+	end
 end
 
 function ox_table:call_banker(player,msg)
@@ -411,26 +413,27 @@ end
 function ox_table:allow_bet()
 	self.status = TABLE_STATUS.BET
 
-	self:broadcast2client("SC_AllowAddScore",{
-		timeout = BET_TIMEOUT,
-	})
+	self:broadcast2client("SC_AllowAddScore",{})
 
-	local done = nil
-	self:begin_timer(BET_TIMEOUT,function()
-		-- double check
-		if done then return end
+	local trustee_type,seconds = self:get_trustee_conf()
+	if trustee_type then
+		local done = nil
+		self:begin_timer(seconds,function()
+			-- double check
+			if done then return end
 
-		done = true
+			done = true
 
-		self:cancel_timer()
-		table.foreach(self.gamers,function(p)
-			if p.chair_id ~= self.banker and (not p.bet_score or p.bet_score < 1) then
-				self:bet(p,{score = self.bet_chips[1] or 1})
-			end
+			self:cancel_timer()
+			table.foreach(self.gamers,function(p)
+				if p.chair_id ~= self.banker and (not p.bet_score or p.bet_score < 1) then
+					self:bet(p,{score = self.bet_chips[1] or 1})
+				end
+			end)
+
+			self:allow_split_cards()
 		end)
-
-		self:allow_split_cards()
-	end)
+	end
 end
 
 function ox_table:bet(player, msg)
@@ -560,25 +563,27 @@ end
 
 function ox_table:allow_split_cards()
 	self.status = TABLE_STATUS.SPLIT
-	table.foreach(self.gamers,function(p) 
+	table.foreach(self.players,function(p) 
 		send2client(p,"SC_AllowSplitCards",{
-			timeout = SPLIT_TIMEOUT,
 			cards = p.cards,
 		})
 	end)
-	
-	self:begin_timer(SPLIT_TIMEOUT,function()
-		self:cancel_timer()
-		table.foreach(self.gamers,function(p)
-			if not p.cards_pair then
-				self:split_cards(p,{
-					cards_pair = table.series(p.cards_type.pair,function(pc)
-						return {cards = pc}
-					end)
-				})
-			end
+
+	local trustee_type,seconds = self:get_trustee_conf()
+	if trustee_type then
+		self:begin_timer(seconds,function()
+			self:cancel_timer()
+			table.foreach(self.gamers,function(p)
+				if not p.cards_pair then
+					self:split_cards(p,{
+						cards_pair = table.series(p.cards_type.pair,function(pc)
+							return {cards = pc}
+						end)
+					})
+				end
+			end)
 		end)
-	end)
+	end
 end
 
 function ox_table:do_balance()
@@ -671,7 +676,7 @@ function ox_table:do_balance()
 end
 
 function ox_table:on_game_overed()
-	log.info("ox_table:on_game_overed table_id =%s   guid=%s   timeis:%s", self.table_id_, self.log_guid, os.date("%y%m%d%H%M%S"))
+	log.info("ox_table:on_game_overed table_id = %s", self.table_id_)
 	self:cancel_timer()
 	self:cancel_kickout_no_ready_timer()
 
@@ -886,6 +891,38 @@ end
 
 function ox_table:on_player_sit_downed(player,reconnect)
 	log.info("ox_table:on_player_sit_downed %s",reconnect)
+	if not self:is_play(player) then
+		local msg = {
+			banker = self.banker,
+			status = self.status or TABLE_STATUS.FREE,
+			round = self:gaming_round(),
+			players = table.map(self.gamers,function(p,chair)
+				return chair,{
+					chair_id = chair,
+					guid = p.guid,
+					call_banker_times = p.callbanker or -1,
+					status = p.status or PLAYER_STATUS.WATCHER,
+					total_score = p.total_score,
+					total_money = p.total_money,
+					score = p.bet_score,
+					cards_pair = table.series(p.cards_pair or {},function(p) return {cards = p} end),
+				}
+			end)
+		}
+
+		send2client(player,"SC_OxTableInfo",msg)
+		if self.status == TABLE_STATUS.CALLBANKER then
+			self:on_reconnect_when_callbanker(player)
+		elseif self.status == TABLE_STATUS.BET then
+			self:on_reconnect_when_bet(player)
+		elseif self.status == TABLE_STATUS.SPLIT then
+			self:on_reconnect_when_split_cards(player)
+		end
+
+		if self.auto_timer then
+			self:begin_clock(self.auto_timer.remainder,player)
+		end
+	end
 	self:sync_kickout_no_ready_timer(player)
 end
 
