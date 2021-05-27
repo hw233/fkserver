@@ -82,7 +82,7 @@ local function afk(fd)
     
     u:lockcall(function()
         if not fduser[fd] then
-            log.error("afk %s double check nil")
+            log.error("afk %s double check nil",fd)
             return
         end
         pcall(skynet.call,u.agent, "lua", "afk",u.guid)
