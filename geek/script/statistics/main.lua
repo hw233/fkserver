@@ -60,7 +60,7 @@ function MSG.SS_GameRoundEnd(msg)
 
     log.dump(date)
 
-    if maxmoney > 0 then
+    if maxmoney and maxmoney > 0 then
         logdb:query(
             [[
             INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
