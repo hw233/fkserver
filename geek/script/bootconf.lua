@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "log"
 local channel = require "channel"
 local bootconf = require "conf.boot"
+local callmod = require "callmod"
 
 local string = string
 local table = table
@@ -10,7 +11,6 @@ local strfmt = string.format
 local tinsert = table.insert
 local tunpack = table.unpack
 local tconcat = table.concat
-local callmod = callmod
 
 local cmdlines = {...}
 
