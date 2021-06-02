@@ -375,6 +375,8 @@ function base_table:calc_score_money(score)
 	return score * 100 * base_multi
 end
 
+base_table.score_money = base_table.calc_score_money
+
 function base_table:do_commission_standalone(guid,commission,contributer)
 	if not self:is_private() then 
 		return
@@ -784,15 +786,25 @@ function base_table:cost_tax(winlose)
 	end
 end
 
-function base_table:notify_game_money()
-	local player_moneys = {}
+function base_table:notify_game_money(moneies)
+	local player_moneys
 	local money_id = self:get_money_id()
-	for chair_id,p in pairs(self.players) do
-		table.insert(player_moneys,{
-			chair_id = chair_id,
-			money_id = money_id,
-			money = player_money[p.guid][money_id] or 0,
-		})
+	if not moneies then
+		player_moneys = table.series(self.players,function(p,chair) 
+			return {
+				chair_id = chair,
+				money_id = money_id,
+				money = player_money[p.guid][money_id] or 0,
+			}
+		end)
+	else
+		player_moneys = table.series(moneies,function(money,chair) 
+			return {
+				chair_id = chair,
+				money_id = money_id,
+				money = money,
+			}
+		end)
 	end
 
 	self:broadcast2client("SYNC_OBJECT",gutil.format_sync_info(
