@@ -29,6 +29,7 @@ local club_sync_cache = require "game.club.club_sync_cache"
 
 local table = table
 local string = string
+local math = math
 local tinsert = table.insert
 
 local dismiss_request_timeout = 60
@@ -364,7 +365,7 @@ function base_table:commit_dismiss(player,agree)
 	end)
 end
 
-function base_table:calc_score_money(score)
+function base_table:score_money(score)
 	local base_multi = 1
     if self:is_private() then
         local private_table = base_private_table[self.private_id]
@@ -375,7 +376,18 @@ function base_table:calc_score_money(score)
 	return score * 100 * base_multi
 end
 
-base_table.score_money = base_table.calc_score_money
+base_table.calc_score_money = base_table.score_money
+
+function base_table:money_score(money)
+	local base_multi = 1
+    if self:is_private() then
+        local private_table = base_private_table[self.private_id]
+        local rule = private_table.rule
+        base_multi = rule.union and rule.union.score_rate or 1
+	end
+	
+	return money / 100 / base_multi
+end
 
 function base_table:do_commission_standalone(guid,commission,contributer)
 	if not self:is_private() then 
