@@ -14,6 +14,8 @@ local base_rule = require "game.lobby.base_rule"
 
 local table = table
 local string = string
+local math = math
+local tinsert = table.insert
 
 local base_table = require "game.lobby.base_table"
 
@@ -185,6 +187,7 @@ function zhajinhua_table:on_started(player_count)
 
 	for i,v in pairs(self.gamers) do
 		v.game_status = PLAYER_STATUS.WAIT
+		v.remain_score = math.floor(self:money_score(self.old_moneies[v.guid]))
 		v.remain_money = self.old_moneies[v.guid]
 		v.bet_score = 0
 		v.bet_money = 0
@@ -217,8 +220,6 @@ function zhajinhua_table:on_started(player_count)
 
 	log.info("game start ID =%s   guid=%s", self.table_id_, 
 		table.concat(table.series(self.players,function(p) return p.guid end),","))
-	
-	log.dump(self.players,string.format("zhajinhua_table:on_started_%s",self:id()),2)
 
 	self:deal_cards()
 	self:first_turn(self.banker)
@@ -231,8 +232,8 @@ end
 function zhajinhua_table:player_bet(player,score)
 	local bet_score = score
 	player.bet_score = (player.bet_score or 0) + bet_score
-	table.insert(self.desk_scores,bet_score)
-	table.insert(player.bet_scores,bet_score)
+	tinsert(self.desk_scores,bet_score)
+	tinsert(player.bet_scores,bet_score)
 	self.all_score = (self.all_score or 0) + bet_score
 end
 
@@ -327,19 +328,16 @@ end
 
 function zhajinhua_table:is_check_money_limit()
 	local club = self.conf and self.conf.club or nil
-	if not club or club.type ~= enum.CT_UNION then
-		return
-	end
-
-	return true
+	local limit = self:is_private() and self.rule.union and self.rule.union.min_score or 0
+	return club and club.type == enum.CT_UNION and limit >= 0
 end
 
-function zhajinhua_table:check_player_money_leak(player,money)
+function zhajinhua_table:check_player_money_leak(player,score)
 	if not self:is_check_money_limit() then
 		return
 	end
 
-	return player.remain_money < money
+	return player.remain_score <= score
 end
 
 function zhajinhua_table:get_player_actions(player_or_chair)
@@ -349,7 +347,7 @@ function zhajinhua_table:get_player_actions(player_or_chair)
 	local men_turn_count = self:get_men_turn_count()
 	local play = self.rule and self.rule.play
 	local can_add_score_in_men_turns = (play and play.can_add_score_in_men_turns) or (self.bet_round and self.bet_round > men_turn_count)
-	return {
+	local as =  {
 		[ACTION.ADD_SCORE] = not is_money_leak and self.last_score < self.max_score and can_add_score_in_men_turns,
 		[ACTION.LOOK_CARDS] = not player.is_look_cards and self.bet_round > men_turn_count,
 		[ACTION.DROP] = self.bet_round and self.bet_round > men_turn_count,
@@ -357,14 +355,26 @@ function zhajinhua_table:get_player_actions(player_or_chair)
 		[ACTION.COMPARE] = (self.bet_round and self.bet_round > math.max(1,men_turn_count)) and not is_money_leak,
 		[ACTION.FOLLOW] = not is_money_leak,
 	}
+	return as
+end
+
+function zhajinhua_table:guard_score(p,score)
+	if not self:is_check_money_limit() then
+		return score
+	end
+	score = score > 0 and score or 0
+	local remain_score = p.remain_score
+	remain_score = remain_score > 0 and remain_score or 0
+	return remain_score > score and score or remain_score
 end
 
 function zhajinhua_table:bet_base_score()
 	local play = self.rule.play
 	local base_score = play and play.base_men_score or self.base_score
 	table.foreach(self.gamers,function(p)
-		self:fake_cost_money(p,base_score)
-		self:player_bet(p,base_score)
+		local score = self:guard_score(p,base_score)
+		self:fake_cost_money(p,score)
+		self:player_bet(p,score)
 	end)
 end
 
@@ -494,6 +504,10 @@ function zhajinhua_table:on_process_over(reason)
 			return p.guid,p.total_money 
 		end)
 	})
+
+	self:cost_tax(table.map(self.players,function(p)
+		return p.guid,p.total_money or 0
+	end))
 	
 	self:foreach(function(p) 
 		if not p.game_status or p.game_status == PLAYER_STATUS.WATCHER then
@@ -608,7 +622,7 @@ end
 -- 下一个
 function zhajinhua_table:next_turn(chair)
 	local reamin = table.sum(self.gamers,function(p) return (not p.death and not p.all_in) and 1 or 0 end)
-	log.info("---------------------------------next_turn %s", reamin)
+	log.info("next_turn %s %s", reamin,chair)
 	chair = chair or self.cur_chair
 	local c = chair
 	local p
@@ -623,7 +637,7 @@ function zhajinhua_table:next_turn(chair)
 
 	self.cur_chair = c
 
-	log.info("---------------------------------next_turn end,turn:%s",self.cur_chair )
+	log.info("next_turn end,turn:%s",self.cur_chair )
 
 	self.round_turn_count = (self.round_turn_count or 0) + 1
 	local go_next = self:next_round()
@@ -1033,7 +1047,7 @@ function zhajinhua_table:handle_cards()
 				k = k-1
 			end
 		end
-		table.insert(sp_cards,tempcards)
+		tinsert(sp_cards,tempcards)
 	end
 	--每局总共做随机2~3首好牌,剩下2首随机洗牌
 	local remainder_num = 5 - spnum
@@ -1048,7 +1062,7 @@ function zhajinhua_table:handle_cards()
 			end
 			k = k-1
 		end
-		table.insert(sp_cards,remain_cards)
+		tinsert(sp_cards,remain_cards)
 	end
 	--打乱顺序
 	local len = #sp_cards
@@ -1105,12 +1119,13 @@ function zhajinhua_table:follow(player)
 	self:cancel_action_timer()
 
 	local score = player.is_look_cards and self.last_score * 2 or self.last_score
-	local is_all_in = self:is_check_money_limit() and player.remain_money < score or false	
-	score = is_all_in and player.remain_money or score
+	local is_all_in = self:check_player_money_leak(player,score)
+	score = is_all_in and self:guard_score(player,score) or score
 
 	self:player_bet(player,score)
+	self:fake_cost_money(player,score)
 
-	table.insert(self.gamelog.actions, {
+	tinsert(self.gamelog.actions, {
 		action = "follow",
 		chair_id = player.chair_id,
 		turn = self.bet_round,
@@ -1131,6 +1146,13 @@ function zhajinhua_table:follow(player)
 			chair_id = player.chair_id,
 			score = score,
 		})
+
+		log.info("table_id[%s]:player guid[%s]--------->allin score[%s]", self.table_id_,player.guid,score)
+
+		if self:compare_with_all(player) then
+			self:game_balance(player)
+			return
+		end
 	end
 
 	self:next_turn()
@@ -1141,7 +1163,8 @@ function zhajinhua_table:cs_follow(player,msg)
 end
 
 function zhajinhua_table:all_in(player)
-	if not self.gamers[player.chair_id] or
+	local chair_id = player.chair_id
+	if not self.gamers[chair_id] or
 		not self:check_player_action(player,ACTION.ALL_IN) then
 		send2client_pb(player,"SC_ZhaJinHuaAllIn",{
 			result = enum.ERROR_OPERATION_INVALID,
@@ -1153,22 +1176,27 @@ function zhajinhua_table:all_in(player)
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
-	local score = player.remain_money
+	local score = self:guard_score(player,self.last_score or self.base_score)
+	self:fake_cost_money(player,score)
 	self:player_bet(player,score)
 	player.all_in = true
 
 	local is_win = self:compare_with_all(player)
 	self:broadcast2client("SC_ZhaJinHuaAllIn",{
-		chair_id = player.chair_id,
+		chair_id = chair_id,
 		score = score,
 		is_win = is_win,
 	})
 
+	if is_win then
+		self:game_balance(player)
+		return
+	end
+
+	player.death = true
+
 	if self:is_end() then
-		self:wait_compare_animate(1.5,function() 
-			self:compare_animate_done()
-			self:game_balance()
-		end)
+		self:game_balance()
 		return
 	end
 
@@ -1188,8 +1216,6 @@ function zhajinhua_table:add_score(player,msg)
 		})
 		return
 	end
-
-	
 
 	local score = msg.score
 	log.info("table_id[%s] player guid[%s]--------> add score[%s]",self.table_id_,player.guid,score)
@@ -1218,86 +1244,62 @@ function zhajinhua_table:add_score(player,msg)
 		return
 	end
 
+	if score > self.max_score then
+		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, score, self.max_score)
+		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+			result = enum.ERROR_OPERATION_INVALID,
+		})
+		return
+	end
+
 	self:clear_action()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 
-	local is_all_in = false
-	if self:is_check_money_limit() then
-		score = score > self.max_score and self.max_score or score
-
-		score = player.remain_money < score and player.remain_money or score
-
-		--第一个全压的人
-		if not self.ball_begin then
-			--获取玩家数量
-			if table.sum(self.gamers,function(p) return not p.death and 1 or 0 end) == 2 then
-				local min_score = table.min(
-						table.select(self.gamers,function(p) return not p.death end),
-						function(p)  return p.remain_money end
-					)
-
-				local all_add_score = (21 - self.bet_round) * self.base_score * 20
-
-				all_add_score = min_score < all_add_score and min_score or all_add_score
-
-				self.max_score = all_add_score
-				score = all_add_score
-
-				log.info("table_id [%s]: guid[%s] add_score self.max_score[%s]:", self.table_id_,player.guid,self.max_score)
-			else
-				log.warning("table_id[%s]: add_score guid[%s] status error",self.table_id_, player.guid)
-				return
-			end
+	local is_all_in
+	local score_add = player.is_look_cards and score * 2 or score
+	if self:check_player_money_leak(player,score_add) then
+		score_add = self:guard_score(player,score_add)
+		is_all_in = true
+	else
+		if score < self.last_score then
+			log.error("table_id[%s]:add_score guid[%s] score[%s] < last[%s]",self.table_id_, player.guid, score, self.last_score)
+			send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+				result = enum.ERROR_OPERATION_INVALID,
+			})
+			return
 		end
-	end
-
-	if score < self.last_score then
-		log.error("table_id[%s]:add_score guid[%s] score[%s] < last[%s]",self.table_id_, player.guid, score, self.last_score)
-		return
-	end
-
-	if score > self.max_score then
-		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, score, self.max_score)
-		return
 	end
 
 	self.last_score = score
 
-	local score_add = player.is_look_cards and score * 2 or score
 	log.info("table_id [%s]: player guid[%s]----->score[%s],money[%s].",self.table_id_,player.guid,score, score_add)
 
 	self:fake_cost_money(player,score_add)
 	self:player_bet(player,score_add)
 	
-	--日志处理
-	table.insert(self.gamelog.actions,{
+	tinsert(self.gamelog.actions,{
 		action = is_all_in and "all_in" or "add_score",
 		chair_id = player.chair_id,
 		score = score_add, -- 注码
 		turn = self.bet_round,
 	})
 
-	log.info("-------------------is_all: %s",is_all_in)
 	self:broadcast2client("SC_ZhaJinHuaAddScore", {
 		result = enum.NONE,
 		chair_id = player.chair_id,
 		score = score_add,
 	})
 
-	--处理全押
-	
-	-- local cur_player = self:cur_player()
-	-- if is_all_in then
-	-- 	log.info("table_id[%s]:player guid[%s]--------->all score money score[%s]", self.table_id_,player.guid,score_add)
-	-- 	player.all_in = true
+	if is_all_in then
+		log.info("table_id[%s]:player guid[%s]--------->allin score[%s]", self.table_id_,player.guid,score_add)
+		player.all_in = true
 
-	-- 	if cur_player.all_in then
-	-- 		self:compare(self.players[self.cur_chair], player.chair_id, true, true)
-	-- 	end
-
-	-- 	self.ball_begin = true
-	-- end
+		if self:compare_with_all(player) then
+			self:game_balance(player)
+			return
+		end
+	end
 
 	self:next_turn()
 end
@@ -1340,7 +1342,7 @@ function zhajinhua_table:give_up(player)
 	player.game_status = PLAYER_STATUS.DROP
 
 	--日志处理
-	table.insert(self.gamelog.actions, {
+	tinsert(self.gamelog.actions, {
 		action = "giveup",
 		chair_id = chair_id,
 		now_chair = self.cur_chair,
@@ -1401,12 +1403,6 @@ function zhajinhua_table:look_card(player)
 
 	log.info("table_id[%s]:player guid[%s]-------------->look cards",self.table_id_,player.guid)
 
-	--全压已经取了钱最少玩家的所有钱，不受看牌×2规则影响，所以可以看牌
-	--if self.ball_begin and player.remain_money < (self.max_score  * 2)  then
-	--	log.error("zhajinhua_table:look_card guid[%s] player_money[%s] max_money[%s] ball_begin and player money error", player.guid,player.remain_money,self.max_score)
-	--	return
-	--end
-
 	player.is_look_cards = true
 
 	send2client_pb(player, "SC_ZhaJinHuaLookCard", {
@@ -1417,9 +1413,8 @@ function zhajinhua_table:look_card(player)
 	self:broadcast2client_except(player, "SC_ZhaJinHuaLookCard", {
 		chair_id = player.chair_id,
 	})
-
-	--日志处理
-	table.insert(self.gamelog.actions, {
+	
+	tinsert(self.gamelog.actions, {
 		action = "look_cards",
 		chair_id = player.chair_id,
 		turn = self.bet_round,
@@ -1512,10 +1507,9 @@ function zhajinhua_table:compare(player, msg)
 	loser.death = true
 	loser.game_status = PLAYER_STATUS.LOSE
 	
-	--日志处理
 	log.info("table_id[%s]: player guid[%s] charid[%s] , target guid[%s] ,turn [%s] , otherplayer [%s] money[%s] win [%s]" ,
 		self.table_id_,player.guid,chair_id,target.guid,self.bet_round,compare_with,score,is_win)
-	table.insert(self.gamelog.actions, {
+	tinsert(self.gamelog.actions, {
 		action = "compare",
 		chair_id = chair_id,
 		turn = self.bet_round,
@@ -1628,11 +1622,20 @@ function zhajinhua_table:game_balance(winner)
 		return (l or 0) + (r or 0) 
 	end)
 
+	table.foreach(self.gamers,function(p,chair) 
+		local s = scores[chair]
+		if s > 0 then
+			p.remain_score = p.remain_score + s
+		end
+	end)
+
 	log.dump(scores)
 	
 	local moneies = self:balance(table.map(scores,function(s,chair) 
-		return chair,self:calc_score_money(s) end
+		return chair,self:score_money(s) end
 	),enum.LOG_MONEY_OPT_TYPE_ZHAJINHUA)
+
+	self:notify_game_money()
 
 	log.dump(moneies)
 
@@ -1685,21 +1688,25 @@ function zhajinhua_table:on_game_overed()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
 
-	self:clear_ready()
-	log.info("self.chair_count %s", self.chair_count)
+	table.foreach(self.gamers,function(p,chair)
+		if p.all_in and math.floor(p.remain_score / self.base_score) <= 0 then
+			p:async_force_exit(enum.STANDUP_REASON_BANKRUPCY)
+			self.gamers[chair] = nil
+		end
+	end)
 
 	self.desk_scores = nil
 	self.all_score = 0
 	self.last_score = 0
 	self.bet_round = nil
 	self.game_status = TABLE_STATUS.FREE
-	table.foreach(self.gamers,function(p) 
+	table.foreach(self.gamers,function(p)
 		p.game_status = PLAYER_STATUS.FREE
 		p.all_in = nil
 		p.death = nil
 		p.is_look_cards = nil
 		p.bet_score = nil
-		p.remain_money = nil
+		p.remain_score = nil
 		p.bet_scores = nil
 		p.cards = nil
 		p.cards_type = nil
@@ -1746,30 +1753,18 @@ end
 
 --替换玩家cost_money方法，先缓存，稍后一起扣钱
 function zhajinhua_table:fake_cost_money(player,score)
-	local money = self:calc_score_money(score)
-	local remain = player.remain_money
-
-	log.info("player table_id[%s] guid[%s] cur money[%s],money[%s].",self.table_id_,player.guid,money,money)
-
-	if self:check_player_money_leak(player,money) then 
-		log.error("table_id[%s]:guid[%s] fake_cost_money error.curmoney[%s], must cost money[%s]",
-			self.table_id_,player.guid,remain,money)
-		return false
-	end
-
-	player.remain_money = player.remain_money - money
-
-	local new_money = player.remain_money
+	local chair_id = player.chair_id
+	local money = self:score_money(score)
+	local new_money = player.remain_money - money
+	player.remain_money = new_money
+	player.remain_score = player.remain_score - score
 	log.info("table_id[%s] player guid[%s] new_money[%s],money[%s].",self.table_id_,player.guid,new_money,money)
-
-	player:notify_money(self:get_money_id(),new_money)
+	
+	self:notify_game_money({
+		[chair_id] = new_money,
+	})
 
 	return true
-end
-
---替换玩家get_money方法
-function zhajinhua_table:get_player_money(player)
-	return player.remain_money
 end
 
 function zhajinhua_table:is_compare_card()
@@ -1876,7 +1871,6 @@ function zhajinhua_table:start_add_score_timer(time,player)
 	self:calllater(time,add_score_timer_func)
 end
 
---全比
 function zhajinhua_table:check_compare_cards(player)
 	local cout = table.sum(self.death,function(_,chair) return not self.death[chair] and 1 or 0 end)
 	local last_score = self.last_score
@@ -1884,7 +1878,7 @@ function zhajinhua_table:check_compare_cards(player)
 		last_score = self.last_score * 2
 	end
 
-	local player_score = player.remain_money
+	local player_score = player.remain_score
 	if player_score < last_score and not player.death and cout >= 3 then
 		--触发全比
 		local money_ = player_score
@@ -1892,8 +1886,7 @@ function zhajinhua_table:check_compare_cards(player)
 
 		self:player_bet(player,money_)
 
-		--日志处理
-		table.insert(self.gamelog.actions, {
+		tinsert(self.gamelog.actions, {
 			action = "add_score",
 			chair_id = player.chair_id,
 			score = player_score, -- 注码
@@ -1976,7 +1969,7 @@ function zhajinhua_table:check_black_user()
 	local white = {}
 	for k,v in pairs(self.players) do
 		if v and self:check_blacklist_player(v.guid) == false then
-			table.insert(white,v)
+			tinsert(white,v)
 			if max_chair_id == k then
 				--最大牌已经在非黑名单玩家手里
 				return
