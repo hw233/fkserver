@@ -365,28 +365,24 @@ function base_table:commit_dismiss(player,agree)
 	end)
 end
 
-function base_table:score_money(score)
-	local base_multi = 1
-    if self:is_private() then
+function base_table:multi()
+	if self:is_private() then
         local private_table = base_private_table[self.private_id]
         local rule = private_table.rule
-        base_multi = rule.union and rule.union.score_rate or 1
+        return rule.union and rule.union.score_rate or 1
 	end
-	
-	return score * 100 * base_multi
+
+	return 1
+end
+
+function base_table:score_money(score)
+	return score * 100 * self:multi()
 end
 
 base_table.calc_score_money = base_table.score_money
 
 function base_table:money_score(money)
-	local base_multi = 1
-    if self:is_private() then
-        local private_table = base_private_table[self.private_id]
-        local rule = private_table.rule
-        base_multi = rule.union and rule.union.score_rate or 1
-	end
-	
-	return money / 100 / base_multi
+	return money / 100 / self:multi()
 end
 
 function base_table:do_commission_standalone(guid,commission,contributer)
