@@ -11,6 +11,7 @@ require "data.zhajinhua_data"
 require "random_mt19937"
 local player_winlose = require "game.lobby.player_winlose"
 local base_rule = require "game.lobby.base_rule"
+local player_money = require "game.lobby.player_money"
 
 local table = table
 local string = string
@@ -1682,18 +1683,24 @@ function zhajinhua_table:game_balance(winner)
 	self:game_over()
 end
 
+function zhajinhua_table:is_bankruptcy(player)
+	local club = self.club
+	if not club or club.type ~= enum.CT_UNION then
+		return
+	end
+
+	local money_id = self:get_money_id()
+	local min_limit = self.rule.union and self.rule.union.min_score or 0
+	local base_limit = self:score_money(self.base_score)
+	local money = player_money[player.guid][money_id]
+	return money < math.max(min_limit,base_limit)
+end
+
 function zhajinhua_table:on_game_overed()
 	log.info("game end table_id =%s   guid=%s   timeis:%s", self.table_id_, self.log_guid, os.date("%y%m%d%H%M%S"))
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
-
-	table.foreach(self.gamers,function(p,chair)
-		if p.all_in and math.floor(p.remain_score / self.base_score) <= 0 then
-			p:async_force_exit(enum.STANDUP_REASON_BANKRUPCY)
-			self.gamers[chair] = nil
-		end
-	end)
 
 	self.desk_scores = nil
 	self.all_score = 0
