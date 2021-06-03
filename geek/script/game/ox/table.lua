@@ -633,6 +633,8 @@ function ox_table:do_balance()
 		p.total_money = (p.total_money or 0) + (moneies[chair] or 0)
 	end)
 
+	
+
 	self.gamelog.balance = table.series(self.gamers,function(v,i) 
 		return {
 			chair_id = i,
@@ -661,6 +663,8 @@ function ox_table:do_balance()
 			}
 		end)
 	})
+
+	self:notify_game_money()
 
 	self.status = TABLE_STATUS.END
 
@@ -718,6 +722,10 @@ function ox_table:on_process_over(reason)
 			}
 		end)
 	})
+
+	self:cost_tax(table.map(self.players,function(p)
+		return p.guid,p.total_money or 0
+	end))
 	
 	base_table.on_process_over(self,reason,{
 		balance = table.map(self.gamers,function(p)
