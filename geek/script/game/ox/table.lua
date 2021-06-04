@@ -728,8 +728,8 @@ function ox_table:on_process_over(reason)
 	end))
 	
 	base_table.on_process_over(self,reason,{
-		balance = table.map(self.gamers,function(p)
-			return p.guid,p.total_money
+		balance = table.map(self.players,function(p)
+			return p.guid,p.total_money or 0
 		end)
 	})
 	
