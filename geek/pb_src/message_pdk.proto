@@ -12,20 +12,30 @@ enum PDK_ACTION{
 enum PDK_CARD_TYPE {
 	ERROR                    = 0;                                //错误类型
 	SINGLE                   = 1;                                //单牌类型
-	DOUBLE                   = 2;                                //对牌类型
-	THREE                    = 3;                                //三不带
-	THREE_WITH_ONE           = 4;                          	//三带一
-	THREE_WITH_TWO           = 5;                          //三带一对
-	FOUR_WITH_SINGLE            = 6;                          	//四带二
-	FOUR_WITH_DOUBLE            = 7;                          	//四带一对
-	FOUR_WITH_THREE = 8;
-	SINGLE_LINE              = 9;                                	//顺子
-	DOUBLE_LINE              = 10;                                //连对
-	PLANE                    = 11;                               //飞机 不带
-	PLANE_WITH_ONE           = 12;                               //飞机 带牌 单
-	PLANE_WITH_TWO           = 13;                               //飞机 带牌 对
-	BOMB                     = 14;                               //炸弹
-	MISSLE = 15;
+	LAIZI_SINGLE 			 = 2;
+	DOUBLE                   = 3;                                //对牌类型
+	LAIZI_DOUBLE 			 = 4;
+	THREE                    = 5;                                //三不带
+	LAIZI_THREE				 = 6;
+	THREE_WITH_ONE           = 7;                          	//三带一
+	THREE_WITH_TWO           = 8;                          //三带一对
+	FOUR_WITH_SINGLE         = 9;                          	//四带二
+	FOUR_WITH_DOUBLE         = 10;                          	//四带一对
+	FOUR_WITH_THREE 		 = 11;
+	FOUR					 = 12;
+	LAIZI_FOUR				 = 13;
+	SINGLE_LINE              = 14;                                	//顺子
+	DOUBLE_LINE              = 15;                                //连对
+	PLANE                    = 16;                               //飞机 不带
+	PLANE_WITH_ONE           = 17;                               //飞机 带牌 单
+	PLANE_WITH_TWO           = 18;                               //飞机 带牌 对
+	SOFT_TRIPLE_BOMB 		 = 19;
+	TRIPLE_BOMB 			 = 20;			//三张炸弹
+	LAIZI_TRIPLE_BOMB		 = 21;			//三张癞子炸弹
+	SOFT_BOMB 				 = 22;
+	BOMB                     = 23;          //炸弹
+	LAIZI_BOMB				 = 24;			//癞子炸弹
+	MISSLE 					 = 25;
 }
 
 message PdkPlayerInfo {
@@ -40,6 +50,7 @@ message PdkReconnectData {
 	int32 last_discard_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
 	repeated int32 last_discard = 3;						// 最后一次的出牌
 	map<int32, int32> total_scores = 4;
+	repeated int32 laizi_replace = 5;
 }
 
 message SC_PdkDeskEnter {
@@ -52,6 +63,7 @@ message SC_PdkDeskEnter {
 	bool is_reconnect = 7;						//reconnect
 	PdkReconnectData pb_rec_data = 8;		//断线数据
 	int32 round = 10;
+	int32 laizi = 11;
 }
 
 //该谁出牌
@@ -68,9 +80,10 @@ message SC_PdkActTrustee {
 }
 
 message CS_PdkDoAction{
-    	enum MsgID { Nil = 0; ID = 24104; }
+    enum MsgID { Nil = 0; ID = 24104; }
 	int32  action = 1;	
-    	repeated int32 cards = 2;   //出的牌数据
+    repeated int32 cards = 2;   //出的牌数据
+	repeated int32 laizi_replace = 3;
 }
 
 message SC_PdkDoAction{
@@ -78,7 +91,8 @@ message SC_PdkDoAction{
 	int32 result = 1;    
 	int32 chair_id	 = 2;	
 	int32 action = 3;	
-    	repeated int32 cards = 4;   //出的牌数据
+    repeated int32 cards = 4;   //出的牌数据
+	repeated int32 laizi_replace = 5;
 }
 
 message PdkBlanacePlayer{
