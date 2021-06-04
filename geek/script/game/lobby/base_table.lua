@@ -365,7 +365,7 @@ function base_table:commit_dismiss(player,agree)
 	end)
 end
 
-function base_table:multi()
+function base_table:base_multi()
 	if self:is_private() then
         local private_table = base_private_table[self.private_id]
         local rule = private_table.rule
@@ -376,13 +376,13 @@ function base_table:multi()
 end
 
 function base_table:score_money(score)
-	return score * 100 * self:multi()
+	return score * 100 * self:base_multi()
 end
 
 base_table.calc_score_money = base_table.score_money
 
 function base_table:money_score(money)
-	return money / 100 / self:multi()
+	return money / 100 / self:base_multi()
 end
 
 function base_table:do_commission_standalone(guid,commission,contributer)
