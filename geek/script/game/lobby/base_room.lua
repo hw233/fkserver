@@ -27,8 +27,6 @@ local base_room = {}
 
 
 local function check_conf(conf)
-	assert(conf.table_count)
-	assert(conf.player_limit)
 	assert(conf.money_limit)
 	assert(conf.tax)
 	assert(conf.tax_show)
@@ -49,16 +47,12 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.id = 1
 	self.conf = conf
 	self.chair_count = chair_count
-
-	local table_count = conf.table_count
-
 	self.tax_show = conf.tax_show -- 是否显示税收信息
 	self.tax_open = conf.tax_open -- 是否开启税收
 	self.tax = conf.tax * 0.01
 	self.ready_mode = ready_mode -- 准备模式
 	self.room_limit = conf.money_limit or 0 -- 房间分限制
 	self.cell_score = conf.cell_money or 0 -- 底注
-	self.player_count_limit = conf.table_count * chair_count -- 房间人数总限制
 	self.tables = {}
 	self.room_cfg = conf.room_cfg
 	self.game_switch_is_open = conf.game_switch_is_open
