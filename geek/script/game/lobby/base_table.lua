@@ -935,7 +935,7 @@ end
 
 function base_table:can_kickout_when_round_over(p)
 	local club = self.conf.club
-	return p.inactive or p.trustee or (club and club:can_sit_down(self.rule,p) ~= enum.ERROR_NONE)
+	return (not p.active) or p.trustee or (club and club:can_sit_down(self.rule,p) ~= enum.ERROR_NONE)
 end
 
 function base_table:kickout_players_when_round_over()
@@ -1255,7 +1255,7 @@ function base_table:can_sit_down(player,chair_id,reconnect)
 end
 
 function base_table:on_player_sit_down(player,chair_id,reconnect)
-	player.inactive = nil
+	player.active = true
 	if reconnect then
 		self:notify_online(player)
 	else
@@ -1790,7 +1790,7 @@ function base_table:on_player_stand_uped(player,reason)
 end
 
 function base_table:on_offline(player)
-	player.inactive = true
+	player.active = nil
 	self:notify_online(player,false)
 end
 
@@ -1933,7 +1933,7 @@ end
 function base_table:reconnect(player)
 	-- 重新上线
 	log.info("---------base_table:reconnect,%s-----------",player.guid)
-	player.inactive = nil
+	player.active = true
 	log.info("set player[%d] in_game true" ,player.guid)
 	self:on_reconnect(player)
 	self:cancel_delay_kickout(player)

@@ -32,6 +32,7 @@ function common.switch_to(guid,room_id)
 	player.table_id = nil
 	player.chair_id = nil
 	player.online = nil
+	player.active = nil
 	allonlineguid[guid] = nil
 	onlineguid[guid] = nil
 	base_players[guid] = nil
@@ -42,10 +43,11 @@ function common.switch_from(guid,room_id)
 
 	local player = base_players[guid]
 	player.online = true
+	player.active = true
 
 	log.info("%s switch_from from %s to %s",guid,room_id,def_game_id)
 	channel.call("game."..tostring(room_id),"msg","SS_ChangeTo",guid,def_game_id)
-
+	
 	reddb:zincrby(string.format("player:online:count:%d",def_first_game_type),
 		1,def_game_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
@@ -76,6 +78,7 @@ function common.switch_to_lobby(guid)
 	player.table_id = nil
 	player.chair_id = nil
 	player.online = nil
+	player.active = nil
 
 	allonlineguid[guid] = nil
 	onlineguid[guid] = nil

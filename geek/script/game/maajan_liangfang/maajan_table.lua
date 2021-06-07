@@ -2716,7 +2716,7 @@ function maajan_table:global_status_info()
                 sex = p.sex,
             },
             ready = self.ready_list[chair_id] and true or false,
-            online = not p.inactive and true or false, 
+            online = p.active and true or false, 
             is_trustee = p.trustee and true or false,
         })
     end

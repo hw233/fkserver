@@ -187,15 +187,9 @@ function logout(guid,offline)
 		return
 	end
 
-	-- online很重要,被动踢出房间时,用以判断是否直接退出服务器
-	if offline then
-		player.online = nil
-	end
-
 	local result = g_room:exit_server(player,offline)
-	-- 不管是否掉线,退出成功,online空
-	if result == enum.ERROR_NONE then
-		player.online = nil
+	if offline then
+		player.active = nil
 	end
 
 	return result
@@ -522,7 +516,7 @@ end
 function on_ss_change_game(guid)
 	local player = base_players[guid]
 	player.online = true
-	player.inactive = nil
+	player.active = true
 	log.info("on_ss_change_game[%d] %s,%s,%s",player.guid,def_first_game_type,def_second_game_type,def_game_id)
 
 	reddb:hmset(string.format("player:online:guid:%d",guid),{
@@ -780,7 +774,7 @@ function on_cs_reconnect(guid)
 				sex = p.sex,
 			},
 			ready = tb.ready_list[p.chair_id] and true or false,
-			online = not p.inactive and true or false,
+			online = p.active and true or false,
 			money = {
 				money_id = money_id,
 				count = p:get_money(money_id),
@@ -853,7 +847,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 			return
 		end
 
-		player.inactive = nil
+		player.active = true
 
 		if reconnect then
 			if not onlineinfo or not onlineinfo.table or not onlineinfo.chair then
@@ -950,7 +944,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 				longitude = p.gps_longitude,
 				latitude = p.gps_latitude,
 				ready = tb.ready_list[p.chair_id] and true or false,
-				online = not p.inactive and true or false, 
+				online = p.active and true or false, 
 				money = {
 					money_id = money_id,
 					count = p:get_money(money_id),
@@ -1410,7 +1404,7 @@ end
 function on_ss_change_to(guid,room_id)
 	local player = base_players[guid]
 	player.online = nil
-	player.inactive = nil
+	player.active = nil
 
 	log.info("on_ss_change_to[%s],%s,%s,%s",guid,def_first_game_type,def_second_game_type,def_game_id)
 

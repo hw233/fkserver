@@ -1,12 +1,9 @@
 
 local base_table = require "game.lobby.base_table"
-local json = require "json"
 local enum = require "pb_enums"
 local base_players = require "game.lobby.base_players"
-local base_private_table = require "game.lobby.base_private_table"
 local onlineguid = require "netguidopt"
 local channel = require "channel"
-local queue = require "skynet.queue"
 local common = require "game.common"
 local game_util = require "game.util"
 local club_utils = require "game.club.club_utils"
@@ -58,7 +55,6 @@ function base_room:init(conf,chair_count,ready_mode)
 	self.game_switch_is_open = conf.game_switch_is_open
 
 	self.players = {}
-	self.cur_player_count_ = 0 -- 当前玩家人数
 
 	self.blacklist_player = setmetatable({},{
 		__index = function(t,guid)
@@ -162,7 +158,7 @@ function base_room:enter_room_and_sit_down(player)
 	end
 
 	local ret = enum.GAME_SERVER_RESULT_NOT_FIND_ROOM
-	if not player:check_money_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
+	if not player:check_money_limit(self:get_room_limit()) then
 		ret = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		local tb,k,j = self:get_suitable_table(self,player,false)
 		if tb then
@@ -178,6 +174,18 @@ end
 -- 站起并离开房间
 function base_room:stand_up_and_exit_room(player,reason)
 	return player:lockcall(function()
+		local guid = player.guid
+		if common.is_in_lobby() then
+			log.error("base_room:stand_up_and_exit_room in lobby,%s",guid)
+			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+		end
+
+		-- double check
+		if not player.online then
+			log.error("base_room:stand_up_and_exit_room double check failed,%s",guid)
+			return enum.ERROR_NONE
+		end
+
 		if not player.table_id then
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
@@ -223,10 +231,6 @@ function base_room:check_entry_table_limit(player,rule,club)
 	local money_id = club_money[club.id]
 
 	return player:get_money(money_id) >= rule.union.entry_score
-end
-
-function base_room:save_private_table(owner,table_id,chair_id)
-	
 end
 
 function base_room:is_table_exists(table_id)
@@ -526,7 +530,7 @@ function base_room:auto_enter_room(player)
 		end
 	end
 	
-	if not player:check_money_limit(self:get_room_limit()) and self.cur_player_count_ < self.player_count_limit then
+	if not player:check_money_limit(self:get_room_limit()) then
 		-- 通知消息
 		local notify = {
 			room_id = self.id,
@@ -569,6 +573,8 @@ function base_room:enter_room(player,reconnect)
 
 		player.table_id = s.table
 		player.chair_id = s.chair
+		player.active = true
+		player.online = true
 	else
 		self:player_login_server(player)
 	end
@@ -608,6 +614,17 @@ end
 function base_room:kickout_room(player,reason)
 	return player:lockcall(function()
 		local guid = player.guid
+		if not player.online then
+			log.error("base_room:kickout_room guid[%d],reason:%s double check failed.",
+				guid,reason)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		if common.is_in_lobby() then
+			self:player_logout_server(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
@@ -615,9 +632,6 @@ function base_room:kickout_room(player,reason)
 		-- double check,检查玩家已经退出了，还在执行kickout
 		if not table_id or not chair_id then
 			log.warning("base_room:kickout_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-			if common.is_in_lobby() then
-				self:player_kickout_room(player)
-			end
 			return enum.GAME_SERVER_RESULT_SUCCESS
 		end
 
@@ -644,6 +658,17 @@ end
 function base_room:kickout_server(player,reason)
 	return player:lockcall(function()
 		local guid = player.guid
+		-- double check
+		if not player.online then
+			log.error("base_room:kickout_server %s double check failed.",guid)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
+		if common.is_in_lobby() then
+			self:player_kickout_server(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:kickout_server guid[%d],table_id:%s,chair_id:%s,reason:%s",
@@ -651,9 +676,6 @@ function base_room:kickout_server(player,reason)
 		-- double check,检查已经退出了还在执行kickout
 		if not table_id or not chair_id then
 			log.warning("base_room:kickout_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-			if common.is_in_lobby() then
-				self:player_kickout_server(player)
-			end
 			return enum.GAME_SERVER_RESULT_SUCCESS
 		end
 
@@ -679,13 +701,25 @@ end
 
 function base_room:exit_room(player,reason)
 	local guid = player.guid
+	local online = player.online
+
+	-- double check
+	if not online then
+		log.error("base_room:exit_room double check failed,%s",guid)
+		return enum.ERROR_NONE
+	end
+
+	if common.is_in_lobby() then
+		self:player_logout_server(player)
+		return enum.ERROR_NONE
+	end
+
 	local table_id = player.table_id
 	local chair_id = player.chair_id
 	log.info("base_room:exit_room guid[%d],table_id:%s,chair_id:%s,reason:%s",
 		guid,table_id,chair_id,reason)
 	if not table_id or not chair_id then
 		log.warning("base_room:exit_room,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-		self:player_exit_room(player)
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end
 
@@ -713,20 +747,33 @@ end
 function base_room:exit_server(player,offline)
 	return player:lockcall(function()
 		local guid = player.guid
+		local online = player.online
+		
+		-- double check
+		if not online then
+			log.error("base_room:exit_server double check failed,%s",guid)
+			return enum.ERROR_NONE
+		end
+
+		if common.is_in_lobby() then
+			self:player_logout_server(player)
+			return enum.GAME_SERVER_RESULT_SUCCESS
+		end
+
 		local table_id = player.table_id
 		local chair_id = player.chair_id
 		log.info("base_room:exit_server guid[%d],table_id:%s,chair_id:%s,offline:%s",
 			guid,table_id,chair_id,offline)
+		
 		if not table_id or not chair_id then
 			log.warning("base_room:exit_server,player:%s table_id:%s or chair_id:%s is nil,exit.",guid,table_id,chair_id)
-			self:player_exit_room(player)
 			return enum.GAME_SERVER_RESULT_SUCCESS
 		end
 
 		local tb = self:find_table_by_player(player)
 		if not tb then
 			log.warning("base_room:exit_server not found table:%s,guid:%s",table_id,guid)
-			self:player_exit_room(player)
+			self:player_exit_room(player,offline)
 			return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 		end
 
@@ -741,7 +788,7 @@ function base_room:exit_server(player,offline)
 		if offline then
 			self:player_logout_server(player)
 		else
-			self:player_exit_room(player)
+			self:player_exit_room(player,offline)
 		end
 
 		return enum.GAME_SERVER_RESULT_SUCCESS
@@ -838,23 +885,11 @@ function base_room:find_android_pos(room_id)
 	return nil
 end
 
--- 心跳
-function base_room:tick()
-	for _,tb in ipairs(self.tables) do
-		tb:tick()
-	end
-end
-
-function base_room:get_player_num()
-	return self.cur_player_count_
-end
-
 -- 玩家进入房间
 function base_room:player_enter_room(player)
 	self.players[player.guid] = player
-	self.cur_player_count_ = self.cur_player_count_ + 1
-	log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s,player_count:%s",
-	player.guid,def_first_game_type,def_game_id,self.cur_player_count_)
+	log.info("base_room:player_enter_room, guid %s,game_id %s,room_id %s",
+	player.guid,def_first_game_type,def_game_id)
 
 	local online_key = string.format("player:online:guid:%d",player.guid)
 	reddb:hmset(online_key,{
@@ -867,42 +902,55 @@ function base_room:player_enter_room(player)
 end
 
 -- 玩家退出房间
-function base_room:player_exit_room(player)
+function base_room:player_exit_room(player,offline)
 	local guid = player.guid
-	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
-	if player.online and not common.is_in_lobby(guid)then
-		if common.is_player_in_lobby(guid) then
-			log.info("base_room:player_exit_room, already in lobby, guid %s, room_id %s,online:%s",
-				guid,def_game_id,player.online)
-			return true
-		end
-		common.switch_to_lobby(guid)
-
-		self.cur_player_count_ = self.cur_player_count_ - 1
-		log.info("base_room:player_exit_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
-		base_players[guid] = nil
-		onlineguid[guid] = nil
-		self.players[guid] = nil
-	else
-		self:player_logout_server(player)
+	-- double check
+	if not player.online then
+		log.error("base_room:player_exit_room guid %s,game_id %s,room_id %s nil session.",
+			guid,def_first_game_type,def_game_id)
+		return
 	end
+	
+	log.info("base_room:player_exit_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
+	if not player.active or offline then
+		self:player_logout_server(player)
+		return
+	end
+
+	if common.is_player_in_lobby(guid) then
+		log.info("base_room:player_exit_room, already in lobby guid %s, room_id %s,online:%s",
+			guid,def_game_id,player.online)
+		return true
+	end
+
+	common.switch_to_lobby(guid)
+
+	log.info("base_room:player_exit_room  %s,%s,%s.",guid,def_first_game_type,def_game_id)
+	base_players[guid] = nil
+	onlineguid[guid] = nil
+	self.players[guid] = nil
 end
 
 function base_room:player_kickout_room(player)
 	local guid = player.guid
-	log.info("base_room:player_kickout_room, guid %s, room_id %s,online:%s",guid,def_game_id,player.online)
-	if player.online and not common.is_in_lobby() then
+	-- double check
+	if not player.online then
+		log.error("base_room:player_kickout_room guid %s,game_id %s,room_id %s nil session.",
+			guid,def_first_game_type,def_game_id)
+		return
+	end
+	
+	log.info("base_room:player_kickout_room, guid %s, room_id %s,active:%s",guid,def_game_id,player.active)
+	if player.active and not common.is_in_lobby() then
 		if common.is_player_in_lobby(guid) then
-			log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,online:%s",
-				guid,def_game_id,player.online)
+			log.info("base_room:player_kickout_room, already in lobby guid %s, room_id %s,active:%s",
+				guid,def_game_id,player.active)
 			return true
 		end
 
 		common.switch_to_lobby(guid)
 
-		self.cur_player_count_ = self.cur_player_count_ - 1
-
-		log.info("base_room:player_kickout_room  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
+		log.info("base_room:player_kickout_room  %s,%s,%s.",guid,def_first_game_type,def_game_id)
 		self.players[guid] = nil
 		base_players[guid] = nil
 		onlineguid[guid] = nil
@@ -913,6 +961,8 @@ end
 
 function base_room:player_login_server(player)
 	local guid = player.guid
+	player.online = true
+	player.active = true
 	reddb:hmset("player:online:guid:"..tostring(guid),{
 		first_game_type = def_first_game_type,
 		second_game_type = def_second_game_type,
@@ -931,19 +981,24 @@ function base_room:player_login_server(player)
 		reddb:incr(string.format("club:member:online:count:%s",club_id))
 	end
 
-	self.cur_player_count_ = self.cur_player_count_ + 1
 	self.players[guid] = player
 
-	log.info("base_room:player_login_server  %s,%s,player_count %s.",def_first_game_type,def_game_id,self.cur_player_count_)
+	log.info("base_room:player_login_server  %s,%s.",def_first_game_type,def_game_id)
 end
 
 function base_room:player_logout_server(player)
 	local guid = player.guid
-	self.players[guid] = nil
-	self.cur_player_count_ = self.cur_player_count_ - 1
+	-- double check
+	if not player.online then
+		log.error("base_room:player_logout_server guid %s,game_id %s,room_id %s nil session.",
+			guid,def_first_game_type,def_game_id)
+		return
+	end
 
-	log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,player_count %s.",
-		guid,def_first_game_type,def_game_id,self.cur_player_count_)
+	self.players[guid] = nil
+
+	log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s.",
+		guid,def_first_game_type,def_game_id)
 
 	if not allonlineguid[guid] then
 		log.info("base_room:player_logout_server guid %s,game_id %s,room_id %s,got nil online session",
@@ -988,6 +1043,13 @@ end
 
 function base_room:player_kickout_server(player)
 	local guid = player.guid
+	-- double check
+	if not player.online then
+		log.error("base_room:player_kickout_server guid %s,game_id %s,room_id %s double check failed.",
+			guid,def_first_game_type,def_game_id)
+		return
+	end
+
 	log.info("base_room:player_kickout_server, guid %s, room_id %s",guid,def_game_id)
 
 	local os = onlineguid[guid]
