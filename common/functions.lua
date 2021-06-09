@@ -742,6 +742,8 @@ function table.logic_and(tb,agg)
     return true
 end
 
+table.And = table.logic_and
+
 function table.logic_or(tb,agg)
     for k,v in pairs(tb or {}) do
         if agg(v,k) then return true end
@@ -749,6 +751,8 @@ function table.logic_or(tb,agg)
 
     return false
 end
+
+table.Or = table.logic_or
 
 function table.foreach(tb,op,on)
     for k,v in pairs(tb or {}) do
