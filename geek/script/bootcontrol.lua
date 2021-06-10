@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "log"
 local channel = require "channel"
 local bootconf = require "conf.boot"
+local cluster = require "cluster"
 local callmod = require "callmod"
 
 local string = string
@@ -40,25 +41,33 @@ end
 local function setup()
     setupbootservice()
     
-    local serviceconfs = channel.call(bootconf.service.name..".?","msg","query_service_conf")
     local clusterconfs = channel.call("config.?","msg","query_cluster_conf")
+	
+	local clusters = {}
+	for _,c in pairs(clusterconfs) do
+		clusters[cluster_name(c)] = cluster_hostaddr(c)
+	end
+
+	cluster.reload(clusters)
 	
 	local services = {}
 
-    for _,cs in pairs(serviceconfs) do
-        if cs.is_launch ~= 0 then
-			local sid = service_id(cs)
-			local cconf = clusterconfs[cs.cluster]
-			if sid and cconf then
-				local cid = cluster_name(cconf)
-				services[sid] = cid .. "@" .. sid
+	for cid in pairs(clusters) do
+		local ok,cc = pcall(cluster.call,cid,"@channel","lua","query")
+		if ok then
+			for sid,sc in pairs(cc) do
+				if type(sc.addr) == "number" then
+					services[sid] = cid .. "@" .. sid
+				else
+					services[sid] = sc.addr
+				end
 			end
-        end
-    end
+			break
+		end
+	end
 
     channel.subscribe(services)
 end
-
 
 local conf_handle = {
 	reload = function()
