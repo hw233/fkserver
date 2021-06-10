@@ -4,6 +4,7 @@ local channel = require "channel"
 local bootconf = require "conf.boot"
 local callmod = require "callmod"
 local cluster = require "cluster"
+require "skynet.manager"
 
 local string = string
 local table = table
@@ -94,20 +95,26 @@ local conf_handle = {
 	usage = function()
 		local lines = {
 			"conf usage:",
-			"reload sid: reload service config of sid from db",
+			"reload %sid: reload service config of sid from db",
 		}
 		print(tconcat(lines,"\n"))
 	end,
 }
 
 skynet.start(function()
+	local cmd = cmdlines[1]
+	if not cmd then
+		conf_handle.usage()
+		skynet.abort()
+		return
+	end
+
 	setup()
 
-	local fn = conf_handle[tolower(cmdlines[1])] or conf_handle.usage
+	local fn = conf_handle[tolower(cmd)] or conf_handle.usage
 	if fn then
 		fn()
 	end
 
-	require "skynet.manager"
 	skynet.abort()
 end)

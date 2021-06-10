@@ -4,6 +4,7 @@ local channel = require "channel"
 local bootconf = require "conf.boot"
 local cluster = require "cluster"
 local callmod = require "callmod"
+require "skynet.manager"
 
 local string = string
 local table = table
@@ -83,13 +84,19 @@ local conf_handle = {
 }
 
 skynet.start(function()
+	local cmd = cmdlines[1]
+	if not cmd then
+		conf_handle.usage()
+		skynet.abort()
+		return
+	end
+
 	setup()
 
-	local fn = conf_handle[tolower(cmdlines[1])] or conf_handle.usage
+	local fn = conf_handle[tolower(cmd)] or conf_handle.usage
 	if fn then
 		fn()
 	end
 
-	require "skynet.manager"
 	skynet.abort()
 end)
