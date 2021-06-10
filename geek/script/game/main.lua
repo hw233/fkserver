@@ -14,8 +14,6 @@ collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "game"
 
-register_dispatcher = msgopt.register
-
 def_game_name = nil
 def_game_id = nil
 global_conf = nil
@@ -120,7 +118,7 @@ skynet.start(function()
 	end)
 
 	skynet.dispatch("msg",function(_,_,cmd,...)
-        skynet.retpack(msgopt.on_msg(cmd,...))
+        skynet.retpack(msgopt(cmd,...))
 	end)
 	
     collectgarbage("setpause", 100)

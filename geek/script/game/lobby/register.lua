@@ -7,79 +7,81 @@ require "game.lobby.on_chat"
 require "game.club.on_club"
 require "game.lobby.on_template"
 
---------------------------------------------------------------------
-register_dispatcher("CG_GameServerCfg",on_cs_game_server_cfg)
-register_dispatcher("CS_GameServerCfg",on_cs_game_server_cfg)
+local msgopt = require "msgopt"
 
--- 注册Login发过来的消息分派函数
-register_dispatcher("LS_LoginNotify",on_ls_login_notify)
-register_dispatcher("S_Logout",on_s_logout)
-register_dispatcher("SS_ChangeGame",on_ss_change_game)
-register_dispatcher("SS_ChangeTo",on_ss_change_to)
+local h = {
+	CG_GameServerCfg = on_cs_game_server_cfg,
+	CS_GameServerCfg = on_cs_game_server_cfg,
 
---------------------------------------------------------------------
--- 注册客户端发过来的消息分派函?
-register_dispatcher("CS_RequestPlayerInfo",on_cs_request_player_info)
-register_dispatcher("CS_LoginValidatebox",on_cs_login_validatebox)
-register_dispatcher("CS_ChangeGame",on_cs_change_game)
-register_dispatcher("CS_JoinRoom",on_cs_join_private_room)
-register_dispatcher("CS_CreateRoom",on_cs_create_private_room)
-register_dispatcher("CS_SetNickname",on_cs_set_nickname)
-register_dispatcher("CS_ChangeHeaderIcon",on_cs_change_header_icon)
-register_dispatcher("CS_BankSetPassword",on_cs_bank_set_password)
-register_dispatcher("CS_BankChangePassword",on_cs_bank_change_password)
-register_dispatcher("CS_BankLogin",on_cs_bank_login)
-register_dispatcher("CS_BankDeposit",on_cs_bank_deposit)
-register_dispatcher("CS_BankDraw",on_cs_bank_draw)
-register_dispatcher("CS_BuyItem",on_cs_buy_item)
-register_dispatcher("CS_DelItem",on_cs_del_item)
-register_dispatcher("CS_UseItem",on_cs_use_item)
-register_dispatcher("CS_EnterRoom",on_cs_enter_room)
-register_dispatcher("CS_AutoEnterRoom",on_cs_auto_enter_room)
-register_dispatcher("CS_AutoSitDown",on_cs_auto_sit_down)
-register_dispatcher("CS_SitDown",on_cs_sit_down)
-register_dispatcher("CS_StandUp",on_cs_stand_up)
-register_dispatcher("CS_EnterRoomAndSitDown",on_cs_enter_room_and_sit_down)
-register_dispatcher("CS_StandUpAndExitRoom",on_cs_stand_up_and_exit_room)
-register_dispatcher("CS_ChangeChair",on_cs_change_chair)
-register_dispatcher("CS_Ready",on_cs_ready)
-register_dispatcher("CS_ChatWorld",on_cs_chat_world)
-register_dispatcher("CS_ChatPrivate",on_cs_chat_private)
-register_dispatcher("SC_ChatPrivate",on_sc_chat_private)
-register_dispatcher("CS_ChatServer",on_cs_chat_server)
-register_dispatcher("CS_ChatRoom",on_cs_chat_room)
-register_dispatcher("CS_ChatTable",on_cs_chat_table)
-register_dispatcher("CS_ChangeTable",on_cs_change_table)
-register_dispatcher("CS_Exit",on_cs_exit)
-register_dispatcher("CS_Trustee",on_cs_trusteeship)
-register_dispatcher("CL_ResetBankPW",on_cl_ResetBankPW)
+	LS_LoginNotify = on_ls_login_notify,
+	S_Logout = on_s_logout,
+	SS_ChangeGame = on_ss_change_game,
+	SS_ChangeTo = on_ss_change_to,
 
-register_dispatcher("CS_DismissTableReq",on_cs_dismiss_table_req)
-register_dispatcher("CS_DismissTableCommit",on_cs_dismiss_table_commit)
+	CS_RequestPlayerInfo = on_cs_request_player_info,
+	CS_LoginValidatebox = on_cs_login_validatebox,
+	CS_ChangeGame = on_cs_change_game,
+	CS_JoinRoom = on_cs_join_private_room,
+	CS_CreateRoom = on_cs_create_private_room,
+	CS_SetNickname = on_cs_set_nickname,
+	CS_ChangeHeaderIcon = on_cs_change_header_icon,
+	CS_BankSetPassword = on_cs_bank_set_password,
+	CS_BankChangePassword = on_cs_bank_change_password,
+	CS_BankLogin = on_cs_bank_login,
+	CS_BankDeposit = on_cs_bank_deposit,
+	CS_BankDraw = on_cs_bank_draw,
+	CS_BuyItem = on_cs_buy_item,
+	CS_DelItem = on_cs_del_item,
+	CS_UseItem = on_cs_use_item,
+	CS_EnterRoom = on_cs_enter_room,
+	CS_AutoEnterRoom = on_cs_auto_enter_room,
+	CS_AutoSitDown = on_cs_auto_sit_down,
+	CS_SitDown = on_cs_sit_down,
+	CS_StandUp = on_cs_stand_up,
+	CS_EnterRoomAndSitDown = on_cs_enter_room_and_sit_down,
+	CS_StandUpAndExitRoom = on_cs_stand_up_and_exit_room,
+	CS_ChangeChair = on_cs_change_chair,
+	CS_Ready = on_cs_ready,
+	CS_ChatWorld = on_cs_chat_world,
+	CS_ChatPrivate = on_cs_chat_private,
+	SC_ChatPrivate = on_sc_chat_private,
+	CS_ChatServer = on_cs_chat_server,
+	CS_ChatRoom = on_cs_chat_room,
+	CS_ChatTable = on_cs_chat_table,
+	CS_ChangeTable = on_cs_change_table,
+	CS_Exit = on_cs_exit,
+	CS_Trustee = on_cs_trusteeship,
+	CL_ResetBankPW = on_cl_ResetBankPW,
 
-register_dispatcher("GetTableStatusInfos",on_s_get_table_status_infos)
-register_dispatcher("C2S_EDIT_TABLE_TEMPLATE",on_cs_edit_table_template)
-register_dispatcher("CS_UpdateLocation",on_cs_update_location_gps)
+	CS_DismissTableReq = on_cs_dismiss_table_req,
+	CS_DismissTableCommit = on_cs_dismiss_table_commit,
 
-register_dispatcher("C2SPlayerInteraction",on_cs_player_interaction)
+	GetTableStatusInfos = on_s_get_table_status_infos,
+	C2S_EDIT_TABLE_TEMPLATE = on_cs_edit_table_template,
+	CS_UpdateLocation = on_cs_update_location_gps,
 
-register_dispatcher("CS_RequestBindPhone",on_cs_bind_account)
-register_dispatcher("CS_RequestSmsVerifyCode",on_cs_request_sms_verify_code)
+	C2SPlayerInteraction = on_cs_player_interaction,
 
-register_dispatcher("CS_RequestBindWx",on_cs_request_bind_wx)
+	CS_RequestBindPhone = on_cs_bind_account,
+	CS_RequestSmsVerifyCode = on_cs_request_sms_verify_code,
 
-register_dispatcher("CS_PERSONAL_ID_BIND",on_cs_personal_id_bind)
+	CS_RequestBindWx = on_cs_request_bind_wx,
 
-register_dispatcher("CS_SearchPlayer",on_cs_search_player)
+	CS_PERSONAL_ID_BIND = on_cs_personal_id_bind,
 
-register_dispatcher("CS_PlayOnceAgain",on_cs_play_once_again)
+	CS_SearchPlayer = on_cs_search_player,
 
-register_dispatcher("CS_Logout",on_cs_logout)
+	CS_PlayOnceAgain = on_cs_play_once_again,
 
-register_dispatcher("CS_ForceKickoutPlayer",on_cs_force_kickout_player)
+	CS_Logout = on_cs_logout,
 
-register_dispatcher("C2S_VoiceInteractive",on_cs_voice_interactive)
+	CS_ForceKickoutPlayer = on_cs_force_kickout_player,
 
-register_dispatcher("BS_Recharge",on_bs_recharge)
+	C2S_VoiceInteractive = on_cs_voice_interactive,
 
-register_dispatcher("BS_BindPhone",on_bs_bind_phone)
+	BS_Recharge = on_bs_recharge,
+
+	BS_BindPhone = on_bs_bind_phone,
+}
+
+msgopt:reg(h)

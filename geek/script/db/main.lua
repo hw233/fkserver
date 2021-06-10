@@ -52,6 +52,6 @@ skynet.start(function()
     require "db.register"
 
     skynet.dispatch("msg",function(_,_,cmd,...)
-        skynet.retpack(msgopt.on_msg(cmd,...))
+        skynet.retpack(msgopt(cmd,...))
     end)
 end)

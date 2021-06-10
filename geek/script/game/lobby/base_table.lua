@@ -3,7 +3,6 @@
 require "game.net_func"
 local log = require "log"
 local enum = require "pb_enums"
-require "msgopt"
 local base_players = require "game.lobby.base_players"
 local base_private_table = require "game.lobby.base_private_table"
 local redisopt = require "redisopt"

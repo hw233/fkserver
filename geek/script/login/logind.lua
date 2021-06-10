@@ -9,8 +9,6 @@ collectgarbage("setstepmul", 1000)
 
 LOG_NAME = "login"
 
-local MSG = {}
-
 local sconf
 
 local CMD = {}
@@ -45,8 +43,7 @@ skynet.start(function()
     end)
 
     require "login.register"
-    msgopt.register_handle(MSG)
     skynet.dispatch("msg",function(_,_,msgid,...)
-        skynet.retpack(msgopt.on_msg(msgid,...))
+        skynet.retpack(msgopt(msgid,...))
     end)
 end)

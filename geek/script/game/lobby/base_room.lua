@@ -13,7 +13,6 @@ local player_club = require "game.lobby.player_club"
 
 require "game.net_func"
 
-require "msgopt"
 local log = require "log"
 local redisopt = require "redisopt"
 
