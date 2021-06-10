@@ -417,13 +417,17 @@ function zhajinhua_table:deal_cards()
 			return math.abs(p.total_score or 0)
 		end)
 
+		local coeff_weight = rconf.coeff_weight or {}
+
+		log.dump(coeff_weight)
+
 		local gamer_coeffes = table.series(self.gamers,function(p,chair)
 			local count_coeff = self:gaming_round() > 0 and (p.winlose_count or 0) / self:gaming_round() or 0
 			local score_coeff = (p.total_score or 0) / max_roundwinlose_abs
 			local winlose_coeff = winloses[chair] / max_winlose_abs
 			return {
 				p = p,
-				coeff = count_coeff * 1000 + score_coeff * 800 + winlose_coeff * 300,
+				coeff = count_coeff * (coeff_weight[1] or 1000) + score_coeff * (coeff_weight[2] or 1000) + winlose_coeff * (coeff_weight[3] or 1000),
 			}
 		end)
 
