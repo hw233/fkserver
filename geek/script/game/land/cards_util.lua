@@ -617,8 +617,6 @@ function cards_util.seek_greatest(kcards,rule)
 
 	typecards = table.values(table.select(typecards,function(v) 
 		if not v.cards or #v.cards == 0 then return false end
-		if has_three_with_one and v.type == LAND_CARD_TYPE.THREE_WITH_ONE and total_count > 4 then return false end
-		if with_3_firstly then return table.logic_or(v.cards,function(c) return c == 3 end) end
 		return true
 	end))
 
