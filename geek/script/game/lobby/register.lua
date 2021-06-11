@@ -22,6 +22,7 @@ local h = {
 	CS_LoginValidatebox = on_cs_login_validatebox,
 	CS_ChangeGame = on_cs_change_game,
 	CS_JoinRoom = on_cs_join_private_room,
+	CS_ReconnectJoinRoom = on_cs_reconnect_join_room,
 	CS_CreateRoom = on_cs_create_private_room,
 	CS_SetNickname = on_cs_set_nickname,
 	CS_ChangeHeaderIcon = on_cs_change_header_icon,

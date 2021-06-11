@@ -1789,3 +1789,19 @@ message SC_NotifyNotice{
 	int32  op = 1;
 	NOTICE notice = 2;
 }
+
+//再入房间
+message CS_ReconnectJoinRoom
+{
+    enum MsgID {NONE = 0; ID = 1240;}
+}
+
+//再入房间回复(本人)
+message SC_ReconnectJoinRoom
+{
+    enum MsgID {NONE = 0; ID = 1241;}
+    int32 result = 1;
+    TABLE_INFO info = 2;
+    repeated SEAT_INFO seat_list = 3;
+	ROUND_INFO round_info = 4;
+}
