@@ -847,7 +847,8 @@ message CS_Ready {
 message SC_Ready {
 	enum MsgID { Nil = 0; ID = 1107; }
 	int32 ready_chair_id = 1;				// 已准备玩家
-	bool is_ready = 2;						// false 取消 true 准备
+	bool  is_ready = 2;						// false 取消 true 准备
+	int32 result = 3;
 }
 
 message CS_Exit {
