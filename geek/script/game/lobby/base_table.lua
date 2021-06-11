@@ -2354,12 +2354,6 @@ function base_table:is_bankruptcy(player)
 	return money < limit
 end
 
---检查玩家是否是黑名单列表玩家，若是则返回true，否则返回false
-function base_table:check_blacklist_player( player_guid )
-	return self.room_:check_player_is_in_blacklist(player_guid)
-end
-
-
 function base_table:play_once_again(player)
 	return self:lockcall(function()
 		local room_fee_result = self:check_private_fee()

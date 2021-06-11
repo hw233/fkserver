@@ -60,18 +60,6 @@ function base_room:init(conf)
 	self.tables = {}
 
 	self.players = {}
-
-	self.blacklist_player = setmetatable({},{
-		__index = function(t,guid)
-			local is = reddb:hget("player:black",guid)
-			if not is then
-				return false
-			end
-
-			t[guid] = (is and is == "true") and true or false
-			return true
-		end,
-	})
 end
 
 function base_room:get_chair_count()
@@ -1134,7 +1122,6 @@ function base_room:change_table(player)
 	end
 end
 
-
 function base_room:change_tax(tax, tax_show, tax_open)
 	print("======================base_room:change_tax")
 	tax = tax * 0.01
@@ -1144,15 +1131,6 @@ function base_room:change_tax(tax, tax_show, tax_open)
 		v.tax_open = tax_open -- 是否开启税收
 		v.tax = tax
 	end
-end
-
---检查玩家是否是黑名单列表玩家，若是则返回true，否则返回false
-function base_room:check_player_is_in_blacklist( player_guid )
-	if player_guid < 0 then
-		return false
-	end
-
-	return self.blacklist_player[player_guid]
 end
 
 function base_room:check_room_fee(rule,club,player)
