@@ -1805,3 +1805,9 @@ message SC_ReconnectJoinRoom
     repeated SEAT_INFO seat_list = 3;
 	ROUND_INFO round_info = 4;
 }
+
+message SC_Alert{
+	enum MsgID {NONE = 0; ID = 1242;}
+	int32 code = 1;
+	string jsonparam = 2;
+}

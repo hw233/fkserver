@@ -299,6 +299,9 @@ local enums = {
 	TSO_LEAVE = pb.enum("TABLE_SYNC_OPCODE","TSO_LEAVE"),
 	TSO_STATUS_CHANGE = pb.enum("TABLE_SYNC_OPCODE","TSO_STATUS_CHANGE"),
     TSO_SEAT_CHANGE = pb.enum("TABLE_SYNC_OPCODE","TSO_SEAT_CHANGE"),
+
+    AC_UPGRADE = pb.enum("ALTER_CODE","AC_UPGRADE"),
+    AC_NEW_VERSION = pb.enum("ALTER_CODE","AC_NEW_VERSION"),
 }
 
 return enums

@@ -47,3 +47,9 @@ enum ERROR_CODE {
     ERROR_LOGIN_NO_BINDING = 505;
     ERROR_REQUEST_SMS_FAILED = 506;
 }
+
+enum ALTER_CODE {
+    AC_NONE = 0;
+    AC_UPGRADE = 1;//强制升级提示
+    AC_NEW_VERSION = 2; //强制下载新版本
+}
