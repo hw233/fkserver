@@ -1,10 +1,10 @@
 
 local enum = require "pb_enums"
 
-local function boot(gameconf,conf)
+local function boot(gameconf)
     local room = require "game.lobby.base_room"
     
-    room:init(gameconf, 2, enum.GAME_READY_MODE_NONE, conf)
+    room:init(gameconf)
     return room
 end
 

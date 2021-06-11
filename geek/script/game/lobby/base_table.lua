@@ -1885,12 +1885,6 @@ function base_table:ready(player)
 		return
 	end
 
-	local ready_mode = self.room_:get_ready_mode()
-	if ready_mode == enum.GAME_READY_MODE_NONE then
-		log.warning("guid[%d] mode=GAME_READY_MODE_NONE", player.guid)
-		return
-	end
-
 	self:lockcall(function()
 		if not self:is_alive() then
 			return
@@ -1957,26 +1951,11 @@ function base_table:can_stand_up(player,reason)
 end
 
 -- 检查开始
-function base_table:check_start(part)
-	local ready_mode = self.room_:get_ready_mode()
-	log.info("check_start %s ready_mode %s,%s",self.table_id_,ready_mode,part)
-	if ready_mode == enum.GAME_READY_MODE_PART then
-		local n = table.nums(self.ready_list)
-		if n >= 2 then
-			self:start(n)
-		end
-	end
-
-	if part then
-		return
-	end
-
-	if ready_mode == enum.GAME_READY_MODE_ALL then
-		local n = table.nums(self.ready_list)
-		if n ~= self.start_count  then
-			return
-		end
-
+function base_table:check_start()
+	log.info("check_start %s",self:id())
+	local n = table.nums(self.ready_list)
+	local min_count = self.room_.min_gamer_count or self.start_count or self.chair_count
+	if n >= min_count then
 		self:start(n)
 	end
 end

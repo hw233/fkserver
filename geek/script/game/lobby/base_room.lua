@@ -28,6 +28,10 @@ local function check_conf(conf)
 	assert(conf.tax_show)
 	assert(conf.tax_open)
 	assert(conf.cell_money)
+	local tbconf = conf.table
+	if tbconf then
+		assert(tbconf.chair_count)
+	end
 end
 
 function base_room:new()
@@ -37,21 +41,23 @@ function base_room:new()
 end
 
 -- 初始化房间
-function base_room:init(conf,chair_count,ready_mode)
+function base_room:init(conf)
 	check_conf(conf)
 
 	self.id = 1
 	self.conf = conf
-	self.chair_count = chair_count
+	local tbconf = conf.table
+	if tbconf then
+		self.chair_count = tbconf.chair_count
+		self.min_gamer_count = tbconf.min_gamer_count or tbconf.chair_count
+	end
+	
 	self.tax_show = conf.tax_show -- 是否显示税收信息
 	self.tax_open = conf.tax_open -- 是否开启税收
 	self.tax = conf.tax * 0.01
-	self.ready_mode = ready_mode -- 准备模式
 	self.room_limit = conf.money_limit or 0 -- 房间分限制
 	self.cell_score = conf.cell_money or 0 -- 底注
 	self.tables = {}
-	self.room_cfg = conf.room_cfg
-	self.game_switch_is_open = conf.game_switch_is_open
 
 	self.players = {}
 
@@ -66,6 +72,14 @@ function base_room:init(conf,chair_count,ready_mode)
 			return true
 		end,
 	})
+end
+
+function base_room:get_chair_count()
+	return self.chair_count
+end
+
+function base_room:get_min_gamer_count()
+	return self.min_gamer_count or self.chair_count
 end
 
 -- 创建桌子
@@ -90,12 +104,7 @@ function base_room:get_room_cell_money()
 end
 
 function base_room:get_room_tax()
-	-- body
 	return self.tax
-end
--- 得到准备模式
-function base_room:get_ready_mode()
-	return self.ready_mode
 end
 
 function base_room:get_private_fee(rule)
