@@ -1954,7 +1954,7 @@ end
 function base_table:check_start()
 	log.info("check_start %s",self:id())
 	local n = table.nums(self.ready_list)
-	local min_count = self.room_.min_gamer_count or self.start_count or self.chair_count
+	local min_count = self.start_count or self.room_.min_gamer_count or self.chair_count
 	if n >= min_count then
 		self:start(n)
 	end
