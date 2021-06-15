@@ -247,7 +247,7 @@ function ws.parse_frame(readbytes)
         if not l_data then
             return nil, nil, "Payloadlen 127 read true length error:" .. tostring(err)
         end
-        frame_length = string.unpack(">!64L", l_data)
+        frame_length = string.unpack(">!8L", l_data)
         -- log.info("payloadlen 127:",frame_length)
     end
 
