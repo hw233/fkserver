@@ -6,12 +6,17 @@ local json = require "json"
 local maajan_tile_dealer = require "maajan_tile_dealer"
 local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
-local profile = require "skynet.profile"
-local skynet = require "skynetproto"
 local club_utils = require "game.club.club_utils"
 local timer = require "timer"
 
 require "functions"
+
+local table = table
+local string = string
+local tinsert = table.insert
+local tremove = table.remove
+local tconcat = table.concat
+local strfmt = string.format
 
 local FSM_S  = def.FSM_state
 
@@ -239,8 +244,6 @@ function maajan_table:on_started(player_count)
         v.multi_pao = nil
         v.gzh = nil
         v.gsp = nil
-        v.gzh_target = nil
-        v.gsp_target = nil
 
         v.statistics = v.statistics or {}
     end
@@ -273,7 +276,7 @@ end
 function maajan_table:fast_start_vote_req(player)
     local player_count = table.sum(self.players,function(p) return 1 end)
     if player_count < 2 then
-        send2client_pb(player,"SC_VoteTableReq",{
+        send2client(player,"SC_VoteTableReq",{
             result = enum.ERROR_OPERATION_INVALID
         })
         return
@@ -326,7 +329,7 @@ function maajan_table:on_reconnect_when_fast_start_vote(player)
         })
     end
 
-    send2client_pb(player,"SC_VoteTableRequestInfo",{
+    send2client(player,"SC_VoteTableRequestInfo",{
         vote_type = "FAST_START",
         request_guid = player.guid,
         request_chair_id = player.chair_id,
@@ -390,8 +393,8 @@ function maajan_table:xi_pai()
 end
 
 function maajan_table:on_reconnect_when_action_qiang_gang_hu(p)
-    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
     self:send_ding_que_status(p)
     self:send_ting_tips(p)
 
@@ -530,7 +533,7 @@ function maajan_table:qiang_gang_hu(player,actions,tile)
 end
 
 function maajan_table:on_reconnect_when_huan_pai(player)
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
     self:send_huan_pai_status(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
@@ -545,7 +548,7 @@ function maajan_table:on_huan_pai(player,msg)
 
     if player.pai.huan then
         log.error("maajan_table:on_huan_pai repeated,guid:%s",player.guid)
-        send2client_pb(player.guid,"SC_HuanPai",{
+        send2client(player.guid,"SC_HuanPai",{
             result = enum.ERROR_OPERATION_REPEATED,
         })
         return
@@ -555,7 +558,7 @@ function maajan_table:on_huan_pai(player,msg)
     for _,tile in pairs(tiles) do
         local c = player.pai.shou_pai[tile]
         if not c or c == 0 then
-            send2client_pb(player.guid,"SC_HuanPai",{
+            send2client(player.guid,"SC_HuanPai",{
                 result = enum.PARAMETER_ERROR,
             })
             log.error("maajan_table:huan_pai tiles %s",table.concat(tiles,","))
@@ -566,7 +569,7 @@ function maajan_table:on_huan_pai(player,msg)
     local tile_count = table.nums(tiles)
     local huan_count = self:get_huan_count()
     if tile_count ~= huan_count then
-        send2client_pb(player.guid,"SC_HuanPai",{
+        send2client(player.guid,"SC_HuanPai",{
             result = enum.PARAMETER_ERROR,
         })
         log.error("maajan_table:huan_pai huan_count == %d,but tiles count = %d",huan_count,tile_count)
@@ -579,7 +582,7 @@ function maajan_table:on_huan_pai(player,msg)
         local mens = table.map(g,function(gp,men) return men,table.nums(gp) end)
         local men_count = table.nums(mens)
         if men_count ~= 1 then
-            send2client_pb(player.guid,"SC_HuanPai",{
+            send2client(player.guid,"SC_HuanPai",{
                 result = enum.PARAMETER_ERROR,
             })
             log.error("maajan_table:huan_pai huan_type == %d,but men count = %d",huan_type,men_count)
@@ -591,7 +594,7 @@ function maajan_table:on_huan_pai(player,msg)
 
     player.pai.huan = {old = tiles,}
 
-    send2client_pb(player,"SC_HuanPai",{
+    send2client(player,"SC_HuanPai",{
         result = enum.ERROR_NONE,
         chair_id = player.chair_id,
         done = true,
@@ -615,7 +618,7 @@ function maajan_table:on_huan_pai(player,msg)
     local log_players = self.game_log.players
     self:foreach(function(p)
         log_players[p.chair_id].huan = p.pai.huan
-        send2client_pb(p,"SC_HuanPaiCommit",{
+        send2client(p,"SC_HuanPaiCommit",{
             new_shou_pai = p.pai.huan.new,
             huan_order = order,
         })
@@ -698,7 +701,7 @@ function maajan_table:huan_pai()
 end
 
 function maajan_table:on_reconnect_when_ding_que(player)
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
     self:send_ding_que_status(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
@@ -758,7 +761,7 @@ function maajan_table:on_ding_que(player,msg)
 
     if player.que then
         log.error("maajan_table:on_ding_que repeated %s,guid:%s",msg.men,player.guid)
-        send2client_pb(player,"SC_DingQue",{
+        send2client(player,"SC_DingQue",{
             result = enum.ERROR_OPERATION_REPEATED
         })
         return
@@ -766,7 +769,7 @@ function maajan_table:on_ding_que(player,msg)
     
     local men = msg.men
     if not men or men < 0 or men > 3 then
-        send2client_pb(player,"SC_DingQue",{
+        send2client(player,"SC_DingQue",{
             result = enum.PARAMETER_ERROR
         })
         return
@@ -909,6 +912,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
 
         self:log_game_action(player,do_action,tile)
         self:adjust_shou_pai(player,do_action,tile)
+        self:clean_gzh(player)
         self:jump_to_player_index(player)
         player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
         player.gzh = nil
@@ -916,6 +920,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
     end
 
     if do_action == ACTION.AN_GANG then
+        self:clean_gzh(player)
         self:adjust_shou_pai(player,do_action,tile)
         self:log_game_action(player,do_action,tile)
         self:jump_to_player_index(player)
@@ -969,8 +974,8 @@ end
 
 function maajan_table:on_reconnect_when_action_after_mo_pai(p)
     self:send_ding_que_status(p)
-    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     local action = self.waiting_actions[p.chair_id]
     if action and not action.done then
@@ -1063,8 +1068,8 @@ function maajan_table:action_after_ding_que()
 end
 
 function maajan_table:on_reconnect_when_action_after_chu_pai(p)
-    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
     self:send_ding_que_status(p)
     local action = self.waiting_actions[p.chair_id]
     if action and not action.done then
@@ -1099,15 +1104,15 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         return
     end
 
+    self.waiting_actions = nil
+
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
 
     local function do_action(actions_to_do)
         local action = actions_to_do[1]
-
         local chu_pai_player = self:chu_pai_player()
-        
         local player = self.players[action.chair_id]
         if not player then
             log.error("do action %s,nil player in chair %s",action.done.action,action.chair_id)
@@ -1116,6 +1121,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
 
         local tile = action.done.tile
         if action.done.action == ACTION.PENG then
+            self:clean_gzh(player)
             table.pop_back(chu_pai_player.pai.desk_tiles)
             self:adjust_shou_pai(player,action.done.action,tile)
             self:log_game_action(player,action.done.action,tile)
@@ -1124,6 +1130,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         end
 
         if def.is_action_gang(action.done.action) then
+            self:clean_gzh(player)
             table.pop_back(chu_pai_player.pai.desk_tiles)
             self:adjust_shou_pai(player,action.done.action,tile)
             self:log_game_action(player,action.done.action,tile)
@@ -1189,22 +1196,26 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         end
 
         if action.done.action == ACTION.PASS then
-            if self.rule.play.guo_zhuang_hu then
-                local hu_action = action.actions[ACTION.HU]
-                log.dump(hu_action)
-                if hu_action then
-                    self:set_gzh_on_pass_hu(player,chu_pai_player,chu_pai_player.chu_pai)
+            for _,act in pairs(actions_to_do) do
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    log.dump(hu_action)
+                    if hu_action then
+                        self:set_gzh_on_pass(p)
+                    end
                 end
-            end
 
-            if self.rule.play.guo_shou_peng then
-                local peng_action = action.actions[ACTION.PENG]
-                if peng_action then
-                    self:set_gsp_on_pass_peng(player,chu_pai_player,chu_pai_player.chu_pai)
+                if self.rule.play.guo_shou_peng then
+                    local peng_action = act.actions[ACTION.PENG]
+                    if peng_action then
+                        self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
+                    end
                 end
-            end
 
-            self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = ACTION.PASS})
+                self:broadcast2client("SC_Maajan_Do_Action",{chair_id = p.chair_id,action = ACTION.PASS})
+            end
+            
             self:next_player_index()
             self:mo_pai()
         end
@@ -1215,8 +1226,9 @@ function maajan_table:on_action_after_chu_pai(player,msg)
     local top_action
     local actions_to_do = {}
     for _,action in pairs(all_actions) do
-        top_action = top_action or action
-        if action.done.action ~= top_action.done.action then
+        if  top_action and
+            action.done.action ~= top_action.done.action
+        then
             break
         end
         table.insert(actions_to_do,action)
@@ -1289,9 +1301,7 @@ function maajan_table:fake_mo_pai()
     table.incr(shou_pai,mo_pai)
 
     player.gzh = nil
-    player.gzh_target = nil
     player.gsp = nil
-    player.gsp_target = nil
 
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
@@ -1299,31 +1309,16 @@ end
 
 function maajan_table:clean_gzh(player)
     player.gzh = nil
-    player.gzh_target = nil
 end
 
-function maajan_table:set_gzh_on_pass_hu(passer,discarder,tile)
+function maajan_table:set_gzh_on_pass(passer)
     passer.gzh = passer.gzh or {}
-    passer.gzh[tile] = self:hu_fan(passer.pai,tile)
-    log.dump(passer.gzh)
-    discarder.gzh_target = discarder.gzh_target or {}
-    discarder.gzh_target[tile] = discarder.gzh_target[tile] or {}
-    table.insert(discarder.gzh_target[tile],passer)
-    log.dump(discarder.gzh_target)
-end
-
-function maajan_table:clean_gzh_on_mo_pai(drawer)
-    if not drawer.gzh_target then return end
-
-    for tile,targets in pairs(drawer.gzh_target) do
-        for _,target in pairs(targets) do
-            if target.gzh then
-                target.gzh[tile] = nil
-                if table.nums(target.gzh) == 0 then target.gzh = nil end
-            end
-        end
+    local gzh = passer.gzh
+    local hu_tiles = self:ting(passer)
+    for tile,_ in pairs(hu_tiles or {}) do
+        gzh[tile] = self:hu_fan(passer,tile)
     end
-    drawer.gzh_target = nil
+    log.dump(gzh)
 end
 
 function maajan_table:is_in_gzh(player,tile)
@@ -1332,27 +1327,11 @@ end
 
 function maajan_table:clean_gsp(player)
     player.gsp = nil
-    player.gsp_target = nil
 end
 
-function maajan_table:set_gsp_on_pass_peng(passer,discarder,tile)
+function maajan_table:set_gsp_on_pass(passer,tile)
     passer.gsp = passer.gsp or {}
     passer.gsp[tile] = true
-    discarder.gsp_target = discarder.gsp_target or {}
-    discarder.gsp_target[tile] = passer
-end
-
-function maajan_table:clean_gsp_on_mo_pai(drawer)
-    if not drawer.gsp_target then return end
-
-    for tile,target in pairs(drawer.gsp_target) do
-        if target.gsp then 
-            target.gsp[tile] = nil 
-            if table.nums(target.gsp) == 0 then target.gsp = nil end
-        end
-    end
-
-    drawer.gsp_target = nil
 end
 
 function maajan_table:is_in_gsp(player,tile)
@@ -1364,8 +1343,8 @@ function maajan_table:mo_pai()
     local player = self:chu_pai_player()
     local shou_pai = player.pai.shou_pai
 
-    self:clean_gzh_on_mo_pai(player)
-    self:clean_gsp_on_mo_pai(player)
+    self:clean_gzh(player)
+    self:clean_gsp(player)
 
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
@@ -1525,22 +1504,20 @@ function maajan_table:send_ting_tips(p)
         local pai = clone(p.pai)
         local discard_tings = table.series(ting_tiles,function(tiles,discard)
             table.decr(pai.shou_pai,discard)
-            local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(pai,tile)} end)
+            local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(p,tile)} end)
             table.incr(pai.shou_pai,discard)
             return { discard = discard, tiles_info = tings, }
         end)
 
-        send2client_pb(p,"SC_TingTips",{
+        send2client(p,"SC_TingTips",{
             ting = discard_tings
         })
-
-        return true
     end
 end
 
 function maajan_table:on_reconnect_when_chu_pai(p)
-    send2client_pb(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
-    send2client_pb(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(p,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
     self:send_ding_que_status(p)
     self:send_ting_tips(p)
 
@@ -1808,7 +1785,7 @@ function maajan_table:send_action_waiting(action)
         end
     end
 
-    send2client_pb(self.players[chair_id],"SC_WaitingDoActions",{
+    send2client(self.players[chair_id],"SC_WaitingDoActions",{
         chair_id = chair_id,
         actions = actions,
     })
@@ -1841,23 +1818,17 @@ function maajan_table:prepare_tiles()
     self:fake_mo_pai()
 end
 
-function maajan_table:max_hu(pai,tiles)
-    local fans = table.series(tiles,function(_,tile) return self:hu_fan(pai,tile) end)
-    table.sort(fans,function(l,r) return l > r end)
-    if table.nums(fans) > 0 then
-        return fans[1]
-    end
-    return 0
+function maajan_table:calc_types(ts)
+    return table.sum(ts,function(_,t) return HU_TYPE_INFO[t].score end),
+        table.sum(ts,function(_,t) return HU_TYPE_INFO[t].fan end)
 end
 
-function maajan_table:hu_fan(pai,tile)
-    local hu = self:rule_hu(pai,tile)
-    local fans = self:calculate_hu({
-        types = hu,
-        tile = tile,
-    })
-
-    return table.sum(fans,function(t) return (t.fan or 0) * (t.count or 1) end)
+function maajan_table:hu_fan(player,in_pai,mo_pai)
+    local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
+    local ext_hu = self:ext_hu(player,in_pai,mo_pai)
+    local hutypes = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
+    local _,fan = self:calc_types(hutypes)
+    return fan or 1
 end
 
 function maajan_table:get_actions_first_turn(p,mo_pai)
@@ -1909,7 +1880,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
     end
 
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-        local max_hu_fan = self:hu_fan(p.pai,in_pai)
+        local max_hu_fan = self:hu_fan(p,in_pai,mo_pai)
         if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
             actions[ACTION.HU] = nil
         end
@@ -2013,9 +1984,9 @@ end
 function maajan_table:on_mo_pai(player,mo_pai)
     player.mo_pai = mo_pai
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
-    send2client_pb(player,"SC_Maajan_Draw",{tile = mo_pai,chair_id = player.chair_id})
+    send2client(player,"SC_Maajan_Draw",{tile = mo_pai,chair_id = player.chair_id})
     self:foreach_except(player,function(p)
-        send2client_pb(p,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
+        send2client(p,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
         p.mo_pai = nil
     end)
 end
@@ -2630,7 +2601,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     end
 
     if self.cur_round and self.cur_round > 0 then
-        send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+        send2client(player,"SC_Maajan_Desk_Enter",msg)
     end
 end
 
@@ -2653,7 +2624,7 @@ function maajan_table:send_hu_status(player)
         })
     end)
 
-    send2client_pb(player,"SC_HuStatus",{
+    send2client(player,"SC_HuStatus",{
         status = status,
     })
 end
@@ -2681,7 +2652,7 @@ function maajan_table:send_ding_que_status(player)
         end)
     end
 
-    send2client_pb(player,"SC_DingQueStatus",{
+    send2client(player,"SC_DingQueStatus",{
         que_status = table.nums(ding_que_status) > 0 and ding_que_status or nil,
         que_info = ding_que_info,
     })
@@ -2696,7 +2667,7 @@ function maajan_table:send_huan_pai_status(player)
         })
     end)
 
-    send2client_pb(player,"SC_HuanPaiStatus",{
+    send2client(player,"SC_HuanPaiStatus",{
         self_choice = player.pai.huan and player.pai.huan.old or nil,
         status = huan_status,
     })
@@ -2741,7 +2712,7 @@ end
 
 function maajan_table:begin_clock(timeout,player,total_time)
     if player then
-        send2client_pb(player,"SC_TimeOutNotify",{
+        send2client(player,"SC_TimeOutNotify",{
             left_time = math.ceil(timeout),
             total_time = total_time and math.floor(total_time) or nil,
         })
@@ -2829,15 +2800,9 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
         return ts
     end)
 
-
-    local function get_types_info(ts)
-        return table.sum(ts,function(_,t) return HU_TYPE_INFO[t].score end),
-            table.sum(ts,function(_,t) return HU_TYPE_INFO[t].fan end)
-    end
-
     table.sort(types,function(l,r)
-        local lscore,lfan = get_types_info(l)
-        local rscore,rfan = get_types_info(r)
+        local lscore,lfan = self:calc_types(l)
+        local rscore,rfan = self:calc_types(r)
         return lscore + 2 ^ lfan > rscore + 2 ^ rfan
     end)
 
@@ -2888,24 +2853,25 @@ function maajan_table:can_hu(player,in_pai)
     return  gang > 0 or score > 1 or fan > 0
 end
 
+
 function maajan_table:get_ting_tiles_info(player)
     local hu_tips = self.rule and self.rule.play.hu_tips or nil
     if not hu_tips then 
-        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
             result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
 
     if player.hu then 
-        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
             result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
     
     if not self:is_que(player) then
-        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
             result = enum.ERROR_NONE,
         })
         return
@@ -2914,12 +2880,12 @@ function maajan_table:get_ting_tiles_info(player)
     local ting_tiles = self:ting(player)
     local pai = clone(player.pai)
     local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
-        return {tile = tile,fan = self:hu_fan(pai,tile)} 
+        return {tile = tile,fan = self:hu_fan(player,tile)} 
     end)
 
     log.dump(hu_tile_fans)
 
-    send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+    send2client(player,"SC_MaajanGetTingTilesInfo",{
         tiles_info = hu_tile_fans,
     })
 end
