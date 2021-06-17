@@ -15,7 +15,6 @@ local channel = require "channel"
 local club_money_type = require "game.club.club_money_type"
 local player_money = require "game.lobby.player_money"
 local club_utils = require "game.club.club_utils"
-local club_role = require "game.club.club_role"
 local json = require "json"
 local gutil = require "util"
 local reddb = redisopt.default

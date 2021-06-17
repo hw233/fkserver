@@ -72,6 +72,13 @@ message CLUB_TEAM_INFO{
     int32 status = 6;
 }
 
+message TEAM_STATUS_INFO{
+    int32 status = 1;//状态 0正常 1歇业 2封禁
+    bool  can_unblock = 2;
+    int32 partner_id = 3;
+    int32 club_id = 4;
+}
+
 //单个座位信息
 message SEAT_INFO { 
     int32 chair_id = 1; //座位序号

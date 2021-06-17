@@ -19,8 +19,6 @@ local club_money = require "game.club.club_money"
 local player_money = require "game.lobby.player_money"
 local player_club = require "game.lobby.player_club"
 local club_commission = require "game.club.club_commission"
-local club_team_template_conf = require "game.club.club_team_template_conf"
-local club_team = require "game.club.club_team"
 local club_partners = require "game.club.club_partners"
 local util = require "util"
 local club_conf = require "game.club.club_conf"
@@ -42,8 +40,6 @@ local queue = require "skynet.queue"
 local club_sync_cache = require "game.club.club_sync_cache"
 
 local reddb = redisopt.default
-
-local table_expire_seconds = 60 * 60 * 5
 
 local request_expire_seconds = 60 * 60 * 24 * 7
 
@@ -497,6 +493,17 @@ function base_club:is_team_credit_block_play(guid)
     end
 end
 
+function base_club:closed_team_id(guid)
+    local team_id = guid
+    while team_id and team_id ~= 0 do
+        local conf = club_partner_conf[self.id][team_id]
+        if conf.status == 0 then
+            return team_id
+        end
+        team_id = club_member_partner[self.id][team_id]
+    end
+end
+
 function base_club:create_table(player,chair_count,round,rule,template)
     local result = self:can_sit_down(rule,player)
     if result ~= enum.ERROR_NONE then
@@ -567,6 +574,10 @@ function base_club:can_sit_down(rule,player)
     
     if self:is_team_credit_block_play(player.guid) then
         return enum.ERROR_CLUB_TEAM_IS_LOCKED
+    end
+
+    if self:closed_team_id(player.guid) then
+        return enum.ERROR_CLUB_TEAM_CLOSE
     end
 
     return enum.ERROR_NONE
@@ -994,7 +1005,7 @@ end
 
 function base_club:exchange_team_commission(partner_id,money)
     return club_member_lock[self.id][partner_id](function()
-        local commission = club_partner_commission[self.id][partner_id]
+        local commission = club_partner_commission[self.id][partner_id] or 0
         if money < 0 then money = commission  end
 
         if money == 0 then return enum.ERROR_NONE end

@@ -1,7 +1,6 @@
 local base_clubs = require "game.club.base_clubs"
 local base_players = require "game.lobby.base_players"
 local runtime_conf = require "game.runtime_conf"
-local serviceconf = require "serviceconf"
 local onlineguid = require "netguidopt"
 local log = require "log"
 local channel = require "channel"
@@ -23,8 +22,13 @@ local club_money = require "game.club.club_money"
 local club_commission = require "game.club.club_commission"
 local redisopt = require "redisopt"
 local g_util = require "util"
+local club_partner_member = require "game.club.club_partner_member"
+local club_money_type = require "game.club.club_money_type"
+local club_team_money = require "game.club.club_team_money"
+local club_partner = require "game.club.club_partner"
 
 local table = table
+local string = string
 
 local tinsert = table.insert
 
@@ -130,6 +134,33 @@ function utils.get_club_tables(club)
     return tables
 end
 
+local function team_branch_member(c,team_id)
+    local cid = c.id
+    local guids = {}
+    for guid,_ in pairs(club_partner_member[cid][team_id] or {}) do
+        if club_role[cid][guid] == enum.CRT_PARTNER then
+            guids = table.union(guids,team_branch_member(c,guid))
+        else
+            tinsert(guids,guid)
+        end
+    end
+
+    return guids
+end
+
+local function transfer_money(club,from_guid,to_guid,money,reason)
+    local money_id = club_money_type[club.id]
+    local allmoney = player_money[from_guid][money_id]
+    money = money or allmoney
+    if allmoney < money then
+        log.error("transfer_money leak %s < %s",allmoney,money)
+        return
+    end
+    club:incr_member_money(from_guid,-money,reason)
+    club:incr_member_money(to_guid,money,reason)
+    return true
+end
+
 function utils.import_union_player_from_group(from,to)
     local root = utils.root(to)
     local members = club_member[from.id]
@@ -139,18 +170,82 @@ function utils.import_union_player_from_group(from,to)
         end
     end)
 
-    if table.nums(guids) == 0 then
-        return
-    end
-
     to:batch_join(guids)
     return true
+end
+
+function utils.import_team_branch_member(from,to,team_id)
+    local fid = from.id
+    local tid = to.id
+    local money_id_from = club_money_type[fid]
+    local money_id_to = club_money_type[tid]
+    local money_from = club_team_money[fid][team_id] or 0
+    local money_to = player_money[team_id][money_id_to] or 0
+    if money_to < money_from then
+        return enum.ERROR_LESS_GOLD
+    end
+
+    local team_member = team_branch_member(from,team_id)
+    if table.Or(team_member,function(guid)
+        local og = onlineguid[guid]
+        return og and og.table
+    end) then
+        return enum.GAME_SERVER_RESULT_IN_GAME
+    end
+
+    local function recursive_batch_import(team)
+        local failed_team,failed_member = 0,0
+        for guid in pairs(club_partner_member[fid][team] or {}) do
+            local role = club_role[fid][guid]
+            if not club_member[tid][guid] then
+                if role == enum.CRT_PARTNER then
+                    from:exchange_team_commission(guid,-1)
+                end
+
+                local money = player_money[guid][money_id_from] or 0
+                to:full_join(guid,team_id,team)
+
+                if money ~= 0 then
+                    transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
+                end
+
+                if role == enum.CRT_PARTNER then
+                    club_partner:create(tid,guid,team)
+                    local fteam,fmember = recursive_batch_import(guid)
+                    failed_team = failed_team + fteam
+                    failed_member = failed_member + fmember
+                    local team_money = player_money[guid][money_id_from]
+                    if team_money ~= 0 then
+                        transfer_money(from,guid,team,team_money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+                    end
+                else
+                    if money ~= 0 then
+                        transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+                    end
+                    from:full_exit(guid,team)
+                end
+            else
+                if role == enum.CRT_PARTNER then
+                    failed_team = failed_team + 1
+                else
+                    failed_member = failed_member + 1
+                end
+            end
+        end
+
+        return failed_team,failed_member
+    end
+
+    local failed_team,faield_member = recursive_batch_import(team_id)
+    log.dump(failed_team)
+    log.dump(faield_member)
+    return enum.ERROR_NONE,failed_team,faield_member
 end
 
 function utils.is_recursive_in_club(club,guid)
     if not club or not guid then return end
     return club_member[club.id][guid] or 
-        table.logic_or(club_team[club] or {},function(_,teamid)
+        table.Or(club_team[club] or {},function(_,teamid)
             return utils.is_recursive_in_club(base_clubs[teamid],guid)
         end)
 end
@@ -219,7 +314,7 @@ end
 
 local function is_member_in_gaming(c)
     if not c then return false end
-    return table.logic_or(club_member[c.id] or {},function(_,mid)
+    return table.Or(club_member[c.id] or {},function(_,mid)
         local os = onlineguid[mid]
         return os and os.table
     end)
@@ -229,7 +324,7 @@ function utils.deep_is_member_in_gaming(c,money_id)
     local gaming = is_member_in_gaming(c)
     if gaming then return true end
     local teamids = club_team[c.id]
-    return table.logic_or(teamids,function(_,teamid)
+    return table.Or(teamids,function(_,teamid)
         local team = base_clubs[teamid]
         return team and utils.deep_is_member_in_gaming(team,money_id)
     end)

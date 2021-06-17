@@ -60,6 +60,10 @@ local h = {
 	B2S_CLUB_DISMISS = on_bs_club_dismiss,
 
 	CS_CLUB_MEMBER_INFO = on_cs_club_member_info,
+
+	CS_CLUB_IMPORT_PLAYER_FROM_TEAM = on_cs_club_import_player_from_team,
+
+	CS_TEAM_STATUS_INFO = on_cs_team_status_info,
 }
 
 local msgopt = require "msgopt"

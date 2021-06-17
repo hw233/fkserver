@@ -25,9 +25,6 @@ local club_commission = require "game.club.club_commission"
 local util = require "util"
 local enum = require "pb_enums"
 local json = require "json"
-local club_fast_template = require "game.club.club_fast_template"
-local crypt = require "skynet.crypt"
-local url = require "url"
 local club_partner = require "game.club.club_partner"
 local club_member_partner = require "game.club.club_member_partner"
 local club_partners = require "game.club.club_partners"
@@ -83,6 +80,8 @@ local CLUB_OP = {
     CLOSE_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","CLOSE_CLUB"),
     OPEN_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","OPEN_CLUB"),
     DISMISS_CLUB = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","DISMISS_CLUB"),
+    BLOCK_TEAM = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","BLOCK_TEAM"),
+    UNBLOCK_TEAM = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","UNBLOCK_TEAM"),
 }
 
 function on_bs_club_create(owner,name,type,creator)
@@ -168,6 +167,57 @@ function on_cs_club_create(msg,guid)
     onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
         result = enum.CLUB_OP_RESULT_SUCCESS,
         id = id,
+    })
+end
+
+function on_cs_club_import_player_from_team(msg,guid)
+    local team_id = msg.team_id
+    local from_id = msg.from_club
+    local to_id = msg.to_club
+    log.info("on_cs_club_import_player_from_team %s",guid)
+    log.dump(msg)
+    log.dump(guid)
+
+    if team_id ~= guid then
+        onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+    
+    local from = base_clubs[from_id]
+    local to = base_clubs[to_id]
+    if not from or not to then
+        onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+            result = enum.ERROR_CLUB_NOT_FOUND
+        })
+        return
+    end
+
+    local authroles = {
+        [enum.CRT_PARTNER] = true,
+        [enum.CRT_BOSS] = true,
+    }
+    local role_from = club_role[from_id][team_id]
+    local role_to = club_role[to_id][team_id]
+    if  not authroles[role_from] or not authroles[role_to] then
+        onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+            result = enum.ERROR_PLAYER_NO_RIGHT
+        })
+        return
+    end
+
+    local teamconf = club_partner_conf[from_id][team_id]
+    if teamconf.status ~= 0 and not from:is_close() then
+        onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED
+        })
+        return
+    end
+
+    local result = club_utils.import_team_branch_member(from,to,team_id)
+    onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+        result = result
     })
 end
 
@@ -467,6 +517,8 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local keygames = table.map(real_games,function(g) return g,true end)
     templates = table.select(templates,function(t) return keygames[t.game_id] end)
+
+    local closed_team_id = club:closed_team_id(guid)
     
     local club_info = {
         root = root.id,
@@ -487,6 +539,12 @@ function on_cs_club_detail_info_req(msg,guid)
                 }
             }
         end),
+        team_status = {
+            status = closed_team_id and 1 or 0,
+            can_unblock = closed_team_id == guid,
+            partner_id = club_member_partner[club_id][guid],
+            club_id = club_id,
+        }
     }
 
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
@@ -1459,6 +1517,57 @@ local function on_cs_club_close(msg,guid,status)
     })
 end
 
+local function on_cs_club_team_block(msg,guid)
+    local op = msg.op
+    local team_id = msg.target_id
+    local club_id = msg.club_id
+    
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            op = op,
+        })
+        return
+    end
+
+    local player = base_players[team_id]
+    if not player then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NOT_EXIST,
+            op = op,
+        })
+        return
+    end
+
+    if team_id ~= guid then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            op = op,
+        })
+        return
+    end
+
+    local role = club_role[club_id][team_id]
+    if role ~= enum.CRT_PARTNER then
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            op = op,
+        })
+        return
+    end
+
+    local isblock = op == CLUB_OP.BLOCK_TEAM
+    reddb:hmset(string.format("club:partner:conf:%s:%s",club_id,team_id),{
+        status = isblock and 0 or 1
+    })
+
+    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+        result = enum.ERROR_NONE,
+        op = op,
+    })
+end
+
 local operator = {
     [CLUB_OP.ADD_ADMIN] = on_cs_club_administrator,
     [CLUB_OP.REMOVE_ADMIN] = on_cs_club_administrator,
@@ -1473,8 +1582,10 @@ local operator = {
     [CLUB_OP.CLOSE_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,enum.CLUB_STATUS_CLOSE) end,
     [CLUB_OP.OPEN_CLUB] = function(msg,guid) on_cs_club_close(msg,guid,enum.CLUB_STATUS_NORMAL) end,
     [CLUB_OP.DISMISS_CLUB] = on_cs_club_dismiss,
-    [CLUB_OP.CANCEL_FORBID] = on_cs_club_blacklist;
-    [CLUB_OP.FORBID_GAME] = on_cs_club_blacklist;
+    [CLUB_OP.CANCEL_FORBID] = on_cs_club_blacklist,
+    [CLUB_OP.FORBID_GAME] = on_cs_club_blacklist,
+    [CLUB_OP.BLOCK_TEAM] = on_cs_club_team_block,
+    [CLUB_OP.UNBLOCK_TEAM] = on_cs_club_team_block,
 }
 
 function on_cs_club_operation(msg,guid)
@@ -1486,7 +1597,7 @@ end
 
 
 function on_cs_club_dismiss_table(msg,guid)
-
+    
 end
 
 
@@ -2953,21 +3064,21 @@ function on_cs_club_member_info(msg,guid)
     local member = msg.guid
     
     if not base_clubs[club_id] then
-        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+        send2client(guid,"SC_CLUB_MEMBER_INFO",{
             result = enum.ERROR_CLUB_NOT_FOUND,
         })
         return
     end
 
     if not club_member[club_id][guid] then
-        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+        send2client(guid,"SC_CLUB_MEMBER_INFO",{
             result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
 
     if not club_member[club_id][member] then
-        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+        send2client(guid,"SC_CLUB_MEMBER_INFO",{
             result = enum.ERROR_MEMBERS_NOT_FOUND,
         })
         return
@@ -2975,7 +3086,7 @@ function on_cs_club_member_info(msg,guid)
 
     local p = base_players[member]
     if not p then 
-        send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+        send2client(guid,"SC_CLUB_MEMBER_INFO",{
             result = enum.ERROR_MEMBERS_NOT_FOUND,
         })
         return
@@ -3022,8 +3133,31 @@ function on_cs_club_member_info(msg,guid)
         } or nil,
     }
 
-    send2client_pb(guid,"SC_CLUB_MEMBER_INFO",{
+    send2client(guid,"SC_CLUB_MEMBER_INFO",{
         result = enum.ERROR_NONE,
         info = info,
+    })
+end
+
+function on_cs_team_status_info(msg,guid)
+    local club_id = msg.club_id
+    
+    local club = base_clubs[club_id]
+    if not club then
+        send2client(guid,"SC_TEAM_STATUS_INFO",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local closed_team_id = club:closed_team_id(guid)
+    send2client(guid,"SC_TEAM_STATUS_INFO",{
+        result = enum.ERROR_NONE,
+        status_info = {
+            status = closed_team_id and 1 or 0,
+            can_unblock = closed_team_id == guid,
+            partner_id = club_member_partner[club_id][guid],
+            club_id = club_id,
+        },
     })
 end
