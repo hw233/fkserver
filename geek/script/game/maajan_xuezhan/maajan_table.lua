@@ -1226,9 +1226,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
     local top_action
     local actions_to_do = {}
     for _,action in pairs(all_actions) do
-        if  top_action and
-            action.done.action ~= top_action.done.action
-        then
+        top_action = top_action or action
+        if action.done.action ~= top_action.done.action then
             break
         end
         table.insert(actions_to_do,action)
