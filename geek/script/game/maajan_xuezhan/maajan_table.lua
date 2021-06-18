@@ -301,12 +301,12 @@ function maajan_table:fast_start_vote_commit(p,msg)
         })
 
         if agree then
-            if not table.logic_and(self.players,function(_,chair) return self.vote_result[chair] ~= nil end) then
+            if not table.And(self.players,function(_,chair) return self.vote_result[chair] ~= nil end) then
                 return
             end
         end
 
-        local all_agree = table.logic_and(self.vote_result,function(a) return a end)
+        local all_agree = table.And(self.vote_result,function(a) return a end)
         self:broadcast2client("SC_VoteTable",{success = all_agree})
         if not all_agree then
             self:update_state(nil)
@@ -424,7 +424,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     self:cancel_auto_action_timer(player)
 
     done_action.done = { action = msg.action }
-    local all_done = table.logic_and(self.qiang_gang_actions or {},function(action) return action.done ~= nil end) 
+    local all_done = table.And(self.qiang_gang_actions or {},function(action) return action.done ~= nil end) 
     if not all_done then
         return
     end
@@ -432,7 +432,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     local target_act = done_action.target_action
     local qiang_tile = done_action.tile
     local chu_pai_player = self:chu_pai_player()
-    local all_pass = table.logic_and(self.qiang_gang_actions or {},function(action) return action.done.action == ACTION.PASS end)
+    local all_pass = table.And(self.qiang_gang_actions or {},function(action) return action.done.action == ACTION.PASS end)
     if all_pass then
         self.qiang_gang_actions = nil
         self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile)
@@ -607,7 +607,7 @@ function maajan_table:on_huan_pai(player,msg)
         done = true,
     })
 
-    if not table.logic_and(self.players,function(p) return p.pai.huan ~= nil end) then
+    if not table.And(self.players,function(p) return p.pai.huan ~= nil end) then
         return
     end
 
@@ -786,7 +786,7 @@ function maajan_table:on_ding_que(player,msg)
 
     self:cancel_auto_action_timer(player)
 
-    if not table.logic_and(self.players,function(p) return p.que ~= nil end) then
+    if not table.And(self.players,function(p) return p.que ~= nil end) then
         return
     end
 
@@ -1091,7 +1091,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         self:cancel_auto_action_timer(self.players[chair])
     end
 
-    if not table.logic_and(self.waiting_actions,function(action) return action.done ~= nil end) then
+    if not table.And(self.waiting_actions,function(action) return action.done ~= nil end) then
         return 
     end
 
@@ -1110,93 +1110,18 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
 
-    local function do_action(actions_to_do)
-        local action = actions_to_do[1]
-        local chu_pai_player = self:chu_pai_player()
-        local player = self.players[action.chair_id]
-        if not player then
-            log.error("do action %s,nil player in chair %s",action.done.action,action.chair_id)
-            return
-        end
+    local top_action = all_actions[1]
+    local top_done_act = top_action.done.action
+    local chu_pai_player = self:chu_pai_player()
+    local player = self.players[top_action.chair_id]
+    if not player then
+        log.error("do action %s,nil player in chair %s",top_action.done.action,top_action.chair_id)
+        return
+    end
 
-        local tile = action.done.tile
-        if action.done.action == ACTION.PENG then
-            self:clean_gzh(player)
-            table.pop_back(chu_pai_player.pai.desk_tiles)
-            self:adjust_shou_pai(player,action.done.action,tile)
-            self:log_game_action(player,action.done.action,tile)
-            self:jump_to_player_index(player)
-            self:chu_pai()
-        end
-
-        if def.is_action_gang(action.done.action) then
-            self:clean_gzh(player)
-            table.pop_back(chu_pai_player.pai.desk_tiles)
-            self:adjust_shou_pai(player,action.done.action,tile)
-            self:log_game_action(player,action.done.action,tile)
-            self:jump_to_player_index(player)
-            self:mo_pai()
-            player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
-            player.gzh = nil
-        end
-
-        if action.done.action == ACTION.HU then
-            for _,act in pairs(actions_to_do) do
-                local p = self.players[act.chair_id]
-                p.hu = {
-                    time = timer.nanotime(),
-                    tile = tile,
-                    types = self:hu(p,tile),
-                    zi_mo = false,
-                    whoee = self.chu_pai_player_index,
-                }
-
-                if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
-                    local pai = chu_pai_player.pai
-                    for _,s in pairs(pai.ming_pai) do
-                        if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
-                            s.dian_pao = act.chair_id
-                        end
-                    end
-                end
-
-                self:log_game_action(p,act.done.action,tile)
-                self:broadcast_player_hu(p,act.done.action)
-                p.statistics.hu = (p.statistics.hu or 0) + 1
-                chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-            end
-
-            if table.nums(actions_to_do) > 1 then
-                chu_pai_player.multi_pao = true
-            end
-
-            table.pop_back(chu_pai_player.pai.desk_tiles)
-
-            local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-            if self.start_count - hu_count == 1 then
-                self:do_balance()
-            else
-                local _,last_hu_chair = table.max(actions_to_do,function(act) return act.chair_id end)
-                local last_hu_player = self.players[last_hu_chair]
-                self:next_player_index(last_hu_player)
-                self:mo_pai()
-            end
-        end
-
-        if def.is_action_chi(action.done.action) then
-            if not action[action.done.action][tile] then
-                return
-            end
-
-            table.pop_back(chu_pai_player.pai.desk_tiles)
-            self:adjust_shou_pai(player,action.done.action,tile)
-            self:log_game_action(player,action.done.action,tile)
-            self:jump_to_player_index(player)
-            self:chu_pai()
-        end
-
-        if action.done.action == ACTION.PASS then
-            for _,act in pairs(actions_to_do) do
+    local function check_all_pass(actions)
+        for _,act in pairs(actions) do
+            if act.done.action == ACTION.PASS then
                 local p = self.players[act.chair_id]
                 if self.rule.play.guo_zhuang_hu then
                     local hu_action = act.actions[ACTION.HU]
@@ -1205,35 +1130,92 @@ function maajan_table:on_action_after_chu_pai(player,msg)
                         self:set_gzh_on_pass(p)
                     end
                 end
-
+    
                 if self.rule.play.guo_shou_peng then
                     local peng_action = act.actions[ACTION.PENG]
                     if peng_action then
                         self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
                     end
                 end
-
-                self:broadcast2client("SC_Maajan_Do_Action",{chair_id = p.chair_id,action = ACTION.PASS})
             end
-            
-            self:next_player_index()
+        end
+    end
+
+    local tile = top_action.done.tile
+    if top_done_act == ACTION.PENG then
+        self:clean_gzh(player)
+        table.pop_back(chu_pai_player.pai.desk_tiles)
+        self:adjust_shou_pai(player,top_done_act,tile)
+        self:log_game_action(player,top_done_act,tile)
+        check_all_pass(all_actions)
+        self:jump_to_player_index(player)
+        self:chu_pai()
+    end
+
+    if def.is_action_gang(top_done_act) then
+        self:clean_gzh(player)
+        table.pop_back(chu_pai_player.pai.desk_tiles)
+        self:adjust_shou_pai(player,top_done_act,tile)
+        self:log_game_action(player,top_done_act,tile)
+        check_all_pass(all_actions)
+        self:jump_to_player_index(player)
+        self:mo_pai()
+        player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
+    end
+
+    if top_done_act == ACTION.HU then
+        local hu_actions = table.series(all_actions,function(act) return act.done.action == ACTION.HU and act or nil end)
+        for _,act in pairs(hu_actions) do
+            local p = self.players[act.chair_id]
+            p.hu = {
+                time = timer.nanotime(),
+                tile = tile,
+                types = self:hu(p,tile),
+                zi_mo = false,
+                whoee = self.chu_pai_player_index,
+            }
+
+            if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
+                local pai = chu_pai_player.pai
+                for _,s in pairs(pai.ming_pai) do
+                    if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
+                        s.dian_pao = act.chair_id
+                    end
+                end
+            end
+
+            self:log_game_action(p,act.done.action,tile)
+            self:broadcast_player_hu(p,act.done.action)
+            p.statistics.hu = (p.statistics.hu or 0) + 1
+            chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
+        end
+
+        if table.nums(hu_actions) > 1 then
+            chu_pai_player.multi_pao = true
+        end
+
+        table.pop_back(chu_pai_player.pai.desk_tiles)
+
+        check_all_pass(all_actions)
+
+        local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+        if self.start_count - hu_count == 1 then
+            self:do_balance()
+        else
+            local _,last_hu_chair = table.max(hu_actions,function(act) return act.chair_id end)
+            local last_hu_player = self.players[last_hu_chair]
+            self:next_player_index(last_hu_player)
             self:mo_pai()
         end
-
-        self:done_last_action(player,{action = action.done.action,tile = tile})
     end
 
-    local top_action
-    local actions_to_do = {}
-    for _,action in pairs(all_actions) do
-        top_action = top_action or action
-        if action.done.action ~= top_action.done.action then
-            break
-        end
-        table.insert(actions_to_do,action)
+    if top_done_act == ACTION.PASS then
+        check_all_pass(all_actions)
+        self:next_player_index()
+        self:mo_pai()
     end
-    
-    do_action(actions_to_do)
+
+    self:done_last_action(player,{action = top_done_act,tile = tile})
 end
 
 function maajan_table:action_after_chu_pai(waiting_actions)
