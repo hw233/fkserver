@@ -1159,11 +1159,14 @@ function base_table:broadcast2client_except(except,msgname, msg)
 end
 
 function base_table:calculate_gps_distance(pos1,pos2)
-	local R = 6371393
-	local C = math.sin(pos1.latitude) * math.sin(pos2.latitude) * math.cos(pos1.longitude-pos2.longitude)
-		+ math.cos(pos1.latitude) * math.cos(pos2.latitude)
+	local R = 6378137
+	local radlat1 = pos1.latitude * math.pi / 180;
+	local radlat2 = pos2.latitude * math.pi / 180;
+	local a = radlat1 - radlat2
+	local b = (pos1.longitude - pos2.longitude) * math.pi / 180;
+	local s = 2 * math.asin(math.sqrt(math.sin(a /2) ^ 2 + math.cos(radlat1) * math.cos(radlat2) * math.sin(b / 2) ^ 2))
 
-	return R * math.acos(C) * math.pi/180
+	return R * s
 end
 
 function base_table:check_cheat_control(player,reconnect)
