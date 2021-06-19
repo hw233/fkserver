@@ -1149,7 +1149,7 @@ local function on_cs_club_partner(msg,guid)
         end
 
         local function recursive_dismiss_partner(c,partner_id)
-            local partner = club_partners[club_id][target_guid]
+            local partner = club_partners[club_id][partner_id]
             for mem_id,_ in pairs(club_partner_member[c.id][partner_id]) do
                 local mrole = club_role[c.id][mem_id]
                 if mrole == enum.CRT_PARTNER then
