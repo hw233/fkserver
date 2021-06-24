@@ -65,10 +65,8 @@ local function kickout(guid)
     log.info("kickout %s",guid)
     local u = onlineguid[guid]
     if u then
-        u:lockcall(function()
-            skynet.call(u.agent,"lua","kickout",u.guid)
-            fduser[u.fd] = nil
-        end)
+        skynet.call(u.agent,"lua","kickout",u.guid)
+        fduser[u.fd] = nil
     end
     onlineguid[guid] = nil
 end
