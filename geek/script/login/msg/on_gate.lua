@@ -60,7 +60,7 @@ local function random_guid()
     local guid
     local exists
     for _ = 1,10000 do
-        guid = math.random(100000,9999999)
+        guid = math.random(100000,999999)
         exists = reddb:sismember("player:all",guid)
         if not exists then
             return guid
