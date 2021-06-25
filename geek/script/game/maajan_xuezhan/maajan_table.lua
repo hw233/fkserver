@@ -2577,7 +2577,8 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         msg.pb_rec_data = {
             last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
             last_chu_pai = last_tile,
-            total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
+            total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),
+            total_money = table.map(self.players,function(p,chair) return chair,p.total_money end),
         }
     end
 

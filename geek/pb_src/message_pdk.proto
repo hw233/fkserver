@@ -51,6 +51,7 @@ message PdkReconnectData {
 	repeated int32 last_discard = 3;						// 最后一次的出牌
 	map<int32, int32> total_scores = 4;
 	repeated int32 laizi_replace = 5;
+	map<int32, int32> total_money = 6;
 }
 
 message SC_PdkDeskEnter {

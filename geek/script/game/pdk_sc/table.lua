@@ -347,10 +347,8 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 			act_left_time = nil,
 			last_discard_chair = self.last_discard and self.last_discard.chair or nil,
 			last_discard = self.last_discard and self.last_discard.cards or nil,
-			total_scores = table.map(self.players,function(p,chair)
-				if p.total_score  and p.total_score ~= 0 then return chair,p.total_score end
-				return chair,nil
-			end),
+			total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),
+			total_money = table.map(self.players,function(p,chair) return chair,p.total_money end),
 			laizi_replace = self.last_discard and self.last_discard.laizi_replace or nil,
 		} or nil,
 		laizi = self.laizi,
