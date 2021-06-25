@@ -135,6 +135,11 @@ local function reg_account(msg)
     end
 
     guid = tonumber(random_guid())
+    if not guid then
+        log.error("random guid faild,maybe number isn't enough.")
+        return enum.ERROR_INTERNAL_UNKOWN
+    end
+    
     local info = {
         guid = guid,
         account = msg.open_id,
