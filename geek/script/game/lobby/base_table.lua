@@ -222,6 +222,18 @@ function base_table:begin_clock(timeout,player,total_time)
 end
 
 function base_table:on_reconnect(player)
+	self:broadcast_sync_table_info_2_club({
+		opcode = enum.TSO_SEAT_CHANGE,
+		table_id = self:id(),
+		trigger = {
+			chair_id = player.chair_id,
+			player_info = {
+				guid = player.guid,
+			},
+			online = true,
+		},
+	})
+
 	if not self.dismiss_request then return end
 
 	local status = {}
@@ -1793,6 +1805,17 @@ end
 function base_table:on_offline(player)
 	player.active = nil
 	self:notify_online(player,false)
+	self:broadcast_sync_table_info_2_club({
+		opcode = enum.TSO_SEAT_CHANGE,
+		table_id = self:id(),
+		trigger = {
+			chair_id = player.chair_id,
+			player_info = {
+				guid = player.guid,
+			},
+			online = false,
+		},
+	})
 end
 
 function base_table:clear_trustee_status()
@@ -2421,6 +2444,7 @@ function base_table:global_status_info(op)
 			},
 			ready = self.ready_list[chair_id] and true or false,
 			is_trustee = p.trustee and true or false,
+			online = p.active,
 		    }
 	end)
     
