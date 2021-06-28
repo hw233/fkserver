@@ -1987,6 +1987,33 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
 
+local transfer_whies = {
+    [enum.CRT_BOSS] = {
+        [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_BOSS] = nil,
+    },
+    [enum.CRT_PARTNER] = {
+        [enum.CRT_PARTNER] = nil,
+        [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+    },
+    [enum.CRT_PLAYER] = {
+        [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+        [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+        [enum.CRT_PLAYER] = nil,
+        [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+    },
+    [enum.CRT_ADMIN] = {
+        [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
+        [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
+        [enum.CRT_ADMIN] = nil,
+    }
+}
+
 local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid)
     local res = {
         result = enum.ERROR_NONE,
@@ -2028,33 +2055,6 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         return
     end
 
-    local whies = {
-        [enum.CRT_BOSS] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_BOSS] = nil,
-        },
-        [enum.CRT_PARTNER] = {
-            [enum.CRT_PARTNER] = nil,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
-        },
-        [enum.CRT_PLAYER] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
-            [enum.CRT_PLAYER] = nil,
-            [enum.CRT_ADMIN] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
-        },
-        [enum.CRT_ADMIN] = {
-            [enum.CRT_PARTNER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_BOSS] = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB,
-            [enum.CRT_PLAYER] = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB,
-            [enum.CRT_ADMIN] = nil,
-        }
-    }
-
     local function recursive_search_partner(cid,pguid,guid)
         local partner = club_member_partner[club_id][guid]
         while partner and partner ~= pguid do
@@ -2064,7 +2064,19 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         return partner
     end
 
-    local why = whies[from_role][to_role]
+    local why = transfer_whies[from_role][to_role]
+    local gaming_guid = from_guid
+    if why == enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB then
+        gaming_guid = to_guid
+    end
+
+    local og = onlineguid[gaming_guid]
+    if og and (og.table or og.chair) then
+        res.result = enum.GAME_SERVER_RESULT_IN_GAME
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
+
     if from_role == enum.CRT_PARTNER and to_role == enum.CRT_PLAYER then
         if not recursive_search_partner(club_id,from_guid,to_guid) then
             res.result = enum.ERROR_PLAYER_NO_RIGHT
