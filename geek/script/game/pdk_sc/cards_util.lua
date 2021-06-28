@@ -355,12 +355,241 @@ function cards_util.try_great_than(kccards,ctype,cvalue,ccount,rule,laizi)
 	end
 end
 
+local function pick(fromcards,count,includes,excludes)
+	assert(count > 0 and fromcards and #fromcards >= count)
 
-function cards_util.try_greatest(kccards,rule,laizi)
+	local cards = {}
+	if includes then
+		for _,card in pairs(fromcards) do
+			if includes[card] and (not excludes or not excludes[card]) then
+				tinsert(cards,card)
+				if #cards == count then return cards  end
+			end
+		end
+	end
+
+	if #cards < count then
+		for _,card in pairs(fromcards) do
+			if (not includes or not includes[card]) and (not excludes or not excludes[card]) then
+				tinsert(cards,card)
+				if #cards == count then return cards  end
+			end
+		end
+	end
+
+	log.error("pick cards not enough cards,count:%s,expect:%s",#cards,count)
+
+	return cards
+end
+
+local function try_with_card(kccards,rule,laizi,card)
+	if not kccards[card] or kccards[card] == 0 then
+		return
+	end
+
 	local play = rule and rule.play or {}
 	local has_bomb = play.bomb_type_option and play.bomb_type_option < 2 or false
 	local zi_mei_dui = play.zi_mei_dui
 	local triple_bomb = play.bomb_type_option == 0
+	
+	local includes = {[card] = true}
+
+	local val = value(card)
+
+	local valuegroup = table.group(kccards,function(_,c) return c ~= laizi and value(c) or laizi end)
+	local valuecards =  table.map(valuegroup,function(cs,v) return v,kc2series(cs) end)
+	local valuecounts = table.map(valuegroup,function(cs,v) return v,table.nums(cs) end)
+
+	local function check_bomb_func(fn)
+		return function()
+			if not has_bomb then return end
+			return fn()
+		end
+	end
+
+	local function check_triple_bomb_func(fn)
+		return function()
+			if not triple_bomb then return end
+			return fn()
+		end
+	end
+
+	local function try_single()
+		if valuecounts[val] == 1 then
+			return {card}
+		end
+	end
+	
+	local function try_double()
+		local laizi_count = laizi and valuecounts[laizi] or 0
+		local c = valuecounts[val] or 0
+		if c >= 2 then
+			return pick(valuecards[val],2,includes)
+		end
+
+		if c >= 1 and laizi_count >= 1 then
+			return {card,laizi},{laizi_card(val)}
+		end
+	end
+	
+	local function try_single_line()
+		local laizi_count = laizi and valuecounts[laizi] or 0
+		local used_laizi = 0
+		local cards = {}
+		local replace = {}
+		for i = 5,14 do
+			local c = valuecounts[i] or 0
+			if c >= 1 then
+				tinsert(cards,i == val and card or valuecards[i][1])
+			elseif laizi_count - used_laizi > 0 and #cards > 0 then
+				tinsert(cards,laizi)
+				tinsert(replace,laizi_card(i))
+				used_laizi = used_laizi + 1
+			else
+				if #cards >= 3 and
+					table.Or(cards,function(c) return c == card end)
+				then 
+					return cards,replace
+				end
+
+				cards = {}
+				used_laizi = 0
+				replace = {}
+			end
+		end
+
+		if 	#cards >= 3 and 
+			table.Or(cards,function(c) return c == card end) 
+		then
+			return cards,replace
+		end
+	end
+	
+	local function try_double_line()
+		local min_c = zi_mei_dui and 2 or 3
+		local laizi_count = laizi and valuecounts[laizi] or 0
+		local used_laizi = 0
+		local cards = {}
+		local cardpairs = {}
+		local replace = {}
+		for i = 5,14 do
+			local c = valuecounts[i] or 0
+			if c == 2 and i ~= laizi then
+				tinsert(cardpairs,pick(valuecards[i],2,includes))
+			elseif c == 1 and laizi_count - used_laizi >= 1 and #cardpairs > 0 then
+				tinsert(cardpairs,{i == val and card or valuecards[i][1],laizi})
+				tinsert(replace,laizi_card(i))
+				used_laizi = used_laizi + 1
+			elseif c == 0 and laizi_count - used_laizi >= 2 and #cardpairs > 0 then
+				tinsert(cardpairs,{laizi,laizi})
+				tinsert(replace,laizi_card(i))
+				tinsert(replace,laizi_card(i))
+				used_laizi = used_laizi + 2
+			else
+				if #cardpairs >= min_c then
+					cards = table.flatten(cardpairs)
+					if table.Or(cards,function(c) return c == card end) then
+						return cards,replace
+					end
+				end
+				cardpairs = {}
+				replace = {}
+				used_laizi = 0
+			end
+		end
+
+		if #cardpairs >= min_c then
+			cards = table.flatten(cardpairs)
+			if table.Or(cards,function(c) return c == card end) then
+				return cards,replace
+			end
+		end
+	end
+	
+	local function try_triple()
+		local laizi_count = laizi and valuecounts[laizi] or 0
+		local c = valuecounts[val] or 0
+		if c == 3 then
+			return pick(valuecards[val],3,includes)
+		end
+
+		if c == 2 and laizi_count >= 1 then
+			return pick(valuecards[val],3,{[5] = true,[laizi] = true}),{laizi_card(val)}
+		end
+
+		if c == 1 and laizi_count >= 2 then
+			return {card,laizi,laizi},{laizi_card(val),laizi_card(val)}
+		end
+
+		if c > 3 then
+			return pick(valuecards[val],3,includes)
+		end
+	end
+	
+	local function try_four()
+		local laizi_count = laizi and valuecounts[laizi] or 0
+		local c = valuecounts[val] or 0
+		if c == 4 then
+			return {valuecards[val][1],valuecards[val][2],valuecards[val][3],valuecards[val][4]}
+		end
+
+		if c == 3 and laizi_count >= 1 then
+			return {valuecards[val][1],valuecards[val][2],valuecards[val][3],laizi},{laizi_card(val)}
+		end
+
+		if c == 2 and laizi_count >= 2 then
+			return {valuecards[val][1],valuecards[val][2],laizi,laizi},{laizi_card(val),laizi_card(val)}
+		end
+
+		if c == 1 and laizi_count >= 3 then
+			return {valuecards[val][1],laizi,laizi,laizi},{laizi_card(val),laizi_card(val),laizi_card(val)}
+		end
+	end
+
+	local tryfunc = {
+		[PDK_CARD_TYPE.SINGLE] = try_single,
+		[PDK_CARD_TYPE.DOUBLE] = try_double,
+		[PDK_CARD_TYPE.LAIZI_DOUBLE] = try_double,
+		[PDK_CARD_TYPE.THREE] = try_triple,
+		[PDK_CARD_TYPE.SINGLE_LINE] = try_single_line,
+		[PDK_CARD_TYPE.DOUBLE_LINE] = try_double_line,
+		[PDK_CARD_TYPE.BOMB] = check_bomb_func(try_four),
+		[PDK_CARD_TYPE.SOFT_BOMB] = check_bomb_func(try_four),
+		[PDK_CARD_TYPE.TRIPLE_BOMB] = check_triple_bomb_func(try_triple),
+		[PDK_CARD_TYPE.SOFT_TRIPLE_BOMB] = check_triple_bomb_func(try_triple),
+	}
+
+	local tryorder = {
+		PDK_CARD_TYPE.DOUBLE_LINE,
+		PDK_CARD_TYPE.SINGLE_LINE,
+		PDK_CARD_TYPE.THREE,
+		PDK_CARD_TYPE.DOUBLE,
+		PDK_CARD_TYPE.SINGLE,
+		PDK_CARD_TYPE.TRIPLE_BOMB,
+		PDK_CARD_TYPE.BOMB,
+	}
+
+	for _,t in pairs(tryorder) do
+		local fn = assert(tryfunc[t])
+		local cards,replace = fn()
+		if cards then
+			log.dump(t)
+			log.dump(cards)
+			assert(#cards > 0 and not check_cards_repeat(cards))
+			return cards,replace
+		end
+	end
+end
+
+function cards_util.try_greatest(kccards,rule,laizi,first_discard)
+	local play = rule and rule.play or {}
+	local has_bomb = play.bomb_type_option and play.bomb_type_option < 2 or false
+	local zi_mei_dui = play.zi_mei_dui
+	local triple_bomb = play.bomb_type_option == 0
+	local with_5_firstly = (rule and rule.play and rule.play.first_discard and rule.play.first_discard.with_5) and true or false
+	if first_discard and with_5_firstly and kccards[5] then
+		return try_with_card(kccards,rule,laizi,5)
+	end
 	
 	local valuegroup = table.group(kccards,function(_,c) return c ~= laizi and value(c) or laizi end)
 	local valuecards =  table.map(valuegroup,function(cs,v) return v,kc2series(cs) end)
@@ -412,29 +641,25 @@ function cards_util.try_greatest(kccards,rule,laizi)
 	local function try_single_line()
 		local laizi_count = laizi and valuecounts[laizi] or 0
 		local used_laizi = 0
-		local seq_count = 0
 		local cards = {}
 		local replace = {}
 		for i = 5,14 do
 			local c = valuecounts[i] or 0
 			if c == 1 then
-				seq_count = seq_count + 1
 				tinsert(cards,valuecards[i][1])
 			elseif laizi_count - used_laizi > 0 and #cards > 0 then
 				tinsert(cards,laizi)
 				tinsert(replace,laizi_card(i))
-				seq_count = seq_count + 1
 				used_laizi = used_laizi + 1
 			else
-				if seq_count >= 3 then return cards,replace end
+				if #cards >= 3 then return cards,replace end
 				cards = {}
-				seq_count = 0
 				used_laizi = 0
 				replace = {}
 			end
 		end
 
-		if seq_count >= 3 then
+		if #cards >= 3 then
 			return cards,replace
 		end
 	end
@@ -443,39 +668,31 @@ function cards_util.try_greatest(kccards,rule,laizi)
 		local min_c = zi_mei_dui and 2 or 3
 		local laizi_count = laizi and valuecounts[laizi] or 0
 		local used_laizi = 0
-		local seq_count = 0
-		local cards = {}
+		local cardpairs = {}
 		local replace = {}
 		for i = 5,14 do
 			local c = valuecounts[i] or 0
 			if c == 2 and i ~= laizi then
-				seq_count = seq_count + 1
-				tinsert(cards,valuecards[i][1])
-				tinsert(cards,valuecards[i][2])
-			elseif c == 1 and laizi_count - used_laizi >= 1 and #cards > 0 then
-				seq_count = seq_count + 1
-				tinsert(cards,valuecards[i][1])
-				tinsert(cards,laizi)
+				tinsert(cardpairs,{valuecards[i][1],valuecards[i][2]})
+			elseif c == 1 and laizi_count - used_laizi >= 1 and #cardpairs > 0 then
+				tinsert(cardpairs,{valuecards[i][1],laizi})
 				tinsert(replace,laizi_card(i))
 				used_laizi = used_laizi + 1
-			elseif c == 0 and laizi_count - used_laizi >= 2 and #cards > 0 then
-				seq_count = seq_count + 1
-				tinsert(cards,laizi)
-				tinsert(cards,laizi)
+			elseif c == 0 and laizi_count - used_laizi >= 2 and #cardpairs > 0 then
+				tinsert(cardpairs,{laizi,laizi})
 				tinsert(replace,laizi_card(i))
 				tinsert(replace,laizi_card(i))
 				used_laizi = used_laizi + 2
 			else
-				if seq_count >= min_c then return cards,replace end
-				cards = {}
+				if #cardpairs >= min_c then return table.flatten(cardpairs),replace end
 				replace = {}
-				seq_count = 0
 				used_laizi = 0
+				cardpairs = {}
 			end
 		end
 
-		if seq_count >= min_c then
-			return cards,replace
+		if #cardpairs >= min_c then
+			return table.flatten(cardpairs),replace
 		end
 	end
 	

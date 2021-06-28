@@ -170,6 +170,8 @@ function pdk_table:on_started(player_count)
 	self.cur_discard_chair = self.zhuang
 	self.game_log.zhuang = self.zhuang
 
+	self.first_discard = true
+
 	self:foreach(function(p)
 		p.win = nil
 		p.round_score = nil
@@ -246,7 +248,7 @@ function pdk_table:begin_discard()
 
 	local function auto_discard(player)
 		if not self.last_discard then
-			local cards,replace = cards_util.try_greatest(player.hand_cards,self.rule,self.laizi)
+			local cards,replace = cards_util.try_greatest(player.hand_cards,self.rule,self.laizi,self.first_discard)
 			assert(cards and #cards > 0)
 			self:do_action_discard(player,cards,replace)
 		else
@@ -466,6 +468,18 @@ function pdk_table:do_action(player,act)
 	end)
 end
 
+function pdk_table:check_first_discards_with_5(cards)
+	local play = self.rule and self.rule.play
+	if not play then return true end
+
+	-- 首张带黑桃5
+	if self.first_discard and play.first_discard and play.first_discard.with_5 then
+		return table.Or(cards,function(c) return c == 5 end) 
+	end
+	
+	return true
+end
+
 function pdk_table:get_cards_type(cards,laizi_replace)
 	local cardstype, cardsval = cards_util.get_cards_type(cards,self.rule,self.laizi,laizi_replace)
 	return cardstype,cardsval
@@ -496,6 +510,14 @@ function pdk_table:do_action_discard(player, cards,laizi_replace)
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
+		})
+		return
+	end
+
+	if not self:check_first_discards_with_5(cards) then
+	 	log.warning("pdk_table:discard guid[%d] not with 5, cards[%s]", player.guid, table.concat(cards, ','))
+		send2client(player,"SC_PdkDoAction",{
+			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
 	end
@@ -532,6 +554,8 @@ function pdk_table:do_action_discard(player, cards,laizi_replace)
 		count = #cards,
 		laizi_replace = laizi_replace,
 	}
+
+	self.first_discard = nil
 
 	player.discard_times = (player.discard_times or 0) + 1
 
