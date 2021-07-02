@@ -553,7 +553,7 @@ function base_table:do_tax_commission(taxes)
 	end
 end
 
-function base_table:each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
+function base_table:each_bigwin_commission_tax(bigwin_tax,bigwin_guids)
 	local player_count = table.nums(self.players)
 	local eachwin = math.floor(bigwin_tax / player_count)
 	local taxes = table.map(self.players,function(p)
@@ -562,12 +562,13 @@ function base_table:each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
 
 	local total_delta = bigwin_tax - (eachwin * player_count)
 
-	taxes[bigwin_guid] = taxes[bigwin_guid] + total_delta
+	local bigwin_any_guid = bigwin_guids[1]
+	taxes[bigwin_any_guid] = taxes[bigwin_any_guid] + total_delta
 
 	return taxes
 end
 
-function base_table:do_bigwin_commission(bigwin_tax,bigwin_guid)
+function base_table:do_bigwin_commission(bigwin_tax,bigwin_guids)
 	if not self:is_private() then 
 		return
 	end
@@ -609,7 +610,7 @@ function base_table:do_bigwin_commission(bigwin_tax,bigwin_guid)
 	bigwin_tax = bigwin_tax - min_ensurance
 	log.dump(min_ensurance)
 	log.dump(bigwin_tax)
-	local taxes = self:each_bigwin_commission_tax(bigwin_tax,bigwin_guid)
+	local taxes = self:each_bigwin_commission_tax(bigwin_tax,bigwin_guids)
 
 	local tree = club_utils.father_tree(club_id,table.keys(taxes))
 	local teamsconf = table.map(tree,function(_,team_id)
@@ -623,15 +624,18 @@ function base_table:do_bigwin_commission(bigwin_tax,bigwin_guid)
 	local commissions = {}
 	local contributions = {}
 	if min_ensurance > 0 then
-		local bigwin_branch = branches[bigwin_guid]
-		local team = bigwin_branch[1] or self.owner_guid
-		local son = branches[2] or bigwin_guid
-		commissions[team] = (commissions[team] or 0) + min_ensurance
-		tinsert(contributions,{
-			parent = team,
-			son = son,
-			commission = min_ensurance,
-		})
+		local each_ensurance = math.floor(min_ensurance / #bigwin_guids)
+		for _,bigwin_guid in pairs(bigwin_guids) do
+			local bigwin_branch = branches[bigwin_guid]
+			local team = bigwin_branch[1] or self.owner_guid
+			local son = branches[2] or bigwin_guid
+			commissions[team] = (commissions[team] or 0) + each_ensurance
+			tinsert(contributions,{
+				parent = team,
+				son = son,
+				commission = min_ensurance,
+			})
+		end
 	end
 
 	local do_percentage = taxconf.percentage_commission
@@ -778,28 +782,30 @@ function base_table:cost_tax(winlose)
 			return l[1] < r[1]
 		end)
 
-		local bigwin_data = winloselist[1]
-		local maxwin = bigwin_data.change
+		local maxwin = winloselist[1].change
 		if maxwin <= 0 then
 			log.warning("base_table:cost_tax [%d] invalid maxwin:%s.",self.private_id,maxwin)
 			return
 		end
-		
-		local bigwin_guid = bigwin_data.guid
+
+		local bigwin_datas = table.select(winloselist,function(d) return d.change == maxwin end,true)
 		local bigwin_tax = gutil.roulette_value(bigwin_conf,maxwin)
 		if not bigwin_tax then
 			log.warning("base_table:cost_tax [%d] invalid bigwin tax,maxwin:%s.",self.private_id,maxwin)
 			return
 		end
 
-		log.dump(bigwin_guid)
+		log.dump(bigwin_datas)
 		log.dump(bigwin_tax)
+		
+		local each_tax = math.floor(bigwin_tax / #bigwin_datas)
+		local taxs = table.map(bigwin_datas,function(d)
+			return d.guid,each_tax
+		end)
 
-		do_cost_tax_money({
-			[bigwin_guid] = bigwin_tax,
-		})
+		do_cost_tax_money(taxs)
 
-		self:do_bigwin_commission(bigwin_tax,bigwin_guid)
+		self:do_bigwin_commission(bigwin_tax,table.keys(taxs))
 		return
 	end
 end
