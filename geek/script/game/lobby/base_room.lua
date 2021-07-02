@@ -10,6 +10,7 @@ local club_utils = require "game.club.club_utils"
 local club_money = require "game.club.club_money"
 local allonlineguid = require "allonlineguid"
 local player_club = require "game.lobby.player_club"
+local base_private_table = require "game.lobby.base_private_table"
 
 require "game.net_func"
 
@@ -417,6 +418,20 @@ function base_room:join_private_table(player,private_table,chair_count)
 	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",private_table.table_id)
 
 	return enum.GAME_SERVER_RESULT_SUCCESS,tb
+end
+
+function base_room:fast_join_private_table(tb,player,chair_id)
+	local table_id = tb:id()
+	local result = tb:player_sit_down(player, chair_id)
+	if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+		log.info("join private table:%s,%s,result:%s",table_id,chair_id,result)
+		return result
+	end
+	
+	self:player_enter_room(player)
+
+	reddb:hset("player:online:guid:"..tostring(player.guid),"global_table",table_id)
+	return enum.ERROR_NONE
 end
 
 -- 切换座位
@@ -1059,6 +1074,20 @@ function base_room:player_kickout_server(player)
 	end
 end
 
+function base_room:find_free_tables(club_id,temp_id)
+	return table.select(self.tables,function(tb,id)
+		if club_id and tb.club_id ~= club_id then return end
+
+		if tb.chair_count <= tb:get_player_count() then return end
+
+		if temp_id then
+			local ptb = base_private_table[tb:id()]
+			if ptb.template ~= temp_id then return end
+		end
+		return tb
+	end,true)
+end
+
 function base_room:get_suitable_table(player,bool_change_table)
 	local player_count = -1
 	local suitable_table = nil
@@ -1119,17 +1148,6 @@ function base_room:change_table(player)
 		end
 	else
 		print("no find tb")
-	end
-end
-
-function base_room:change_tax(tax, tax_show, tax_open)
-	print("======================base_room:change_tax")
-	tax = tax * 0.01
-	for i , v in pairs (self.room_list_) do		
-		print (tax, tax_show, tax_open)
-		v.tax_show = tax_show -- 是否显示税收信息
-		v.tax_open = tax_open -- 是否开启税收
-		v.tax = tax
 	end
 end
 

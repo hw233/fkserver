@@ -1812,3 +1812,18 @@ message SC_Alert{
 	int32 code = 1;
 	string jsonparam = 2;
 }
+
+message CS_FastJoinRoom{
+	enum MsgID {NONE = 0; ID = 1243;}
+	int32 club_id = 1;
+	int32 game_id = 2;
+	int32 template_id = 3;
+}
+
+message SC_FastJoinRoom{
+	enum MsgID {NONE = 0; ID = 1244;}
+	int32 result = 1;
+    TABLE_INFO info = 2;
+    repeated SEAT_INFO seat_list = 3;
+	ROUND_INFO round_info = 4;
+}

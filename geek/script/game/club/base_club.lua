@@ -543,6 +543,40 @@ function base_club:create_table(player,chair_count,round,rule,template)
     return result,global_tid,tb
 end
 
+function base_club:fast_create_table(player,chair_count,round,rule,template)
+    local result,global_tid,tb = g_room:create_private_table(player,chair_count,round,rule,self)
+    if result == enum.GAME_SERVER_RESULT_SUCCESS then
+        reddb:hmset(string.format("table:info:%d",global_tid),{
+            club_id = self.id,
+            template = template and template.template_id or nil,
+        })
+
+        reddb:sadd("club:table:"..self.id,global_tid)
+        base_private_table[global_tid] = nil
+        
+        club_sync_cache.sync(self.id,{
+            opcode = enum.TSO_CREATE,
+            table_id = global_tid,
+            rule = json.encode(rule),
+            template_id = template.template_id,
+            cur_round = tb:gaming_round(),
+            game_type = template.game_id,
+            trigger = {
+                chair_id = player.chair_id,
+                player_info = {
+                    guid = player.guid,
+                    nickname = player.nickname,
+                    icon = player.icon,
+                    sex = player.sex,
+                },
+                online = true,
+            },
+        })
+    end
+
+    return result,global_tid,tb
+end
+
 --玩家坐下积分检测
 function base_club:can_sit_down(rule,player)
     local member = club_member[self.id][player.guid]
@@ -686,6 +720,20 @@ function base_club:is_block()
     return self.status and self.status == enum.CLUB_STATUS_BLOCK
 end
 
+function base_club:is_block_gaming_with_others(tb,player)
+    if tb.start_count > 2 then
+        if  self:is_block_in_block_group(tb,player) or
+            self:is_block_play_in_same_team_layer(tb,player) or
+            self:is_block_in_same_team_branch(tb,player) or
+            self:is_block_in_2_team_layer(tb,player)
+        then
+            return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+        end
+    end
+
+    return enum.ERROR_NONE
+end
+
 function base_club:join_table(player,private_table,chair_count)
     local rule = private_table.rule
     local result = self:can_sit_down(rule,player)
@@ -698,14 +746,9 @@ function base_club:join_table(player,private_table,chair_count)
         return enum.GAME_SERVER_RESULT_TABLE_NOT_FOUND
     end
 
-    if tb.start_count > 2 then
-        if  self:is_block_in_block_group(tb,player) or
-            self:is_block_play_in_same_team_layer(tb,player) or
-            self:is_block_in_same_team_branch(tb,player) or
-            self:is_block_in_2_team_layer(tb,player)
-        then
-            return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
-        end
+    result = self:is_block_gaming_with_others(tb,player)
+    if result ~= enum.ERROR_NONE then
+        return result
     end
 
     return g_room:join_private_table(player,private_table,chair_count)

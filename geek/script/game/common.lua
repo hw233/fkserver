@@ -17,6 +17,10 @@ function common.find_best_room(first_game_type,second_game_type)
 	return g_common.find_lightest_weight_game_server(first_game_type,second_game_type)
 end
 
+function common.all_game_server(first_game_type,second_game_type)
+	return g_common.all_game_server(first_game_type,second_game_type)
+end
+
 function common.switch_to(guid,room_id)
 	if room_id == def_game_id then return end
 

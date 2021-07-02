@@ -23,14 +23,14 @@ local runtime_conf = require "game.runtime_conf"
 local game_util = require "game.util"
 local g_util = require "util"
 local base_rule = require "game.lobby.base_rule"
+local club_table = require "game.club.club_table"
 
 local reddb = redisopt.default
 
 local string = string
 local strfmt = string.format
-
-
---local base_room = require "game.lobby.base_room"
+local table = table
+local tinsert = table.insert
 
 -- 登陆验证框相关
 local validatebox_ch = {}
@@ -676,6 +676,8 @@ function on_cs_create_private_room(msg,guid,game_id)
 			return
 		end
 
+		player.active = true
+
 		if game_id then
 			common.switch_from(guid,game_id)
 		end
@@ -1090,6 +1092,249 @@ function on_cs_join_private_room(msg,guid,game_id)
 
 		tb:on_player_sit_downed(player)
 	end)
+end
+
+function on_ss_fast_join_room(msg,guid,game_id)
+	if game_util.is_game_in_maintain() then
+		return enum.GAME_SERVER_RESULT_MAINTAIN
+	end
+	
+	local player = base_players[guid]
+	local club_id = msg.club_id
+	local template_id = msg.template_id
+	local club = base_clubs[club_id]
+
+	local tbs = g_room:find_free_tables(club_id,template_id)
+	table.sort(tbs,function(l,r) return l:get_player_count() > r:get_player_count() end)
+	for _,tb in pairs(tbs) do
+		repeat
+			local table_id = tb:id()
+			local ptb = base_private_table[table_id]
+			local rule = ptb.rule
+			local can = club:can_sit_down(rule,player)
+			if can ~= enum.ERROR_NONE then break end
+
+			can = club:is_block_gaming_with_others(tb,player)
+			if can ~= enum.ERROR_NONE then break end
+
+			local free_chair = tb:get_free_chair_id()
+			can = tb:can_sit_down(player,free_chair)
+			if can ~= enum.ERROR_NONE then break end
+
+			return player:lockcall(function()
+				local result = g_room:fast_join_private_table(tb,player,free_chair)
+				if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+					log.warning("on_ss_try_fast_join_room faild!guid:%s,%s",guid,result)
+					return result
+				end
+				
+				player.active = true
+		
+				if game_id then
+					common.switch_from(guid,game_id)
+				end
+				
+				local money_id = club_money_type[club_id]
+				onlineguid.send(guid,"SC_FastJoinRoom",{
+					result = result,
+					info = {
+						game_type = def_first_game_type,
+						club_id = club_id,
+						table_id = table_id,
+						rule = json.encode(ptb.rule),
+						owner = tb.owner_guid,
+					},
+					seat_list = table.series(tb.players,function(p) 
+						return {
+							chair_id = p.chair_id,
+							player_info = {
+								icon = p.icon,
+								guid = p.guid,
+								nickname = p.nickname,
+								sex = p.sex,
+							},
+							longitude = p.gps_longitude,
+							latitude = p.gps_latitude,
+							ready = tb.ready_list[p.chair_id] and true or false,
+							online = p.active and true or false, 
+							money = {
+								money_id = money_id,
+								count = p:get_money(money_id),
+							},
+							is_trustee = p.trustee and true or false,
+						}
+					end),
+					round_info = tb and {
+						round_id = tb:hold_ext_game_id(),
+					} or nil,
+				})
+				
+				tb:on_player_sit_downed(player)
+
+				return enum.ERROR_NONE
+			end)
+		until true
+	end
+
+	return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+end
+
+function on_ss_fast_create_room(msg,guid,game_id)
+	if game_util.is_game_in_maintain() then
+		return enum.GAME_SERVER_RESULT_MAINTAIN
+	end
+
+	local player = base_players[guid]
+	local club_id = msg.club_id
+	local template_id = msg.template_id
+	local club = base_clubs[club_id]
+
+	local temp = table_template[template_id]
+	local rule = temp.rule
+	local can = club:can_sit_down(rule,player)
+	if can ~= enum.ERROR_NONE then return can end
+
+	local result,round,chair_count,pay_option,_ = base_rule.check(rule)
+	if result ~= enum.ERROR_NONE  then
+		return result
+	end
+
+	return player:lockcall(function()
+		local result,table_id,tb = club:fast_create_table(player,chair_count,round,rule,temp)
+		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+			return result
+		end
+
+		player.active = true
+
+		if game_id then
+			common.switch_from(guid,game_id)
+		end
+
+		local money_id = club_id and club_money_type[club_id] or -1
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = result,
+			info = {
+				game_type = def_first_game_type,
+				club_id = club_id,
+				table_id = table_id,
+				rule = json.encode(rule),
+				owner = guid,
+			},
+			seat_list = {{
+				chair_id = player.chair_id,
+				player_info = {
+					icon = player.icon,
+					guid = player.guid,
+					nickname = player.nickname,
+					sex = player.sex,
+				},
+				longitude = player.gps_longitude,
+				latitude = player.gps_latitude,
+				ready = tb.ready_list[player.chair_id] and true or false,
+				online = true,
+				money = {
+					money_id = money_id,
+					count = player:get_money(money_id),
+				},
+			}},
+			round_info = tb and {
+				round_id = tb:hold_ext_game_id()
+			} or nil,
+		})
+
+		tb:on_player_sit_downed(player)
+
+		return enum.ERROR_NONE
+	end)
+end
+
+function on_cs_fast_join_room(msg,guid)
+	local club_id = msg.club_id
+	local template_id = msg.template_id
+	local game_id = msg.game_id
+
+	local player = base_players[guid]
+	if not player then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+
+		return
+	end
+
+	if 	not club_id or
+		club_id == 0 or
+		(template_id == 0 and game_id == 0)
+	then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+
+		return
+	end
+
+	local club = base_clubs[club_id]
+	if not club then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+
+		return
+	end
+
+	local temp = table_template[template_id]
+	if not temp then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.ERROR_OPERATION_INVALID
+		})
+
+		return
+	end
+
+	local onlineinfo = onlineguid[guid]
+	if onlineinfo and (onlineinfo.table or onlineinfo.chair) then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.GAME_SERVER_RESULT_IN_GAME,
+		})
+		return
+	end
+	
+	if game_util.is_global_in_maintain() and not player:is_vip() then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = enum.LOGIN_RESULT_MAINTAIN,
+		})
+		return
+	end
+
+	local room_weights = common.all_game_server(temp.game_id)
+	local rooms = table.series(room_weights,function(weight,roomid) 
+		return { room_id = roomid,weight = weight,}
+	end)
+	table.sort(rooms,function(l,r) return l.weight > r.weight end)
+
+	for _,v in pairs(rooms) do
+		local room_id = v.room_id
+		local result = channel.call("game."..room_id,"msg","SS_FastJoinRoom",msg,guid,def_game_id)
+		if result == enum.GAME_SERVER_RESULT_MAINTAIN then
+			onlineguid.send(guid,"SC_FastJoinRoom",{
+				result = enum.GAME_SERVER_RESULT_MAINTAIN,
+			})
+			return
+		end
+
+		if result == enum.ERROR_NONE then
+			return
+		end
+	end
+
+	local room_id = rooms[#rooms].room_id
+	local result = channel.call("game."..room_id,"msg","SS_FastCreateRoom",msg,guid,def_game_id)
+	if result ~= enum.ERROR_NONE then
+		onlineguid.send(guid,"SC_FastJoinRoom",{
+			result = result,
+		})
+	end
 end
 
 -- 设置昵称

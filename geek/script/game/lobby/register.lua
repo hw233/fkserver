@@ -83,6 +83,10 @@ local h = {
 	BS_Recharge = on_bs_recharge,
 
 	BS_BindPhone = on_bs_bind_phone,
+
+	CS_FastJoinRoom = on_cs_fast_join_room,
+	SS_FastJoinRoom = on_ss_fast_join_room,
+	SS_FastCreateRoom = on_ss_fast_create_room,
 }
 
 msgopt:reg(h)
