@@ -1122,6 +1122,12 @@ function on_ss_fast_join_room(msg,guid,game_id)
 			if can ~= enum.ERROR_NONE then break end
 
 			return player:lockcall(function()
+				-- double check
+				local og = onlineguid[guid]
+				if og.table or og.chair then
+					return enum.GAME_SERVER_RESULT_IN_ROOM
+				end
+
 				local result = g_room:fast_join_private_table(tb,player,free_chair)
 				if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 					log.warning("on_ss_try_fast_join_room faild!guid:%s,%s",guid,result)
@@ -1200,6 +1206,12 @@ function on_ss_fast_create_room(msg,guid,game_id)
 	end
 
 	return player:lockcall(function()
+		-- double check
+		local og = onlineguid[guid]
+		if og.table or og.chair then
+			return enum.GAME_SERVER_RESULT_IN_ROOM
+		end
+
 		local result,table_id,tb = club:fast_create_table(player,chair_count,round,rule,temp)
 		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 			return result
@@ -1292,14 +1304,6 @@ function on_cs_fast_join_room(msg,guid)
 		return
 	end
 
-	local onlineinfo = onlineguid[guid]
-	if onlineinfo and (onlineinfo.table or onlineinfo.chair) then
-		onlineguid.send(guid,"SC_FastJoinRoom",{
-			result = enum.GAME_SERVER_RESULT_IN_GAME,
-		})
-		return
-	end
-	
 	if game_util.is_global_in_maintain() and not player:is_vip() then
 		onlineguid.send(guid,"SC_FastJoinRoom",{
 			result = enum.LOGIN_RESULT_MAINTAIN,
@@ -1307,34 +1311,47 @@ function on_cs_fast_join_room(msg,guid)
 		return
 	end
 
-	local room_weights = common.all_game_server(temp.game_id)
-	local rooms = table.series(room_weights,function(weight,roomid) 
-		return { room_id = roomid,weight = weight,}
-	end)
-	table.sort(rooms,function(l,r) return l.weight > r.weight end)
-
-	for _,v in pairs(rooms) do
-		local room_id = v.room_id
-		local result = channel.call("game."..room_id,"msg","SS_FastJoinRoom",msg,guid,def_game_id)
-		if result == enum.GAME_SERVER_RESULT_MAINTAIN then
+	player:lockcall(function()
+		local og = onlineguid[guid]
+		if og and (og.table or og.chair) then
 			onlineguid.send(guid,"SC_FastJoinRoom",{
-				result = enum.GAME_SERVER_RESULT_MAINTAIN,
+				result = enum.GAME_SERVER_RESULT_IN_GAME,
 			})
 			return
 		end
+		
+		local room_weights = common.all_game_server(temp.game_id)
+		local rooms = table.series(room_weights,function(weight,roomid) 
+			return { room_id = roomid,weight = weight,}
+		end)
+		table.sort(rooms,function(l,r) return l.weight > r.weight end)
 
-		if result == enum.ERROR_NONE then
-			return
+		for _,v in pairs(rooms) do
+			local room_id = v.room_id
+			local result = channel.call("game."..room_id,"msg","SS_FastJoinRoom",msg,guid,def_game_id)
+			if 	result == enum.GAME_SERVER_RESULT_MAINTAIN or
+				result == enum.GAME_SERVER_RESULT_IN_ROOM or
+				result == enum.GAME_SERVER_RESULT_IN_GAME
+			then
+				onlineguid.send(guid,"SC_FastJoinRoom",{
+					result = result,
+				})
+				return
+			end
+
+			if result == enum.ERROR_NONE then
+				return
+			end
 		end
-	end
 
-	local room_id = rooms[#rooms].room_id
-	local result = channel.call("game."..room_id,"msg","SS_FastCreateRoom",msg,guid,def_game_id)
-	if result ~= enum.ERROR_NONE then
-		onlineguid.send(guid,"SC_FastJoinRoom",{
-			result = result,
-		})
-	end
+		local room_id = rooms[#rooms].room_id
+		local result = channel.call("game."..room_id,"msg","SS_FastCreateRoom",msg,guid,def_game_id)
+		if result ~= enum.ERROR_NONE then
+			onlineguid.send(guid,"SC_FastJoinRoom",{
+				result = result,
+			})
+		end
+	end)
 end
 
 -- 设置昵称
