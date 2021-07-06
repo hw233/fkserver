@@ -751,11 +751,7 @@ function base_table:cost_tax(winlose)
 	end
 
 	local AA = tonumber(taxconf.AA)
-	if AA and AA > 0 and not winlose then
-		if self:gaming_round() > 1 then
-			return
-		end
-
+	if AA and AA > 0 then
 		local tax = table.map(self.players,function(p) 
 			return p.guid,taxconf.AA
 		end)
@@ -2129,7 +2125,6 @@ function base_table:on_started(player_count)
 
 	if self:gaming_round() == 1 then
 		self:cost_private_fee()
-		self:cost_tax()
 	end
 
 	self.start_time = os.time()
