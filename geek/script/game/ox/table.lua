@@ -41,8 +41,8 @@ local default_times = {
 local all_cards = {
 	1,2,3,4,5,6,7,8,9,10,11,12,13,
 	21,22,23,24,25,26,27,28,29,30,31,32,33,
-	22,42,43,44,45,46,47,48,49,50,51,52,53,
-	23,62,63,64,65,66,67,68,69,70,71,72,73,
+	41,42,43,44,45,46,47,48,49,50,51,52,53,
+	61,62,63,64,65,66,67,68,69,70,71,72,73,
 }
 
 local default_bet_chips = {1}
@@ -118,7 +118,7 @@ function ox_table:check_start(part)
 		return
 	end
 
-	local is_all_gamer_ready = table.logic_and(self.gamers,function(_,c) 
+	local is_all_gamer_ready = table.And(self.gamers,function(_,c) 
 		return self.ready_list[c] and true or false 
 	end)
 	local gamer_count = table.nums(self.gamers)
@@ -361,7 +361,7 @@ function ox_table:call_banker(player,msg)
 			times = times,
 		})
 		
-		local done = table.logic_and(self.gamers,function(p) return p.callbanker end)
+		local done = table.And(self.gamers,function(p) return p.callbanker end)
 		if done then
 			self:cancel_timer()
 			local bankertimes = table.series(self.gamers,function(p)
@@ -497,11 +497,18 @@ function ox_table:bet(player, msg)
 		})
 
 		if 
-			table.logic_and(self.gamers,function(p,c) return p.bet_score or c == self.banker end)
+			table.And(self.gamers,function(p,c) return p.bet_score or c == self.banker end)
 		then
 			self:cancel_timer()
 			self:allow_split_cards()
 		end
+	end)
+end
+
+function ox_table:check_cards_pair(player,cards_pair)
+	local cm = table.map(player.cards,function(c) return c,true end)
+	return table.And(cards_pair,function(cs)
+		return table.And(cs,function(c) return cm[c] end)
 	end)
 end
 
@@ -539,6 +546,15 @@ function ox_table:split_cards(player,msg)
 			pair = player.cards_type.pair
 		else
 			pair = table.series(cards_pair or {},function(p) return p.cards end)
+			if not self:check_cards_pair(player,pair) then
+				log.error("ox_table:split_cards guid[%s] invalid cards!", player.guid)
+				log.dump(pair,"cards pair")
+				send2client(player,"SC_OxSplitCards",{
+					result = enum.ERROR_OPERATION_REPEATED,
+				})
+				return
+			end
+
 			player.cards_type = logic.pair_type(pair,self.rule_times)
 		end
 		
@@ -553,7 +569,7 @@ function ox_table:split_cards(player,msg)
 			type = player.cards_type.type,
 		})
 
-		local done = table.logic_and(self.gamers,function(p) return p.cards_pair end)
+		local done = table.And(self.gamers,function(p) return p.cards_pair end)
 		if done then
 			self:cancel_timer()
 			self:do_balance()
@@ -576,9 +592,7 @@ function ox_table:allow_split_cards()
 			table.foreach(self.gamers,function(p)
 				if not p.cards_pair then
 					self:split_cards(p,{
-						cards_pair = table.series(p.cards_type.pair,function(pc)
-							return {cards = pc}
-						end)
+						cards_pair = {}
 					})
 				end
 			end)

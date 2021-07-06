@@ -135,6 +135,13 @@ local function cards_type(cards,opt)
 		}
 	end
 
+	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] then
+		return {
+			type = CARDS_TYPE.OX_HULU,
+			pair = {list},
+		}
+	end
+
 	local ox_values = table.series(list,get_ox_value)
 	local types = {}
 	for i=1,3 do
@@ -175,28 +182,21 @@ local function cards_type(cards,opt)
 	if opt[CARDS_TYPE.OX_TONGHUASHUN] and same_color and seq then
 		return {
 			type = CARDS_TYPE.OX_TONGHUASHUN,
-			pair = t.pair,
-		}
-	end
-	
-	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] then
-		return {
-			type = CARDS_TYPE.OX_HULU,
-			pair = t.pair,
+			pair = {list},
 		}
 	end
 
 	if opt[CARDS_TYPE.OX_TONGHUA] and same_color then
 		return {
 			type = CARDS_TYPE.OX_TONGHUA,
-			pair = t.pair,
+			pair = {list},
 		}
 	end
 
 	if opt[CARDS_TYPE.OX_SHUNZI] and seq then
 		return {
 			type = CARDS_TYPE.OX_SHUNZI,
-			pair = t.pair,
+			pair = {list},
 		}
 	end
 
