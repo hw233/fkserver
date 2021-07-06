@@ -19,6 +19,10 @@ local redisopt = require "redisopt"
 
 local reddb = redisopt.default
 
+local string = string
+local table = table
+local strfmt = string.format
+
 -- 房间
 local base_room = {}
 
@@ -1027,6 +1031,8 @@ function base_room:player_logout_server(player)
 		-1,def_game_id)
 	reddb:decr("player:online:count")
 
+	reddb:hset(string.format("player:info:%d",guid),"logout_time",os.time())
+
 	local clubs = table.merge(player_club[guid][enum.CT_UNION],player_club[guid][enum.CT_DEFAULT])
 	for club_id in pairs(clubs) do
 		reddb:srem(string.format("club:member:online:guid:%s",club_id),guid)
@@ -1036,7 +1042,7 @@ function base_room:player_logout_server(player)
 	base_players[guid] = nil
 	onlineguid[guid] = nil
 	allonlineguid[guid] = nil
-
+	
 	channel.publish("db.?","msg","S_Logout", {
 		account = player.account,
 		guid = guid,

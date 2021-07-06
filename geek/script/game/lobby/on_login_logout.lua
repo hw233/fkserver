@@ -115,7 +115,10 @@ function on_ls_login_notify(guid,reconnect)
 		
 		log.info("login step game->LC_Login,account=%s", player.account)
 		
-		player.login_time = os.time()
+		local now = os.time()
+		reddb:hset(string.format("player:info:%d",guid),"login_time",now)
+
+		player.login_time = now
 		g_room:enter_server(player)
 	end)
 end
