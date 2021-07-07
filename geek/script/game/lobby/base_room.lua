@@ -308,7 +308,7 @@ end
 -- 创建私人房间
 function base_room:create_private_table(player,chair_count,round, rule,club)
 	if player.table_id or player.chair_id then
-		log.info("player already in table, table_id is [%d] chair_id is [%d] guid[%d]",player.table_id,player.chair_id,player.guid)
+		log.info("player already in table, table_id is [%s] chair_id is [%s] guid[%s]",player.table_id,player.chair_id,player.guid)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
