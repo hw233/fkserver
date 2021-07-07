@@ -394,20 +394,20 @@ end
 -- 加入私人房间
 function base_room:join_private_table(player,private_table,chair_count)
 	if player.table_id or player.chair_id then
-		log.warning("player tableid is [%d] chairid is [%d]",player.table_id,player.chair_id)
+		log.warning("player tableid is [%s] chairid is [%s]",player.table_id,player.chair_id)
 		return enum.GAME_SERVER_RESULT_PLAYER_ON_CHAIR
 	end
 
 	local table_id = private_table.real_table_id
 	local tb = self.tables[table_id]
 	if not tb then
-		log.info("join private table:%d,%d not found",private_table.table_id,table_id)
+		log.info("join private table:%s,%s not found",private_table.table_id,table_id)
 		return enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 	end
 	
 	local chair_id = tb:get_free_chair_id()
 	if not chair_id then
-		log.info("join private table:%d,%d without free chair",private_table.table_id,table_id)
+		log.info("join private table:%s,%s without free chair",private_table.table_id,table_id)
 		return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NO_FREE_CHAIR
 	end
 
