@@ -1088,7 +1088,7 @@ function base_room:find_free_tables(club_id,temp_id)
 
 		if temp_id then
 			local ptb = base_private_table[tb:id()]
-			if ptb.template ~= temp_id then return end
+			if not ptb or ptb.template ~= temp_id then return end
 		end
 		return tb
 	end,true)
