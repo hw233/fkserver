@@ -1121,6 +1121,7 @@ function on_ss_fast_join_room(msg,guid,game_id)
 			if can ~= enum.ERROR_NONE then break end
 
 			local free_chair = tb:get_free_chair_id()
+			if not free_chair then break end
 			can = tb:can_sit_down(player,free_chair)
 			if can ~= enum.ERROR_NONE then break end
 
