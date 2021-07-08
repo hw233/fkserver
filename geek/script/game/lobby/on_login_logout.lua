@@ -1117,6 +1117,7 @@ function on_ss_fast_join_room(msg,guid,game_id)
 		repeat
 			local table_id = tb:id()
 			local ptb = base_private_table[table_id]
+			if not ptb then break end
 			local rule = ptb.rule
 			local can = club:can_sit_down(rule,player)
 			if can ~= enum.ERROR_NONE then break end
