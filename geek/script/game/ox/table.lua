@@ -473,6 +473,14 @@ function ox_table:bet(player, msg)
 			return
 		end
 
+		if player.bet_score then
+			log.error("ox_table:bet guid[%s] repeat", player.guid, score)
+			send2client(player,"SC_OxAddScore",{
+				result = enum.ERROR_OPERATION_REPEATED,
+			})
+			return
+		end
+
 		if self.club and self.club.type == enum.CT_UNION then
 			local money_id = self:get_money_id()
 			local money = player:get_money(money_id)
@@ -485,7 +493,7 @@ function ox_table:bet(player, msg)
 			end
 		end
 
-		player.bet_score = (player.bet_score or 0) + score
+		player.bet_score = score
 
 		self.gamelog.bet[player.chair_id] = score
 
