@@ -2123,52 +2123,49 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
     end
 
     local money_id = club_money_type[club_id]
+    
+    local orgin_money = player_money[from_guid][money_id]
+    if orgin_money < money then
+        res.result = enum.ERROR_PARAMETER_ERROR
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
-    local lock = money_locks[money_id]
-    lock(function()
-        local orgin_money = player_money[from_guid][money_id]
-        if orgin_money < money then
-            res.result = enum.ERROR_PARAMETER_ERROR
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
+    local old_from_money = player_money[from_guid][money_id]
+    local new_from_money = club:incr_member_redis_money(from_guid,-money)
+    local old_to_money = player_money[to_guid][money_id]
+    local new_to_money = club:incr_member_redis_money(to_guid,money)
 
-        local old_from_money = player_money[from_guid][money_id]
-        local new_from_money = club:incr_member_redis_money(from_guid,-money)
-        local old_to_money = player_money[to_guid][money_id]
-        local new_to_money = club:incr_member_redis_money(to_guid,money)
+    local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
+        source_id = from_guid,
+        target_id = to_guid,
+        type = 4,
+        operator = guid,
+    })
 
-        local recharge_id = channel.call("db.?","msg","SD_LogRecharge",{
-            source_id = from_guid,
-            target_id = to_guid,
+    local errno  =
+        channel.call("db.?","msg","SD_TransferMoney",{
+            from = {
+                guid = from_guid,
+                old_money = old_from_money,
+                new_money = new_from_money,
+            },
+            to = {
+                guid = to_guid,
+                old_money = old_to_money,
+                new_money = new_to_money,
+            },
             type = 4,
-            operator = guid,
+            money_id = money_id,
+            why = why,
+            why_ext = recharge_id,
         })
 
-        local errno  =
-            channel.call("db.?","msg","SD_TransferMoney",{
-                from = {
-                    guid = from_guid,
-                    old_money = old_from_money,
-                    new_money = new_from_money,
-                },
-                to = {
-                    guid = to_guid,
-                    old_money = old_to_money,
-                    new_money = new_to_money,
-                },
-                type = 4,
-                money_id = money_id,
-                why = why,
-                why_ext = recharge_id,
-            })
-
-        if errno ~= enum.ERROR_NONE then
-            res.result = errno
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-    end)
+    if errno ~= enum.ERROR_NONE then
+        res.result = errno
+        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+        return
+    end
 
     onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
 end
