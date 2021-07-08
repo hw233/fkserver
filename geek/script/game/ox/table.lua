@@ -465,10 +465,10 @@ function ox_table:bet(player, msg)
 			end
 		end
 
-		if score <= 0 then
+		if not table.Or(self.bet_chips,function(chip) return chip == score end) then
 			log.error("ox_table:bet guid[%s] score[%s] <= 0", player.guid, score)
 			send2client(player,"SC_OxAddScore",{
-				result = enum.ERROR_PARAMETER_ERROR,
+				result = enum.ERROR_OPERATION_INVALID,
 			})
 			return
 		end
