@@ -820,8 +820,10 @@ function do_reconnect(guid,game_id)
 			} or nil,
 		})
 
-		tb:reconnect(player)
-		tb:on_player_sit_downed(player,true)
+		tb:lockcall(function()
+			tb:reconnect(player)
+			tb:on_player_sit_downed(player,true)
+		end)
 	end)
 end
 
@@ -925,8 +927,10 @@ function do_reconnect_old(msg,guid,game_id)
 			} or nil,
 		})
 
-		tb:reconnect(player)
-		tb:on_player_sit_downed(player,true)
+		tb:lockcall(function()
+			tb:reconnect(player)
+			tb:on_player_sit_downed(player,true)
+		end)
 	end)
 end
 
