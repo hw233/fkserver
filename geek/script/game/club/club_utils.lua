@@ -114,12 +114,14 @@ function utils.get_club_tables(club)
 
     local room_table = {}
     for tid in pairs(table_ids) do
-        local tb = base_private_table[tid]
-        if not tb then return end
-        local room_id = tb.room_id
-        if not room_id then return end
-        room_table[room_id] = room_table[room_id] or {}
-        table.insert(room_table[room_id],tid)
+        repeat
+            local tb = base_private_table[tid]
+            if not tb then break end
+            local room_id = tb.room_id
+            if not room_id then break end
+            room_table[room_id] = room_table[room_id] or {}
+            table.insert(room_table[room_id],tid)
+        until true
     end
 
     local tables = {}
