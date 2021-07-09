@@ -2382,6 +2382,12 @@ end
 
 function base_table:play_once_again(player)
 	return self:lockcall(function()
+		-- double check
+		if not self:exists() then
+			log.error("base_table:play_once_again double check table not exists,%s",self:id())
+			return enum.ERROR_TABLE_NOT_EXISTS
+		end
+
 		local room_fee_result = self:check_private_fee()
 		if room_fee_result ~= enum.ERROR_NONE then
 			return room_fee_result
