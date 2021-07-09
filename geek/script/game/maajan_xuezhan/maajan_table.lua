@@ -2837,39 +2837,41 @@ end
 
 
 function maajan_table:get_ting_tiles_info(player)
-    local hu_tips = self.rule and self.rule.play.hu_tips or nil
-    if not hu_tips then 
-        send2client(player,"SC_MaajanGetTingTilesInfo",{
-            result = enum.ERROR_OPERATION_INVALID,
-        })
-        return
-    end
+    self:lockcall(function()
+        local hu_tips = self.rule and self.rule.play.hu_tips or nil
+        if not hu_tips then 
+            send2client(player,"SC_MaajanGetTingTilesInfo",{
+                result = enum.ERROR_OPERATION_INVALID,
+            })
+            return
+        end
 
-    if player.hu then 
-        send2client(player,"SC_MaajanGetTingTilesInfo",{
-            result = enum.ERROR_OPERATION_INVALID,
-        })
-        return
-    end
-    
-    if not self:is_que(player) then
-        send2client(player,"SC_MaajanGetTingTilesInfo",{
-            result = enum.ERROR_NONE,
-        })
-        return
-    end
+        if player.hu then 
+            send2client(player,"SC_MaajanGetTingTilesInfo",{
+                result = enum.ERROR_OPERATION_INVALID,
+            })
+            return
+        end
+        
+        if not self:is_que(player) then
+            send2client(player,"SC_MaajanGetTingTilesInfo",{
+                result = enum.ERROR_NONE,
+            })
+            return
+        end
 
-    local ting_tiles = self:ting(player)
-    local pai = clone(player.pai)
-    local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
-        return {tile = tile,fan = self:hu_fan(player,tile)} 
+        local ting_tiles = self:ting(player)
+        local pai = clone(player.pai)
+        local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
+            return {tile = tile,fan = self:hu_fan(player,tile)} 
+        end)
+
+        log.dump(hu_tile_fans)
+
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
+            tiles_info = hu_tile_fans,
+        })
     end)
-
-    log.dump(hu_tile_fans)
-
-    send2client(player,"SC_MaajanGetTingTilesInfo",{
-        tiles_info = hu_tile_fans,
-    })
 end
 
 function maajan_table:global_status_info()
