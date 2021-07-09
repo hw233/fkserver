@@ -84,7 +84,7 @@ function util.alive_game_ids()
 		if not id then return end
 		id = tonumber(id)
 		local sconf = serviceconf[id]
-		if not sconf.conf or not sconf.conf.private_conf then return end
+		if not sconf or not sconf.conf or not sconf.conf.private_conf then return end
 		return sconf.conf.first_game_type
 	end)
 end
