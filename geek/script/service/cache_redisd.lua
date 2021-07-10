@@ -31,14 +31,14 @@ local function cache_push(key,value)
 	tinsert(cachequeue,key)
 end
 
-local function check_clean_cache(key,time)
+local function check_clean_cache(key)
 	local c = cache[key]
 	if c then
-		if time - c.time < default_elapsed_time then 
+		if os.time() - c.time < default_elapsed_time then 
 			return
 		end
 		
-		-- log.info("del cache key %s",key)
+		log.info("del cache key %s",key)
 		cache[key] = nil
 		locks[key] = nil
 	end
@@ -46,21 +46,16 @@ local function check_clean_cache(key,time)
 end
 
 local function elapsed_cache_key()
-	local time = os.time()
 	local key
 	local lock
-	for _ = 1,10000 do
-		key = cachequeue[1]
-		if not key then
-			break
-		end
-
+	for _ = 1,1000 do
+		key = tremove(cachequeue,1)
+		if not key then break end
+		
 		lock = locks[key]
-		if not lock(check_clean_cache,key,time) then
-			break
+		if not lock(check_clean_cache,key) then
+			tinsert(cachequeue,key)
 		end
-
-		tremove(cachequeue,1)
 	end
 
 	timer.timeout(default_elapsed_time,elapsed_cache_key)
