@@ -20,13 +20,6 @@ local rsa_public_key
 
 local onlineguid = {}
 
-local ctx = {}
-
-function ctx:lockcall(fn,...)
-    self.__lock = self.__lock or queue()
-    return self.__lock(fn,...)
-end
-
 local function send2client(guid,msgname,msg)
     local u = onlineguid[guid]
     if not u or not u.fd then
@@ -46,7 +39,6 @@ function CMD.login(u)
         log.error("double login %s",guid)
     end
     
-    setmetatable(u,{__index = ctx})
     onlineguid[u.guid] = u
 end
 
@@ -75,14 +67,12 @@ local function afk(guid)
         return
     end
 
-    u:lockcall(function()
-        if not onlineguid[guid] then
-            log.error("afk,guid:%s double check got nil session",guid)
-            return
-        end
-        channel.call("service."..tostring(u.server),"lua","afk",guid,true)
-        onlineguid[guid] = nil
-    end)
+    if not onlineguid[guid] then
+        log.error("afk,guid:%s double check got nil session",guid)
+        return
+    end
+    channel.call("service."..tostring(u.server),"lua","afk",guid,true)
+    onlineguid[guid] = nil
 end
 
 function CMD.logout(guid)
@@ -150,16 +140,12 @@ local function dispatch(msgname,msg,guid)
         return
     end
 
-    u:lockcall(function()
-        -- double check
-        u = onlineguid[guid]
-        if not u then
-            log.error("dispatch forward guid:%s msg:%s server:%s double check got nil session,maybe afk already.",
-                guid,msgname,u.server)
-            return
-        end
-        channel.publish("service."..tostring(u.server),"msg",msgname,msg,guid)
-    end)
+    if not onlineguid[guid] then
+        log.error("dispatch forward guid:%s msg:%s server:%s double check got nil session,maybe afk already.",
+            guid,msgname,u.server)
+        return
+    end
+    channel.call("service."..tostring(u.server),"msg",msgname,msg,guid)
 end
 
 skynet.register_protocol {

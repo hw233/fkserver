@@ -19,45 +19,8 @@ gateid = tonumber(gateid)
 gateservice = tonumber(gateservice)
 
 local string = string
-local strfmt = string.format
-
-local task = {}
-
-function task:lockcall(fn,...)
-    self.__lock = self.__lock or queue()
-    return self.__lock(fn,...)
-end
-
-local tasking = setmetatable({},{
-    __index = function(t,fd)
-        local q = setmetatable({},{__index = task})
-        t[fd] = q
-        return q
-    end,
-})
 
 local send2client = netmsgopt.send
-
-local CMD = {}
-
-function CMD.afk(fd)
-    if not fd then return end
-    
-    local l = rawget(tasking,fd)
-    
-    if not l then
-        log.warning("logind afk fd:%s,no logining session.",fd)
-        return
-    end
-
-    l:lockcall(function()
-        if l.guid then
-            skynet.send(gateservice,"lua","afk",l.guid)
-        end
-        
-        tasking[fd] = nil
-    end)
-end
 
 local MSG = {}
 
@@ -191,89 +154,77 @@ local function do_cl_login(msg,session)
         return
     end
 
-    local l = tasking[fd]
-    return l:lockcall(function()
-        local ok,info,server
-        if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
-            ok,info,server = login_by_account(msg,session)
-        elseif msg.open_id and msg.open_id ~= "" then
-            ok,info,server = login_by_openid(msg,session)
-        elseif msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
-            ok,info,server = login_by_sms(msg,session)
-        else
-            log.error("CL_Login invalid parameter")
-            tasking[fd] = nil
-            return
+    local ok,info,server
+    if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
+        ok,info,server = login_by_account(msg,session)
+    elseif msg.open_id and msg.open_id ~= "" then
+        ok,info,server = login_by_openid(msg,session)
+    elseif msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
+        ok,info,server = login_by_sms(msg,session)
+    else
+        log.error("CL_Login invalid parameter")
+        return
+    end
+
+    log.dump(info)
+
+    if ok then
+        if info.result == enum.LOGIN_RESULT_SUCCESS then
+            local guid = info.guid
+            skynet.call(gateservice,"lua","login",fd,guid,server,info)
+            -- flag login done session for afk when logining
         end
 
-        log.dump(info)
-
-        if ok then
-            if info.result == enum.LOGIN_RESULT_SUCCESS then
-                local guid = info.guid
-                skynet.call(gateservice,"lua","login",fd,guid,server,info)
-                -- flag login done session for afk when logining
-                l.guid = guid
-            end
-    
-            send2client(fd,"LC_Login",info)
-        else
-            send2client(fd,"LC_Login",{
-                result = enum.LOGIN_RESULT_MAINTAIN
-            })
-        end
-
-        tasking[fd] = nil
-    end)
+        send2client(fd,"LC_Login",info)
+    else
+        send2client(fd,"LC_Login",{
+            result = enum.LOGIN_RESULT_MAINTAIN
+        })
+    end
 end
 
 function MSG.CL_Auth(msg,session)
     local fd = session.fd
-    local l = tasking[fd]
-    return l:lockcall(function()
-        if  (not msg.code or msg.code == "") or
-            (not msg.auth_platform or msg.auth_platform == "") then
-            send2client(fd,"LC_Auth",{
-                result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
-            })
-            tasking[fd] = nil
-            return
-        end
+    if  (not msg.code or msg.code == "") or
+        (not msg.auth_platform or msg.auth_platform == "") then
+        send2client(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_AUTH_CHECK_ERROR,
+        })
+        return
+    end
 
-        msg.ip = session.ip
-        local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
-        log.dump(result)
-        log.dump(userinfo)
-        if not ok then
-            send2client(fd,"LC_Auth",{
-                result = enum.LOGIN_RESULT_MAINTAIN,
-            })
-            tasking[fd] = nil
-            return
-        end
+    msg.ip = session.ip
+    local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
+    log.dump(result)
+    log.dump(userinfo)
+    if not ok then
+        send2client(fd,"LC_Auth",{
+            result = enum.LOGIN_RESULT_MAINTAIN,
+        })
+        return
+    end
 
-        if  ok and
-            result ~= enum.LOGIN_RESULT_SUCCESS and 
-            result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
-            send2client(fd,"LC_Auth",{
-                result = result,
-                errmsg = userinfo,
-            })
-            return
-        end
+    if  ok and
+        result ~= enum.LOGIN_RESULT_SUCCESS and 
+        result ~= enum.LOGIN_RESULT_RESET_ACCOUNT_DUP_ACC then
+        send2client(fd,"LC_Auth",{
+            result = result,
+            errmsg = userinfo,
+        })
+        return
+    end
 
-        log.dump(userinfo)
+    log.dump(userinfo)
 
-        local do_login_msg = {
-            ip = msg.ip,
-            open_id = userinfo.open_id,
-            package_name = msg.package_name,
-            phone_type = msg.phone_type,
-            version = msg.version,
-        }
+    local do_login_msg = {
+        ip = msg.ip,
+        open_id = userinfo.open_id,
+        package_name = msg.package_name,
+        phone_type = msg.phone_type,
+        version = msg.version,
+    }
 
-        do_cl_login(do_login_msg,session)
-    end)
+    do_cl_login(do_login_msg,session)
 end
 
 function MSG.CL_Login(msg,session)
@@ -312,14 +263,8 @@ end
 
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...)
-        local f = CMD[cmd]
-        if f then
-            skynet.retpack(f(...))
-        else
-            log.error("unkown cmd:%s",cmd)
-            skynet.retpack(nil)
-            return nil
-        end
+        log.error("unkown cmd:%s",cmd)
+        skynet.retpack(nil)
     end)
 
     skynet.register_protocol {
