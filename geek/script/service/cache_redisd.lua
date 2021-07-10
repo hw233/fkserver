@@ -21,7 +21,7 @@ local locks = setmetatable({},{
 	end,
 })
 
-local default_elapsed_time = 5
+local default_elapsed_time = 10
 
 local function cache_push(key,value)
 	cache[key] = {
