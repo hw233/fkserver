@@ -1139,7 +1139,7 @@ function on_ss_fast_join_room(msg,guid,game_id)
 
 				local result = g_room:fast_join_private_table(tb,player,free_chair)
 				if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-					log.warning("on_ss_try_fast_join_room faild!guid:%s,%s",guid,result)
+					log.warning("on_ss_fast_join_room faild!guid:%s,%s",guid,result)
 					return result
 				end
 				
@@ -1270,13 +1270,31 @@ function on_ss_fast_create_room(msg,guid,game_id)
 	end)
 end
 
+local function fast_create_room(msg,guid,room_id)
+	if room_id ~= def_game_id then
+		return channel.call(string.format("game.%d",room_id),"msg","SS_FastCreateRoom",msg,guid,def_game_id)
+	end
+
+	return on_ss_fast_create_room(msg,guid,def_game_id)
+end
+
+local function fast_join_room(msg,guid,room_id)
+	if room_id ~= def_game_id then
+		return channel.call(string.format("game.%d",room_id),"msg","SS_FastJoinRoom",msg,guid,def_game_id)
+	end
+
+	return on_ss_fast_join_room(msg,guid,def_game_id)
+end
+
 function on_cs_fast_join_room(msg,guid)
 	local club_id = msg.club_id
 	local template_id = msg.template_id
 	local game_id = msg.game_id
 
+	log.info("on_cs_fast_join_room %s,%s,%s,%s",guid,club_id,template_id,game_id)
 	local player = base_players[guid]
 	if not player then
+		log.error("on_cs_fast_join_room nil player,%s",guid)
 		onlineguid.send(guid,"SC_FastJoinRoom",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1288,6 +1306,7 @@ function on_cs_fast_join_room(msg,guid)
 		club_id == 0 or
 		(template_id == 0 and game_id == 0)
 	then
+		log.error("on_cs_fast_join_room invalid param")
 		onlineguid.send(guid,"SC_FastJoinRoom",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1297,6 +1316,7 @@ function on_cs_fast_join_room(msg,guid)
 
 	local club = base_clubs[club_id]
 	if not club then
+		log.error("on_cs_fast_join_room club not exists %s,%s",guid,club_id)
 		onlineguid.send(guid,"SC_FastJoinRoom",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -1321,6 +1341,7 @@ function on_cs_fast_join_room(msg,guid)
 	end
 
 	player:lockcall(function()
+		-- double check
 		local og = onlineguid[guid]
 		if og and (og.table or og.chair) then
 			onlineguid.send(guid,"SC_FastJoinRoom",{
@@ -1337,7 +1358,8 @@ function on_cs_fast_join_room(msg,guid)
 
 		for _,v in pairs(rooms) do
 			local room_id = v.room_id
-			local result = channel.call("game."..room_id,"msg","SS_FastJoinRoom",msg,guid,def_game_id)
+			local result = fast_join_room(msg,guid,room_id)
+
 			if 	result == enum.GAME_SERVER_RESULT_MAINTAIN or
 				result == enum.GAME_SERVER_RESULT_IN_ROOM or
 				result == enum.GAME_SERVER_RESULT_IN_GAME
@@ -1354,7 +1376,7 @@ function on_cs_fast_join_room(msg,guid)
 		end
 
 		local room_id = rooms[#rooms].room_id
-		local result = channel.call("game."..room_id,"msg","SS_FastCreateRoom",msg,guid,def_game_id)
+		local result = fast_create_room(msg,guid,room_id)
 		if result ~= enum.ERROR_NONE then
 			onlineguid.send(guid,"SC_FastJoinRoom",{
 				result = result,
