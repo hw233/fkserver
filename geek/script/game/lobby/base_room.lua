@@ -12,6 +12,7 @@ local allonlineguid = require "allonlineguid"
 local player_club = require "game.lobby.player_club"
 local base_private_table = require "game.lobby.base_private_table"
 local spinlock = require "spinlock"
+local mutex = require "mutex"
 
 require "game.net_func"
 
@@ -321,7 +322,7 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 	end
 
 	local global_tid
-	spinlock("table:spinlock",function()
+	local ok = mutex("table:create",function()
 		for _ = 1,10000 do
 			global_tid = math.random(100000,999999)
 			local exists = reddb:sismember("table:all",global_tid)

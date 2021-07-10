@@ -14,6 +14,7 @@ local runtime_conf = require "game.runtime_conf"
 local g_common = require "common"
 local game_util = require "game.util"
 local spinlock = require "spinlock"
+local mutex = require "mutex"
 
 local reddb = redisopt.default
 
@@ -133,8 +134,8 @@ local function reg_account(msg)
         promoter = tonumber(param.promoter) or promoter
     until true
 
-    local result
-    result,guid = spinlock("guid:spinlock",function()
+    local result,ok
+    ok,result,guid = mutex("guid:spinlock",function()
         local id = tonumber(random_guid())
         if not id then
             log.error("random guid faild,maybe number isn't enough.")

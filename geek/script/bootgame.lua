@@ -20,6 +20,7 @@ local servicepath = {
     [nameservice.TIDSTATISTICS] = "statistics.main",
     [nameservice.TIBROKER] = "broker.main",
     [nameservice.TIQUEUE] = "queue.main",
+    [nameservice.TIMUTEX] = "mutex.main",
 
     [nameservice.TNDB] = "db.main",
     [nameservice.TNCONFIG] = "config.main",
@@ -30,6 +31,7 @@ local servicepath = {
     [nameservice.TNSTATISTICS] = "statistics.main",
     [nameservice.TNBROKER] = "broker.main",
     [nameservice.TNQUEUE] = "queue.main",
+    [nameservice.TNMUTEX] = "mutex.main",
 }
 
 local function cluster_name(conf)
