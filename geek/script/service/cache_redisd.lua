@@ -431,5 +431,5 @@ skynet.start(function()
 
 	skynet.register ".cache_redisd"
 
-	elapsed_cache_key()
+	-- elapsed_cache_key()
 end)
