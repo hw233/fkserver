@@ -772,55 +772,55 @@ function do_reconnect(guid,game_id)
 			return
 		end
 		
-		local result = tb:player_sit_down(player, chair_id,true)
-		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-			log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
-				table_id,guid,chair_id,result)
+		return tb:lockcall(function()
+			local result = tb:player_sit_down(player, chair_id,true)
+			if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+				log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
+					table_id,guid,chair_id,result)
+				onlineguid.send(guid,"SC_ReconnectJoinRoom",{
+					result = result
+				})
+				return
+			end
+
+			player.active = true
+
+			local seats = table.series(tb.players,function(p)
+				return {
+					chair_id = p.chair_id,
+					player_info = {
+						icon = p.icon,
+						guid = p.guid,
+						nickname = p.nickname,
+						sex = p.sex,
+					},
+					ready = tb.ready_list[p.chair_id] and true or false,
+					online = p.active and true or false,
+					money = {
+						money_id = money_id,
+						count = p:get_money(money_id),
+					},
+					longitude = p.gps_longitude,
+					latitude = p.gps_latitude,
+					is_trustee = p.trustee and true or false,
+				}
+			end)
+
 			onlineguid.send(guid,"SC_ReconnectJoinRoom",{
-				result = result
+				result = enum.ERROR_NONE,
+				info = {
+					game_type = private_table.game_type,
+					club_id = private_table.club_id,
+					table_id = private_table.table_id,
+					rule = json.encode(private_table.rule),
+					owner = private_table.owner,
+				},
+				seat_list = seats,
+				round_info = tb and {
+					round_id = tb:hold_ext_game_id()
+				} or nil,
 			})
-			return
-		end
 
-		player.active = true
-
-		local seats = table.series(tb.players,function(p)
-			return {
-				chair_id = p.chair_id,
-				player_info = {
-					icon = p.icon,
-					guid = p.guid,
-					nickname = p.nickname,
-					sex = p.sex,
-				},
-				ready = tb.ready_list[p.chair_id] and true or false,
-				online = p.active and true or false,
-				money = {
-					money_id = money_id,
-					count = p:get_money(money_id),
-				},
-				longitude = p.gps_longitude,
-				latitude = p.gps_latitude,
-				is_trustee = p.trustee and true or false,
-			}
-		end)
-
-		onlineguid.send(guid,"SC_ReconnectJoinRoom",{
-			result = enum.ERROR_NONE,
-			info = {
-				game_type = private_table.game_type,
-				club_id = private_table.club_id,
-				table_id = private_table.table_id,
-				rule = json.encode(private_table.rule),
-				owner = private_table.owner,
-			},
-			seat_list = seats,
-			round_info = tb and {
-				round_id = tb:hold_ext_game_id()
-			} or nil,
-		})
-
-		tb:lockcall(function()
 			tb:reconnect(player)
 			tb:on_player_sit_downed(player,true)
 		end)
@@ -879,55 +879,55 @@ function do_reconnect_old(msg,guid,game_id)
 			return
 		end
 		
-		local result = tb:player_sit_down(player, chair_id,true)
-		if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
-			log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
-				table_id,guid,chair_id,result)
+		return tb:lockcall(function()
+			local result = tb:player_sit_down(player, chair_id,true)
+			if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
+				log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
+					table_id,guid,chair_id,result)
+				onlineguid.send(guid,"SC_JoinRoom",{
+					result = result
+				})
+				return
+			end
+
+			player.active = true
+
+			local seats = table.series(tb.players,function(p)
+				return {
+					chair_id = p.chair_id,
+					player_info = {
+						icon = p.icon,
+						guid = p.guid,
+						nickname = p.nickname,
+						sex = p.sex,
+					},
+					ready = tb.ready_list[p.chair_id] and true or false,
+					online = p.active and true or false,
+					money = {
+						money_id = money_id,
+						count = p:get_money(money_id),
+					},
+					longitude = p.gps_longitude,
+					latitude = p.gps_latitude,
+					is_trustee = p.trustee and true or false,
+				}
+			end)
+
 			onlineguid.send(guid,"SC_JoinRoom",{
-				result = result
+				result = enum.ERROR_NONE,
+				info = {
+					game_type = private_table.game_type,
+					club_id = private_table.club_id,
+					table_id = private_table.table_id,
+					rule = json.encode(private_table.rule),
+					owner = private_table.owner,
+				},
+				seat_list = seats,
+				round_info = tb and {
+					round_id = tb:hold_ext_game_id()
+				} or nil,
 			})
-			return
-		end
-
-		player.active = true
-
-		local seats = table.series(tb.players,function(p)
-			return {
-				chair_id = p.chair_id,
-				player_info = {
-					icon = p.icon,
-					guid = p.guid,
-					nickname = p.nickname,
-					sex = p.sex,
-				},
-				ready = tb.ready_list[p.chair_id] and true or false,
-				online = p.active and true or false,
-				money = {
-					money_id = money_id,
-					count = p:get_money(money_id),
-				},
-				longitude = p.gps_longitude,
-				latitude = p.gps_latitude,
-				is_trustee = p.trustee and true or false,
-			}
-		end)
-
-		onlineguid.send(guid,"SC_JoinRoom",{
-			result = enum.ERROR_NONE,
-			info = {
-				game_type = private_table.game_type,
-				club_id = private_table.club_id,
-				table_id = private_table.table_id,
-				rule = json.encode(private_table.rule),
-				owner = private_table.owner,
-			},
-			seat_list = seats,
-			round_info = tb and {
-				round_id = tb:hold_ext_game_id()
-			} or nil,
-		})
-
-		tb:lockcall(function()
+			
 			tb:reconnect(player)
 			tb:on_player_sit_downed(player,true)
 		end)
