@@ -415,7 +415,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     
     local done_action = self:check_action_before_do(self.qiang_gang_actions or {},player,msg)
     if not done_action then 
-        log.error("on_action_qiang_gang_hu,no wait qiang gang action,%s,%s",player.guid)
+        log.error("on_action_qiang_gang_hu,no wait qiang gang action,%s",player.guid)
         return
     end
 
