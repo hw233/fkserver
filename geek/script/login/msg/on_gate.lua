@@ -13,6 +13,7 @@ require "login.msg.runtime"
 local runtime_conf = require "game.runtime_conf"
 local g_common = require "common"
 local game_util = require "game.util"
+local spinlock = require "spinlock"
 
 local reddb = redisopt.default
 
@@ -129,17 +130,22 @@ local function reg_account(msg)
         promoter = tonumber(param.promoter) or promoter
     until true
 
-    local ip = msg.ip 
-    if ip then
-        reddb:hset("player:info:"..tostring(guid),"login_ip",ip)
+    local result
+    result,guid = spinlock("guid:spinlock",function()
+        local id = tonumber(random_guid())
+        if not id then
+            log.error("random guid faild,maybe number isn't enough.")
+            return enum.ERROR_INTERNAL_UNKOWN
+        end
+
+        reddb:sadd("player:all",id)
+        return enum.ERROR_NONE,id
+    end)
+
+    if result ~= enum.ERROR_NONE then
+        return result
     end
 
-    guid = tonumber(random_guid())
-    if not guid then
-        log.error("random guid faild,maybe number isn't enough.")
-        return enum.ERROR_INTERNAL_UNKOWN
-    end
-    
     local info = {
         guid = guid,
         account = msg.open_id,
@@ -171,7 +177,6 @@ local function reg_account(msg)
         info.phone = phone
     end
 
-    reddb:sadd("player:all",guid)
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
     
