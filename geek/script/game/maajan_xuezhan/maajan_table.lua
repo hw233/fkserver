@@ -1081,6 +1081,11 @@ function maajan_table:on_reconnect_when_action_after_chu_pai(p)
 end
 
 function maajan_table:on_action_after_chu_pai(player,msg)
+    if not self.waiting_actions then
+        log.error("maajan_table:on_action_after_chu_pai not waiting actions,%s",player.guid)
+        return
+    end
+
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
         action.done = {
