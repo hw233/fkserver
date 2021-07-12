@@ -655,6 +655,21 @@ function table.union_tables(tbs,agg)
     return t
 end
 
+function table.flatten(tbs,agg)
+    local t = {}
+    for _,tb in pairs(tbs or {}) do
+        for k,v in pairs(tb) do
+            if agg then
+                table.insert(t,agg(v,k))
+            else
+                table.insert(t,v)
+            end
+        end
+    end
+
+    return t
+end
+
 function table.pop_back(tb)
 	local ret = tb[#tb]
 	table.remove(tb)
