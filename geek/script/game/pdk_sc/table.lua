@@ -707,7 +707,7 @@ function pdk_table:game_balance(winner)
 		local count = table.sum(p.hand_cards)
 		local score = count
 		local chun_tian = not p.discard_times or p.discard_times == 0
-		local fan_chun = p.discard_times == 1 and self.zhuang == p.chair_id
+		local fan_chun = (play.fan_chun ~= false) and p.discard_times == 1 and self.zhuang == p.chair_id
 		if chun_tian then
 			score = CHUN_TIAN_TIMES * score
 		elseif fan_chun then
