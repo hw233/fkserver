@@ -136,10 +136,10 @@ end
 
 function connection_pool.release(pool,conn)
 	tinsert(pool.__free,conn)
+	
+	reserve_guard(pool)
 
 	pool:wakeup()
-
-	reserve_guard(pool)
 end
 
 function connection_pool.query(pool,fmtsql,...)
