@@ -151,7 +151,9 @@ local function dispatch(msgname,msg,guid)
     end
 
     u:lockcall(function()
-        if not onlineguid[guid] then
+        -- double check
+        u = onlineguid[guid]
+        if not u then
             log.error("dispatch forward guid:%s msg:%s server:%s double check got nil session,maybe afk already.",
                 guid,msgname,u.server)
             return
