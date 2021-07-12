@@ -1374,11 +1374,13 @@ end
 
 function base_table:do_dismiss(reason)
 	return self:lockcall(function()
+		-- double check
 		if not self:exists() then
 			log.trace("base_table do_dismiss but table:%s is not live,reason:%s",self:id(),reason)
+			return
 		end
 
-		log.info("base_table:dismiss %s",self.private_id)
+		log.info("base_table:dismiss %s",self:id())
 		if not self:is_private() then
 			log.warning("dismiss non-private table,real_table_id:%s",self.table_id)
 			return enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
@@ -1399,19 +1401,17 @@ function base_table:do_dismiss(reason)
 			table_id = self:id(),
 		})
 
-		log.info("base_table:dismiss %s,%s",self.private_id,self.table_id_)
-		local private_table_conf = base_private_table[self.private_id]
-		local club_id = private_table_conf.club_id
-		local private_table_id = private_table_conf.table_id
-		local private_table_owner = private_table_conf.owner
-		reddb:del("table:info:"..private_table_id)
-		reddb:del("player:table:"..private_table_owner)
-		reddb:del("table:player:"..private_table_id)
-		reddb:srem("table:all",private_table_id)
+		log.info("base_table:dismiss %s,%s",self:id(),self.table_id_)
+		local club_id = self.club_id
+		local table_id = self:id()
+		reddb:del("table:info:"..table_id)
+		reddb:del("player:table:"..self.owner_guid)
+		reddb:del("table:player:"..table_id)
+		reddb:srem("table:all",table_id)
 		
 		if club_id then
-			reddb:srem("club:table:"..club_id,private_table_id)
-			club_table[club_id][private_table_id] = nil
+			reddb:srem("club:table:"..club_id,table_id)
+			club_table[club_id][table_id] = nil
 		end
 
 		base_private_table[self.private_id] = nil
@@ -1428,8 +1428,6 @@ function base_table:do_dismiss(reason)
 		self.start_count = self.chair_count
 		self.ext_round_status = nil
 		
-
-
 		return enum.GAME_SERVER_RESULT_SUCCESS
 	end)
 end
