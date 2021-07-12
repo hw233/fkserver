@@ -2106,19 +2106,19 @@ function maajan_table:calculate_jiao(p)
         return {} 
     end
 
-    local type_fans = {}
-    for tile,_ in pairs(jiao_tiles) do
-        local hu = {
-            types = self:rule_hu(p.pai,tile),
-        }
-        local hu_fans = self:calculate_hu(hu)
-        local fan = table.sum(hu_fans,function(t) return (t.count or 1) * (t.fan or 0) end)
-        table.insert(type_fans,{types = hu_fans,hu = hu,fan = fan,tile = tile})
-    end
-
-    if self.rule.play.cha_da_jao then
+    local type_fans = table.flatten(
+        table.series(jiao_tiles,function(_,tile)
+            local tt = self:rule_hu_types(p.pai,tile)
+            return table.series(tt,function(ts)
+                local _,fan = self:calc_types(ts)
+                return {types = self:serial_types(ts),fan = fan,tile = tile}
+            end)
+        end)
+    )
+    
+    if self.rule.play.cha_da_jiao then
         table.sort(type_fans,function(l,r) return l.fan > r.fan end)
-    elseif self.rule.play.cha_xiao_jao then
+    elseif self.rule.play.cha_xiao_jiao then
         table.sort(type_fans,function(l,r) return l.fan < r.fan end)
     end
 
@@ -2784,13 +2784,12 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
     return types
 end
 
-function maajan_table:rule_hu(pai,in_pai,mo_pai)
+function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
     local private_conf = self:room_private_conf()
-    local types = {}
     local play_opt = (not private_conf or not private_conf.play) and "xuezhan" or private_conf.play.option
     local hu_types = mj_util.hu(pai,in_pai,mo_pai)
     local rule_play = self.rule.play
-    types = table.series(hu_types,function(ones)
+    return table.series(hu_types,function(ones)
         local ts = {}
         for t,c in pairs(ones) do
             if  (t == HU_TYPE.KA_WU_XING and not rule_play.jia_xin_5) or
@@ -2814,11 +2813,27 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
 
         return ts
     end)
+end
+
+function maajan_table:rule_hu(pai,in_pai,mo_pai)
+    local types = self:rule_hu_types(pai,in_pai,mo_pai)
 
     table.sort(types,function(l,r)
         local lscore,lfan = self:calc_types(l)
         local rscore,rfan = self:calc_types(r)
         return lscore + 2 ^ lfan > rscore + 2 ^ rfan
+    end)
+
+    return types[1] or {}
+end
+
+function maajan_table:min_rule_hu(pai,in_pai,mo_pai)
+    local types = self:rule_hu_types(pai,in_pai,mo_pai)
+
+    table.sort(types,function(l,r)
+        local lscore,lfan = self:calc_types(l)
+        local rscore,rfan = self:calc_types(r)
+        return lscore + 2 ^ lfan < rscore + 2 ^ rfan
     end)
 
     return types[1] or {}
