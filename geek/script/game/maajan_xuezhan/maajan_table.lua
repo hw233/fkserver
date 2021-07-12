@@ -1487,7 +1487,7 @@ function maajan_table:send_ting_tips(p)
 
     local ting_tiles = self:ting_full(p)
     if table.nums(ting_tiles) > 0 then
-        local pai = clone(p.pai)
+        local pai = p.pai
         local discard_tings = table.series(ting_tiles,function(tiles,discard)
             table.decr(pai.shou_pai,discard)
             local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(p,tile)} end)
@@ -1804,16 +1804,87 @@ function maajan_table:prepare_tiles()
     self:fake_mo_pai()
 end
 
+function maajan_table:types_fan(ts)
+    local room_private_conf = self:room_private_conf()
+
+    local play_opt = room_private_conf and room_private_conf.play and room_private_conf.play.option or "xuezhan"
+    
+    local da_dui_zi_fan = self.rule.play.da_dui_zi_fan_2 and 2 or HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
+    local qing_yi_se_fan = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
+    if play_opt == "er_ren_yi_fang" then
+        qing_yi_se_fan = self.rule.play.qing_yi_se_fan or 0
+    end
+
+    for _,t in pairs(ts) do
+        if t.type == HU_TYPE.QING_YI_SE then
+            t.fan = qing_yi_se_fan
+        end
+
+        if t.type == HU_TYPE.QING_DA_DUI then
+            t.fan = qing_yi_se_fan + da_dui_zi_fan
+        end
+
+        if t.type == HU_TYPE.DA_DUI_ZI then
+            t.fan = da_dui_zi_fan
+        end
+
+        if t.type == HU_TYPE.QING_QI_DUI and play_opt == "er_ren_yi_fang" then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.QI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_LONG_BEI and play_opt == "er_ren_yi_fang" then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_QI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_SI_DUI then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.SI_DUI].fan
+        end
+
+        if t.type == HU_TYPE.QING_LONG_SI_DUI then
+            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
+        end
+    end
+
+    return ts
+end
+
+function maajan_table:serial_types(tsmap)
+    local types = table.series(tsmap,function(c,t)
+        local tinfo = HU_TYPE_INFO[t]
+        return {type = t,fan = tinfo.fan,score = tinfo.score,count = c}
+    end)
+
+    return self:types_fan(types)
+end
+
+function maajan_table:gang_types(p)
+    local s2hu_type = {
+        [SECTION_TYPE.MING_GANG] = HU_TYPE.MING_GANG,
+        [SECTION_TYPE.AN_GANG] = HU_TYPE.AN_GANG,
+        [SECTION_TYPE.BA_GANG] = HU_TYPE.BA_GANG,
+    }
+
+    local ss = table.select(p.pai.ming_pai,function(s) return  s2hu_type[s.type] ~= nil end)
+    local gfan= table.group(ss,function(s) return  s2hu_type[s.type] end)
+    local typescount = table.map(gfan,function(gp,t)
+        return t,table.nums(gp)
+    end)
+
+    return typescount
+end
+
 function maajan_table:calc_types(ts)
-    return table.sum(ts,function(_,t) return HU_TYPE_INFO[t].score end),
-        table.sum(ts,function(_,t) return HU_TYPE_INFO[t].fan end)
+    ts = self:serial_types(ts)
+    return table.sum(ts,function(t) return (t.score or 1) * (t.count or 0) end),
+        table.sum(ts,function(t) return (t.count or 1) * (t.fan or 0) end)
 end
 
 function maajan_table:hu_fan(player,in_pai,mo_pai)
     local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
     local ext_hu = self:ext_hu(player,in_pai,mo_pai)
-    local hutypes = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
-    local _,fan = self:calc_types(hutypes)
+    local hu = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
+    local types = table.merge(hu,self:gang_types(player),function(l,r) return l or r end)
+    local _,fan = self:calc_types(types)
     return fan or 1
 end
 
@@ -1978,54 +2049,11 @@ function maajan_table:on_mo_pai(player,mo_pai)
 end
 
 function maajan_table:calculate_hu(hu)
-    local types = table.series(hu.types,function(c,t)
-        local type_info = HU_TYPE_INFO[t]
-        return {type = t,fan = type_info.fan,score = type_info.score,count = c}
-    end)
+    local types = self:serial_types(hu.types)
 
     if hu.qiang_gang then
         local type_info = HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU]
         table.insert(types,{type = HU_TYPE.QIANG_GANG_HU,fan = type_info.fan,score = type_info.score,count = 1})
-    end
-
-    local room_private_conf = self:room_private_conf()
-
-    local play_opt = room_private_conf and room_private_conf.play and room_private_conf.play.option or "xuezhan"
-    
-    local da_dui_zi_fan = self.rule.play.da_dui_zi_fan_2 and 2 or HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
-    local qing_yi_se_fan = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
-    if play_opt == "er_ren_yi_fang" then
-        qing_yi_se_fan = self.rule.play.qing_yi_se_fan or 0
-    end
-
-    for _,t in pairs(types) do
-        if t.type == HU_TYPE.QING_YI_SE then
-            t.fan = qing_yi_se_fan
-        end
-
-        if t.type == HU_TYPE.QING_DA_DUI then
-            t.fan = qing_yi_se_fan + da_dui_zi_fan
-        end
-
-        if t.type == HU_TYPE.DA_DUI_ZI then
-            t.fan = da_dui_zi_fan
-        end
-
-        if t.type == HU_TYPE.QING_QI_DUI and play_opt == "er_ren_yi_fang" then
-            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.QI_DUI].fan
-        end
-
-        if t.type == HU_TYPE.QING_LONG_BEI and play_opt == "er_ren_yi_fang" then
-            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_QI_DUI].fan
-        end
-
-        if t.type == HU_TYPE.QING_SI_DUI then
-            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.SI_DUI].fan
-        end
-
-        if t.type == HU_TYPE.QING_LONG_SI_DUI then
-            t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
-        end
     end
 
     return types
@@ -2716,7 +2744,7 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
     local types = {}
 
     local chu_pai_player = self:chu_pai_player()
-    
+
     
     if self.rule.play.tian_di_hu then
         if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
@@ -2825,9 +2853,8 @@ function maajan_table:can_hu(player,in_pai)
     if table.nums(hu_types) == 0 then
         return false
     end
-
-    local score = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].score end)
-    local fan = table.sum(hu_types,function(c,t) return HU_TYPE_INFO[t].fan end)
+    
+    local score,fan = self:calc_types(hu_types)
 
     local gang = table.sum(player.pai.ming_pai,function(s)
         return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
@@ -2866,8 +2893,7 @@ function maajan_table:get_ting_tiles_info(player)
         end
 
         local ting_tiles = self:ting(player)
-        local pai = clone(player.pai)
-        local hu_tile_fans = table.series(ting_tiles or {},function(_,tile) 
+        local hu_tile_fans = table.series(ting_tiles or {},function(_,tile)
             return {tile = tile,fan = self:hu_fan(player,tile)} 
         end)
 
