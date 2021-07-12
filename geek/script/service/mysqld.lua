@@ -16,6 +16,9 @@ local string = string
 local tinsert = table.insert
 local tremove = table.remove
 
+local xpcall = xpcall
+local traceback = debug.traceback
+
 local query_ttl_time = 3
 
 local connection = {}
@@ -115,7 +118,7 @@ function connection_pool.occupy(pool)
 		end
 
 		local ok
-		ok,conn = pcall(new_connection,pool.__conf)
+		ok,conn = xpcall(new_connection,traceback,pool.__conf)
 		if ok and conn then
 			return conn
 		end
@@ -145,7 +148,7 @@ end
 function connection_pool.query(pool,fmtsql,...)
 	local starttime = skynet.time()
 	local conn = pool:occupy()
-	local ok,res = pcall(conn.query,conn,fmtsql,...)
+	local ok,res = xpcall(conn.query,traceback,conn,fmtsql,...)
 	if not ok then
 		log.error("msyqld connection_pool query got error,%s",res)
 		pool:release(conn)
