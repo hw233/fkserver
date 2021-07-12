@@ -19,6 +19,8 @@ local tremove = table.remove
 local xpcall = xpcall
 local traceback = debug.traceback
 
+local retry_query_times = 100
+
 local query_ttl_time = 3
 
 local connection = {}
@@ -111,15 +113,17 @@ function connection_pool.close(pool)
 end
 
 function connection_pool.occupy(pool)
+	local ok,conn
 	for _ = 1,1000 do
-		local conn = tremove(pool.__free,1)
+		conn = tremove(pool.__free,1)
 		if conn then
 			return conn
 		end
-
-		local ok
+		
 		ok,conn = xpcall(new_connection,traceback,pool.__conf)
-		if ok and conn then
+		if not ok then
+			log.error("connection pool occupy new connection failed,%s",conn)
+		elseif conn then
 			return conn
 		end
 		
@@ -146,21 +150,28 @@ function connection_pool.release(pool,conn)
 end
 
 function connection_pool.query(pool,fmtsql,...)
-	local starttime = skynet.time()
-	local conn = pool:occupy()
-	local ok,res = xpcall(conn.query,traceback,conn,fmtsql,...)
-	if not ok then
-		log.error("msyqld connection_pool query got error,%s",res)
-		pool:release(conn)
-		error(res)
-		return
+	local ok,res
+	local conn
+	local starttime 
+	for i = 1,retry_query_times do
+		starttime = skynet.time()
+		conn = pool:occupy()
+		ok,res = xpcall(conn.query,traceback,conn,fmtsql,...)
+		if ok then
+			pool:release(conn)
+			local delta = skynet.time() - starttime
+			if delta > query_ttl_time then
+				log.warning("msyqld connection_pool.query max_ttl %s,sql:\"%s\"",delta,fmtsql)
+			end
+			return res
+		end
+
+		log.error("msyqld connection_pool query got error %s times,retry,%s",i,res)
+		conn:close()
 	end
-	pool:release(conn)
-	local delta = skynet.time() - starttime
-	if delta > query_ttl_time then
-		log.warning("msyqld connection_pool.query max_ttl %s,sql:\"%s\"",delta,fmtsql)
-	end
-	return res
+
+	log.error("msyqld connection_pool query got error,retry %s times,failed,%s",retry_query_times,res)
+	error(res)
 end
 
 function connection_pool.begin_transaction(pool)
