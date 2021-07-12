@@ -91,8 +91,9 @@ end
 
 function connection_pool.wakeup(pool)
 	local co = tremove(pool.__waiting,1)
-	if co then
+	while co do
 		skynet.wakeup(co)
+		co = tremove(pool.__waiting,1)
 	end
 end
 
