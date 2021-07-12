@@ -86,7 +86,7 @@ end
 function connection_pool.wait(pool)
 	local co = coroutine.running()
 	tinsert(pool.__waiting,co)
-	skynet.wait()
+	skynet.wait(co)
 end
 
 function connection_pool.wakeup(pool)
