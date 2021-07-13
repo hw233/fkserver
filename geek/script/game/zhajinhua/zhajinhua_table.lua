@@ -1304,6 +1304,8 @@ function zhajinhua_table:add_score(player,msg)
 			self:game_balance(player)
 			return
 		end
+
+		player.death = true
 	end
 
 	self:next_turn()
