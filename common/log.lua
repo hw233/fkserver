@@ -12,6 +12,15 @@ local debuglayer = 3
 local bootconf = require "conf.boot"
 local stdout_enable = bootconf.stdout_log
 
+
+local function logservice()
+    if not logd or logd == ".logger" then
+        logd = skynet.localname(".logger") or ".logger"
+    end
+
+    return logd
+end
+
 local function debuginfo()
     return debug.getinfo(debuglayer)
 end
@@ -32,7 +41,7 @@ local level_fmts = {
 }
 
 local function log_out(s,level)
-    skynet.send(logd, "lua",LOG_NAME or SERVICE_NAME,s)
+    skynet.send(logservice(), "lua",LOG_NAME or SERVICE_NAME,s)
 
     if not stdout_enable then
         return
@@ -158,7 +167,7 @@ function log.dump(value,description,nesting)
 end
 
 skynet.init(function()
-	logd =  skynet.localname(".logger") or ".logger"
+	logservice()
 end)
 
 return log
