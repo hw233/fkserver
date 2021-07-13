@@ -1170,6 +1170,11 @@ function maajan_table:on_action_after_chu_pai(player,msg)
 
     if top_done_act == ACTION.HU then
         local hu_actions = table.series(all_actions,function(act) return act.done.action == ACTION.HU and act or nil end)
+        local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+        if table.nums(hu_actions) > 1 and hu_count_before == 0 then
+            chu_pai_player.first_multi_pao = true
+        end
+
         for _,act in pairs(hu_actions) do
             local p = self.players[act.chair_id]
             p.hu = {
@@ -1193,10 +1198,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
             self:broadcast_player_hu(p,act.done.action)
             p.statistics.hu = (p.statistics.hu or 0) + 1
             chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-        end
-
-        if table.nums(hu_actions) > 1 then
-            chu_pai_player.multi_pao = true
         end
 
         table.pop_back(chu_pai_player.pai.desk_tiles)
@@ -2294,7 +2295,7 @@ function maajan_table:ding_zhuang()
     end
 
     for _,p in pairs(self.players) do
-        if p.multi_pao then
+        if p.first_multi_pao then
             return p.chair_id
         end
     end
