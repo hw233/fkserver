@@ -56,7 +56,7 @@ function CMD.start(conf)
 	def_second_game_type = gameconf.second_game_type
 	global_conf = channel.call("config.?","msg","global_conf")
 
-	LOG_NAME = def_game_name .. "." .. def_first_game_type
+	LOG_NAME = string.format("%s.%d.%d",def_game_name,def_first_game_type,def_game_id)
 
 	log.info("start game %s.%d.%d",gameconf.gamename,gameconf.first_game_type,gameconf.second_game_type)
 
