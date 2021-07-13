@@ -29,7 +29,7 @@ function CMD.start(conf)
     sconf = conf
     def_db_id = conf.id
     serviceid = conf.id
-    LOG_NAME = "db_" .. conf.id
+    LOG_NAME = string.format("db.%d",conf.id)
 end
 
 skynet.start(function()

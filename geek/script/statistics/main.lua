@@ -40,7 +40,7 @@ local CMD = {}
 
 function CMD.start(conf)
     checkdbconf(conf)
-    LOG_NAME = "statistics_" .. conf.id
+    LOG_NAME = string.format("statistics.%d",conf.id)
 end
 
 
