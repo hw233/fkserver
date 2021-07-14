@@ -1104,13 +1104,14 @@ function maajan_table:on_action_after_chu_pai(player,msg)
     self:cancel_clock_timer()
 
     local all_actions = table.values(self.waiting_actions)
+    
+    self.waiting_actions = nil
+
     if table.nums(all_actions) == 0 then
         self:next_player_index()
         self:mo_pai()
         return
     end
-
-    self.waiting_actions = nil
 
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
