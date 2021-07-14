@@ -448,7 +448,8 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     local qiang_hu_count = table.sum(self.qiang_gang_actions or {},function(waiting)
         return (waiting.done and waiting.done.action & (ACTION.QIANG_GANG_HU | ACTION.HU)) and 1 or 0
     end)
-    chu_pai_player.first_multi_pao = qiang_hu_count > 1 or nil
+    local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
+    chu_pai_player.first_multi_pao = (hu_count_before == 0 and qiang_hu_count > 1) or nil
 
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
@@ -456,7 +457,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
         p.hu = {
             time = timer.nanotime(),
             tile = done_action_tile,
-            types = self:hu(p,done_action_tile),
+            types = self:hu(p,done_action_tile,nil,true),
             zi_mo = false,
             whoee = self.chu_pai_player_index,
             qiang_gang = true,
@@ -891,7 +892,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
         self:foreach_except(player,function(p)
             if p.hu then return end
 
-            local actions = self:get_actions(p,nil,tile)
+            local actions = self:get_actions(p,nil,tile,true)
             if not actions[ACTION.HU] then return end
 
             qiang_gang_hu[p.chair_id] = {
@@ -1880,13 +1881,13 @@ function maajan_table:calc_types(ts)
         table.sum(ts,function(t) return (t.count or 1) * (t.fan or 0) end)
 end
 
-function maajan_table:hu_fan(player,in_pai,mo_pai)
+function maajan_table:hu_fan(player,in_pai,mo_pai,qiang_gang)
     local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
-    local ext_hu = self:ext_hu(player,in_pai,mo_pai)
+    local ext_hu = self:ext_hu(player,mo_pai,qiang_gang)
     local hu = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
     local types = table.merge(hu,self:gang_types(player),function(l,r) return l or r end)
-    local _,fan = self:calc_types(types)
-    return fan or 1
+    local score,fan = self:calc_types(types)
+    return fan or 0,score or 0
 end
 
 function maajan_table:get_actions_first_turn(p,mo_pai)
@@ -1917,7 +1918,7 @@ function maajan_table:get_actions_first_turn(p,mo_pai)
     return actions
 end
 
-function maajan_table:get_actions(p,mo_pai,in_pai)
+function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     local si_dui = self.rule.play and self.rule.play.si_dui
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
 
@@ -1944,7 +1945,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai)
         end
     end
 
-    if in_pai and not self:can_hu(p,in_pai) and actions[ACTION.HU] then
+    if in_pai and not self:can_hu(p,in_pai,mo_pai,qiang_gang) and actions[ACTION.HU] then
         actions[ACTION.HU] = nil
     end
 
@@ -2050,14 +2051,7 @@ function maajan_table:on_mo_pai(player,mo_pai)
 end
 
 function maajan_table:calculate_hu(hu)
-    local types = self:serial_types(hu.types)
-
-    if hu.qiang_gang then
-        local type_info = HU_TYPE_INFO[HU_TYPE.QIANG_GANG_HU]
-        table.insert(types,{type = HU_TYPE.QIANG_GANG_HU,fan = type_info.fan,score = type_info.score,count = 1})
-    end
-
-    return types
+    return self:serial_types(hu.types)
 end
 
 function maajan_table:calculate_gang(p)
@@ -2741,12 +2735,11 @@ function maajan_table:begin_clock(timeout,player,total_time)
     })
 end
 
-function maajan_table:ext_hu(player,in_pai,mo_pai)
+function maajan_table:ext_hu(player,mo_pai,qiang_gang)
     local types = {}
 
     local chu_pai_player = self:chu_pai_player()
 
-    
     if self.rule.play.tian_di_hu then
         if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
             types[HU_TYPE.TIAN_HU] = 1
@@ -2780,6 +2773,10 @@ function maajan_table:ext_hu(player,in_pai,mo_pai)
 
     if chu_pai_player ~= player and discarder_last_action and def.is_action_gang(discarder_last_action.action) then
         types[HU_TYPE.GANG_SHANG_PAO] = 1
+    end
+
+    if qiang_gang then
+        types[HU_TYPE.QIANG_GANG_HU] = 1
     end
 
     return types
@@ -2828,21 +2825,9 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
     return types[1] or {}
 end
 
-function maajan_table:min_rule_hu(pai,in_pai,mo_pai)
-    local types = self:rule_hu_types(pai,in_pai,mo_pai)
-
-    table.sort(types,function(l,r)
-        local lscore,lfan = self:calc_types(l)
-        local rscore,rfan = self:calc_types(r)
-        return lscore + 2 ^ lfan < rscore + 2 ^ rfan
-    end)
-
-    return types[1] or {}
-end
-
-function maajan_table:hu(player,in_pai,mo_pai)
+function maajan_table:hu(player,in_pai,mo_pai,qiang_gang)
     local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
-    local ext_hu = self:ext_hu(player,in_pai,mo_pai)
+    local ext_hu = self:ext_hu(player,mo_pai,qiang_gang)
     return table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
 end
 
@@ -2851,7 +2836,7 @@ function maajan_table:is_hu(pai,in_pai)
     return mj_util.is_hu(pai,in_pai,si_dui)
 end
 
-function maajan_table:can_hu(player,in_pai)
+function maajan_table:can_hu(player,in_pai,mo_pai,qiang_gang)
     local room_private_conf = self:room_private_conf()
     if not room_private_conf.play then
         return self:is_hu(player.pai,in_pai)
@@ -2865,24 +2850,9 @@ function maajan_table:can_hu(player,in_pai)
         return self:is_hu(player.pai,in_pai)
     end
 
-    local hu_types = self:hu(player,in_pai)
-    if table.nums(hu_types) == 0 then
-        return false
-    end
-    
-    local score,fan = self:calc_types(hu_types)
-
-    local gang = table.sum(player.pai.ming_pai,function(s)
-        return (s.type == SECTION_TYPE.AN_GANG or s.type == SECTION_TYPE.MING_GANG or
-                s.type == SECTION_TYPE.BA_GANG or s.type == SECTION_TYPE.FREE_BA_GANG or
-                s.type == SECTION_TYPE.FREE_AN_GANG) and 1 or 0
-    end)
-
-    log.dump(gang)
-
-    return  gang > 0 or score > 1 or fan > 0
+    local score,fan = self:hu_fan(player,in_pai,mo_pai,qiang_gang)
+    return fan > 0
 end
-
 
 function maajan_table:get_ting_tiles_info(player)
     self:lockcall(function()
