@@ -1945,7 +1945,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         end
     end
 
-    if in_pai and not self:can_hu(p,in_pai,mo_pai,qiang_gang) and actions[ACTION.HU] then
+    if in_pai and not self:can_hu(p,in_pai,nil,qiang_gang) and actions[ACTION.HU] then
         actions[ACTION.HU] = nil
     end
 
@@ -2850,7 +2850,7 @@ function maajan_table:can_hu(player,in_pai,mo_pai,qiang_gang)
         return self:is_hu(player.pai,in_pai)
     end
 
-    local score,fan = self:hu_fan(player,in_pai,mo_pai,qiang_gang)
+    local fan,score = self:hu_fan(player,in_pai,mo_pai,qiang_gang)
     return fan > 0
 end
 
