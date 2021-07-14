@@ -2,12 +2,19 @@ local skynet = require "skynetproto"
 local log = require "log"
 local timer = require "timer"
 local queue = require "skynet.queue"
+require "functions"
 
 require "functions"
 
 LOG_NAME = "redis_cached"
 
-local redisd = ".redisd"
+local cached = ...
+
+assert(cached)
+
+cached = tonumber(cached)
+
+local redisd
 
 local table = table
 local tinsert = table.insert
@@ -372,38 +379,12 @@ setmetatable(command,{
 	end
 })
 
-local CMD = {}
-
-function CMD.command(db,cmd,...)
-	return command[cmd](db,...)
-end
-
-function CMD.close(...)
-    return skynet.call(redisd,"lua",...)
-end
-
-skynet.init(function()
-	redisd = skynet.uniqueservice("service.redisd")
-end)
-
-skynet.start(function()
-	skynet.dispatch("lua", function (_, _, cmd, ...)
-		local f = CMD[cmd]
-		if f then
-			skynet.retpack(f(...))
-		else
-			log.error("unknown cmd:"..cmd)
-		end
+skynet.start(function()	
+	redisd = skynet.call(cached,"lua","REDIS")
+	skynet.dispatch("lua", function (_, _,db,cmd,...)
+		local f = command[cmd]
+		skynet.retpack(f(cmd,...))
 	end)
-
-	require "skynet.manager"
-	local handle = skynet.localname ".cache_redisd"
-	if handle then
-		skynet.exit()
-		return handle
-	end
-
-	skynet.register ".cache_redisd"
 
 	-- elapsed_cache_key()
 end)

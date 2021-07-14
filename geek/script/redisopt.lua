@@ -2,31 +2,39 @@ local skynet = require "skynet"
 local log = require "log"
 local meta_tree = require "redismetadata"
 local meta_matcher = require "redisorm.meta_matcher"
+local crc16 = require "crc16"
 
 require "functions"
 
-local redisd = ".redisd"
+local cached
+local cacheagent
 
+local function get_command_key(key,...)
+	return tostring(key)
+end
+
+local function get_slot(key)
+	return (crc16(key) % #cacheagent) + 1
+end
+
+local function do_slot_command(slot,db,cmd,...)
+	return skynet.call(cacheagent[slot],"lua",db,cmd,...)
+end
+
+local function do_command(db,cmd,...)
+	local key = get_command_key(...)
+	return skynet.call(cacheagent[get_slot(key)],"lua",db,cmd,...)
+end
 
 local function expand(tb)
-	if not tb then return nil end
-	local list = {}
-	for k,v in pairs(tb) do
-		table.insert(list,k)
-		table.insert(list,v)
-	end
-	return list
+	if not tb then return end
+	return table.expand(tb)
 end
 
 local function fold(tb)
-	if not tb then return nil end
-
-	local t = {}
-	for i = 1,#tb,2 do
-		t[tostring(tb[i])] = tb[i + 1]
-	end
-
-	return t
+	if not tb then return end
+	
+	return table.fold(tb)
 end
 
 local function meta_decode(v,key,node)
@@ -134,9 +142,7 @@ local function key_args(self,...)
 	return key,args
 end
 
-local function do_command(db,cmd,...)
-	return skynet.call(redisd,"lua","command",db,cmd,...)
-end
+
 
 local function batch_field_commander(cmd,ret_formater,arg_formater,encoder,decoder)
 	ret_formater = ret_formater or raw_ret_formater
@@ -239,6 +245,52 @@ local command = {
 	sdiff = commander("sdiff",nil,nil,nil,raw_decoder),
 }
 
+function command:mget(...)
+	local keys = {...}
+	local slotkeys = {}
+	for k in pairs(keys) do
+		local slot = get_slot(k)
+		slotkeys[slot] = slotkeys[slot] or {}
+		table.insert(slotkeys[slot],k)
+	end
+
+	local slotvalues = table.map(slotkeys,function(ks,slot)
+		local values = do_slot_command(slot,self.__db,"mget",table.unpack(ks))
+
+		local dict = {}
+		for i = 1,#ks do
+			dict[ks[i]] = values[i]
+		end
+
+		return dict
+	end)
+
+	local keyvalue = {}
+	for slot,map in pairs(slotvalues) do
+		for k,v in pairs(map) do
+			keyvalue[k] = v
+		end
+	end
+
+	return table.series(keys,function(k) return keyvalue[k] end)
+end
+
+function command:mset(...)
+	local keys = {...}
+	local slotkeyvalue = {}
+	for k,v in pairs(fold(keys)) do
+		local slot = get_slot(k)
+		slotkeyvalue[slot] = slotkeyvalue[slot] or {}
+		slotkeyvalue[slot][k] = v
+	end
+	
+	local ret = table.And(slotkeyvalue,function(keyvalue,slot)
+		return do_slot_command(slot,self.__db,"mset",table.unpack(expand(keyvalue)))
+	end)
+
+	return ret
+end
+
 setmetatable(command, {
 	__index = function(t,cmd)
 		local f = function(t,key,...)
@@ -250,53 +302,7 @@ setmetatable(command, {
 	end
 })
 
-local key_command = {
-	hmset = batch_field_commander("hmset",dict_ret_formater,dict_arg_formater,raw_encoder,nil_decoder),
-	hmget = batch_field_commander("hmget",list_ret_formater,nil,nil,batch_decoder),
-	hgetall = commander("hgetall",dict_ret_formater,nil,nil,dict_decoder),
-	hget = field_commander("hget",nil,nil,nil,raw_decoder),
-	hset = field_commander("hset"),
-	mset = batch_key_commander("mset",nil,dict_arg_formater,nil,nil),
-	mget = batch_key_commander("mget",list_arg_formater,nil,nil,batch_decoder),
-	get = commander("get"),
-	incr = commander("incr"),
-	incrby = commander("incrby"),
-	incrbyfloat = commander("incrbyfloat"),
-	decr = commander("decr"),
-	decrby = commander("decrby"),
-	hincrby = field_commander("hincrby"),
-	hincrbyfloat = field_commander("hincrbyfloat"),
-	smembers = commander("smembers",nil,nil,nil,raw_decoder),
-	sdiff = commander("sdiff",nil,nil,nil,raw_decoder),
-}
-
-setmetatable(key_command, {
-	__index = function(t,cmd)
-		local f = function(t,...)
-			local v = do_command(t.__db,cmd,t.__key,...)
-			return v
-		end
-		t[cmd] = f
-		return f
-	end
-})
-
-local function create_key(db,fmt,...)
-	return setmetatable({
-		__db = db,
-		__key = string.format(fmt,...),
-	},{
-		__index = key_command
-	})
-end
-
-local redis_db = {}
-
-function redis_db.key(self,fmt,...)
-	return create_key(self.__db,fmt,...)
-end
-
-setmetatable(redis_db,{__index = command,})
+local redis_db = setmetatable({},{__index = command,})
 
 local redis = setmetatable({},{
 	__index = function(t,name)
@@ -306,18 +312,11 @@ local redis = setmetatable({},{
 	end
 })
 
-function redis.connect(conf)
-	return skynet.call(redisd,"lua","connect",conf)
-end
-
-function redis.close(db)
-	return skynet.call(redisd,"lua","close",db)
-end
-
 redis.default = redis[1]
 
 skynet.init(function()
-	redisd = skynet.uniqueservice("service.cache_redisd")
+	cached = skynet.uniqueservice("cached")
+	cacheagent = skynet.call(cached,"lua","AGENT")
 end)
 
 return redis

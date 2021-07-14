@@ -87,15 +87,6 @@ function CMD.close(db)
 end
 
 skynet.start(function()
-	skynet.dispatch("lua", function (_, _, cmd, ...)
-		local f = CMD[cmd]
-		if f then
-			skynet.retpack(f(...))
-		else
-			log.error("unknown cmd:"..cmd)
-		end
-	end)
-
 	require "skynet.manager"
 	local handle = skynet.localname ".redisd"
 	if handle then
@@ -104,4 +95,13 @@ skynet.start(function()
 	end
 
 	skynet.register ".redisd"
+
+	skynet.dispatch("lua", function (_, _, cmd, ...)
+		local f = CMD[cmd]
+		if f then
+			skynet.retpack(f(...))
+		else
+			log.error("unknown cmd:"..cmd)
+		end
+	end)
 end)
