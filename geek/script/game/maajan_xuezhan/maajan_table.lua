@@ -1087,6 +1087,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         return
     end
 
+    local msgaction = msg.action
+
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
         action.done = {
@@ -1097,14 +1099,33 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         self:cancel_auto_action_timer(self.players[chair])
     end
 
-    if not table.And(self.waiting_actions,function(action) return action.done ~= nil end) then
-        return 
+    local hu_action_count = table.sum(self.waiting_actions,function(action)
+        return action.actions[ACTION.HU] and 1 or 0
+    end)
+
+    local hu_done_count = table.sum(self.waiting_actions,function(action)
+        return (action.actions[ACTION.HU] and action.done ~= nil) and 1 or 0
+    end)
+
+    local hu_count = table.sum(self.waiting_actions,function(action)
+        return (action.done ~= nil and action.done.action == ACTION.HU) and 1 or 0
+    end)
+
+    if  hu_action_count == 0 or
+        hu_action_count > hu_done_count or
+        hu_count == 0
+    then
+        if not table.And(self.waiting_actions,function(action) return action.done ~= nil end) then
+            return
+        end
     end
 
     self:cancel_clock_timer()
 
-    local all_actions = table.values(self.waiting_actions)
-    
+    local all_actions = table.series(self.waiting_actions,function(action)
+        return action.done ~= nil and action or nil
+    end)
+
     self.waiting_actions = nil
 
     if table.nums(all_actions) == 0 then
