@@ -241,7 +241,7 @@ function maajan_table:on_started(player_count)
         v.mo_pai = nil
         v.chu_pai = nil
         v.que = nil
-        v.multi_pao = nil
+        v.first_multi_pao = nil
         v.gzh = nil
         v.gsp = nil
 
@@ -448,7 +448,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg)
     local qiang_hu_count = table.sum(self.qiang_gang_actions or {},function(waiting)
         return (waiting.done and waiting.done.action & (ACTION.QIANG_GANG_HU | ACTION.HU)) and 1 or 0
     end)
-    chu_pai_player.multi_pao = qiang_hu_count > 1 or nil
+    chu_pai_player.first_multi_pao = qiang_hu_count > 1 or nil
 
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
