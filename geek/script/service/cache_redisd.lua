@@ -3,6 +3,8 @@ local log = require "log"
 local timer = require "timer"
 local queue = require "skynet.queue"
 
+require "functions"
+
 LOG_NAME = "redis_cached"
 
 local redisd = ".redisd"
@@ -10,14 +12,20 @@ local redisd = ".redisd"
 local table = table
 local tinsert = table.insert
 local tremove = table.remove
+local fold_into = table.fold_into
+local expand = table.expand
 
 local cache = {}
 local cachequeue = {}
-local locks = setmetatable({},{
+local queuelock = setmetatable({},{
 	__index = function(t,k)
 		local q = queue()
 		t[k] = q
 		return q
+	end,
+	__call = function(t,key,fn,...)
+		local l = t[key]
+		return l(fn,...)
 	end,
 })
 
@@ -28,7 +36,7 @@ local function cache_push(key,value)
 		value = value,
 		time = os.time(),
 	}
-	tinsert(cachequeue,key)
+	-- tinsert(cachequeue,key)
 end
 
 local function check_clean_cache(key)
@@ -40,20 +48,18 @@ local function check_clean_cache(key)
 		
 		log.info("del cache key %s",key)
 		cache[key] = nil
-		locks[key] = nil
+		queuelock[key] = nil
 	end
 	return true
 end
 
 local function elapsed_cache_key()
 	local key
-	local lock
 	for _ = 1,1000 do
 		key = tremove(cachequeue,1)
 		if not key then break end
 		
-		lock = locks[key]
-		if not lock(check_clean_cache,key) then
+		if not queuelock(key,check_clean_cache,key) then
 			tinsert(cachequeue,key)
 		end
 	end
@@ -71,30 +77,11 @@ local function new_commander(cmd,fn)
 	end
 end
 
-local function fold(list,tb)
-	tb = tb or {}
-	for i = 1,#list,2 do
-		tb[list[i]] = list[i + 1]
-	end
-	return tb
-end
-
-local function expand(tb)
-	local list = {}
-	for k,v in pairs(tb) do
-		tinsert(list,k)
-		tinsert(list,v)
-	end
-
-	return list
-end
-
-
 local function hash_set(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
-			fold({...},c.value)
+			fold_into({...},c.value)
 		end
 
 		return do_redis_command(db,cmd,key,...)
@@ -102,26 +89,24 @@ local function hash_set(db,cmd,key,...)
 end
 
 local function hash_get(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
-			assert(type(c) == "table")
 			local cvalue = c.value
-			assert(type(cvalue) == "table")
 
 			return expand(cvalue)
 		end
 		
 		local data = do_redis_command(db,cmd,key,...)
 		
-		cache_push(key,fold(data))
+		cache_push(key,fold_into(data))
 
 		return data
 	end,...)
 end
 
 local function hash_get_set(db,cmd,key,field,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local val = do_redis_command(db,cmd,key,field,...)
 
 		local c = cache[key]
@@ -135,22 +120,20 @@ local function hash_get_set(db,cmd,key,field,...)
 end
 
 local function hash_batch_get(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local fields = {...}
 		local c = cache[key]
 		if c then
-			assert(type(c) == "table")
 			local cvalue = c.value
-			assert(type(cvalue) == "table")
 
 			local uncache_fields = table.series(fields,function(f)
 				if not cvalue[f] then return f end
 			end)
 
 			if #uncache_fields > 0 then
-				local uncache_values = do_redis_command(db,"hmget",key,table.unpack(uncache_fields))
-				for i,f in pairs(uncache_fields) do
-					cvalue[f] = uncache_values[i]
+				local fvalues = do_redis_command(db,"hmget",key,table.unpack(fields))
+				for i,f in pairs(fields) do
+					cvalue[f] = fvalues[i]
 				end
 			end
 			
@@ -172,7 +155,7 @@ local function hash_batch_get(db,cmd,key,...)
 end
 
 local function hash_del(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			local cvalue = c.value
@@ -185,25 +168,31 @@ local function hash_del(db,cmd,key,...)
 	end,...)
 end
 
-local function string_get(db,cmd,...)
-	local keys = {...}
-
-	local uncache_keys = table.series(keys,function(k)
-		if not cache[k] then return k end
-	end)
-
-	if #uncache_keys > 0 then
-		local uncache_values = do_redis_command(db,"mget",table.unpack(uncache_keys))
-		for i,key in pairs(uncache_keys) do
-			cache_push(key,uncache_values[i])
+local function string_get(db,cmd,key)
+	return queuelock(key,function() 
+		local c = cache[key]
+		if c then
+			return c.value
 		end
-	end
-	
-	local values = table.series(keys,function(key) return cache[key].value end)
-	return table.unpack(values)
+
+		local v = do_redis_command(db,"get",key)
+		cache_push(key,v)
+		return v
+	end)
 end
 
-local function string_set(db,cmd,...)
+local function string_mget(db,cmd,...)
+	return do_redis_command(db,cmd,...)
+end
+
+local function string_set(db,cmd,key,val)
+	return queuelock(key,function()
+		cache[tostring(key)] = val
+		return do_redis_command(db,cmd,key,val)
+	end)
+end
+
+local function string_mset(db,cmd,...)
 	local kvs = {...}
 	for i = 1,#kvs,2 do
 		cache[tostring(kvs[i])] = nil
@@ -212,7 +201,7 @@ local function string_set(db,cmd,...)
 end
 
 local function string_get_set(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local val = do_redis_command(db,cmd,key,...)
 		cache[key] = nil
 		return val
@@ -220,7 +209,7 @@ local function string_get_set(db,cmd,key,...)
 end
 
 local function set_add(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			local cvalue = c.value
@@ -234,7 +223,7 @@ local function set_add(db,cmd,key,...)
 end
 
 local function set_get(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			return table.keys(c.value)
@@ -261,7 +250,7 @@ local function set_move(db,cmd,src,target,member,...)
 end
 
 local function set_pop(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local vals = do_redis_command(db,cmd,key,...)
 		local c = cache[key]
 		if c and vals then
@@ -276,7 +265,7 @@ local function set_pop(db,cmd,key,...)
 end
 
 local function set_del(db,cmd,key,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			local cvalue = c.value
@@ -290,8 +279,11 @@ local function set_del(db,cmd,key,...)
 end
 
 local function key_del(db,cmd,key,...)
-	cache[key] = nil
-	return do_redis_command(db,cmd,key,...)
+	return queuelock(key,function(...)
+		cache[key] = nil
+		queuelock[key] = nil
+		return do_redis_command(db,cmd,key,...)
+	end,...)
 end
 
 local function key_rename(db,cmd,key1,key2,...)
@@ -301,7 +293,7 @@ local function key_rename(db,cmd,key1,key2,...)
 end
 
 local function key_expire(db,cmd,key,seconds,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			c.time = os.time() + (seconds - default_elapsed_time + 1)
@@ -312,7 +304,7 @@ local function key_expire(db,cmd,key,seconds,...)
 end
 
 local function key_expire_at(db,cmd,key,timestamp,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			c.time = timestamp - (default_elapsed_time + 1)
@@ -323,7 +315,7 @@ local function key_expire_at(db,cmd,key,timestamp,...)
 end
 
 local function key_pexpire(db,cmd,key,milliseconds,...)
-	return locks[key](function(...)
+	return queuelock(key,function(...)
 		local c = cache[key]
 		if c then
 			c.time = os.time() + (math.ceil(milliseconds / 1000) - default_elapsed_time)
@@ -332,27 +324,6 @@ local function key_pexpire(db,cmd,key,milliseconds,...)
 		return do_redis_command(db,cmd,key,milliseconds,...)
 	end,...)
 end
-
-local function key_pexpire_at(db,cmd,key,milliseconds_timestamp,...)
-	return locks[key](function(...)
-		local c = cache[key]
-		if c then
-			c.time = math.floor(milliseconds_timestamp / 1000) - (default_elapsed_time + 1)
-		end
-
-		return do_redis_command(db,cmd,key,milliseconds_timestamp,...)
-	end,...)
-end
-
-
-local key_commander = {
-	del = new_commander("del",key_del),
-	rename = new_commander("rename",key_rename),
-	expire = new_commander("expire",key_expire),
-	expireat = new_commander("expireat",key_expire_at),
-	pexpire = new_commander("pexpire",key_pexpire),
-	pexpireat = new_commander("pexpireat",key_pexpire),
-}
 
 local command = {
 	hset = new_commander("hset",hash_set),
@@ -364,9 +335,9 @@ local command = {
 	hincrbyfloat = new_commander("hincrbyfloat",hash_get_set),
 
 	get = new_commander("get",string_get),
-	mget = new_commander("mget",string_get),
+	mget = new_commander("mget",string_mget),
 	set = new_commander("set",string_set),
-	mset = new_commander("mset",string_set),
+	mset = new_commander("mset",string_mset),
 	incr = new_commander("incr",string_get_set),
 	incrby = new_commander("incrby",string_get_set),
 	incrbyfloat = new_commander("incrbyfloat",string_get_set),
