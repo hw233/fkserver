@@ -670,6 +670,33 @@ function table.flatten(tbs,agg)
     return t
 end
 
+function table.fold(l)
+    local t = {}
+    for i = 1,#l,2 do
+        t[l[i]] = l[i + 1]
+    end
+    return t
+end
+
+function table.fold_into(l,tb)
+    tb = tb or {}
+
+    for i = 1,#l,2 do
+        tb[l[i]] = l[ i + 1]
+    end
+
+    return tb
+end
+
+function table.expand(tb)
+    local t = {}
+    for k,v in pairs(tb) do
+        table.insert(t,k)
+        table.insert(t,v)
+    end
+    return t
+end
+
 function table.pop_back(tb)
 	local ret = tb[#tb]
 	table.remove(tb)
