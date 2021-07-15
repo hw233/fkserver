@@ -184,11 +184,23 @@ function pdk_table:on_started(player_count)
 end
 
 function pdk_table:deal_cards()
-	local all_count = self.start_count * 10
+	local play = self.rule and self.rule.play or {}
+	
+	local c_cards = {}
+	if play.que_yi_se then
+		for _,c in pairs(all_cards) do
+			if cards_util.color(c) ~= 2 then
+				tinsert(c_cards,c)
+			end
+		end
+	else
+		c_cards = clone(all_cards)
+	end
+
 	local cards = {5}
-	local c_cards = clone(all_cards)
 	local k = #c_cards
 	local n = 1
+	local all_count = self.start_count * 10
 	while n <= all_count - 1 do
 		local i = math.random(1,k)
 		local c = c_cards[i]
@@ -210,7 +222,6 @@ function pdk_table:deal_cards()
 	dealer:layout_cards(table.union_tables(pei_cards))
 
 	local laizi_value
-	local play = self.rule and self.rule.play or {}
 	if play.lai_zi then
 		laizi_value = math.random(5,14)
 		self.laizi = cards_util.laizi_card(laizi_value)
