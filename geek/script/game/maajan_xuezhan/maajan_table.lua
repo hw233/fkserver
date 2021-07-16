@@ -2239,7 +2239,7 @@ function maajan_table:on_game_overed()
     self.zhuang = self:ding_zhuang() or self.zhuang
 
     self:clear_ready()
-    self:update_state(FSM_S.PER_BEGIN)
+    self.cur_state_FSM = nil
 
     self:foreach(function(v)
         v.hu = nil
@@ -2351,7 +2351,7 @@ function maajan_table:tile_count_2_tiles(counts,excludes)
 end
 
 function maajan_table:is_play(...)
-	return self.cur_state_FSM and self.cur_state_FSM ~= FSM_S.GAME_CLOSE and self.cur_state_FSM ~= FSM_S.PER_BEGIN
+    return self.cur_state_FSM ~= nil
 end
 
 function maajan_table:clear_deposit_and_time_out(player)
