@@ -670,27 +670,42 @@ function table.flatten(tbs,agg)
     return t
 end
 
-function table.fold(l)
+function table.fold(l,fn)
     local t = {}
+    local k,v
     for i = 1,#l,2 do
-        t[l[i]] = l[i + 1]
+        if fn then
+            k,v = fn(l[i + 1],l[i])
+        else
+            k,v = l[i],l[i + 1]
+        end
+        t[k] = v
     end
     return t
 end
 
-function table.fold_into(l,tb)
+function table.fold_into(l,tb,fn)
     tb = tb or {}
 
+    local k,v
     for i = 1,#l,2 do
-        tb[l[i]] = l[ i + 1]
+        if fn then
+            k,v = fn(l[i + 1],l[i])
+        else
+            k,v = l[i],l[i + 1]
+        end
+        tb[k] = v
     end
 
     return tb
 end
 
-function table.expand(tb)
+function table.expand(tb,fn)
     local t = {}
     for k,v in pairs(tb) do
+        if fn then
+            k,v = fn(v,k)
+        end
         table.insert(t,k)
         table.insert(t,v)
     end
