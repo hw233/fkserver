@@ -1087,8 +1087,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         return
     end
 
-    local msgaction = msg.action
-
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
         action.done = {
@@ -1127,12 +1125,6 @@ function maajan_table:on_action_after_chu_pai(player,msg)
     end)
 
     self.waiting_actions = nil
-
-    if table.nums(all_actions) == 0 then
-        self:next_player_index()
-        self:mo_pai()
-        return
-    end
 
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
@@ -2036,6 +2028,11 @@ function maajan_table:check_action_before_do(waiting_actions,player,msg)
     local action = msg.action
     local chair_id = player.chair_id
     local tile = msg.value_tile
+    if not waiting_actions then
+        log.error("waiting actions nil when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
+        return
+    end
+
     local player_actions = waiting_actions[chair_id]
     if not player_actions then
         log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
@@ -2057,6 +2054,11 @@ function maajan_table:check_action_before_do(waiting_actions,player,msg)
             log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
             return
         end
+    end
+
+    if not actions[action] or not actions[action][tile] then
+        log.error("no action waiting when check_action_before_do,chair_id %s,action:%s,tile:%s",chair_id,action,tile)
+        return
     end
 
     return player_actions
