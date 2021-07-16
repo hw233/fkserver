@@ -6,20 +6,11 @@ local chronos = require "chronos"
 
 local print = print
 local SERVICE_NAME = SERVICE_NAME
-local logd = ".logger"
+local logd = ".logd"
 local debuglayer = 3
 
 local bootconf = require "conf.boot"
 local stdout_enable = bootconf.stdout_log
-
-
-local function logservice()
-    if not logd or logd == ".logger" then
-        logd = skynet.localname(".logger") or ".logger"
-    end
-
-    return logd
-end
 
 local function debuginfo()
     return debug.getinfo(debuglayer)
@@ -41,7 +32,7 @@ local level_fmts = {
 }
 
 local function log_out(s,level)
-    skynet.send(logservice(), "lua",LOG_NAME or SERVICE_NAME,s)
+    skynet.send(logd, "lua",LOG_NAME or SERVICE_NAME,s)
 
     if not stdout_enable then
         return
@@ -167,7 +158,7 @@ function log.dump(value,description,nesting)
 end
 
 skynet.init(function()
-	logservice()
+	logd = skynet.uniqueservice("logd")
 end)
 
 return log

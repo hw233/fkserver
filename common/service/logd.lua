@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local chronos = require "chronos"
-local channel = require "channel"
+
 local log_name_files = {}
 local service_file = {}
 
@@ -34,7 +34,7 @@ local function do_log(_,_,servicename,log)
     file:flush()
 end
 
-local function log_text_dispatch(_, address, msg)
+local function log_text(_, address, msg)
 	local time = chronos.nanotime()
 	local strtime = strfmt("[%s.%03d]",os.date("%Y-%m-%d %H:%M:%S",mfloor(time)),mceil((time % 1) * 1000))
 	local log = strfmt("%s %-8s%08x: %s",strtime,"SYSTEM ",address, msg)
@@ -48,7 +48,7 @@ skynet.register_protocol {
 	name = "text",
 	id = skynet.PTYPE_TEXT,
 	unpack = skynet.tostring,
-	dispatch = log_text_dispatch,
+	dispatch = log_text,
 }
 
 skynet.register_protocol {
@@ -56,20 +56,22 @@ skynet.register_protocol {
 	id = skynet.PTYPE_SYSTEM,
 	unpack = function(...) return ... end,
 	dispatch = function(_,address)
-		log_text_dispatch(_,address,"TERM")
+		local channel = require "channel"
+		log_text(_,address,"TERM")
 		local ok,err = pcall(channel.term)
 		if not ok then
-			log_text_dispatch(_,address,err)
+			log_text(_,address,err)
 		end
 		require "skynet.manager"
 		skynet.abort()
-		log_text_dispatch(_,address,"TERM END,ABORTED")
+		log_text(_,address,"TERM END,ABORTED")
 	end
 }
 
 skynet.dispatch("lua",do_log)
 
 skynet.start(function()
+	
 end)
 
 
