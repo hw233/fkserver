@@ -187,7 +187,10 @@ end
 
 local function string_set(db,cmd,key,val)
 	return queuelock(key,function()
-		cache[tostring(key)] = val
+		local c = cache[key]
+		if c then
+			c.value = val
+		end
 		return do_redis_command(db,cmd,key,val)
 	end)
 end
