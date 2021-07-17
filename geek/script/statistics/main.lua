@@ -58,10 +58,8 @@ function MSG.SS_GameRoundEnd(msg)
 
     local date = timestamp_date(tonumber(start_time))
 
-    log.dump(date)
-
     if maxmoney and maxmoney > 0 then
-        logdb:query(
+        local res = logdb:query(
             [[
             INSERT INTO t_log_player_daily_big_win_count(guid,club,game_id,count,date)
             VALUES(%s,%s,%s,1,%s)
@@ -69,6 +67,9 @@ function MSG.SS_GameRoundEnd(msg)
             ]],
             maxguid,club or 0,game_id,date
         )
+        if res.errno then
+            log.error("%s",res.err)
+        end
     end
     
     local winlosevalues = table.series(balance,function(money,guid)
@@ -82,61 +83,80 @@ function MSG.SS_GameRoundEnd(msg)
         return strfmt("(%s,%s,%s,1,%s,%s)",guid,club or 0,game_id,validcount,date)
     end)
 
-    local sqls = {
-        {
-            strfmt(
-                [[
-                    INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,valid_count,date)
-                    VALUES %s
-                    ON DUPLICATE KEY UPDATE 
-                    count = count + 1,
-                    valid_count = valid_count + VALUES(valid_count);
-                ]],
-                tconcat(countvalues,",")
-            )
-        },
-        {
-            strfmt(
-                [[
-                    INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
-                    VALUES %s
-                    ON DUPLICATE KEY UPDATE money = money + VALUES(money);
-                ]],
-                tconcat(winlosevalues,",")
-            )
-        }
-    }
+    local ret = logdb:query([[
+            INSERT INTO t_log_player_daily_play_count(guid,club,game_id,count,valid_count,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE 
+            count = count + 1,
+            valid_count = valid_count + VALUES(valid_count);
 
-    local ret = logdb:batchquery(sqls)
+            INSERT INTO t_log_player_daily_win_lose(guid,club,game_id,money,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE money = money + VALUES(money);
+        ]],
+        tconcat(countvalues,","),
+        tconcat(winlosevalues,",")
+    )
     if ret.errno then
         log.error('%s',ret.err)
     end
 
-    if club and club ~= 0 then
-        local values = {}
-        for guid,_ in pairs(balance or {}) do
-            tinsert(values,strfmt("(%s,%s,1,%s,%s)",guid,club,validcount,date))
-            local partner = club_member_partner[club][guid]
-            while partner and partner ~= 0 do
-                tinsert(values,strfmt("(%s,%s,1,%s,%s)",partner,club,validcount,date))
-                partner = club_member_partner[club][partner]
-            end
-        end
+    if not club or club == 0 then
+        return
+    end
 
-        local sql = strfmt(
-            [[
-                INSERT INTO t_log_team_daily_play_count(guid,club,count,valid_count,date)
-                VALUES %s
-                ON DUPLICATE KEY UPDATE
-                count = count + 1,
-                valid_count = valid_count + VALUES(valid_count)
-            ]],
-            tconcat(values,","))
+    local playcount_values = {}
+    local winlose_values = {}
+    for guid,winlose in pairs(balance or {}) do
+        local partner = guid
+        repeat
+            tinsert(winlose_values,strfmt('(%s,%s,%d,%s,%s)',partner,club,game_id,winlose,date))
+            tinsert(playcount_values,strfmt("(%s,%s,1,%s,%s)",partner,club,validcount,date))
+            partner = club_member_partner[club][partner]
+        until not partner or partner == 0
+    end
 
-        local ret = logdb:query(sql)
-        if ret.errno then
-            log.error('%s',ret.err)
-        end
+    ret = logdb:query([[
+            INSERT INTO t_log_team_daily_play_count(guid,club,count,valid_count,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE
+            count = count + 1,
+            valid_count = valid_count + VALUES(valid_count);
+
+            INSERT INTO t_log_team_daily_win_lose(guid,club,game_id,money,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE
+            money = money + VALUES(money);
+        ]],
+        tconcat(playcount_values,","),
+        tconcat(winlose_values,",")
+    )
+    if ret.errno then
+        log.error('%s',ret.err)
+    end
+
+    if not maxmoney or maxmoney <= 0 then
+        log.error('no max money')
+        return
+    end
+
+    local bigwin_count_values = {}
+    local partner = maxguid
+    repeat 
+        tinsert(bigwin_count_values,strfmt('(%s,%s,%d,1,%s)',partner,club,game_id,date))
+        partner = club_member_partner[club][partner]
+    until not partner or partner == 0
+
+    ret = logdb:query(
+        [[
+            INSERT INTO t_log_team_daily_big_win_count(guid,club,game_id,count,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE count = count + 1
+        ]],
+        tconcat(bigwin_count_values,",")
+    )
+    if ret.errno then
+        log.error("%s",ret.err)
     end
 end
 
@@ -152,18 +172,16 @@ function MSG.SS_PlayerCommissionContributes(msg)
 
     local date = timestamp_date()
 
-    local batchsqls = table.series(contributions,function(s)
-        return {
-            [[
-                INSERT INTO t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
-                VALUES(%s,%s,%s,%s,%s,%s)
-                ON DUPLICATE KEY UPDATE commission = commission + VALUES(commission);
-            ]],
-            s.parent,s.son,s.commission or 0,template or 0,club,date
-        }
+    local values = table.series(contributions,function(s)
+        return strfmt("(%s,%s,%s,%s,%s,%s)",s.parent,s.son,s.commission or 0,template or 0,club,date)
     end)
-
-    local res = dbopt.log:batchquery(batchsqls)
+    
+    local res = dbopt.log:query([[
+            INSERT INTO t_log_player_daily_commission_contribute(parent,son,commission,template,club,date)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE commission = commission + VALUES(commission);
+        ]],tconcat(values,",")
+    )
     if res.errno then
         log.error("SS_PlayerCommissionContributes INSERT INTO t_log_player_daily_commission_contribute errno:%d,errstr:%s.",res.errno,res.err)
     end
