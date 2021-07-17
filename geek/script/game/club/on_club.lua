@@ -730,6 +730,7 @@ function on_cs_club_query_memeber(msg,guid)
                     conf = {
                         credit = club_partner_conf[club_id][p.guid].credit or 0,
                     },
+                    logout_time = (p.logout_time and p.login_time and p.login_time < p.logout_time) and p.logout_time or nil,
                 }),
                 parent = parent_guid,
                 block_gaming = club_gaming_blacklist[club_id][p.guid],
