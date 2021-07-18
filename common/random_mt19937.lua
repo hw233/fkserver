@@ -1,5 +1,6 @@
 
 local random = require "random"
+local math = math
 
 local rand = random.new(os.time())
 

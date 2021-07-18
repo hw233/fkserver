@@ -1,5 +1,6 @@
 require "functions"
 local chronos = require "chronos"
+require "random_mt19937"
 
 local card_dealer = class("card_dealer")
 

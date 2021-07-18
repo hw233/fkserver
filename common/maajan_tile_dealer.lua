@@ -1,7 +1,9 @@
 require "functions"
+require "random_mt19937"
+
+local math = math
 
 local maajan_tile_dealer = {}
-
 
 function maajan_tile_dealer:new(all_tiles)
     local o = {
