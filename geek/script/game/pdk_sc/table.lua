@@ -103,6 +103,12 @@ function pdk_table:ding_zhuang()
 		return self.conf.owner.chair_id
 	end
 
+	local function random_zhuang()
+		local ps = table.values(self.players)
+		local i  = math.random(#ps)
+		return ps[i].chair_id
+	end
+
 	local function winner_zhuang()
 		if not self.cur_round or self.cur_round == 1 then return end
 		
@@ -113,14 +119,14 @@ function pdk_table:ding_zhuang()
 
 	local ding_zhuang_fn = {
 		[0] = winner_zhuang,
-		[1] = room_owner_zhuang,
+		[1] = random_zhuang,
 		[2] = with_5_zhuang,
 	}
 
 	if self:is_private() then
 		local zhuang_conf = self.rule and self.rule.play and self.rule.play.zhuang or {}
 		local zhuang_opt = zhuang_conf.normal_round or 1
-		self.zhuang = ding_zhuang_fn[zhuang_opt]() or winner_zhuang() or room_owner_zhuang()
+		self.zhuang = ding_zhuang_fn[zhuang_opt]() or winner_zhuang() or random_zhuang()
 	end
 end
 
