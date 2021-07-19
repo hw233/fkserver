@@ -111,13 +111,13 @@ function MSG.SS_GameRoundEnd(msg)
         local partner = guid
         repeat
             tinsert(winlose_values,strfmt('(%s,%s,%d,%s,%s)',partner,club,game_id,winlose,date))
-            tinsert(playcount_values,strfmt("(%s,%s,1,%s,%s)",partner,club,validcount,date))
+            tinsert(playcount_values,strfmt("(%s,%s,%d,1,%s,%s)",partner,club,game_id,validcount,date))
             partner = club_member_partner[club][partner]
         until not partner or partner == 0
     end
 
     ret = logdb:query([[
-            INSERT INTO t_log_team_daily_play_count(guid,club,count,valid_count,date)
+            INSERT INTO t_log_team_daily_play_count(guid,club,game_id,count,valid_count,date)
             VALUES %s
             ON DUPLICATE KEY UPDATE
             count = count + 1,
