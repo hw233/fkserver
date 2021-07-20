@@ -46,6 +46,10 @@ function on_sd_create_club(msg)
             [[INSERT IGNORE INTO t_player_money(guid,money_id,money) VALUES(%s,%s,0);]],
             club_info.owner,money_info.id
         },
+        {
+            [[INSERT IGNORE INTO t_partner_member(club,guid,partner,status) VALUES(%d,%d,0,0);]],
+            club_info.id,club_info.owner
+        }
     }
 
     log.dump(transqls)
