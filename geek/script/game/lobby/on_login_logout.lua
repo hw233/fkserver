@@ -802,7 +802,7 @@ function do_reconnect(guid,game_id)
 					},
 					longitude = p.gps_longitude,
 					latitude = p.gps_latitude,
-					is_trustee = p.trustee and true or false,
+					is_trustee = (p ~= player and p.trustee) and true or false,
 				}
 			end)
 
@@ -909,7 +909,7 @@ function do_reconnect_old(msg,guid,game_id)
 					},
 					longitude = p.gps_longitude,
 					latitude = p.gps_latitude,
-					is_trustee = p.trustee and true or false,
+					is_trustee = (p ~= player and p.trustee) and true or false,
 				}
 			end)
 
@@ -1076,7 +1076,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 					money_id = money_id,
 					count = p:get_money(money_id),
 				},
-				is_trustee = p.trustee and true or false,
+				is_trustee = (p ~= player and p.trustee) and true or false,
 			}
 		end)
 
@@ -1176,7 +1176,7 @@ function on_ss_fast_join_room(msg,guid,game_id)
 								money_id = money_id,
 								count = p:get_money(money_id),
 							},
-							is_trustee = p.trustee and true or false,
+							is_trustee = (p ~= player and p.trustee) and true or false,
 						}
 					end),
 					round_info = tb and {
