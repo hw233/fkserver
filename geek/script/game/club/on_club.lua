@@ -2726,7 +2726,12 @@ function on_cs_club_edit_config(msg,guid)
         return
     end
 
-    tconf = table.map(tconf,function(c,k) return k,c and true or false end)
+    tconf = table.map(tconf,function(c,k)
+        if type(c) == "string" then
+            return k,c and true or false 
+        end
+        return k,c
+    end)
 
     log.dump(tconf)
 

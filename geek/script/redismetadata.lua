@@ -130,6 +130,7 @@ tree.club.conf["%d+"] = {
     block_partner_player_branch = "bool",
     block_partner_player_2_layer = "bool",
     admin_analysis = "bool",
+    auto_cash_commission = "json",
 }
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"
@@ -151,6 +152,8 @@ tree.club.partner.conf["%d+"]["%d+"] = {
 
 tree.club.notice["%d+"] = "set"
 tree.club.notice["%d+"]["%d+"] = "number"
+tree.club.team.exchange.time["%d+"] = "hash"
+tree.club.team.exchange.time["%d+"]["%d+"] = "number"
 
 tree.conf["%d+"] = "hash"
 tree.conf["%d+"] = {

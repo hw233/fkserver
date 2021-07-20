@@ -1084,13 +1084,38 @@ function base_club:incr_team_commission(partner_id,money,round_id)
             money_id = club_money_type[self.id],
             guid = partner_id,
         })
-
         local newmoney = reddb:hincrby(string.format("club:partner:commission:%d",self.id),partner_id,money)
         newmoney = newmoney and tonumber(newmoney) or 0
         club_partner_commission[self.id] = nil
+        
+        local conf = club_conf[self.id]
+        local auto_cash = conf.auto_cash_commission
+        local interval = auto_cash.interval
+        if auto_cash and auto_cash.open then
+            repeat
+                if not interval then break end
+                interval = tonumber(interval)
+                if interval <= 0 then break end
+
+                local last_time = reddb:hget(string.format("club:team:exchange:time:%s",self.id),partner_id)
+                if last_time and os.time() - tonumber(last_time) < interval then break end
+                
+                reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-newmoney)
+                self:incr_member_money(partner_id,newmoney,enum.LOG_MONEY_OPT_TYPE_AUTO_CLUB_COMMISSION)
+                game_util.log_statistics_money(club_money_type[self.id],newmoney,enum.LOG_MONEY_OPT_TYPE_AUTO_CLUB_COMMISSION,self.id)
+                channel.publish("db.?","msg","SD_LogPlayerCommission",{
+                    club = self.id,
+                    commission = -newmoney,
+                    round_id = "",
+                    money_id = club_money_type[self.id],
+                    guid = partner_id,
+                })
+
+                reddb:hset(string.format("club:team:exchange:time:%s",self.id),partner_id,os.time())
+            until true
+        end
 
         club_partners[self.id][partner_id]:notify_money()
-        return newmoney
     end)
 end
 
