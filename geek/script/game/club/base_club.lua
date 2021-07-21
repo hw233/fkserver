@@ -1090,9 +1090,9 @@ function base_club:incr_team_commission(partner_id,money,round_id)
         
         local conf = club_conf[self.id]
         local auto_cash = conf.auto_cash_commission
-        local interval = auto_cash.interval
         if auto_cash and auto_cash.open then
             repeat
+                local interval = auto_cash.interval
                 if not interval then break end
                 interval = tonumber(interval)
                 if interval <= 0 then break end
