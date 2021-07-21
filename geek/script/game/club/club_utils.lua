@@ -26,6 +26,7 @@ local club_partner_member = require "game.club.club_partner_member"
 local club_money_type = require "game.club.club_money_type"
 local club_team_money = require "game.club.club_team_money"
 local club_partner = require "game.club.club_partner"
+local club_partner_conf = require "game.club.club_partner_conf"
 
 local table = table
 local string = string
@@ -390,6 +391,10 @@ function utils.get_template_commission_conf(club_id,template_id,team_id)
         end
 
         conf = club_partner_template_default_commission[club_id][template_id][parent]
+        if not conf or table.nums(conf) == 0 then
+            local parent_conf = club_partner_conf[club_id][parent]
+            conf = parent_conf and parent_conf.commission or nil
+        end
     end
 
     return conf

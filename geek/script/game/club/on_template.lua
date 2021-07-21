@@ -13,6 +13,7 @@ local club_member_partner = require "game.club.club_member_partner"
 local club_utils = require "game.club.club_utils"
 local redisopt = require "redisopt"
 local json = require "json"
+local club_partner_conf = require "game.club.club_partner_conf"
 require "functions"
 
 local reddb = redisopt.default
@@ -387,10 +388,11 @@ function on_cs_get_club_team_template_conf(msg,guid)
 
     local parent = club_member_partner[club_id][guid]
     local mydefaultrate = (not parent or parent == 0) and 10000 or 0
-    
+    local parentconf = club_partner_conf[club_id][guid]
+    local parent_commission_conf = parentconf and parentconf.commission or nil
     local confs = table.series(tids,function(tid)
         local myconf = club_utils.get_template_commission_conf(club_id,tid,guid)
-        local teamconf = club_partner_template_default_commission[club_id][tid][guid]
+        local teamconf = club_partner_template_default_commission[club_id][tid][guid] or parent_commission_conf
         return {
             template_id = tid,
             my_commission_rate = myconf and myconf.percent or mydefaultrate,

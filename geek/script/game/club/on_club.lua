@@ -2952,8 +2952,8 @@ function on_cs_club_edit_team_config(msg,guid)
     end
 
     local role = club_role[club_id][guid]
-    if (role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER) or
-        club_member_partner[club_id][partner_id] ~= guid 
+    if (role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER) or 
+       (club_member_partner[club_id][partner_id] ~= guid and partner_id ~= guid)
     then 
         onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",{
             result = enum.ERROR_PLAYER_NO_RIGHT,

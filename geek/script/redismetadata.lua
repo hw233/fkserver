@@ -148,6 +148,7 @@ tree.club.partner.conf["%d+"]["%d+"] = "hash"
 tree.club.partner.conf["%d+"]["%d+"] = {
     credit = "number",
     status = "number",
+    commission = "json",
 }
 
 tree.club.notice["%d+"] = "set"
