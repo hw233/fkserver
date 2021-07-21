@@ -288,7 +288,7 @@ function on_sd_join_partner(msg)
     local partner = msg.partner
 
     local res = dbopt.game:query(string.format([[
-        INSERT INTO t_partner_member(club,guid,partner) VALUES(%s,%s,%s);
+        INSERT INTO t_partner_member(club,guid,partner) VALUES(%s,%s,%s) ON DUPLICATE KEY UPDATE status = 0;
     ]],club,guid,partner or "NULL"))
     if res.errno then
         log.error("on_sd_join_partner INSERT INTO t_partner_member errno:%d,errstr:%s",res.errno,res.err)
