@@ -34,7 +34,8 @@ function on_cs_act_double(msg,guid)
 end
 
 function on_cs_act_discard(msg,guid)
-	log.info ("test .................. on_cs_act_discard")
+	log.info ("test .................. on_cs_act_discard %s",guid)
+	log.dump(msg,string.format("on_cs_act_discard_%s",guid))
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
@@ -76,7 +77,7 @@ function on_cs_act_gang(msg,guid)
 end
 
 function on_cs_act_pass(msg,guid)
-	log.info ("test .................. on_cs_act_pass")
+	log.info ("test .................. on_cs_act_pass %s",guid)
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
@@ -104,7 +105,8 @@ function on_cs_act_chi(msg,guid)
 end
 
 function on_cs_act_trustee(msg,guid)
-	log.info ("test .................. on_cs_act_trustee")
+	log.info ("test .................. on_cs_act_trustee,guid:%s",guid)
+	log.dump(msg,string.format("on_cs_act_trustee_%s",guid))
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
@@ -133,6 +135,7 @@ end
 
 function on_cs_do_action(msg,guid)
 	log.info ("test .................. on_cs_do_action,guid:%s",guid)
+	log.dump(msg,string.format("on_cs_do_action_%s",guid))
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
@@ -147,6 +150,7 @@ end
 
 function on_cs_huan_pai(msg,guid)
 	log.info ("test .................. on_cs_huan_pai,guid:%s",guid)
+	log.dump(msg,string.format("on_cs_huan_pai_%s",guid))
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_huan_pai no player,guid:%s",guid)
@@ -161,6 +165,7 @@ end
 
 function on_cs_ding_que(msg,guid)
 	log.info ("test .................. on_cs_ding_que,guid:%s",guid)
+	log.dump(msg,string.format("on_cs_ding_que_%s",guid))
 	local player = base_players[guid]
 	if not player then
 		log.error("on_cs_ding_que no player,guid:%s",guid)
