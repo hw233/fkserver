@@ -21,6 +21,10 @@ function common.all_game_server(first_game_type,second_game_type)
 	return g_common.all_game_server(first_game_type,second_game_type)
 end
 
+function common.lobby_id(guid)
+	return g_common.lobby_id(guid)
+end
+
 function common.switch_to(guid,room_id)
 	if room_id == def_game_id then return end
 
@@ -63,7 +67,7 @@ function common.switch_from(guid,room_id)
 end
 
 function common.switch_to_lobby(guid)
-	local room_id = common.find_best_room(1)
+	local room_id = common.lobby_id(guid)
 	if not room_id then
 		log.error("common.switch_to_lobby can not find lobby.")
 		return

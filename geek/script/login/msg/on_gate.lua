@@ -698,7 +698,7 @@ function on_cl_login(msg,gate)
     end
 
     -- 找一个默认大厅服务器
-    game_id = game_id or g_common.find_lightest_weight_game_server(1)
+    game_id = g_common.lobby_id(guid)
     if not game_id then
         log.warning("no default lobby")
         return {
@@ -784,7 +784,7 @@ function on_cl_reg_account(msg,gate)
     log.info("[%s] reg account, guid = %d ,platform_id = %s", info.account, info.guid,info.platform_id)
 
     -- 找一个默认大厅服务器
-    local gameid = g_common.find_lightest_weight_game_server(1)
+    local gameid = g_common.lobby_id(guid)
     if not gameid then
         log.warning("no default lobby")
         return {

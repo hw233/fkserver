@@ -38,4 +38,12 @@ function common.all_game_server(first_game_type,second_game_type)
 	return room_weights
 end
 
+function common.lobby_id(guid)
+    local list = reddb:zrangebyscore("player:online:count:1","-inf","+inf")
+    list = table.series(list,function(l) return tonumber(l) end)
+    table.sort(list,function(l,r) return l < r end)
+    local id = list[(guid % #list) + 1]
+    return id
+end
+
 return common
