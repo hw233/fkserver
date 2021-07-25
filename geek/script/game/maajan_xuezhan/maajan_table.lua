@@ -968,6 +968,7 @@ function maajan_table:on_action_after_mo_pai(player,msg)
     if do_action == ACTION.PASS then
         self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action})
         self:chu_pai()
+        return
     end
 
     self:done_last_action(player,{action = do_action,tile = tile,})
@@ -1234,6 +1235,7 @@ function maajan_table:on_action_after_chu_pai(player,msg)
         check_all_pass(all_actions)
         self:next_player_index()
         self:mo_pai()
+        return
     end
 
     self:done_last_action(player,{action = top_done_act,tile = tile})
