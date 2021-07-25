@@ -348,12 +348,14 @@ message SC_WaitingDoActions {
 	enum MsgID { Nil = 0; ID = 23116;}
 	int32 chair_id = 1;
 	repeated Action actions = 3;
+	int32 session_id = 4;
 }
 
 message CS_Maajan_Do_Action{
 	enum MsgID { Nil = 0; ID = 23002;}
 	int32 action = 1;
 	int32 value_tile = 2;
+	int32 session_id = 3;
 }
 
 message SC_Maajan_Do_Action{
@@ -362,6 +364,7 @@ message SC_Maajan_Do_Action{
 	int32 action = 2;
 	int32 value_tile = 3;
 	int32 target_chair_id = 4; //抢杠等
+	int32 session_id = 5;
 }
 
 message CS_Maajan_Action_Discard{
