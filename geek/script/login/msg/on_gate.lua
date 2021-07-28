@@ -253,7 +253,8 @@ end
 local function wx_auth(msg)
     log.dump(msg)
     local code = msg.code
-    return channel.call("broker.?","msg","SB_WxAuth",msg.code)
+    local package = msg.package_name
+    return channel.call("broker.?","msg","SB_PackageWxAuth",code,package)
 end
 
 function on_cl_auth(msg)
