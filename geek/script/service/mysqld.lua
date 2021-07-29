@@ -76,10 +76,11 @@ function new_connection_pool(conf)
 	log.dump(conf)
 	return setmetatable({
 		__conf = conf,
-		__min= conf.pool or 8,
+		__max = conf.pool or 8,
 		__free = {},
 		__waiting = {},
 		__trans = {},
+		__all = {},
 	},{
 		__index = connection_pool,
 		__gc = function(pool)
@@ -105,7 +106,7 @@ end
 function connection_pool.close(pool)
 	local conn
 	repeat
-		conn = tremove(pool.__free,1)
+		conn = tremove(pool.__all,1)
 		if conn then
 			conn:close()
 		end
@@ -114,37 +115,28 @@ end
 
 function connection_pool.occupy(pool)
 	local ok,conn
-	for _ = 1,1000 do
+	while true do
 		conn = tremove(pool.__free,1)
 		if conn then
 			return conn
 		end
-		
-		ok,conn = xpcall(new_connection,traceback,pool.__conf)
-		if not ok then
-			log.error("connection pool occupy new connection failed,%s",conn)
-		elseif conn then
-			return conn
+
+		if #pool.__all <= pool.__max then
+			ok,conn = xpcall(new_connection,traceback,pool.__conf)
+			if not ok then
+				log.error("connection pool occupy new connection failed,%s",conn)
+			elseif conn then
+				tinsert(pool.__all,conn)
+				return conn
+			end
 		end
 		
 		pool:wait()
 	end
 end
 
-local function reserve_guard(pool)
-	local conn
-	while #pool.__free > pool.__min do
-		conn = tremove(pool.__free,1)
-		if conn then
-			conn:close()
-		end
-	end
-end
-
 function connection_pool.release(pool,conn)
 	tinsert(pool.__free,conn)
-	
-	reserve_guard(pool)
 
 	pool:wakeup()
 end
