@@ -1160,9 +1160,8 @@ function maajan_table:on_action_after_chu_pai(player,msg)
                 local p = self.players[act.chair_id]
                 if self.rule.play.guo_zhuang_hu then
                     local hu_action = act.actions[ACTION.HU]
-                    log.dump(hu_action)
                     if hu_action then
-                        self:set_gzh_on_pass(p)
+                        self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
                     end
                 end
     
@@ -1330,12 +1329,21 @@ function maajan_table:clean_gzh(player)
     player.gzh = nil
 end
 
-function maajan_table:set_gzh_on_pass(passer)
+function maajan_table:set_gzh_on_pass(passer,tile)
     passer.gzh = passer.gzh or {}
     local gzh = passer.gzh
     local hu_tiles = self:ting(passer)
-    for tile,_ in pairs(hu_tiles or {}) do
-        gzh[tile] = self:hu_fan(passer,tile)
+    local block_tile_fan = table.map(hu_tiles or {},function(_,tile)
+        return tile,self:hu_fan(passer,tile)
+    end)
+    
+    local block_fan = block_tile_fan[tile]
+    if block_fan and block_fan > 0 then
+        for tile,fan in pairs(block_tile_fan) do
+            if fan <= block_fan then
+                gzh[tile] = fan
+            end
+        end
     end
     log.dump(gzh)
 end
