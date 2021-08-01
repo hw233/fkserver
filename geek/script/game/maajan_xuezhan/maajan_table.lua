@@ -1338,7 +1338,7 @@ function maajan_table:set_gzh_on_pass(passer,tile)
     end)
     
     local block_fan = block_tile_fan[tile]
-    if block_fan and block_fan > 0 then
+    if block_fan then
         for tile,fan in pairs(block_tile_fan) do
             if fan <= block_fan then
                 gzh[tile] = fan
