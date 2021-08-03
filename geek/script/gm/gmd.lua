@@ -933,16 +933,79 @@ function gmd.maintain_switch(data)
     }
 end
 
+function gmd.club_free_cost(data)
+    local club_id = tonumber(data.club_id)
+    if not club_id then
+        return {
+            errcode = error.PARAMETER_ERROR,
+        }
+    end
 
+    local club = base_clubs[club_id]
+    if not club then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "club not found",
+        }
+    end
+
+    local expire_at = tonumber(data.expire_at)
+    if not expire_at or expire_at <= os.time() then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "time can not set less than now timestamp",
+        }
+    end
+
+    reddb:hset("runtime_conf:private_fee:club",club_id,expire_at)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.agency_free_cost(data)
+    local guid = tonumber(data.guid)
+    if not guid then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "guid can not be nil",
+        }
+    end
+
+    local player = base_players[guid]
+    if not player then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "player not found",
+        }
+    end
+
+    local expire_at = tonumber(data.expire_at)
+    if not expire_at or expire_at <= os.time() then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "time can not set less than now timestamp",
+        }
+    end
+
+    reddb:hset("runtime_conf:private_fee:agency",guid,expire_at)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
 
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
 gmd["club/del"] = gmd.del_club
 gmd["club/dismiss"] = gmd.dismiss_club
+gmd['club/freecost']= gmd.club_free_cost
 gmd["player/block"] = gmd.block_player
 gmd["agency/create"] = gmd.agency_create
 gmd["agency/remove"] = gmd.agency_remove
+gmd["agency/freecost"] = gmd.agency_free_cost
 gmd["online/player"] = gmd.online_player
 gmd["player/update"] = gmd.update_player
 gmd['notice/publish'] = gmd.publish_notice

@@ -15,14 +15,14 @@ local private_fee_switch = setmetatable({},{
 local private_fee_club_switch = setmetatable({},{
     __index = function(_,club_id)
         local v = reddb:hget("runtime_conf:private_fee:club",club_id)
-        return (not v or tonumber(v) ~= 0) and true or false
+        return (not v or tonumber(v) > os.time()) and true or false
     end,
 })
 
 local private_fee_agency_switch = setmetatable({},{
     __index = function(_,guid)
         local v = reddb:hget("runtime_conf:private_fee:agency",guid)
-        return (not v or tonumber(v) ~= 0) and true or false
+        return (not v or tonumber(v) > os.time()) and true or false
     end,
 })
 
