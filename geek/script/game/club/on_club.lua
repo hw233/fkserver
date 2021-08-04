@@ -1217,7 +1217,7 @@ local function on_cs_club_partner(msg,guid)
                         return result
                     end
                 end
-                c:exit(mem_id)
+                c:full_exit(mem_id,guid)
             end
 
             return partner:dismiss()
