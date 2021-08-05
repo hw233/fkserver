@@ -8,6 +8,11 @@ local log = require "log"
 
 local reddb = redisopt.default
 
+local table = table
+
+local tinsert = table.insert
+local tremove = table.remove
+
 local unused_player_info_elapsed = 30
 
 local queue = require "skynet.queue"
@@ -19,6 +24,8 @@ local infolock = setmetatable({},{
 		return lock
 	end,
 })
+
+local alivetime = {}
 
 local mgr = {}
 
@@ -65,17 +72,34 @@ local readwriter = setmetatable({},{
 })
 
 timermgr:loop(unused_player_info_elapsed,function()
+	local deadguid = {}
 	for guid,p in pairs(mgr) do
-		p:lockcall(function()
-			if 	not p.online and 
-				not p.table_id and 
-				not p.chair_id 
+		if 	not p.online and
+			not p.table_id and
+			not p.chair_id
+		then
+			log.info("collect guid:%s",guid)
+			tinsert(deadguid,guid)
+		end
+	end
+
+	local guid
+	repeat
+		guid = tremove(deadguid,1)
+		if not guid then break end
+		
+		local p = mgr[guid]
+		if p then
+			-- double check
+			if 	not p.online and
+				not p.table_id and
+				not p.chair_id
 			then
-				-- log.info("clean unused player info %s",guid)
+				log.info("clean guid info: %s",guid)
 				readwriter[guid] = nil
 			end
-		end)
-	end
+		end
+	until not guid
 end)
 
 return readwriter
