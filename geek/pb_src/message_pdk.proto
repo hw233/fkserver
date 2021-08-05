@@ -28,14 +28,15 @@ enum PDK_CARD_TYPE {
 	DOUBLE_LINE              = 15;                                //连对
 	PLANE                    = 16;                               //飞机 不带
 	PLANE_WITH_ONE           = 17;                               //飞机 带牌 单
-	PLANE_WITH_TWO           = 18;                               //飞机 带牌 对
-	SOFT_TRIPLE_BOMB 		 = 19;
-	TRIPLE_BOMB 			 = 20;			//三张炸弹
-	LAIZI_TRIPLE_BOMB		 = 21;			//三张癞子炸弹
-	SOFT_BOMB 				 = 22;
-	BOMB                     = 23;          //炸弹
-	LAIZI_BOMB				 = 24;			//癞子炸弹
-	MISSLE 					 = 25;
+	PLANE_WITH_TWO           = 18;                               //飞机 带牌 双
+	PLANE_WITH_MIX 			 = 19;								//飞机 混合带
+	SOFT_TRIPLE_BOMB 		 = 20;	
+	TRIPLE_BOMB 			 = 21;			//三张炸弹
+	LAIZI_TRIPLE_BOMB		 = 22;			//三张癞子炸弹
+	SOFT_BOMB 				 = 23;
+	BOMB                     = 24;          //炸弹
+	LAIZI_BOMB				 = 25;			//癞子炸弹
+	MISSLE 					 = 26;
 }
 
 message PdkPlayerInfo {
