@@ -678,7 +678,7 @@ function on_cl_login(msg,gate)
     local game_id = tonumber(onlineinfo.server)
     local first_game_type = tonumber(onlineinfo.first_game_type)
     if game_id  and tonumber(first_game_type) ~= 1 then
-        log.info("player[%s] reconnect game_id:%s ,session_id = %s ,gate_id = %s", guid, game_id, info.session_id, info.gate_id)
+        log.info("player[%s] reconnect game_id:%s,gate_id = %s", guid, game_id, gate)
         info.result = enum.LOGIN_RESULT_SUCCESS
         info.reconnect = 1
         reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
@@ -687,8 +687,8 @@ function on_cl_login(msg,gate)
 
         log.dump(info)
 
-        log.info("login step reconnect login->LS_LoginNotify,account=%s,gameid=%s,session_id = %s,gate_id = %s",
-            account, game_id, info.session_id, info.gate_id)
+        log.info("login step reconnect login->LS_LoginNotify,guid=%s,account=%s,gameid=%s,gate_id = %s",
+            guid,account, game_id, gate)
         return info,game_id
     end
 
@@ -736,7 +736,7 @@ function on_cl_login(msg,gate)
 
     channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",guid)
 
-    log.info("login step login->LS_LoginNotify,account=%s,gameid=%d", account, game_id)
+    log.info("login step login->LS_LoginNotify,guid=%s,account=%s,gameid=%d", guid,account, game_id)
 
     info.result = enum.LOGIN_RESULT_SUCCESS
 
