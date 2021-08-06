@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local table = table
 
 local agentcount = ...
-agentcount = agentcount and tonumber(agentcount) or 16
+agentcount = agentcount and tonumber(agentcount) or 32
 
 local agentservice = {}
 local redisd
