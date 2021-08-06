@@ -4,7 +4,7 @@ local log = require "log"
 
 local agentcount = ...
 
-agentcount = tonumber(agentcount) or 8
+agentcount = tonumber(agentcount) or 16
 
 local senderservice = {}
 
