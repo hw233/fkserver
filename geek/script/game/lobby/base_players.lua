@@ -90,14 +90,16 @@ timermgr:loop(unused_player_info_elapsed,function()
 		
 		local p = mgr[guid]
 		if p then
-			-- double check
-			if 	not p.online and
-				not p.table_id and
-				not p.chair_id
-			then
-				log.info("clean guid info: %s",guid)
-				readwriter[guid] = nil
-			end
+			p:lockcall(function()
+				-- double check
+				if 	not p.online and
+					not p.table_id and
+					not p.chair_id
+				then
+					log.info("clean guid info: %s",guid)
+					readwriter[guid] = nil
+				end
+			end)
 		end
 	until not guid
 end)
