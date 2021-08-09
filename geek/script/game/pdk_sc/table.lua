@@ -8,6 +8,7 @@ local cards_util = require "game.pdk_sc.cards_util"
 local club_utils = require "game.club.club_utils"
 local def = require "game.pdk_sc.define"
 require "functions"
+local timer = require "timer"
 
 local table = table
 local tinsert = table.insert
@@ -267,14 +268,14 @@ function pdk_table:begin_discard()
 		if not self.last_discard then
 			local cards,replace = cards_util.try_greatest(player.hand_cards,self.rule,self.laizi,self.first_discard)
 			assert(cards and #cards > 0)
-			self:do_action_discard(player,cards,replace)
+			self:do_action_discard(player,cards,replace,true)
 		else
 			local cards,replace = cards_util.try_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule,self.laizi)
 			if not cards then
-				self:do_action_pass(player)
+				self:do_action_pass(player,true)
 			else
 				assert(cards and #cards > 0)
-				self:do_action_discard(player,cards,replace)
+				self:do_action_discard(player,cards,replace,true)
 			end
 		end
 	end
@@ -313,6 +314,27 @@ function pdk_table:cancel_clock_timer()
         self.clock_timer:kill()
         self.clock_timer = nil
     end
+end
+
+function pdk_table:set_trusteeship(player,trustee)
+    base_table.set_trusteeship(self,player,trustee)
+	if self.game_log then
+    	table.insert(self.game_log.actions,{chair = player.chair_id,act = "Trustee",trustee = trustee,time = timer.nanotime()})
+	end
+end
+
+function pdk_table:on_offline(player)
+	base_table.on_offline(self,player)
+	if self.game_log then
+		table.insert(self.game_log.actions,{chair = player.chair_id,act = "Offline",time = timer.nanotime()})
+	end
+end
+
+function pdk_table:on_reconnect(player)
+	base_table.on_reconnect(self,player)
+	if self.game_log then
+		table.insert(self.game_log.actions,{chair = player.chair_id,act = "Reconnect",time = timer.nanotime()})
+	end
 end
 
 function pdk_table:begin_discard_timer(timeout,fn)
@@ -386,7 +408,7 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 end
 
 function pdk_table:on_game_overed()
-    self.game_log = {}
+    self.game_log = nil
 	
     self:clear_ready()
 
@@ -503,7 +525,7 @@ function pdk_table:get_cards_type(cards,laizi_replace)
 end
 
 -- 出牌
-function pdk_table:do_action_discard(player, cards,laizi_replace)
+function pdk_table:do_action_discard(player, cards,laizi_replace,auto)
 	log.info("pdk_table:do_action_discard {%s}",table.concat(cards,","))
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("pdk_table:discard guid[%d] status error", player.guid)
@@ -597,7 +619,8 @@ function pdk_table:do_action_discard(player, cards,laizi_replace)
 		cards_type = cardstype,
 		cards = cards,
 		laizi_replace = laizi_replace,
-		time = os.time(),
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	local cardsum = table.sum(player.hand_cards)
@@ -617,7 +640,7 @@ function pdk_table:do_action_discard(player, cards,laizi_replace)
 end
 
 -- 放弃出牌
-function pdk_table:do_action_pass(player)
+function pdk_table:do_action_pass(player,auto)
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("pdk_table:pass_card guid[%d] status error", player.guid)
 		send2client(player,"SC_PdkDoAction",{
@@ -649,7 +672,8 @@ function pdk_table:do_action_pass(player)
 	tinsert(self.game_log.actions,{
 		chair_id = player.chair_id,
 		action = ACTION.PASS,
-		time = os.time(),
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	log.info("cur_chair_id[%d],pass_chair_id[%d]",self.cur_discard_chair,player.chair_id)

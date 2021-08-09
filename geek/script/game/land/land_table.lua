@@ -1,17 +1,15 @@
 -- 斗地主逻辑
 local pb = require "pb"
-
 local base_table = require "game.lobby.base_table"
 require "data.land_data"
 local log = require "log"
 require "game.lobby.game_android"
-local timer_manager = require "game.timer_manager"
 local card_dealer = require "card_dealer"
 local enum = require "pb_enums"
 local cards_util = require "game.land.cards_util"
 local club_utils = require "game.club.club_utils"
 require "functions"
-local base_private_table = require "game.lobby.base_private_table"
+local timer = require "timer"
 
 local offlinePunishment_flag = false
 
@@ -115,6 +113,28 @@ function land_table:on_started(player_count)
 	self.start_count = player_count
 	base_table.on_started(self,player_count)
 	self:do_game_start()
+end
+
+
+function land_table:set_trusteeship(player,trustee)
+	base_table.set_trusteeship(self,player,trustee)
+	if self.game_log then
+    	table.insert(self.game_log.actions,{chair = player.chair_id,act = "Trustee",trustee = trustee,time = timer.nanotime()})
+	end
+end
+
+function land_table:on_offline(player)
+	base_table.on_offline(self,player)
+	if self.game_log then
+		table.insert(self.game_log.actions,{chair = player.chair_id,act = "Offline",time = timer.nanotime()})
+	end
+end
+
+function land_table:on_reconnect(player)
+	base_table.on_reconnect(self,player)
+	if self.game_log then
+		table.insert(self.game_log.actions,{chair = player.chair_id,act = "Reconnect",time = timer.nanotime()})
+	end
 end
 
 function land_table:do_game_start()
@@ -593,14 +613,14 @@ function land_table:begin_discard()
 		if not self.last_discard then
 			local cards = cards_util.seek_greatest(player.hand_cards,self.rule)
 			assert(cards and #cards > 0)
-			self:do_action_discard(player,cards)
+			self:do_action_discard(player,cards,true)
 		else
 			local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
 			if cards then
 				assert(#cards > 0)
-				self:do_action_discard(player,cards)
+				self:do_action_discard(player,cards,true)
 			else
-				self:do_action_pass(player)
+				self:do_action_pass(player,true)
 			end
 		end
 	end
@@ -677,7 +697,7 @@ function land_table:send_desk_enter_data(player,reconnect)
 end
 
 function land_table:on_game_overed()
-    self.game_log = {}
+    self.game_log = nil
 
 	self:cancel_clock_timer()
 	self:cancel_discard_timer()
@@ -802,7 +822,7 @@ function land_table:get_cards_type(cards)
 end
 
 -- 出牌
-function land_table:do_action_discard(player, cards)
+function land_table:do_action_discard(player, cards ,auto)
 	log.info("land_table:do_action_discard {%s}",table.concat(cards,","))
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("land_table:discard guid[%d] status error", player.guid)
@@ -887,7 +907,8 @@ function land_table:do_action_discard(player, cards)
 		chair_id = player.chair_id,
 		cards_type = cardstype,
 		cards = cards,
-		time = os.time(),
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	if  table.sum(player.hand_cards) == 0 then
@@ -904,7 +925,7 @@ function land_table:do_action_discard(player, cards)
 end
 
 -- 放弃出牌
-function land_table:do_action_pass(player)
+function land_table:do_action_pass(player,auto)
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("land_table:pass_card guid[%s] status error", player.guid)
 		send2client_pb(player,"SC_DdzDoAction",{
@@ -936,7 +957,8 @@ function land_table:do_action_pass(player)
 	table.insert(self.game_log.actions,{
 		chair_id = player.chair_id,
 		action = ACTION.PASS,
-		time = os.time(),
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	log.info("cur_chair_id[%s],pass_chair_id[%s]",self.cur_discard_chair,player.chair_id)

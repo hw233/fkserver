@@ -3,7 +3,6 @@
 local pb = require "pb_files"
 local log = require "log"
 local define = require "game.zhajinhua.base.define"
-local timer_manager = require "game.timer_manager"
 local enum = require "pb_enums"
 local card_dealer = require "card_dealer"
 local cards_util = require "game.zhajinhua.base.cards_util"
@@ -12,6 +11,7 @@ require "random_mt19937"
 local player_winlose = require "game.lobby.player_winlose"
 local base_rule = require "game.lobby.base_rule"
 local player_money = require "game.lobby.player_money"
+local timer = require "timer"
 
 local table = table
 local string = string
@@ -89,7 +89,7 @@ function zhajinhua_table:request_dismiss(player)
 	end)
 
 	if self.dismiss_request then
-		send2client_pb(player.guid,"SC_DismissTableReq",{
+		send2client(player.guid,"SC_DismissTableReq",{
 			result = enum.ERROR_OPERATION_REPEATED
 		})
 		return
@@ -135,6 +135,27 @@ function zhajinhua_table:check_dismiss_commit(agrees)
 	return done,agreed
 end
 
+
+function zhajinhua_table:set_trusteeship(player,trustee)
+    base_table.set_trusteeship(self,player,trustee)
+	if self.gamelog then
+    	table.insert(self.gamelog.actions,{chair = player.chair_id,act = "Trustee",trustee = trustee,time = timer.nanotime()})
+	end
+end
+
+function zhajinhua_table:on_offline(player)
+	base_table.on_offline(self,player)
+	if self.gamelog then
+		table.insert(self.gamelog.actions,{chair = player.chair_id,act = "Offline",time = timer.nanotime()})
+	end
+end
+
+function zhajinhua_table:on_reconnect(player)
+	base_table.on_reconnect(self,player)
+	if self.gamelog then
+		table.insert(self.gamelog.actions,{chair = player.chair_id,act = "Reconnect",time = timer.nanotime()})
+	end
+end
 
 function zhajinhua_table:on_started(player_count)
 	base_table.on_started(self,player_count)
@@ -282,13 +303,13 @@ function zhajinhua_table:start_player_turn(player)
 	local player = type(player) == "number" and self.players[player] or player
 	local actions = self:get_player_actions(player)
 	self:foreach_except(player,function(p)
-		send2client_pb(p,"SC_ZhaJinHuaTurn",{
+		send2client(p,"SC_ZhaJinHuaTurn",{
 			chair_id = player.chair_id,
 			actions = {},
 		})
 	end)
 
-	send2client_pb(player,"SC_ZhaJinHuaTurn",{
+	send2client(player,"SC_ZhaJinHuaTurn",{
 		chair_id = player.chair_id,
 		actions = table.series(actions,function(v,k) return v and k or nil end),
 	})
@@ -299,12 +320,12 @@ function zhajinhua_table:start_player_turn(player)
 	if trustee_type then
 		local function auto_action(p)
 			if (actions[ACTION.DROP] and self.rule.play.trustee_drop) or not actions[ACTION.FOLLOW] then
-				self:give_up(p)
+				self:give_up(p,nil,true)
 				return
 			end
 
 			if (actions[ACTION.FOLLOW] and self.rule.play.trustee_follow) or not actions[ACTION.DROP] then
-				self:follow(p)
+				self:follow(p,nil,true)
 				return
 			end
 		end
@@ -717,7 +738,7 @@ function zhajinhua_table:owner_start_game(player)
 
 	log.info("zhajinhua_table:owner_start_game %s,owner:%s,result:%s",self.table_id_,player.guid,result)
 	if result ~= enum.ERROR_NONE then
-		send2client_pb(player,"SC_ZhaJinHuaStartGame",{
+		send2client(player,"SC_ZhaJinHuaStartGame",{
 			result = result
 		})
 	end
@@ -767,7 +788,7 @@ function zhajinhua_table:reconnect(player)
 	log.info("zhajinhua_table:reconnect---------->table_id[%s],guid[%s],chair_id[%s]",
 		self.table_id_,player.guid,player.chair_id)
 
-	send2client_pb(player, "SC_ZhaJinHuaReconnect",{
+	send2client(player, "SC_ZhaJinHuaReconnect",{
 		players = table.map(self.players,function(p,chair)
 			return chair,{
 				status = p.game_status or PLAYER_STATUS.WATCHER,
@@ -802,7 +823,7 @@ function zhajinhua_table:reconnect(player)
 				return v and k or nil 
 			end)
 		end
-		send2client_pb(player,"SC_ZhaJinHuaTurn",turn)
+		send2client(player,"SC_ZhaJinHuaTurn",turn)
 
 		if self.clock_timer then
 			self:begin_clock(self.clock_timer.remainder,player)
@@ -816,7 +837,7 @@ end
 function zhajinhua_table:show_cards_to_all(player,info)
 	if info.cards ~= nil then
 		self:foreach_except(player,function(p) 
-			send2client_pb(p, "SC_ZhaJinHuaShowCardsToAll",{
+			send2client(p, "SC_ZhaJinHuaShowCardsToAll",{
 				chair_id = p.chair_id,
 				cards = info.cards
 			})
@@ -838,9 +859,9 @@ end
 
 function zhajinhua_table:get_last_record(player,msg)
 	if self.last_record[player.guid] then
-		send2client_pb(player, "SC_ZhaJinHuaLastRecord", self.last_record[player.guid])
+		send2client(player, "SC_ZhaJinHuaLastRecord", self.last_record[player.guid])
 	else
-		send2client_pb(player, "SC_ZhaJinHuaLastRecord", {
+		send2client(player, "SC_ZhaJinHuaLastRecord", {
 			win_chair_id = 0,
 			pb_conclude = {},
 			tax = 0
@@ -1110,10 +1131,10 @@ function zhajinhua_table:check_spec_cards(cards)
 	return true
 end
 
-function zhajinhua_table:follow(player)
+function zhajinhua_table:follow(player,msg,auto)
 	if not self.gamers[player.chair_id] or 
 		not self:check_player_action(player,ACTION.FOLLOW) then
-		send2client_pb(player,"SC_ZhaJinHuaFollowBet",{
+		send2client(player,"SC_ZhaJinHuaFollowBet",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1135,6 +1156,8 @@ function zhajinhua_table:follow(player)
 		chair_id = player.chair_id,
 		turn = self.bet_round,
 		score = score,
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	if not is_all_in then
@@ -1171,7 +1194,7 @@ function zhajinhua_table:all_in(player)
 	local chair_id = player.chair_id
 	if not self.gamers[chair_id] or
 		not self:check_player_action(player,ACTION.ALL_IN) then
-		send2client_pb(player,"SC_ZhaJinHuaAllIn",{
+		send2client(player,"SC_ZhaJinHuaAllIn",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1216,7 +1239,7 @@ end
 function zhajinhua_table:add_score(player,msg)
 	if not self.gamers[player.chair_id] or
 		not self:check_player_action(player,ACTION.ADD_SCORE) then
-		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+		send2client(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1227,7 +1250,7 @@ function zhajinhua_table:add_score(player,msg)
 
 	if score < 0 then
 		log.warning("table_id[%s]: add_score guid[%s] status error  is score %s < 0", self.table_id_, player.guid,score)
-		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+		send2client(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1235,7 +1258,7 @@ function zhajinhua_table:add_score(player,msg)
 
 	if player.all_in then
 		log.warning("table_id[%s]: add_score guid[%s] status error  is all_score_  true", self.table_id_, player.guid)
-		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+		send2client(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1243,7 +1266,7 @@ function zhajinhua_table:add_score(player,msg)
 
 	if player.death then
 		log.error("table_id[%s]:add_score guid[%s] is dead", self.table_id_,player.guid)
-		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+		send2client(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1251,7 +1274,7 @@ function zhajinhua_table:add_score(player,msg)
 
 	if score > self.max_score then
 		log.error("table_id[%s]:add_score guid[%s] score[%s] > max[%s]",self.table_id_, player.guid, score, self.max_score)
-		send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+		send2client(player,"SC_ZhaJinHuaAddScore",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1269,7 +1292,7 @@ function zhajinhua_table:add_score(player,msg)
 	else
 		if score < self.last_score then
 			log.error("table_id[%s]:add_score guid[%s] score[%s] < last[%s]",self.table_id_, player.guid, score, self.last_score)
-			send2client_pb(player,"SC_ZhaJinHuaAddScore",{
+			send2client(player,"SC_ZhaJinHuaAddScore",{
 				result = enum.ERROR_OPERATION_INVALID,
 			})
 			return
@@ -1288,6 +1311,7 @@ function zhajinhua_table:add_score(player,msg)
 		chair_id = player.chair_id,
 		score = score_add, -- 注码
 		turn = self.bet_round,
+		time = timer.nanotime(),
 	})
 
 	self:broadcast2client("SC_ZhaJinHuaAddScore", {
@@ -1316,10 +1340,10 @@ function zhajinhua_table:cs_add_score(player,msg)
 end
 
 -- 放弃跟注
-function zhajinhua_table:give_up(player)
+function zhajinhua_table:give_up(player,msg,auto)
 	if not self.gamers[player.chair_id] or
 		not self:check_player_action(player,ACTION.DROP) then
-		send2client_pb(player,"SC_ZhaJinHuaGiveUp",{
+		send2client(player,"SC_ZhaJinHuaGiveUp",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1330,7 +1354,7 @@ function zhajinhua_table:give_up(player)
 
 	if player.death then
 		log.error("table_id[%s]:give_up guid[%s] is dead", self.table_id_,player.guid)
-		send2client_pb(player,"SC_ZhaJinHuaGiveUp",{
+		send2client(player,"SC_ZhaJinHuaGiveUp",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -1353,6 +1377,8 @@ function zhajinhua_table:give_up(player)
 		action = "giveup",
 		chair_id = chair_id,
 		now_chair = self.cur_chair,
+		time = timer.nanotime(),
+		auto = auto,
 	})
 
 	self:broadcast2client("SC_ZhaJinHuaGiveUp",{
@@ -1398,7 +1424,7 @@ end
 function zhajinhua_table:look_card(player)
 	if not self.gamers[player.chair_id] or
 		not self:check_player_action(player,ACTION.LOOK_CARDS) then
-		send2client_pb(player,"SC_ZhaJinHuaLookCard",{
+		send2client(player,"SC_ZhaJinHuaLookCard",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1412,7 +1438,7 @@ function zhajinhua_table:look_card(player)
 
 	player.is_look_cards = true
 
-	send2client_pb(player, "SC_ZhaJinHuaLookCard", {
+	send2client(player, "SC_ZhaJinHuaLookCard", {
 		chair_id = player.chair_id,
 		cards = player.cards,
 	})
@@ -1425,6 +1451,7 @@ function zhajinhua_table:look_card(player)
 		action = "look_cards",
 		chair_id = player.chair_id,
 		turn = self.bet_round,
+		time = timer.nanotime(),
 	})
 
 	self:start_player_turn(player)
@@ -1456,7 +1483,7 @@ end
 function zhajinhua_table:compare(player, msg)
 	if not self.gamers[player.chair_id] or
 		not self:check_player_action(player,ACTION.COMPARE) then
-		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
+		send2client(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID,
 		})
 		return
@@ -1471,7 +1498,7 @@ function zhajinhua_table:compare(player, msg)
  	local target = self.players[compare_with]
  	if not target then
 		log.error("table_id[%s]:compare guid[%s] compare[%s] error",self.table_id_, player.guid, compare_with)
-		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
+		send2client(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
  		return
@@ -1479,7 +1506,7 @@ function zhajinhua_table:compare(player, msg)
 
 	if player.all_in or target.all_in or player.death or target.death then
 		log.error("table_id[%s]:compare anyone [%s]vs[%s]  is dead",self.table_id_, player.guid,target.guid)
-		send2client_pb(player,"SC_ZhaJinHuaCompareCards",{
+		send2client(player,"SC_ZhaJinHuaCompareCards",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -1524,6 +1551,7 @@ function zhajinhua_table:compare(player, msg)
 		money = score,		--比牌花费
 		win = is_win,		--是否获胜
 		score = score,
+		time = timer.nanotime(),
 	})
 
 	self:broadcast2client("SC_ZhaJinHuaCompareCards",{
@@ -1704,6 +1732,7 @@ end
 
 function zhajinhua_table:on_game_overed()
 	log.info("game end table_id =%s   guid=%s   timeis:%s", self.table_id_, self.log_guid, os.date("%y%m%d%H%M%S"))
+	self.gamelog = nil
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
 	self:cancel_kickout_no_ready_timer()
@@ -1907,6 +1936,7 @@ function zhajinhua_table:check_compare_cards(player)
 			turn = self.bet_round,
 			isallscore = false ,  --是否全压
 			isallcom = true, --是否为全比
+			time = timer.nanotime(),
 		})
 
 		self:broadcast2client("SC_ZhaJinHuaAddScore", {
@@ -2078,7 +2108,7 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 	if not reconnect then
 		self:check_kickout_no_ready()
 		if self:is_play() then
-			send2client_pb(player, "SC_ZhaJinHuaTableGamingInfo",{
+			send2client(player, "SC_ZhaJinHuaTableGamingInfo",{
 				players = table.map(self.players,function(p,chair)
 					return chair,{
 						status = p.game_status or PLAYER_STATUS.WATCHER,

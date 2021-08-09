@@ -1,13 +1,12 @@
-local card_dealer = require "card_dealer"
 -- 牛牛逻辑
 local base_table = require "game.lobby.base_table"
 local log = require "log"
 local enum = require "pb_enums"
 local define = require "game.ox.define"
 local logic = require "game.ox.gamelogic_1"
-local onlineguid = require "netguidopt"
 local base_rule = require "game.lobby.base_rule"
 local card_dealer = require "card_dealer"
+local timer = require "timer"
 
 local table = table
 local string = string
@@ -702,6 +701,7 @@ function ox_table:do_balance()
 end
 
 function ox_table:on_game_overed()
+	self.gamelog = nil
 	log.info("ox_table:on_game_overed table_id = %s", self.table_id_)
 	self:cancel_timer()
 	self:cancel_kickout_no_ready_timer()

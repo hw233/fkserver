@@ -178,7 +178,7 @@ end
 
 function base_table:begin_clock_ex(timeout,id,total_time,player)
 	if player then 
-		send2client_pb(player,"SC_StartTimer",{
+		send2client(player,"SC_StartTimer",{
 			left_time = math.ceil(timeout),
 			total_time = total_time and math.floor(total_time) or nil,
 			id = id,
@@ -195,7 +195,7 @@ end
 
 function base_table:cancel_clock_ex(id,player)
 	if player then 
-		send2client_pb(player,"SC_CancelTimer",{
+		send2client(player,"SC_CancelTimer",{
 			id = id,
 		})
 		return
@@ -208,7 +208,7 @@ end
 
 function base_table:begin_clock(timeout,player,total_time)
 	if player then 
-		send2client_pb(player,"SC_TimeOutNotify",{
+		send2client(player,"SC_TimeOutNotify",{
 			left_time = math.floor(timeout + 0.0000001),
 			total_time = total_time and math.floor(total_time) or nil,
 		})
@@ -249,7 +249,7 @@ function base_table:on_reconnect(player)
 	local requester = self.dismiss_request.requester
 	local timer = self.dismiss_request.timer
 
-	send2client_pb(player,"SC_DismissTableRequestInfo",{
+	send2client(player,"SC_DismissTableRequestInfo",{
 		result = enum.ERROR_NONE,
 		request_guid = requester.guid,
 		request_chair_id = requester.chair_id,
@@ -267,14 +267,14 @@ function base_table:request_dismiss(player)
 	return self:lockcall(function()
 		log.info("player %s request dismiss table_id %s",player.guid,self:id())
 		if not self:is_alive() then
-			send2client_pb(player.guid,"SC_DismissTableReq",{
+			send2client(player.guid,"SC_DismissTableReq",{
 				result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
 			})
 			return
 		end
 
 		if self.dismiss_request then
-			send2client_pb(player.guid,"SC_DismissTableReq",{
+			send2client(player.guid,"SC_DismissTableReq",{
 				result = enum.ERROR_OPERATION_REPEATED
 			})
 			return
@@ -897,7 +897,7 @@ function base_table:sync_kickout_no_ready_timer(player)
 	local remain_time = math.floor(self.kickout_no_ready_timer.remainder)
 	local timer_id = self.kickout_no_ready_timer.id
 	if player then
-		send2client_pb(player,"SC_StartTimer",{
+		send2client(player,"SC_StartTimer",{
 			id = timer_id,
 			left_time = remain_time,
 		})

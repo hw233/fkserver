@@ -7,6 +7,7 @@ local json = require "json"
 local maajan_tile_dealer = require "maajan_tile_dealer"
 local base_private_table = require "game.lobby.base_private_table"
 local enum = require "pb_enums"
+local timer = require "timer"
 
 require "functions"
 
@@ -104,6 +105,27 @@ function maajan_table:on_private_dismissed()
     end
 
     base_table.on_private_dismissed(self)
+end
+
+function maajan_table:set_trusteeship(player,trustee)
+    base_table.set_trusteeship(self,player,trustee)
+    if self.game_log then
+        table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Trustee",trustee = trustee,time = timer.nanotime()})
+    end
+end
+
+function maajan_table:on_offline(player)
+	base_table.on_offline(self,player)
+    if self.game_log then
+		table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Offline",time = timer.nanotime()})
+	end
+end
+
+function maajan_table:on_reconnect(player)
+	base_table.on_reconnect(self,player)
+	if self.game_log then
+		table.insert(self.game_log.action_table,{chair = player.chair_id,act = "Reconnect",time = timer.nanotime()})
+	end
 end
 
 function maajan_table:on_started(player_count)
@@ -259,7 +281,7 @@ function maajan_table:on_qiang_gang_hu(event)
         return
     end
 
-    local actions = table.value(self.waiting_player_actions)
+    local actions = table.values(self.waiting_player_actions)
     table.sort(actions,function(l,r)
         local l_priority = ACTION_PRIORITY[l.done.action]
         local r_priority = ACTION_PRIORITY[r.done.action]
@@ -343,7 +365,7 @@ function maajan_table:send_action_waiting(action)
         end
     end
 
-    send2client_pb(self.players[chair_id],"SC_WaitingDoActions",{
+    send2client(self.players[chair_id],"SC_WaitingDoActions",{
         chair_id = chair_id,
         actions = actions,
     })
@@ -813,7 +835,7 @@ function maajan_table:send_ting(player,ting_tiles)
         end
     end
 
-    send2client_pb(player,"SC_WaitingTing",{
+    send2client(player,"SC_WaitingTing",{
         ting = ting,
     })
 end
@@ -823,9 +845,9 @@ function maajan_table:on_mo_pai(mo_pai)
         if p.chair_id == self.chu_pai_player_index then
             p.mo_pai = mo_pai
             p.mo_pai_count = p.mo_pai_count + 1
-            send2client_pb(p,"SC_Maajan_Draw",{tile = mo_pai,chair_id = k})
+            send2client(p,"SC_Maajan_Draw",{tile = mo_pai,chair_id = k})
         else
-            send2client_pb(p,"SC_Maajan_Draw",{tile = 255,chair_id = self.chu_pai_player_index})
+            send2client(p,"SC_Maajan_Draw",{tile = 255,chair_id = self.chu_pai_player_index})
             p.mo_pai = nil
         end
     end
@@ -1750,7 +1772,7 @@ end
 
 
 function maajan_table:on_game_overed()
-    self.game_log = {}
+    self.game_log = nil
     self:ding_zhuang()
 
     self.do_logic_update = false
@@ -2301,16 +2323,16 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
     end
 
     if self.cur_round and self.cur_round > 0 then
-        send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+        send2client(player,"SC_Maajan_Desk_Enter",msg)
     end
 
     if is_reconnect then
         if self.dealer then
-            send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+            send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
         end
 
         if self.chu_pai_player_index then
-            send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+            send2client(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
         end
 
         if self.waiting_player_actions then
@@ -2367,11 +2389,11 @@ function maajan_table:on_reconnect_wait_chu_pai(player)
         total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
     }
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    send2client(player,"SC_Maajan_Desk_Enter",msg)
 
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     if self.waiting_player_actions then
         local player_actions = self.waiting_player_actions[player.chair_id]
@@ -2424,11 +2446,11 @@ function maajan_table:on_reconnect_action_after_chu_pai(player)
         total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
     }
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    send2client(player,"SC_Maajan_Desk_Enter",msg)
 
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     if self.waiting_player_actions then
         local player_actions = self.waiting_player_actions[player.chair_id]
@@ -2476,11 +2498,11 @@ function maajan_table:on_reconnect_action_after_mo_pai(player)
         total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
     }
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    send2client(player,"SC_Maajan_Desk_Enter",msg)
 
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     if self.waiting_player_actions then
         local player_actions = self.waiting_player_actions[player.chair_id]
@@ -2530,11 +2552,11 @@ function maajan_table:on_reconnect_qiang_gang_hu(player)
         total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
     }
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    send2client(player,"SC_Maajan_Desk_Enter",msg)
 
-    send2client_pb(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    send2client_pb(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
+    send2client(player,"SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 
     if self.waiting_player_actions then
         local player_actions = self.waiting_player_actions[player.chair_id]
@@ -2557,7 +2579,7 @@ function maajan_table:on_reconnect_pre_begin(player)
         total_scores = table.map(self.players,function(p) return p.chair_id,p.total_score end),
     }
 
-    send2client_pb(player,"SC_Maajan_Desk_Enter",msg)
+    send2client(player,"SC_Maajan_Desk_Enter",msg)
 end
 
 function maajan_table:reconnect(player)
@@ -2657,7 +2679,7 @@ function maajan_table:send_ting_tips(p)
 
         log.dump(discard_tings)
 
-        send2client_pb(p,"SC_TingTips",{
+        send2client(p,"SC_TingTips",{
             ting = discard_tings
         })
 
@@ -2678,14 +2700,14 @@ end
 function maajan_table:on_cs_get_ting_tiles_info(player)
     local hu_tips = self.rule and self.rule.play.hu_tips or nil
     if not hu_tips then 
-        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
             result = enum.ERROR_OPERATION_INVALID,
         })
         return
     end
 
     if player.hu then 
-        send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+        send2client(player,"SC_MaajanGetTingTilesInfo",{
             result = enum.ERROR_OPERATION_INVALID,
         })
         return
@@ -2699,7 +2721,7 @@ function maajan_table:on_cs_get_ting_tiles_info(player)
 
     log.dump(hu_tile_fans)
 
-    send2client_pb(player,"SC_MaajanGetTingTilesInfo",{
+    send2client(player,"SC_MaajanGetTingTilesInfo",{
         tiles_info = hu_tile_fans,
     })
 end
