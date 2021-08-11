@@ -4,6 +4,7 @@ local log = require "log"
 local skynet = require "skynetproto"
 local mysql = require "skynet.db.mysql"
 local channel = require "channel"
+local queue = require "skynet.queue"
 
 LOG_NAME = "mysqld"
 
@@ -24,6 +25,8 @@ local retry_query_times = 100
 local query_ttl_time = 3
 
 local connection = {}
+
+local connect_lock = queue()
 
 function connection:close()
 	if not self.conn then 
@@ -81,6 +84,7 @@ function new_connection_pool(conf)
 		__waiting = {},
 		__trans = {},
 		__all = {},
+		__connect_lock = queue(),
 	},{
 		__index = connection_pool,
 		__gc = function(pool)
@@ -121,14 +125,20 @@ function connection_pool.occupy(pool)
 			return conn
 		end
 
-		if #pool.__all <= pool.__max then
-			ok,conn = xpcall(new_connection,traceback,pool.__conf)
-			if not ok then
-				log.error("connection pool occupy new connection failed,%s",conn)
-			elseif conn then
-				tinsert(pool.__all,conn)
-				return conn
+		local conn = pool.__connect_lock(function()
+			if #pool.__all <= pool.__max then
+				ok,conn = xpcall(new_connection,traceback,pool.__conf)
+				if not ok then
+					log.error("connection pool occupy new connection failed,%s",conn)
+				elseif conn then
+					tinsert(pool.__all,conn)
+					return conn
+				end
 			end
+		end)
+
+		if conn then
+			return conn
 		end
 		
 		pool:wait()
