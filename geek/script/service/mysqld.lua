@@ -84,6 +84,7 @@ function new_connection_pool(conf)
 		__waiting = {},
 		__trans = {},
 		__all = {},
+		__all_count = 0,
 		__connect_lock = queue(),
 	},{
 		__index = connection_pool,
@@ -109,60 +110,80 @@ function connection_pool.wakeup(pool)
 	end
 end
 
-function connection_pool.close(pool)
-	local conn
-	repeat
-		conn = tremove(pool.__all,1)
-		if conn then
-			conn:close()
+function connection_pool.close_one(pool,cid)
+	pool.__connect_lock(function()
+		local conn = pool.__all[cid]
+		if not conn then return end
+
+		conn:close()
+		pool.__all_count = pool.__all_count - 1
+		pool.__all[cid] = nil
+	end)
+end
+
+function connection_pool.connect_one(pool)
+	return pool.__connect_lock(function()
+		if pool.__all_count <= pool.__max then
+			local ok,conn = xpcall(new_connection,traceback,pool.__conf)
+			if ok and conn then
+				local id = #pool.__all + 1
+				pool.__all[id] = conn
+				pool.__all_count = pool.__all_count + 1
+				return conn,id
+			end
+
+			if not ok then
+				log.error("connection pool occupy new connection failed,%s",conn)
+				return
+			end
 		end
-	until not conn
+	end)
+end
+
+function connection_pool.close(pool)
+	for _,conn in pairs(pool.__all) do
+		conn:close()
+	end
+	pool.__all = {}
+	pool.__all_count = 0
 end
 
 function connection_pool.occupy(pool)
-	local ok,conn
+	local conn,id
 	while true do
-		conn = tremove(pool.__free,1)
-		if conn then
-			return conn
+		id = tremove(pool.__free,1)
+		if id then
+			conn = pool.__all[id]
+			if conn then
+				return conn,id
+			end
 		end
 
-		local conn = pool.__connect_lock(function()
-			if #pool.__all <= pool.__max then
-				ok,conn = xpcall(new_connection,traceback,pool.__conf)
-				if not ok then
-					log.error("connection pool occupy new connection failed,%s",conn)
-				elseif conn then
-					tinsert(pool.__all,conn)
-					return conn
-				end
-			end
-		end)
-
+		conn,id = pool:connect_one()
 		if conn then
-			return conn
+			return conn,id
 		end
 		
 		pool:wait()
 	end
 end
 
-function connection_pool.release(pool,conn)
-	tinsert(pool.__free,conn)
+function connection_pool.release(pool,cid)
+	tinsert(pool.__free,cid)
 
 	pool:wakeup()
 end
 
 function connection_pool.query(pool,fmtsql,...)
 	local ok,res
-	local conn
+	local conn,cid
 	local starttime 
 	for i = 1,retry_query_times do
 		starttime = skynet.time()
-		conn = pool:occupy()
+		conn,cid = pool:occupy()
 		ok,res = xpcall(conn.query,traceback,conn,fmtsql,...)
 		if ok then
-			pool:release(conn)
+			pool:release(cid)
 			local delta = skynet.time() - starttime
 			if delta > query_ttl_time then
 				log.warning("msyqld connection_pool.query max_ttl %s,sql:\"%s\"",delta,fmtsql)
@@ -171,7 +192,7 @@ function connection_pool.query(pool,fmtsql,...)
 		end
 
 		log.error("msyqld connection_pool query got error %s times,retry,%s",i,res)
-		conn:close()
+		pool:close_one(cid)
 	end
 
 	log.error("msyqld connection_pool query got error,retry %s times,failed,%s",retry_query_times,res)
@@ -180,23 +201,24 @@ end
 
 function connection_pool.begin_transaction(pool)
 	local transid = #pool.__trans + 1
-	local conn = pool:occupy()
+	local conn,cid = pool:occupy()
 	conn:query([[SET AUTOCOMMIT = 0;BEGIN;]])
-	pool.__trans[transid] = conn
+	pool.__trans[transid] = cid
 	return transid
 end
 
 function connection_pool.do_transaction(pool,transid,fmtsql,...)
-	local conn = pool.__trans[transid]
-	assert(conn,string.format("do_transaction got nil conn with id %s.",transid))
-	
+	local cid = pool.__trans[transid]
+	assert(cid,string.format("do_transaction got nil conn id with id %s.",transid))
+	local conn = pool.__all[cid]
+	assert(conn,string.format("do_transaction got nil conn id %s with id %s.",transid,cid))
 	return conn:query(fmtsql,...)
 end
 
 function connection_pool.finish_transaction(pool,transid)
-	local conn = pool.__trans[transid]
-	if conn then
-		pool:release(conn)
+	local cid = pool.__trans[transid]
+	if cid then
+		pool:release(cid)
 	end
 	pool.__trans[transid] = nil
 end
