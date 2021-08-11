@@ -100,10 +100,12 @@ function connection_pool.wait(pool)
 end
 
 function connection_pool.wakeup(pool)
-	local co = tremove(pool.__waiting,1)
-	while co do
-		skynet.wakeup(co)
+	local co
+	local freec = #pool.__free
+	for _ = 1,freec do
 		co = tremove(pool.__waiting,1)
+		if not co then break end
+		skynet.wakeup(co)
 	end
 end
 
