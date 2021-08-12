@@ -180,7 +180,7 @@ local function reg_account(msg)
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
     
-    channel.call("db.?","msg","LD_RegAccount",info)
+    channel.publish("db.?","msg","LD_RegAccount",info)
 
     -- -- 注册时加默认房卡
     local register_money = global_conf.register_money

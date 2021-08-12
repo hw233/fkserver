@@ -7,8 +7,6 @@ local queue = require "skynet.queue"
 local timer = require "timer"
 local skynet = require "skynet"
 
-local money_lock = queue()
-
 -- 玩家退出
 function on_s_logout(msg)
 	-- 上次在线时间
@@ -205,9 +203,9 @@ function on_sd_new_money_type(msg)
 	dbopt.game:batchquery("INSERT INTO t_money(id,type,club_id) VALUES(%d,%d,%s)",id,money_type,club_id)
 end
 
-local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_ext)
-	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
-		club_id,guid,money_id,amount,why,why_ext)
+local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_ext,operator)
+	log.info("transfer_money_club2player club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s,operator:%s",
+		club_id,guid,money_id,amount,why,why_ext,operator)
 	local sqls = {
 		{[[SELECT money FROM t_club_money WHERE club = %d AND money_id = %d;]],club_id,money_id},
 		{[[UPDATE t_club_money SET money = money + (%d) WHERE club = %d AND money_id = %d;]],- amount,club_id,money_id},
@@ -256,7 +254,7 @@ local function transfer_money_club2player(club_id,guid,money_id,amount,why,why_e
 	return enum.ERROR_NONE,old_club_money,new_club_money,old_player_money,new_player_money
 end
 
-local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_ext)
+local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_ext,operator)
 	log.info("transfer_money_player2club club:%s,guid:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id,guid,money_id,amount,why,why_ext)
 	local sqls = {
@@ -306,7 +304,7 @@ local function transfer_money_player2club(guid,club_id,money_id,amount,why,why_e
 	return enum.ERROR_NONE,old_club_money,new_club_money,old_player_money,new_player_money
 end
 
-local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,why,why_ext)
+local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,why,why_ext,operator)
 	log.info("transfer_money_club2club from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
 		club_id_from,club_id_to,money_id,amount,why,why_ext)
 	local sqls = {
@@ -361,12 +359,12 @@ local function transfer_money_club2club(club_id_from,club_id_to,money_id,amount,
 end
 
 
-local function transfer_money_player2player(from,to,money_id,why,why_ext)
+local function transfer_money_player2player(from,to,money_id,why,why_ext,operator)
 	local from_guid = from.guid
 	local to_guid = to.guid
 	local amount = from.new_money - (from.old_money or 0)
-	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s",
-		from_guid,to_guid,money_id,amount,why,why_ext)
+	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s,opertor:%s",
+		from_guid,to_guid,money_id,amount,why,why_ext,operator)
 	local sqls = {
 		{
 			[[
@@ -390,6 +388,18 @@ local function transfer_money_player2player(from,to,money_id,why,why_ext)
 
 	log.dump(res)
 
+	local res = dbopt.log:query([[
+			INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);
+		]],
+		from_guid,to_guid,4,operator,"","",os.time()
+	)
+	if res.errno then
+		log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
+		return
+	end
+
+	why_ext = res.insert_id
+
 	local logsqls = {
 		{
 			[[
@@ -401,11 +411,9 @@ local function transfer_money_player2player(from,to,money_id,why,why_ext)
 		}
 	}
 
-	log.dump(logsqls)
 	res = dbopt.log:batchquery(logsqls)
 	if res.errno then
 		log.error("transfer_money_player2club insert log error,errno:%d,err:%s",res.errno,res.err)
-		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	return enum.ERROR_NONE
@@ -419,21 +427,22 @@ function on_sd_transfer_money(msg)
 	local amount = msg.amount
 	local why = msg.why
 	local why_ext = msg.why_ext
+	local operator = msg.operator
 
 	if trans_type == 1 then
-		return money_lock(transfer_money_club2player,from,to,money_id,amount,why,why_ext)
+		return transfer_money_club2player(from,to,money_id,amount,why,why_ext,operator)
 	end
 
 	if trans_type == 2 then
-		return money_lock(transfer_money_player2club,from,to,money_id,amount,why,why_ext)
+		return transfer_money_player2club(from,to,money_id,amount,why,why_ext,operator)
 	end
 
 	if trans_type == 3 then
-		return money_lock(transfer_money_club2club,from,to,money_id,amount,why,why_ext)
+		return transfer_money_club2club(from,to,money_id,amount,why,why_ext,operator)
 	end
 
 	if trans_type == 4 then
-		return money_lock(transfer_money_player2player,from,to,money_id,why,why_ext)
+		return transfer_money_player2player(from,to,money_id,why,why_ext,operator)
 	end
 
 	return enum.ERROR_PARAMETER_ERROR

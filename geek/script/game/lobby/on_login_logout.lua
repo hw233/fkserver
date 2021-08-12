@@ -1408,7 +1408,7 @@ function on_cs_set_nickname(msg,guid)
 	reddb:hset(string.format("player:info:%d",guid),"nickname",nickname)
 	player.nickname = nickname
 
-	channel.call("db.?","msg","SD_UpdatePlayerInfo",{
+	channel.publish("db.?","msg","SD_UpdatePlayerInfo",{
 		nickname = player.nickname,
 	},guid)
 

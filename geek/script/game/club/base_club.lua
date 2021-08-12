@@ -919,7 +919,7 @@ function base_club:incr_commission(money,round_id)
     newmoney = newmoney and tonumber(newmoney) or 0
     club_commission[self.id] = nil
 
-    channel.call("db.?","msg","SD_LogClubCommission",{
+    channel.publish("db.?","msg","SD_LogClubCommission",{
         parent = self.parent,
         club = self.id,
         commission = money,
