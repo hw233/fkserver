@@ -2167,6 +2167,8 @@ function on_cs_transfer_money(msg,guid)
     local source_id = msg.source_id
     local target_id = msg.target_id
 
+    log.info("on_cs_transfer_money from:%s,to:%s,money:%s",source_id,target_id,money)
+
     local res = {
         result = enum.ERROR_OPERATION_INVALID,
         source_type = source_type,

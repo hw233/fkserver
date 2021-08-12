@@ -1028,6 +1028,7 @@ function base_club:incr_member_money(guid,delta_money,why,why_ext)
 end
 
 function base_club:incr_member_redis_money(guid,delta_money)
+    log.info("base_club:incr_member_redis_money club:%s,guid:%s,money:%s",self.id,guid,delta_money)
     local player = base_players[guid]
     if not player or not club_member[self.id][guid] then
         log.error("base_club:incr_member_money got nil player or not member,club:%s,guid:%s",self.id,guid)
