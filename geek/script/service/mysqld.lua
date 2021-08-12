@@ -26,8 +26,6 @@ local query_ttl_time = 3
 
 local connection = {}
 
-local connect_lock = queue()
-
 function connection:close()
 	if not self.conn then 
 		return 
@@ -102,7 +100,8 @@ end
 
 function connection_pool.wakeup(pool)
 	local co
-	local freec = #pool.__free
+	local unopen_c = pool.__max - pool.__all_count
+	local freec = #pool.__free + (unopen_c >= 0 and unopen_c or 0)
 	for _ = 1,freec do
 		co = tremove(pool.__waiting,1)
 		if not co then break end
