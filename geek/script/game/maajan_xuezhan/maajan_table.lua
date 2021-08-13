@@ -944,6 +944,12 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
         end)
 
         if table.nums(qiang_gang_hu) > 0 then
+            send2client(player,"SC_Maajan_Do_Action_Commit",{
+                action = do_action,
+                chair_id = player.chair_id,
+                session_id = msg.session_id,
+            })
+            
             self:qiang_gang_hu(player,qiang_gang_hu,tile)
             return
         end
@@ -1180,6 +1186,11 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
         hu_count == 0
     then
         if not table.And(self.waiting_actions,function(action) return action.done ~= nil end) then
+            send2client(player,"SC_Maajan_Do_Action_Commit",{
+                action = msg.action,
+                chair_id = player.chair_id,
+                session_id = msg.session_id,
+            })
             return
         end
     end

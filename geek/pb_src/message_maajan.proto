@@ -358,6 +358,15 @@ message CS_Maajan_Do_Action{
 	int32 session_id = 3;
 }
 
+message SC_Maajan_Do_Action_Commit{
+	enum MsgID { Nil = 0; ID = 23004;}
+	int32 chair_id = 1;
+	int32 action = 2;
+	int32 value_tile = 3;
+	int32 target_chair_id = 4; //抢杠等
+	int32 session_id = 5;
+}
+
 message SC_Maajan_Do_Action{
 	enum MsgID { Nil = 0; ID = 23118;}
 	int32 chair_id = 1;
