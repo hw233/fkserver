@@ -1541,6 +1541,15 @@ function maajan_table:on_action_chu_pai(player,msg,auto)
         return
     end
 
+    local que_men = player.que
+    if  que_men and
+        table.Or(shou_pai,function(c,tile) return c > 0 and mj_util.tile_men(tile) == que_men end) and
+        que_men ~= mj_util.tile_men(chu_pai_val)
+    then
+        log.error("que exists and tile is not que when chu guid:%s,tile:%s",player.guid,chu_pai_val)
+        return
+    end
+
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
 
