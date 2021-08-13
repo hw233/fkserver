@@ -1003,7 +1003,11 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
     end
 
     if do_action == ACTION.PASS then
-        self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,action = do_action,session_id = session_id})
+        send2client(player,"SC_Maajan_Do_Action",{
+            action = do_action,
+            chair_id = player.chair_id,
+            session_id = msg.session_id,
+        })
         self:chu_pai()
         return
     end
@@ -1141,13 +1145,22 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
 
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
+        local done_action = msg.action
         action.done = {
-            action = msg.action,
+            action = done_action,
             tile = msg.value_tile,
             auto = auto,
         }
         local chair = action.chair_id
         self:cancel_auto_action_timer(self.players[chair])
+
+        if done_action == ACTION.PASS then
+            send2client(player,"SC_Maajan_Do_Action",{
+                action = done_action,
+                chair_id = player.chair_id,
+                session_id = msg.session_id,
+            })
+        end
     end
 
     local hu_action_count = table.sum(self.waiting_actions,function(action)
@@ -1315,6 +1328,8 @@ function maajan_table:action_after_chu_pai(waiting_actions)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_action(p,action)
+            log.warning("auto action %s",p.guid)
+            log.dump(action)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = self:chu_pai_player().chu_pai
             self:lockcall(function()
