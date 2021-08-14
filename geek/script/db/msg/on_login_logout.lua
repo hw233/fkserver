@@ -391,14 +391,13 @@ local function transfer_money_player2player(from,to,money_id,why,why_ext,operato
 	local res = dbopt.log:query([[
 			INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);
 		]],
-		from_guid,to_guid,4,operator,"","",os.time()
+		from_guid,to_guid,4,operator,"NULL","",os.time()
 	)
 	if res.errno then
 		log.error("on_sd_log_recharge insert into t_log_recharge info throw exception.[%d],[%s]",res.errno,res.err)
-		return
 	end
 
-	why_ext = res.insert_id
+	why_ext = res and res.insert_id or nil
 
 	local logsqls = {
 		{
