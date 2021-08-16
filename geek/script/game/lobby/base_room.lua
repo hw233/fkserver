@@ -1060,6 +1060,8 @@ function base_room:player_logout_server(player)
 	base_players[guid] = nil
 	onlineguid[guid] = nil
 	allonlineguid[guid] = nil
+
+	channel.call("queue.?","lua","D",guid)
 	
 	channel.publish("db.?","msg","S_Logout", {
 		account = player.account,

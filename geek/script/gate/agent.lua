@@ -71,7 +71,7 @@ local function afk(guid)
         log.error("afk,guid:%s double check got nil session",guid)
         return
     end
-    channel.call("service."..tostring(u.server),"lua","afk",guid,true)
+    channel.call("queue.?","lua","C",guid,"service."..tostring(u.server),"lua","afk",guid,true)
     onlineguid[guid] = nil
 end
 
@@ -102,7 +102,7 @@ function MSG.CS_Logout(msg,guid)
         return
     end
 
-    local result = channel.call("service."..tostring(u.server),"msg","CS_Logout",guid)
+    local result = channel.call("queue.?","lua","C",guid,"service."..tostring(u.server),"msg","CS_Logout",guid)
 
     netmsgopt.send(u.fd,"SC_Logout",{
         result = result
@@ -145,7 +145,7 @@ local function dispatch(msgname,msg,guid)
             guid,msgname,u.server)
         return
     end
-    channel.call("service."..tostring(u.server),"msg",msgname,msg,guid)
+    channel.publish("queue.?","lua","S",guid,"service."..tostring(u.server),"msg",msgname,msg,guid)
 end
 
 skynet.register_protocol {

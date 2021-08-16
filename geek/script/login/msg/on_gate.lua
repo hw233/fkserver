@@ -685,7 +685,7 @@ function on_cl_login(msg,gate)
         info.reconnect = 1
         reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
 
-        channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
+        channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
 
         log.dump(info)
 
@@ -736,7 +736,7 @@ function on_cl_login(msg,gate)
 
     reddb:sadd("player:online:all",guid)
 
-    channel.pcall("game."..tostring(game_id),"msg","LS_LoginNotify",guid)
+    channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid)
 
     log.info("login step login->LS_LoginNotify,guid=%s,account=%s,gameid=%d", guid,account, game_id)
 
@@ -801,7 +801,7 @@ function on_cl_reg_account(msg,gate)
         gate = gate,
     })
 
-    channel.pcall("game."..tostring(gameid),"msg","LS_LoginNotify",{
+    channel.pcall("queue.?","lua","C",guid,"game."..tostring(gameid),"msg","LS_LoginNotify",{
         player_login_info = info,
         password = msg.password,
     })

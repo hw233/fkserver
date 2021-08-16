@@ -19,6 +19,7 @@ local servicepath = {
     [nameservice.TIDGAME] = "game.main",
     [nameservice.TIDSTATISTICS] = "statistics.main",
     [nameservice.TIBROKER] = "broker.main",
+    [nameservice.TIQUEUE] = "queue.main",
 
     [nameservice.TNDB] = "db.main",
     [nameservice.TNCONFIG] = "config.main",
@@ -28,6 +29,7 @@ local servicepath = {
     [nameservice.TNGAME] = "game.main",
     [nameservice.TNSTATISTICS] = "statistics.main",
     [nameservice.TNBROKER] = "broker.main",
+    [nameservice.TNQUEUE] = "queue.main",
 }
 
 local function cluster_name(conf)
@@ -51,9 +53,12 @@ local function is_bootcluster()
 end
 
 local function launchservice(conf)
+    if not servicepath[conf.type or conf.name] then
+        log.warning("unsupport service %s",conf.name)
+        return
+    end
     local id = conf.name .. "." .. tostring(conf.id)
     local servicename = servicepath[conf.type] or servicepath[conf.name]
-    if not servicename then return end
     local ok,handle = pcall(skynet.newservice,servicename,conf.id)
     if not ok then return end
     log.info("new service,id:%s,handle:%s",id,handle)
