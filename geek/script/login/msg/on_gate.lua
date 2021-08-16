@@ -73,6 +73,11 @@ local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
         guid = tonumber(guid)
+        local p = base_players[guid]
+        if p and p.status == 0 then
+            return enum.ERROR_PLAYER_IS_LOCKED
+        end
+
         log.warning("reg_account repeated.open_id:%s,guid:%s",msg.open_id,guid)
         local reginfo = {
             nickname = msg.nickname or ("guest_"..tostring(guid)),
@@ -86,8 +91,6 @@ local function reg_account(msg)
         }
         
         reddb:hmset("player:info:"..tostring(guid),reginfo)
-
-        local p = base_players[guid]
 
         if g_common.is_in_maintain() and not p:is_vip() then
             return enum.LOGIN_RESULT_MAINTAIN
@@ -208,14 +211,17 @@ local function open_id_login(msg)
         return enum.LOGIN_RESULT_ACCOUNT_NOT_EXISTS
     end
 
+    local player = base_players[guid]
+    if player and player.status == 0 then
+        return enum.ERROR_PLAYER_IS_LOCKED
+    end
+
     local ip = msg.ip 
     if ip then
         reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-
-    local player = base_players[guid]
 
     local info = {
         guid = player.guid,
@@ -241,11 +247,6 @@ local function open_id_login(msg)
     }
 
     base_players[guid] = nil
-
-    log.dump(info)
-    if info.status == 0 then
-        return enum.ERROR_PLAYER_IS_LOCKED,info
-    end
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
@@ -340,8 +341,6 @@ local function sms_login(msg)
         return enum.LOGIN_RESULT_SMS_FAILED
     end
 
-
-
     local ret,info
     local uuid = reddb:get(string.format("player:phone_uuid:%s",msg.phone))
     if not uuid or uuid == "" then
@@ -366,12 +365,17 @@ local function sms_login(msg)
     else
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
+        local player = base_players[guid]
+        if player and player.status == 0 then
+            return enum.ERROR_PLAYER_IS_LOCKED
+        end
+
         local ip = msg.ip 
         if ip then
             reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
         end
         reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-        local player = base_players[guid]
+        
         info = {
             guid = player.guid,
             account = player.open_id,
@@ -518,13 +522,15 @@ local function h5_login(msg)
 
     guid = tonumber(guid)
 
+    local player = base_players[guid]
+
     local ip = msg.ip
     if ip then
         reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-    local player = base_players[guid]
+    
     local info = {
         guid = player.guid,
         account = player.open_id,
@@ -551,9 +557,6 @@ local function h5_login(msg)
     base_players[guid] = nil
 
     log.dump(player)
-    if player.status == 0 then
-        return enum.ERROR_PLAYER_IS_LOCKED,info
-    end
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
@@ -573,6 +576,11 @@ local function account_login(msg)
             return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
         end
         guid = tonumber(uuid)
+    end
+
+    local player = base_players[guid]
+    if player and player.status == 0 then
+        return enum.ERROR_PLAYER_IS_LOCKED
     end
 
     local password = msg.password
@@ -596,8 +604,7 @@ local function account_login(msg)
     end
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
-
-    local player = base_players[guid]
+    
     local info = {
         guid = player.guid,
         account = player.open_id,
@@ -622,11 +629,6 @@ local function account_login(msg)
     }
 
     base_players[guid] = nil
-
-    log.dump(player)
-    if player.status == 0 then
-        return enum.ERROR_PLAYER_IS_LOCKED,info
-    end
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
