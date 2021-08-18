@@ -6,6 +6,7 @@ require "functions"
 local msgopt = require "msgopt"
 local redisopt = require "redisopt"
 local enum = require "pb_enums"
+require "random_mt19937"
 
 local reddb = redisopt.default
 
