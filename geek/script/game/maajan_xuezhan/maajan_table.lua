@@ -2703,7 +2703,7 @@ function maajan_table:on_chu_pai(tile)
     for _, p in pairs(self.players) do
         if p.chair_id == self.chu_pai_player_index then
             p.chu_pai = tile
-            p.chu_pai_count = p.chu_pai_count + 1
+            p.chu_pai_count = (p.chu_pai_count or 0) + 1
         else
             p.chu_pai = nil
         end
