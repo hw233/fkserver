@@ -702,6 +702,8 @@ function cards_util.get_cards_type(cards)
 				tinsert(values,i)
 			elseif #values == 1 then
 				values = {}
+			elseif #values > 1 then
+				break
 			end
 		end
 
