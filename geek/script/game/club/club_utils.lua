@@ -481,7 +481,6 @@ function utils.father_branch(club_id,fathers,guid)
     local myrole = club_role[club_id][guid]
     if myrole == enum.CRT_PARTNER or myrole == enum.CRT_BOSS then
         f = guid
-        tinsert(branch,1,guid)
     else
         f = fathers[guid]
     end

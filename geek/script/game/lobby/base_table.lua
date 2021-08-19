@@ -481,6 +481,10 @@ function base_table:do_tax_commission(taxes)
 		return guid,club_utils.father_branch(club_id,tree,guid)
 	end)
 
+	log.dump(branches)
+
+	log.dump(teamsconf)
+
 	local do_percentage = taxconf.percentage_commission
 
 	local commissions = {}
@@ -489,10 +493,9 @@ function base_table:do_tax_commission(taxes)
 	local function do_branch_commission(guid,tax)
 		local branch = branches[guid]
 		local commission = tax
-		local i = 1
 		for i = 1,#branch do
 			local myself = branch[i]
-			local son = branch[i + 1] or guid
+			local son = branch[i + 1]
 			local son_commission
 			if son then
 				son_commission = club_utils.team_commission(teamsconf[son],commission,do_percentage) or 0
@@ -500,9 +503,11 @@ function base_table:do_tax_commission(taxes)
 				son = guid
 				son_commission = 0
 			end
+
 			son_commission = son_commission > 0 and son_commission or 0
 			son_commission = son_commission < commission and son_commission or commission
 			local my_commission = commission - son_commission
+			log.info("%s<-> %s - %s,%s,%s",son,myself,commission,son_commission,my_commission)
 			commission = son_commission
 			commissions[myself] = (commissions[myself] or 0) + my_commission
 
@@ -514,7 +519,7 @@ function base_table:do_tax_commission(taxes)
 				})
 			end
 
-			log.info("base_table:do_tax_commission club:%s,partner:%s,commission:%s",club_id,myself,commission)
+			log.info("base_table:do_tax_commission club:%s,partner:%s,commission:%s",club_id,myself,my_commission)
 
 			if commission <= 0 then
 				break
