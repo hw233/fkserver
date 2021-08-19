@@ -93,16 +93,19 @@ function on_ls_login_notify(guid,reconnect)
 		return
 	end
 
-	player:lockcall(function()
+	return player:lockcall(function()
 		local s = onlineguid[guid]
 		log.info("set player.online = true,guid:%d",guid)
 		player.online = true
 		local repeat_login = s and s.server == def_game_id
 		if reconnect or repeat_login then
 			-- 重连/重复登陆
-			log.info("login step game->LC_Login,guid=%s,game_id:%s,reconnect:%s,repeat:%s", 
-				guid,def_game_id,reconnect,repeat_login)
-			-- g_room:enter_room(player,true)
+			log.info("on_ls_login_notify,guid=%s,game_id:%s,reconnect:%s,repeat:%s,table_id:%s,chair_id:%s", 
+				guid,def_game_id,reconnect,repeat_login,s.table,s.chair)
+			local table_id = s.table
+			if table_id and g_room:is_table_exists(table_id) then
+				return true
+			end
 			return
 		end
 
@@ -113,7 +116,7 @@ function on_ls_login_notify(guid,reconnect)
 				guid,def_game_id,s.server)
 		end
 		
-		log.info("login step game->LC_Login,account=%s", player.account)
+		log.info("on_ls_login_notify,account=%s", player.account)
 		
 		local now = os.time()
 		reddb:hset(string.format("player:info:%d",guid),"login_time",now)
@@ -731,8 +734,15 @@ function do_reconnect(guid,game_id)
 			})
 			return
 		end	
+
+		if not onlineinfo.table then
+			onlineguid.send(guid,"SC_ReconnectJoinRoom",{
+				result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+			})
+			return
+		end
 		
-		if not onlineinfo.table or not onlineinfo.chair then
+		if not onlineinfo.chair then
 			onlineguid.send(guid,"SC_ReconnectJoinRoom",{
 				result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR
 			})
@@ -839,7 +849,14 @@ function do_reconnect_old(msg,guid,game_id)
 			return
 		end	
 		
-		if not onlineinfo.table or not onlineinfo.chair then
+		if not onlineinfo.table then
+			onlineguid.send(guid,"SC_JoinRoom",{
+				result = enum.GAME_SERVER_RESULT_NOT_FIND_TABLE
+			})
+			return
+		end
+		
+		if not onlineinfo.chair then
 			onlineguid.send(guid,"SC_JoinRoom",{
 				result = enum.GAME_SERVER_RESULT_PLAYER_NO_CHAIR
 			})

@@ -682,16 +682,18 @@ function on_cl_login(msg,gate)
     if game_id  and tonumber(first_game_type) ~= 1 then
         log.info("player[%s] reconnect game_id:%s,gate_id = %s", guid, game_id, gate)
         info.result = enum.LOGIN_RESULT_SUCCESS
-        info.reconnect = 1
+        
         reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
 
-        channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
+        local _,reconnect = channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
+        if reconnect then
+            info.reconnect = 1
+            log.dump(info)
 
-        log.dump(info)
-
-        log.info("login step reconnect login->LS_LoginNotify,guid=%s,account=%s,gameid=%s,gate_id = %s",
-            guid,account, game_id, gate)
-        return info,game_id
+            log.info("on_cl_login reconnect,guid=%s,account=%s,gameid=%s,gate_id = %s",
+                guid,account, game_id, gate)
+            return info,game_id
+        end
     end
 
     if g_common.is_in_maintain() and not is_player_vip(info) then
@@ -738,7 +740,7 @@ function on_cl_login(msg,gate)
 
     channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid)
 
-    log.info("login step login->LS_LoginNotify,guid=%s,account=%s,gameid=%d", guid,account, game_id)
+    log.info("on_cl_login,guid=%s,account=%s,gameid=%d", guid,account, game_id)
 
     info.result = enum.LOGIN_RESULT_SUCCESS
 
@@ -801,10 +803,7 @@ function on_cl_reg_account(msg,gate)
         gate = gate,
     })
 
-    channel.pcall("queue.?","lua","C",guid,"game."..tostring(gameid),"msg","LS_LoginNotify",{
-        player_login_info = info,
-        password = msg.password,
-    })
+    channel.pcall("queue.?","lua","C",guid,"game."..tostring(gameid),"msg","LS_LoginNotify",guid)
 
     info.ret = enum.LOGIN_RESULT_SUCCESS
 
