@@ -70,12 +70,18 @@ local function afk(fd)
         return
     end
     
-    if not fduser[fd] then
-        log.error("afk %s double check nil",fd)
-        return
-    end
-    pcall(skynet.call,u.agent, "lua", "afk",u.guid)
-    logout(u.guid)
+
+
+    u:lockcall(function()
+        -- double check
+        if not fduser[fd] then
+            log.error("afk %s double check nil",fd)
+            return
+        end
+        
+        pcall(skynet.call,u.agent, "lua", "afk",u.guid)
+        logout(u.guid)
+    end)
 end
 
 local function login(fd,guid,server,conf)
