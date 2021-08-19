@@ -783,6 +783,14 @@ function do_reconnect(guid,game_id)
 		end
 		
 		return tb:lockcall(function()
+			-- double check
+			if not tb:exists() then
+				onlineguid.send(guid,"SC_ReconnectJoinRoom",{
+					result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+				})
+				return
+			end
+
 			local result = tb:player_sit_down(player, chair_id,true)
 			if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 				log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
@@ -897,6 +905,13 @@ function do_reconnect_old(msg,guid,game_id)
 		end
 		
 		return tb:lockcall(function()
+			if not tb:exists() then
+				onlineguid.send(guid,"SC_JoinRoom",{
+					result = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND
+				})
+				return
+			end
+
 			local result = tb:player_sit_down(player, chair_id,true)
 			if result ~= enum.GAME_SERVER_RESULT_SUCCESS then
 				log.warning("on_cs_reconnect table %s,guid:%s,chair_id:%s,result:%s,failed",
