@@ -346,9 +346,9 @@ function base_player:decrby(field,value)
 	return tonumber(v)
 end
 
-function base_player:lockcall(fn)
+function base_player:lockcall(fn,...)
 	self.lock = self.lock or queue()
-	return self.lock(fn)
+	return self.lock(fn,...)
 end
 
 function base_player:incr_redis_money(money_id,money,club_id)
