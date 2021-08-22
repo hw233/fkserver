@@ -176,7 +176,6 @@ local function incr_player_money(guid,money_id,old_money,new_money,where,why,why
 	)
 	if res.errno then
 		log.error("incr_player_money error,errno:%d,error:%s",res.errno,res.err)
-		return
 	end
 
 	-- 单独执行，避免统计时锁表卡住
