@@ -83,7 +83,7 @@ function on_cs_update_location_gps(msg,guid)
 end
 
 -- 玩家登录通知 验证账号成功后会收到
-function on_ls_login_notify(guid,reconnect)
+function on_ls_login_notify(guid,reconnect,gate)
 	log.info("on_ls_login_notify game_id = %d,guid:%s,reconnect:%s", def_game_id,guid, reconnect)
 	onlineguid[guid] = nil
 
@@ -98,6 +98,10 @@ function on_ls_login_notify(guid,reconnect)
 		log.info("set player.online = true,guid:%d",guid)
 		player.online = true
 		local repeat_login = s and s.server == def_game_id
+		if gate then
+			reddb:hset(string.format("player:online:guid:%s",guid),"gate",gate)
+		end
+
 		if reconnect or repeat_login then
 			-- 重连/重复登陆
 			log.info("on_ls_login_notify,guid=%s,game_id:%s,reconnect:%s,repeat:%s,table_id:%s,chair_id:%s", 

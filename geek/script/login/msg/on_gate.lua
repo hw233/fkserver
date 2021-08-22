@@ -685,7 +685,7 @@ function on_cl_login(msg,gate)
         
         reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
 
-        local _,reconnect = channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true)
+        local _,reconnect = channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true,gate)
         if reconnect then
             info.reconnect = 1
             log.dump(info)
@@ -731,14 +731,11 @@ function on_cl_login(msg,gate)
     
     log.dump(gate)
     -- 存入redis
-    reddb:hmset("player:online:guid:"..tostring(guid),{
-        gate = gate,
-        login = def_game_id,
-    })
+    reddb:hmset("player:online:guid:"..tostring(guid),"gate",gate)
 
     reddb:sadd("player:online:all",guid)
 
-    channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid)
+    channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,false,gate)
 
     log.info("on_cl_login,guid=%s,account=%s,gameid=%d", guid,account, game_id)
 
