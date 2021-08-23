@@ -1495,9 +1495,9 @@ local function on_cs_club_close(msg,guid,status)
     end
 
     local role = club_role[club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
+    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PARAMETER_ERROR,
+            result = enum.ERROR_PLAYER_NO_RIGHT,
             op = oper,
         })
         return
