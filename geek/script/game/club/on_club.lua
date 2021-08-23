@@ -2213,6 +2213,10 @@ end
 function on_cs_exchagne_club_commission(msg,guid)
     local club_id = msg.club_id
     local count = msg.count
+    local partner_id = msg.partner_id
+    if not partner_id or partner_id == 0 then
+        partner_id = guid
+    end
 
     if not count or not club_id then
         onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
@@ -2229,7 +2233,7 @@ function on_cs_exchagne_club_commission(msg,guid)
         return
     end
 
-    local role = club_role[club_id][guid]
+    local role = club_role[club_id][partner_id]
     if role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
         onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
             result = enum.ERROR_PLAYER_NO_RIGHT,
@@ -2237,15 +2241,25 @@ function on_cs_exchagne_club_commission(msg,guid)
         return
     end
 
-    local commission = club_partner_commission[club_id][guid]
+    if  role == enum.CRT_PARTNER and
+        not club_utils.is_recursive_in_team(club,guid,partner_id)
+    then
+        onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end
+
+    local commission = club_partner_commission[club_id][partner_id]
     if count < 0 then
         count = commission
     end
 
-    local result = club:exchange_team_commission(guid,count)
+    local result = club:exchange_team_commission(partner_id,count)
     onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
         result = result,
         club_id = club_id,
+        partner_id = partner_id,
     })
 end
 

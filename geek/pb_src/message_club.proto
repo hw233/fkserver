@@ -355,12 +355,14 @@ message C2S_EXCHANGE_CLUB_COMMISSON_REQ{
     enum MsgID {NIL = 0;ID = 14087;}
     int32 club_id = 1;      //俱乐部ID
     int32 count = 2;
+    int32 partner_id = 3;
 }
 
 message S2C_EXCHANGE_CLUB_COMMISSON_RES{ 
     enum MsgID {NIL = 0;ID = 14088;}
     int32 result = 1;
     int32 club_id = 2;      //俱乐部ID
+    int32 partner_id = 3;
 }
 
 message C2S_CLUB_MONEY_REQ{ 
