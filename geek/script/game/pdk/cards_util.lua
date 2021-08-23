@@ -101,7 +101,6 @@ local function pick_exactly(valuecards,count,val,excludes,try_includes)
 
 	local cards = {}
 	local vcards = valuecards[val]
-	log.dump(try_includes)
 	if try_includes then
 		for _,card in pairs(vcards) do
 			if try_includes[card] and (not excludes or not excludes[card]) then
@@ -120,7 +119,6 @@ local function pick_exactly(valuecards,count,val,excludes,try_includes)
 		end
 	end
 
-	log.dump(cards)
 
 	assert(cards and #cards == count)
 
@@ -340,13 +338,13 @@ function cards_util.seek_great_than(kcards,ctype,cvalue,ccount,rule)
 		end,
 		[PDK_CARD_TYPE.PLANE_WITH_ONE] = function()
 			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,3,ccount  /  4)
-			if lian_count >= ccount  /  4 then
+			if lian_count >= ccount  /  4 and total_count >= ccount then
 				return pick_func[PDK_CARD_TYPE.PLANE_WITH_ONE](first_value,ccount  /  4)
 			end
 		end,
 		[PDK_CARD_TYPE.PLANE_WITH_TWO] = function()
 			local lian_count,first_value = seek_continuity_cards_count(valuecounts,cvalue + 1,3,ccount / 5)
-			if lian_count >= ccount / 5 then
+			if lian_count >= ccount / 5 and total_count >= ccount then
 				return pick_func[PDK_CARD_TYPE.PLANE_WITH_TWO](first_value,ccount / 5)
 			end
 		end,
@@ -397,8 +395,6 @@ function cards_util.seek_great_than(kcards,ctype,cvalue,ccount,rule)
 	if not cards and ctype ~= PDK_CARD_TYPE.BOMB then
 		cards = seek_any_bomb()
 	end
-
-	log.dump(cards)
 
 	assert((not cards or #cards > 0) and not check_cards_repeat(cards))
 
@@ -476,7 +472,6 @@ function cards_util.seek_greatest(kcards,rule,first_discard)
 				table.mergeto(excludes,
 					table.map(cards,function(c) return c,true end),
 					function(l,r) return l or r end)
-				log.dump(excludes)
 				local combine_cards = search_min_combination(valuecards,2,excludes)
 				table.mergeto(excludes,
 					table.map(combine_cards,function(c) return c,true end),
