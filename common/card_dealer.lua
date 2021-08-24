@@ -18,10 +18,13 @@ function card_dealer:shuffle()
 	for _ = 1,10 do math.random() end
 
     local j = 1
+    local c = #self.cards
     for i = #self.cards,1,-1 do
-        j = math.random(i)
+        j = math.random(c)
         if i ~= j then self.cards[j],self.cards[i] = self.cards[i],self.cards[j] end
     end
+
+    dump(self.cards)
 
     self.remainder_card_count = #self.cards
 end

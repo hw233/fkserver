@@ -1,5 +1,6 @@
 require "functions"
 require "random_mt19937"
+local chronos = require "chronos"
 
 local math = math
 
@@ -18,11 +19,12 @@ function maajan_tile_dealer:load_tiles(tiles)
 end
 
 function maajan_tile_dealer:shuffle()
-    math.randomseed(os.time())
+    math.randomseed(math.floor(chronos.nanotime() * 10000))
 	for _ = 1,10 do math.random() end
 
+    local c = #self.tiles
     for i = #self.tiles,1,-1 do
-        local j = math.random(i)
+        local j = math.random(c)
         if i ~= j then self.tiles[j],self.tiles[i] = self.tiles[i],self.tiles[j] end
     end
 
