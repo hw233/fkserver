@@ -57,10 +57,17 @@ local all_cards = {
 		43,44,45,46,47,48,49,50,51,52,53,54,55,
 		63,64,65,66,67,68,69,70,71,72,73,74,75,
 		96,97
+	},
+	[2] = {
+		3,4,5,6,7,8,9,10,11,12,13,14,15,
+		23,24,25,26,27,28,29,30,31,32,33,34,35,
+		43,44,45,46,47,48,49,50,51,52,53,54,55,
+		63,64,65,66,67,68,69,70,71,72,73,74,75,
+		96,97
 	}
 }
 
-local land_table = base_table:new()
+local land_table = setmetatable({},{__index = base_table})
 
 -- 初始化
 function land_table:init(room, table_id, chair_count)
@@ -215,6 +222,12 @@ function land_table:deal_cards()
 
 	self.landlord_cards = dealer:deal_cards(3)
 
+	self.left_cards = dealer:left_cards()
+	log.dump(self.left_cards)
+	if self.left_cards and #self.left_cards > 0 then
+		self.game_log.left_cards = self.left_cards
+	end
+	
 	self:begin_compete_landlord()
 end
 
@@ -322,14 +335,14 @@ function  land_table:do_compete_landlord_score(player,msg)
 	if self.last_landlord_cometition then
 		if (self.last_landlord_cometition < 0 and self.last_landlord_cometition ~= -4) or 
 			(action < 0 and action ~= -4) then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
 
 		if self.last_landlord_cometition >= action and action ~= -4 then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
@@ -342,7 +355,7 @@ function  land_table:do_compete_landlord_score(player,msg)
 			end)
 
 			if da_sum >= 3 and action ~= 3 then
-				send2client_pb(player,"SC_DdzCallLandlord",{
+				send2client(player,"SC_DdzCallLandlord",{
 					result = enum.ERROR_PARAMETER_ERROR
 				})
 				return
@@ -413,14 +426,14 @@ function land_table:do_compete_landlord_normal(player,msg)
 	local action = msg.action
 	if self.last_landlord_cometition then
 		if self.last_landlord_cometition > 0  or action > 0  then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
 		end
 
 		if self.last_landlord_cometition == -2 and action ~= -1 and action ~= -3 then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
@@ -433,7 +446,7 @@ function land_table:do_compete_landlord_normal(player,msg)
 			end)
 
 			if da_sum >= 3 and action ~= -2 and not self.begin_competition_normal then
-				send2client_pb(player,"SC_DdzCallLandlord",{
+				send2client(player,"SC_DdzCallLandlord",{
 					result = enum.ERROR_PARAMETER_ERROR
 				})
 				return
@@ -503,14 +516,14 @@ function land_table:do_compete_landlord(player,msg)
 	self.lock(function()
 		local action = msg.action
 		if player.chair_id ~= self.cur_competer then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_OPERATION_INVALID
 			})
 			return
 		end
 
 		if not action or action < -4 or action > 3 then
-			send2client_pb(player,"SC_DdzCallLandlord",{
+			send2client(player,"SC_DdzCallLandlord",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
 			return
@@ -692,7 +705,7 @@ function land_table:send_desk_enter_data(player,reconnect)
 	end
 
 	if self.cur_round and self.cur_round > 0 then
-		send2client_pb(player,"SC_DdzDeskEnter",msg)
+		send2client(player,"SC_DdzDeskEnter",msg)
 	end
 end
 
@@ -724,6 +737,8 @@ function land_table:on_game_overed()
 	self.compete_landlord_2_round = nil
 	
 	self:update_status(TABLE_STATUS.FREE)
+
+	self.left_cards = nil
 
 	base_table.on_game_overed(self)
 end
@@ -764,6 +779,7 @@ function land_table:on_process_over(reason)
         p.total_score = nil
     end
 
+	self.left_cards = nil
     self.landlord = nil
 	base_table.on_process_over(self,reason,{
         balance = total_winlose,
@@ -826,7 +842,7 @@ function land_table:do_action_discard(player, cards ,auto)
 	log.info("land_table:do_action_discard {%s}",table.concat(cards,","))
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("land_table:discard guid[%d] status error", player.guid)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -834,7 +850,7 @@ function land_table:do_action_discard(player, cards ,auto)
 
 	if player.chair_id ~= self.cur_discard_chair then
 		log.warning("land_table:discard guid[%s] turn[%s] error, cur[%s]", player.guid, player.chair_id, self.cur_turn)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -843,7 +859,7 @@ function land_table:do_action_discard(player, cards ,auto)
 	if not table.logic_and(cards,function(c) return player.hand_cards[c] ~= nil end) then
 		log.warning("land_table:discard guid[%s] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
@@ -857,7 +873,7 @@ function land_table:do_action_discard(player, cards ,auto)
 		(cardstype == CARD_TYPE.THREE and not play.san_zhang) or 
 		(cardstype == CARD_TYPE.THREE_WITH_TWO and not play.san_dai_er)then
 		log.warning("land_table:discard guid[%s] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
@@ -868,7 +884,7 @@ function land_table:do_action_discard(player, cards ,auto)
 		log.warning("land_table:discard guid[%s] compare_cards error, cards[%s], cur_discards[%s,%s,%s], last_discard[%s,%s,%s]", 
 			player.guid, table.concat(cards, ','),cardstype, #cards,
 			cardsval,self.last_discard.type,self.last_discard.count,self.last_discard.value)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
 		return
@@ -928,7 +944,7 @@ end
 function land_table:do_action_pass(player,auto)
 	if self.status ~= TABLE_STATUS.PLAY then
 		log.warning("land_table:pass_card guid[%s] status error", player.guid)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -936,7 +952,7 @@ function land_table:do_action_pass(player,auto)
 
 	if player.chair_id ~= self.cur_discard_chair then
 		log.warning("land_table:pass_card guid[%s] turn[%s] error, cur[%s]", player.guid, player.chair_id, self.cur_discard_chair)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -944,7 +960,7 @@ function land_table:do_action_pass(player,auto)
 
 	if not self.last_discard then
 		log.error("land_table:pass_card guid[%s] first turn", player.guid)
-		send2client_pb(player,"SC_DdzDoAction",{
+		send2client(player,"SC_DdzDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
@@ -981,20 +997,20 @@ function  land_table:reconnect(player)
 	log.info("land_table:reconnect guid:%s",player.guid)
 	self:send_desk_enter_data(player,true)
 	if self.status == TABLE_STATUS.PLAY then
-		send2client_pb(player,"SC_DdzDiscardRound",{
+		send2client(player,"SC_DdzDiscardRound",{
 			chair_id = self.cur_discard_chair
 		})
 	end
 
 	if self.status == TABLE_STATUS.COMPETE_LANDLORD then
 		if self.landlord_competitions then
-			send2client_pb(player,"SC_DdzCallLandlordInfo",{
+			send2client(player,"SC_DdzCallLandlordInfo",{
 				result = enum.ERROR_NONE,
 				info = self.landlord_competitions,
 			})
 		end
 
-		send2client_pb(player,"SC_DdzCallLandlordRound",{
+		send2client(player,"SC_DdzCallLandlordRound",{
 			chair_id = self.cur_competer
 		})
 	end
@@ -1094,6 +1110,7 @@ function land_table:game_balance(winner)
 			}
 		end),
 		chun_tian = is_fanchun and 2 or (is_chuntian and 1 or 0),
+		left_cards = self.left_cards,
 	})
 
 	self:notify_game_money()

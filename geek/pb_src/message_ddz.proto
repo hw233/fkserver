@@ -101,6 +101,7 @@ message SC_DdzGameOver {
 	enum MsgID { Nil = 0; ID = 25106; }
 	repeated DdzBlanacePlayer 	player_balance = 2;
 	int32 chun_tian = 3;
+	repeated int32 left_cards = 4;
 }
 
 message DdzStatisticsItem{
