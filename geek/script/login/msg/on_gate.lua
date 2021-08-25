@@ -731,7 +731,7 @@ function on_cl_login(msg,gate)
     
     log.dump(gate)
     -- 存入redis
-    reddb:hmset("player:online:guid:"..tostring(guid),"gate",gate)
+    reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
 
     reddb:sadd("player:online:all",guid)
 
