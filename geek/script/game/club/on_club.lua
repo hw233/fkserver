@@ -2242,6 +2242,7 @@ function on_cs_exchagne_club_commission(msg,guid)
     end
 
     if  role == enum.CRT_PARTNER and
+        guid ~= partner_id and
         not club_utils.is_recursive_in_team(club,guid,partner_id)
     then
         onlineguid.send(guid,"S2C_EXCHANGE_CLUB_COMMISSON_RES",{
