@@ -17,16 +17,12 @@ local CMD = {}
 
 function CMD.S(guid,...)
 	local l = queues[guid]
-	return l(function(...)
-		return channel.call(...)
-	end,...)
+	return l(channel.call,...)
 end
 
 function CMD.C(guid,...)
 	local l = queues[guid]
-	return l(function(...)
-		return channel.call(...)
-	end,...)
+	return l(channel.call,...)
 end
 
 function CMD.P(...)
@@ -34,7 +30,7 @@ function CMD.P(...)
 end
 
 function CMD.D(guid)
-	queues[guid] = nil
+	
 end
 
 local function checkloginconf(conf)
