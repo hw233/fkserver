@@ -2227,6 +2227,7 @@ function maajan_table:calculate_gang(p)
             tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
         elseif t == HU_TYPE.AN_GANG or t == HU_TYPE.BA_GANG then
             self:foreach_except(who,function(pi)
+                if pi == p then return end
                 if pi.hu and pi.hu.time < s.time then return end
 
                 tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
