@@ -24,8 +24,6 @@ function card_dealer:shuffle()
         if i ~= j then self.cards[j],self.cards[i] = self.cards[i],self.cards[j] end
     end
 
-    dump(self.cards)
-
     self.remainder_card_count = #self.cards
 end
 
