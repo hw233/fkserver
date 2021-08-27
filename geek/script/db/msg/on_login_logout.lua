@@ -96,7 +96,6 @@ function on_ld_reg_account(msg)
 	rs = dbopt.game:batchquery(transqls)
 	if rs.errno then
 		log.error("on_ld_reg_account insert into game player info throw exception.[%d],[%s]",rs.errno,rs.err)
-		return
 	end
 
 	rs = dbopt.log:batchquery([[
