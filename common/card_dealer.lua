@@ -2,6 +2,8 @@ require "functions"
 local chronos = require "chronos"
 require "random_mt19937"
 
+local table = table
+
 local card_dealer = class("card_dealer")
 
 function card_dealer:ctor(cards)
@@ -21,7 +23,7 @@ function card_dealer:shuffle()
     local c = #self.cards
     for i = #self.cards,1,-1 do
         j = math.random(c)
-        if i ~= j then self.cards[j],self.cards[i] = self.cards[i],self.cards[j] end
+        self.cards[j],self.cards[i] = self.cards[i],self.cards[j]
     end
 
     self.remainder_card_count = #self.cards
@@ -29,19 +31,17 @@ end
 
 function card_dealer:deal_one()
     local k = self.remainder_card_count
-    local j = 1
-    local card = self.cards[j]
-    if j ~= k then self.cards[j], self.cards[k] = self.cards[k], self.cards[j] end
+    local card = self.cards[k]
     self.remainder_card_count = self.remainder_card_count - 1
     return card
 end
 
 function card_dealer:deal_one_by_condition(func)
     local k = self.remainder_card_count
-    for j = 1,k do
+    for j = k,1,-1 do
         if func(self.cards[j]) then
             local card = self.cards[j]
-            if j ~= k then self.cards[j], self.cards[k] = self.cards[k], self.cards[j] end
+            self.cards[j], self.cards[1] = self.cards[1], self.cards[j]
             self.remainder_card_count = self.remainder_card_count - 1
             return card
         end
@@ -54,7 +54,7 @@ function card_dealer:deal_cards(count)
     local cards = {}
     for _ = 1,count do
 		local c = self:deal_one()
-		if c ~= 0 then table.push_back(cards,c)  end
+		if c and c ~= 0 then table.insert(cards,c)  end
 	end
     return cards
 end
@@ -63,7 +63,7 @@ function card_dealer:deal_cards_by_condition(count,func)
     local cards = {}
     for _ = 1,count do
 		local c = self:deal_one_by_condition(func)
-		if c ~= 0 then table.push_back(cards,c) end
+		if c and c ~= 0 then table.insert(cards,c) end
 	end
     return cards
 end
@@ -74,11 +74,12 @@ end
 
 function card_dealer:layout_cards(cards,begin)
     begin = begin or 1
+    local size = #self.cards
     local cardindex = table.map(self.cards,function(c,i) return c,i end)
     for i,c in pairs(cards) do
         local j = cardindex[c]
         assert(j,"layout_cards invalid card:"..tostring(c))
-        local k = begin + i - 1
+        local k = size - (begin + i - 1) + 1
         local ck = self.cards[k]
         cardindex[c],cardindex[ck] = cardindex[ck],cardindex[c]
         self.cards[j],self.cards[k] = self.cards[k],self.cards[j]
