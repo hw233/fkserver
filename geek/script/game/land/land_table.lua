@@ -1057,12 +1057,13 @@ function land_table:game_balance(winner)
 		return chair ~= self.landlord
 	end
 
+	local player_count = table.nums(self.players)
 	local scores = table.map(self.players,function(_,chair)
 		local score = multi * self.base_score
 		if is_win(chair) then
-			score = self.landlord == chair  and 2 * score or score
+			score = self.landlord == chair  and (player_count - 1) * score or score
 		else
-			score = self.landlord == chair and -2 * score or -score
+			score = self.landlord == chair and -((player_count - 1)) * score or -score
 		end
 		return chair,score
 	end)
