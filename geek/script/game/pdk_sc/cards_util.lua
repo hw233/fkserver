@@ -209,7 +209,8 @@ function cards_util.try_great_than(kccards,ctype,cvalue,ccount,rule,laizi)
 	
 	local function try_triple()
 		local c 
-		for i = cvalue + 1,14 do
+		local bv = (ctype == PDK_CARD_TYPE.TRIPLE_BOMB or ctype == PDK_CARD_TYPE.THREE) and cvalue + 1 or 5
+		for i = bv,14 do
 			c = valuecounts[i] or 0
 			if c == 3 then
 				return {valuecards[i][1],valuecards[i][2],valuecards[i][3]}
@@ -219,7 +220,8 @@ function cards_util.try_great_than(kccards,ctype,cvalue,ccount,rule,laizi)
 
 	local function try_soft_triple()
 		local c 
-		for i = cvalue + 1,14 do
+		local bv = ctype == PDK_CARD_TYPE.SOFT_TRIPLE_BOMB and cvalue + 1 or 5
+		for i = bv,14 do
 			c = valuecounts[i] or 0
 			if c == 2 and laizi_count >= 1 then
 				return {valuecards[i][1],valuecards[i][2],laizi},{laizi_card(i)}
@@ -237,7 +239,8 @@ function cards_util.try_great_than(kccards,ctype,cvalue,ccount,rule,laizi)
 
 	local function try_four()
 		local c 
-		for i = cvalue + 1,14 do
+		local bv = ctype == PDK_CARD_TYPE.BOMB and cvalue + 1 or 5
+		for i = bv,14 do
 			c = valuecounts[i] or 0
 			if c == 4 then
 				return {valuecards[i][1],valuecards[i][2],valuecards[i][3],valuecards[i][4]}
@@ -247,7 +250,8 @@ function cards_util.try_great_than(kccards,ctype,cvalue,ccount,rule,laizi)
 
 	local function try_soft_four()
 		local c 
-		for i = cvalue + 1,14 do
+		local bv = ctype == PDK_CARD_TYPE.SOFT_BOMB and cvalue + 1 or 5
+		for i = bv,14 do
 			c = valuecounts[i] or 0
 			if c == 3 and laizi_count >= 1 then
 				return {valuecards[i][1],valuecards[i][2],valuecards[i][3],laizi},{laizi_card(i)}
