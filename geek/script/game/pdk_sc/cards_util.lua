@@ -615,7 +615,7 @@ function cards_util.try_greatest(kccards,rule,laizi,first_discard)
 
 	local function try_single()
 		local c 
-		for i = 5,14 do
+		for i = 14,5,-1 do
 			c = valuecounts[i] or 0
 			if c >= 1 then
 				return {valuecards[i][1]}

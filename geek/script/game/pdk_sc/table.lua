@@ -524,6 +524,20 @@ function pdk_table:get_cards_type(cards,laizi_replace)
 	return cardstype,cardsval
 end
 
+function pdk_table:check_discard_next_player_last_single(ctype,cvalue)
+	local play = self.rule and self.rule.play
+	if not play then return end
+
+	-- 下家报单必出最大单牌
+	if play.bao_dan_discard_max and not self.last_discard then
+		local next_player = self.players[self:next_chair()]
+		if table.nums(next_player.hand_cards) == 1 and ctype == CARDS_TYPE.SINGLE then
+			local _,hand_max_value = table.max(self:cur_player().hand_cards,function(_,c) return cards_util.value(c) end)
+			return hand_max_value ~= cvalue
+		end
+	end
+end
+
 -- 出牌
 function pdk_table:do_action_discard(player, cards,laizi_replace,auto)
 	log.info("pdk_table:do_action_discard {%s}",table.concat(cards,","))
@@ -553,13 +567,7 @@ function pdk_table:do_action_discard(player, cards,laizi_replace,auto)
 		return
 	end
 
-	if not self:check_first_discards_with_5(cards) then
-	 	log.warning("pdk_table:discard guid[%d] not with 5, cards[%s]", player.guid, table.concat(cards, ','))
-		send2client(player,"SC_PdkDoAction",{
-			result = enum.ERROR_PARAMETER_ERROR
-		})
-		return
-	end
+
 
 	local cardstype, cardsval = self:get_cards_type(cards,laizi_replace)
 	log.info("cardstype[%s] cardsval[%s]" , cardstype , cardsval)
@@ -581,6 +589,16 @@ function pdk_table:do_action_discard(player, cards,laizi_replace,auto)
 		})
 		return
 	end
+
+	if 	not self:check_first_discards_with_5(cards) or
+		self:check_discard_next_player_last_single(cardstype,cardsval)
+	then
+		log.warning("pdk_table:discard guid[%d] not with 5, cards[%s]", player.guid, table.concat(cards, ','))
+		send2client(player,"SC_PdkDoAction",{
+			result = enum.ERROR_PARAMETER_ERROR
+		})
+		return
+   end
 
 	self:cancel_discard_timer()
 	self:cancel_clock_timer()
@@ -663,6 +681,17 @@ function pdk_table:do_action_pass(player,auto)
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
+	end
+
+	if self.rule and self.rule.play.must_discard or self.rule.play.must_discard == nil then
+		local cards = cards_util.try_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule,self.laizi)
+		if cards then
+			log.error("pdk_table:pass_card guid[%d] must discard", player.guid)
+			send2client(player,"SC_PdkDoAction",{
+				result = enum.ERROR_PARAMETER_ERROR
+			})
+			return
+		end
 	end
 
 	self:cancel_discard_timer()
