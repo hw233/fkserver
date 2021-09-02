@@ -33,23 +33,10 @@ function onlineguid.send(guid,msgname,msg)
     channel.publish("gate."..s.gate,"client",guid,"forward",msgname,msg)
 end
 
-function onlineguid.control(player_or_guid,msgname,msg)
-    local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid
+function onlineguid.goserver(player_or_guid,server)
+    local guid = type(player_or_guid) == "table" and player_or_guid.guid or player_or_guid 
 
-    if not allonlineguid[guid] then
-        log.warning("send2guid %d not online.",guid)
-        return
-    end
-
-    local s = onlineguid[guid]
-    if not s or not s.gate then 
-        log.warning("control2guid %d not online.",guid)
-        return
-    end
-
-    log.info("onlineguid.control %s %s %s",guid,msgname,msg)
-
-    channel.call("gate."..s.gate,"client",guid,"lua",msgname,msg)
+    channel.call("queue.?","lua","GoServer",guid,server)
 end
 
 function onlineguid.broadcast(guids,msgname,msg)

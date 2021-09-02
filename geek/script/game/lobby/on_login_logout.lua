@@ -98,10 +98,6 @@ function on_ls_login_notify(guid,reconnect,gate)
 		log.info("set player.online = true,guid:%d",guid)
 		player.online = true
 		local repeat_login = s and s.server == def_game_id
-		if gate then
-			reddb:hset(string.format("player:online:guid:%s",guid),"gate",gate)
-		end
-
 		if reconnect or repeat_login then
 			-- 重连/重复登陆
 			log.info("on_ls_login_notify,guid=%s,game_id:%s,reconnect:%s,repeat:%s,table_id:%s,chair_id:%s", 
@@ -541,7 +537,7 @@ function on_ss_change_game(guid)
 		1,def_game_id)
 
 	onlineguid[player.guid] = nil
-	onlineguid.control(player,"goserver",def_game_id)
+	onlineguid.goserver(guid,def_game_id)
 	onlineguid[player.guid] = nil
 
 	log.info("on_ss_change_game change step login notify,guid=%s", player.guid)

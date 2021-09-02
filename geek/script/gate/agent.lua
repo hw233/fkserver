@@ -61,17 +61,7 @@ local function afk(guid)
         return
     end
 
-    if not u.server then
-        log.warning("afk,guid:%s not in server",guid)
-        onlineguid[guid] = nil
-        return
-    end
-
-    if not onlineguid[guid] then
-        log.error("afk,guid:%s double check got nil session",guid)
-        return
-    end
-    channel.call("queue.?","lua","C",guid,"service."..tostring(u.server),"lua","afk",guid,true)
+    channel.call("queue.?","lua","C",guid,"lua","afk",guid,true)
     onlineguid[guid] = nil
 end
 
@@ -84,25 +74,16 @@ function CMD.afk(guid)
     afk(guid)
 end
 
-function CMD.goserver(guid,server)
-    local u = onlineguid[guid]
-    if not u then
-        log.warning("goserver %s got nil session",guid)
-        return
-    end
-    u.server = server
-end
-
 local MSG = {}
 
 function MSG.CS_Logout(msg,guid)
     local u = onlineguid[guid]
-    if not u or not u.server then
+    if not u then
         log.error("CS_Logout got nil session or server:%s",guid)
         return
     end
 
-    local result = channel.call("queue.?","lua","C",guid,"service."..tostring(u.server),"msg","CS_Logout",guid)
+    local result = channel.call("queue.?","lua","C",guid,"msg","CS_Logout",guid)
 
     netmsgopt.send(u.fd,"SC_Logout",{
         result = result
@@ -135,17 +116,12 @@ local function dispatch(msgname,msg,guid)
     end
 
     local u = onlineguid[guid]
-    if not u or not u.server then
+    if not u then
         log.error("dispatch forward to server %s got nil session or fd",guid)
         return
     end
-
-    if not onlineguid[guid] then
-        log.error("dispatch forward guid:%s msg:%s server:%s double check got nil session,maybe afk already.",
-            guid,msgname,u.server)
-        return
-    end
-    channel.publish("queue.?","lua","S",guid,"service."..tostring(u.server),"msg",msgname,msg,guid)
+    
+    channel.publish("queue.?","lua","S",guid,"msg",msgname,msg,guid)
 end
 
 skynet.register_protocol {

@@ -59,7 +59,7 @@ function MSG.CL_RegAccount(msg,session)
     info.game_id = gameid
     log.info("login step MSG.CL_RegAccount,account=%s, session_id=%s", info.account, session.fd)
     if info.ret == enum.LOGIN_RESULT_SUCCESS then
-        skynet.call(gateservice,"lua","login",session.fd,info.guid,gameid,info)
+        skynet.call(gateservice,"lua","login",session.fd,info.guid,info)
     end
 
     log.dump(info)
@@ -77,11 +77,11 @@ local function login_by_sms(msg,session)
 
     msg.ip = session.ip
 
-    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
+    local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
     log.dump(info)
 
-    return ok,info,server
+    return ok,info
 end
 
 local function login_by_openid(msg,session)
@@ -93,11 +93,11 @@ local function login_by_openid(msg,session)
 
     msg.ip = session.ip
 
-    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
+    local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
     log.dump(info)
 
-    return ok,info,server
+    return ok,info
 end
 
 local function login_by_account(msg,session)
@@ -133,10 +133,10 @@ local function login_by_account(msg,session)
     msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
-    local ok,info,server = channel.pcall("login.?","msg","CL_Login",msg,gateid)
+    local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
     log.info( "login step gateservice.CL_Login,account=%s, session_id=%d", msg.account, fd )
-    return ok,info,server
+    return ok,info
 end
 
 local function is_valid_str(v)
@@ -154,13 +154,13 @@ local function do_cl_login(msg,session)
         return
     end
 
-    local ok,info,server
+    local ok,info
     if msg.account and msg.account ~= "" and msg.password and msg.password ~= "" then
-        ok,info,server = login_by_account(msg,session)
+        ok,info = login_by_account(msg,session)
     elseif msg.open_id and msg.open_id ~= "" then
-        ok,info,server = login_by_openid(msg,session)
+        ok,info = login_by_openid(msg,session)
     elseif msg.phone and msg.phone ~= "" and msg.sms_verify_no and msg.sms_verify_no ~= "" then
-        ok,info,server = login_by_sms(msg,session)
+        ok,info = login_by_sms(msg,session)
     else
         log.error("CL_Login invalid parameter")
         return
@@ -171,8 +171,7 @@ local function do_cl_login(msg,session)
     if ok then
         if info.result == enum.LOGIN_RESULT_SUCCESS then
             local guid = info.guid
-            skynet.call(gateservice,"lua","login",fd,guid,server,info)
-            -- flag login done session for afk when logining
+            skynet.call(gateservice,"lua","login",fd,guid,info)
         end
 
         send2client(fd,"LC_Login",info)

@@ -670,45 +670,27 @@ function on_cl_login(msg,gate)
     -- 重连判断
     --清空online信息，重接最新数据
     onlineguid[guid] = nil
-    
-    local onlineinfo = onlineguid[guid]
 
-    local old_gate = onlineinfo and onlineinfo.gate
-    if old_gate and old_gate ~= gate then
-        channel.call("gate."..tostring(old_gate),"lua","kickout",guid)
+    local ok,reconnect,game_id = channel.pcall("queue.?","lua","Login",guid,gate)
+    if not ok then
+        return {
+            result = enum.ERROR_INTERNAL_UNKOWN
+        }
     end
 
-    local game_id = tonumber(onlineinfo.server)
-    local first_game_type = tonumber(onlineinfo.first_game_type)
-    if game_id  and tonumber(first_game_type) ~= 1 then
-        log.info("player[%s] reconnect game_id:%s,gate_id = %s", guid, game_id, gate)
+    if reconnect then
         info.result = enum.LOGIN_RESULT_SUCCESS
-        
-        reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
+        info.reconnect = 1
+        log.dump(info)
 
-        local _,reconnect = channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,true,gate)
-        if reconnect then
-            info.reconnect = 1
-            log.dump(info)
-
-            log.info("on_cl_login reconnect,guid=%s,account=%s,gameid=%s,gate_id = %s",
-                guid,account, game_id, gate)
-            return info,game_id
-        end
+        log.info("on_cl_login reconnect,guid=%s,account=%s,gameid=%s,gate_id = %s",
+            guid,account, game_id, gate)
+        return info
     end
 
     if g_common.is_in_maintain() and not is_player_vip(info) then
         return {
             result = enum.LOGIN_RESULT_MAINTAIN
-        }
-    end
-
-    -- 找一个默认大厅服务器
-    game_id = g_common.lobby_id(guid)
-    if not game_id then
-        log.warning("no default lobby")
-        return {
-            result = enum.LOGIN_RESULT_NO_DEFAULT_LOBBY,
         }
     end
 
@@ -731,12 +713,7 @@ function on_cl_login(msg,gate)
     })
     
     log.dump(gate)
-    -- 存入redis
-    reddb:hset("player:online:guid:"..tostring(guid),"gate",gate)
-
     reddb:sadd("player:online:all",guid)
-
-    channel.pcall("queue.?","lua","C",guid,"game."..tostring(game_id),"msg","LS_LoginNotify",guid,false,gate)
 
     log.info("on_cl_login,guid=%s,account=%s,gameid=%d", guid,account, game_id)
 
@@ -744,7 +721,7 @@ function on_cl_login(msg,gate)
 
     onlineguid[guid] = nil
  
-    return info,game_id
+    return info
 end
 
 function on_cl_reg_account(msg,gate)  
@@ -786,24 +763,13 @@ function on_cl_reg_account(msg,gate)
 
     log.info("[%s] reg account, guid = %d ,platform_id = %s", info.account, info.guid,info.platform_id)
 
-    -- 找一个默认大厅服务器
-    local gameid = g_common.lobby_id(guid)
-    if not gameid then
-        log.warning("no default lobby")
-        return {
-            result = enum.LOGIN_RESULT_NO_DEFAULT_LOBBY
-        }
-    end
-
     -- 存入redis
-    reddb:hmset("player:online:guid"..tostring(info.guid),{
-        server = gameid,
-        gate = gate,
-    })
+    reddb:hset("player:online:guid"..tostring(info.guid),"gate",gate)
 
-    channel.pcall("queue.?","lua","C",guid,"game."..tostring(gameid),"msg","LS_LoginNotify",guid)
+    local reconnect,gameid = channel.pcall("queue.?","lua","Login",guid,gate)
 
     info.ret = enum.LOGIN_RESULT_SUCCESS
+    info.reconnect = reconnect and 1 or 0
 
     return info,gameid
 end

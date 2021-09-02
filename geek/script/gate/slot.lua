@@ -69,8 +69,6 @@ local function afk(fd)
         log.error("afk got nil session,%d",fd)
         return
     end
-    
-
 
     u:lockcall(function()
         -- double check
@@ -84,7 +82,7 @@ local function afk(fd)
     end)
 end
 
-local function login(fd,guid,server,conf)
+local function login(fd,guid,conf)
     local s = onlineguid[guid] or fduser[fd]
     if s then
         if s.fd == fd and s.guid == guid then
@@ -102,7 +100,6 @@ local function login(fd,guid,server,conf)
         fd = fd,
         ip = msgserver.ip(fd),
         conf = conf,
-        server = server,
     })
     
     local u = {
@@ -117,8 +114,8 @@ local function login(fd,guid,server,conf)
     fduser[fd] = u
 end
 
-function CMD.login(fd,guid,server,conf)
-    login(fd,guid,server,conf)
+function CMD.login(fd,guid,conf)
+    login(fd,guid,conf)
 end
 
 function CMD.logout(guid)

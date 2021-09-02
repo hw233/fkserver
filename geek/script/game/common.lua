@@ -61,7 +61,7 @@ function common.switch_from(guid,room_id)
 	reddb:zincrby(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),
 		1,def_game_id)
 
-	onlineguid.control(player,"goserver",def_game_id)
+	onlineguid.goserver(guid,def_game_id)
 
 	onlineguid[guid] = nil
 end
