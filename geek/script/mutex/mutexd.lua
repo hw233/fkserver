@@ -62,6 +62,10 @@ function CMD.start()
 	
 end
 
+function CMD.term()
+	
+end
+
 skynet.start(function()
 	skynet.dispatch("lua",function(_,_,cmd,...)
 		local fn = CMD[cmd]
