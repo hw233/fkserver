@@ -120,7 +120,6 @@ function CMD.Login(guid,gate)
 			s = sessions[guid]
 			return s:lockcall(function()
 				reddb:hmset(strfmt("player:online:guid:%d",guid),{
-					server = server,
 					gate = gate
 				})
 
@@ -132,7 +131,6 @@ function CMD.Login(guid,gate)
 		end
 
 		reddb:hmset(strfmt("player:online:guid:%d",guid),{
-			server = server,
 			gate = gate
 		})
 
