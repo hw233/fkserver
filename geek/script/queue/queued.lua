@@ -90,7 +90,8 @@ function CMD.Login(guid,gate)
 			channel.call("gate."..tostring(old_gate),"lua","kickout",guid)
 		end
 
-		if s.server and s.server ~= 1 then
+		local all_lobby = g_common.all_game_server(1)
+		if s.server and not all_lobby[s.server] then
 			local reconnect = s:lockcall(function()
 				-- Quit already
 				if not rawget(sessions,guid) then
