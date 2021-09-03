@@ -585,7 +585,7 @@ end
 function pdk_table:do_action_discard(player, cards , auto)
 	log.info("pdk_table:do_action_discard {%s}",table.concat(cards,","))
 	if self.status ~= TABLE_STATUS.PLAY then
-		log.warning("pdk_table:discard guid[%d] status error", player.guid)
+		log.warning("pdk_table:discard guid[%s] status error", player.guid)
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -601,7 +601,7 @@ function pdk_table:do_action_discard(player, cards , auto)
 	end
 
 	if not table.logic_and(cards,function(c) return player.hand_cards[c] ~= nil end) then
-		log.warning("pdk_table:discard guid[%d] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
+		log.warning("pdk_table:discard guid[%s] cards[%s] error, has[%s]", player.guid, table.concat(cards, ','), 
 			table.concat(table.keys(player.hand_cards), ','))
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
@@ -612,7 +612,7 @@ function pdk_table:do_action_discard(player, cards , auto)
 	local cardstype, cardsval = self:get_cards_type(cards)
 	log.info("cardstype[%s] cardsval[%s]" , cardstype , cardsval)
 	if not cardstype then
-		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
+		log.warning("pdk_table:discard guid[%s] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
@@ -622,7 +622,7 @@ function pdk_table:do_action_discard(player, cards , auto)
 	if self:check_discard_cards_type(cardstype,cards) or 
 	   self:check_discard_next_player_last_single(cardstype,cardsval) or 
 	   self:check_first_discards_with_3(cards) then
-		log.warning("pdk_table:discard guid[%d] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
+		log.warning("pdk_table:discard guid[%s] get_cards_type error, cards[%s]", player.guid, table.concat(cards, ','))
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_PARAMETER_ERROR
 		})
@@ -631,7 +631,7 @@ function pdk_table:do_action_discard(player, cards , auto)
 
 	local cmp = cards_util.compare_cards({type = cardstype, count = #cards, value = cardsval}, self.last_discard)
 	if self.last_discard and (not cmp or cmp <= 0) then
-		log.warning("pdk_table:discard guid[%d] compare_cards error, cards[%s], cur_discards[%d,%d,%d], last_discard[%d,%d,%d]", 
+		log.warning("pdk_table:discard guid[%s] compare_cards error, cards[%s], cur_discards[%s,%s,%s], last_discard[%s,%s,%s]", 
 			player.guid, table.concat(cards, ','),cardstype, #cards,
 			cardsval,self.last_discard.type,self.last_discard.count,self.last_discard.value)
 		send2client(player,"SC_PdkDoAction",{
@@ -661,7 +661,7 @@ function pdk_table:do_action_discard(player, cards , auto)
 		cards = cards,
 	})
 
-	log.info("pdk_table:do_action_discard  chair_id [%d] cards{%s}", player.chair_id, table.concat(cards, ','))
+	log.info("pdk_table:do_action_discard  chair_id [%s] cards{%s}", player.chair_id, table.concat(cards, ','))
 	
 	table.foreach(cards,function(c) player.hand_cards[c] = nil end)
 
@@ -691,7 +691,7 @@ end
 -- 放弃出牌
 function pdk_table:do_action_pass(player,auto)
 	if self.status ~= TABLE_STATUS.PLAY then
-		log.warning("pdk_table:pass_card guid[%d] status error", player.guid)
+		log.warning("pdk_table:pass_card guid[%s] status error", player.guid)
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -699,7 +699,7 @@ function pdk_table:do_action_pass(player,auto)
 	end
 
 	if player.chair_id ~= self.cur_discard_chair then
-		log.warning("pdk_table:pass_card guid[%d] turn[%d] error, cur[%d]", player.guid, player.chair_id, self.cur_discard_chair)
+		log.warning("pdk_table:pass_card guid[%s] turn[%s] error, cur[%s]", player.guid, player.chair_id, self.cur_discard_chair)
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -707,7 +707,7 @@ function pdk_table:do_action_pass(player,auto)
 	end
 
 	if not self.last_discard then
-		log.error("pdk_table:pass_card guid[%d] first turn", player.guid)
+		log.error("pdk_table:pass_card guid[%s] first turn", player.guid)
 		send2client(player,"SC_PdkDoAction",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
@@ -717,7 +717,7 @@ function pdk_table:do_action_pass(player,auto)
 	if self.rule and self.rule.play.must_discard then
 		local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
 		if cards then
-			log.error("pdk_table:pass_card guid[%d] must discard", player.guid)
+			log.error("pdk_table:pass_card guid[%s] must discard", player.guid)
 			send2client(player,"SC_PdkDoAction",{
 				result = enum.ERROR_PARAMETER_ERROR
 			})
@@ -736,7 +736,7 @@ function pdk_table:do_action_pass(player,auto)
 		auto = auto,
 	})
 
-	log.info("cur_chair_id[%d],pass_chair_id[%d]",self.cur_discard_chair,player.chair_id)
+	log.info("cur_chair_id[%s],pass_chair_id[%s]",self.cur_discard_chair,player.chair_id)
 	self:broadcast2client("SC_PdkDoAction", {
 		chair_id = player.chair_id,
 		action = ACTION.PASS
