@@ -90,7 +90,7 @@ function CMD.Login(guid,gate)
 			channel.call("gate."..tostring(old_gate),"lua","kickout",guid)
 		end
 
-		if s.server then
+		if s.server and s.server ~= 1 then
 			local reconnect = s:lockcall(function()
 				-- Quit already
 				if not rawget(sessions,guid) then
