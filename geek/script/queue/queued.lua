@@ -40,35 +40,41 @@ local CMD = {}
  -- SEND
 function CMD.S(guid,...)
 	local l = queues[guid]
-	local s = rawget(sessions,guid)
-	if not s then
-		log.error("send nil session,%s",guid)
-		return
-	end
-	
-	if not s.server then
-		log.error("call nil session server,%s",guid)
-		return
-	end
+	return l(function(...)
+		-- dobule check
+		local s = rawget(sessions,guid)
+		if not s then
+			log.error("send nil session,%s",guid)
+			return
+		end
+		
+		if not s.server then
+			log.error("send nil session server,%s",guid)
+			return
+		end
 
-	return l(channel.call,"service." .. s.server,...)
+		return channel.call("service." .. s.server,...)
+	end,...)
 end
 
  --CALL
 function CMD.C(guid,...)
 	local l = queues[guid]
-	local s = rawget(sessions,guid)
-	if not s then
-		log.error("call nil session,%s",guid)
-		return
-	end
+	return l(function(...)
+		-- dobule check
+		local s = rawget(sessions,guid)
+		if not s then
+			log.error("call nil session,%s",guid)
+			return
+		end
 
-	if not s.server then
-		log.error("call nil session server,%s",guid)
-		return
-	end
+		if not s.server then
+			log.error("call nil session server,%s",guid)
+			return
+		end
 
-	return l(channel.call,"service." .. s.server,...)
+		return channel.call("service." .. s.server,...)
+	end,...)
 end
 
  --BROKER
@@ -160,10 +166,8 @@ function CMD.GoServer(guid,to)
 		return
 	end
 
-	s:lockcall(function()
-		s.server = to
-		reddb:hset(strfmt("player:online:guid:%d",guid),"server",to)
-	end)
+	s.server = to
+	reddb:hset(strfmt("player:online:guid:%d",guid),"server",to)
 end
 
 local function checkloginconf(conf)
