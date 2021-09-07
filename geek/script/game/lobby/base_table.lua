@@ -1885,7 +1885,7 @@ function base_table:check_kickout_no_ready()
 			self:begin_kickout_no_ready_timer(seconds,function()
 				self:foreach(function(p)
 					if not self.ready_list[p.chair_id] then
-						p:async_force_exit(enum.STANDUP_REASON_NO_READY_TIMEOUT)
+						p:force_exit(enum.STANDUP_REASON_NO_READY_TIMEOUT)
 					end
 				end)
 			end)
