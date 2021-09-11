@@ -406,102 +406,6 @@ local function sms_login(msg)
 	return enum.LOGIN_RESULT_SUCCESS,info
 end
 
-local function account_login(msg,gate)
-    log.info( "login step login[offline]->LD_VerifyAccount ok,account=%s", msg.account)
-    local account = msg.verify_account.account
-	local platform_id = msg.platform_id
-	local ip = msg.ip
-	local phone = msg.phone
-	local phone_type = msg.phone_type
-	local version = msg.version
-	local channel_id = msg.channel_id
-	local package_name = msg.package_name
-    local imei = msg.imei
-
-    local using_login_validatebox = reddb:hget("player:login:validatebox",tostring(channel_id))
-    local register_status = reddb:hgetall("player:register:ip:"..ip)
-    local register_count = tonumber(register_status.count)
-    if register_count > 3 and using_login_validatebox == 0 then
-        using_login_validatebox = 1
-    end
-
-    local guid = reddb:get("player:account:"..tostring(account))
-    guid = tonumber(guid)
-
-    local player = base_players[guid]
-    if not player or player.password ~= msg.password then
-        log.error( "verify account[%s] failed,account or password invalid", account )
-        return enum.LOGIN_RESULT_DB_ERR
-    end
-
-    if not player.shared_id then
-        reddb:hset("player:account:"..tostring(account),"shared_id",msg.shared_id)
-    end
-
-    if not player.guid then
-        log.error( "verify account[%s] failed", account )
-        return enum.LOGIN_RESULT_ACCOUNT_EMPTY
-    end
-
-    if player.enable_transfer then
-        log.error( "verify account[%s] failed", account )
-        return enum.LOGIN_RESULT_AGENT_CANNOT_IN_GAME
-    end
-
-    if player.disable then
-        log.error( "verify account[%s] failed", account )
-        return enum.LOGIN_RESULT_ACCOUNT_DISABLED
-    end
-
-    local is_disable_ip = reddb:sismember("player:login:disable_ip",ip)
-    if is_disable_ip  then
-        log.error( "verify account[%s] failed", account )
-        return enum.LOGIN_RESULT_IP_CONTROL
-    end
-
-    reddb:hincrby("player:info:"..tostring(guid),"login_count",1)
-    reddb:hmset("player:info:"..tostring(guid),{
-        login_phone = phone,
-        login_phone_type = phone_type,
-        login_version = version,
-        login_channel_id = channel_id,
-        login_imei = imei,
-        login_ip = ip,
-        login_time = os.time(),
-    })
-
-    channel.publish("db.?","msg","LD_LogLogin",{
-        guid = player.guid,
-        phone = phone,
-        phone_type = phone_type,
-        version = version,
-        channel_id = channel_id,
-        login_channel_id = msg.channel_id,
-        imei = imei,
-        ip = ip,
-        is_guest = player.is_guest,
-        create_time = player.create_time,
-        register_time = player.register_time,
-        deprecated_imei = player.deprecated_imei,
-        platform_id = player.platform_id,
-        sensiorpromoter = player.sensiorpromoter,
-        package_name = package_name,
-    })
-
-	player.account = account
-    player.platform_id = platform_id
-
-    local status = msg.maintain_switch
-    if status == 1 and not player:is_vip() then
-        log.warning("=======maintain login==============status = [%d]", status)
-        return {
-            result = enum.LOGIN_RESULT_MAINTAIN,
-        }
-    end
-
-    return enum.LOGIN_RESULT_SUCCESS,player
-end
-
 local function h5_login(msg)
     if not runtime_conf.global.h5_login then
         return enum.LOGIN_RESULT_ACCOUNT_DISABLED
@@ -671,10 +575,16 @@ function on_cl_login(msg,gate)
     --清空online信息，重接最新数据
     onlineguid[guid] = nil
 
-    local ok,reconnect,game_id = channel.pcall("queue.?","lua","Login",guid,gate)
+    local ok,result,reconnect,game_id = channel.pcall("queue.?","lua","Login",guid,gate)
     if not ok then
         return {
             result = enum.ERROR_INTERNAL_UNKOWN
+        }
+    end
+
+    if result == enum.LOGIN_RESULT_MAINTAIN and not reconnect and not is_player_vip(info) then
+        return {
+            result = enum.LOGIN_RESULT_MAINTAIN
         }
     end
 
@@ -686,12 +596,6 @@ function on_cl_login(msg,gate)
         log.info("on_cl_login reconnect,guid=%s,account=%s,gameid=%s,gate_id = %s",
             guid,account, game_id, gate)
         return info
-    end
-
-    if g_common.is_in_maintain() and not is_player_vip(info) then
-        return {
-            result = enum.LOGIN_RESULT_MAINTAIN
-        }
     end
 
     channel.publish("db.?","msg","LD_LogLogin",{

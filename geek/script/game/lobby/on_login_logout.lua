@@ -24,6 +24,7 @@ local game_util = require "game.util"
 local g_util = require "util"
 local base_rule = require "game.lobby.base_rule"
 local club_table = require "game.club.club_table"
+local g_common = require "common"
 
 local reddb = redisopt.default
 
@@ -90,7 +91,7 @@ function on_ls_login_notify(guid,reconnect,gate)
 	local player = base_players[guid]
 	if not player then
 		log.error("on_ls_login_notify game_id = %s,no player,guid:%d",def_game_id,guid)
-		return
+		return enum.ERROR_PLAYER_NOT_EXIST
 	end
 
 	return player:lockcall(function()
@@ -104,9 +105,13 @@ function on_ls_login_notify(guid,reconnect,gate)
 				guid,def_game_id,reconnect,repeat_login,s.table,s.chair)
 			local table_id = s.table
 			if table_id and g_room:is_table_exists(table_id) then
-				return true
+				return enum.ERROR_NONE,true
 			end
-			return
+			return enum.ERROR_NONE
+		end
+
+		if g_common.is_in_maintain() and (player.vip and player.vip ~= 0) then
+			return enum.LOGIN_RESULT_MAINTAIN
 		end
 
 		log.info("ip_area =%s",player.ip_area)
@@ -123,6 +128,7 @@ function on_ls_login_notify(guid,reconnect,gate)
 
 		player.login_time = now
 		g_room:enter_server(player)
+		return enum.ERROR_NONE
 	end)
 end
 

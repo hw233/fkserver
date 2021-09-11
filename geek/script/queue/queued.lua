@@ -4,6 +4,7 @@ local queue = require "skynet.queue"
 local log = require "log"
 local redisopt = require "redisopt"
 local g_common = require "common"
+local enum = require "pb_enums"
 
 local reddb = redisopt.default
 
@@ -98,7 +99,7 @@ function CMD.Login(guid,gate)
 
 		local all_lobby = g_common.all_game_server(1)
 		if s.server and not all_lobby[s.server] then
-			local reconnect = s:lockcall(function()
+			local _,reconnect = s:lockcall(function()
 				-- Quit already
 				if not rawget(sessions,guid) then
 					log.warning("Login reconnecting double check got nil session,Quit already,%s",guid)
@@ -112,7 +113,7 @@ function CMD.Login(guid,gate)
 			end)
 
 			if reconnect then
-				return true,s.server
+				return enum.ERROR_NONE,true,s.server
 			end
 		end
 	end
@@ -120,6 +121,7 @@ function CMD.Login(guid,gate)
 	local server = g_common.lobby_id(guid)
 	local s = sessions[guid]
 	return s:lockcall(function()
+		local result
 		local l = queues[guid]
 		-- double check
 		if not rawget(sessions,guid) then
@@ -129,22 +131,25 @@ function CMD.Login(guid,gate)
 					gate = gate
 				})
 
-				l(channel.call,"game."..s.server,"msg","LS_LoginNotify",guid,false,gate)
-				s.gate = gate
-				s.server = server
-				return false,server
+				result = l(channel.call,"game."..s.server,"msg","LS_LoginNotify",guid,false,gate)
+				if result == enum.ERROR_NONE then
+					s.gate = gate
+					s.server = server
+				end
+				return result,false,server
 			end)
 		end
 
-		reddb:hmset(strfmt("player:online:guid:%d",guid),{
-			gate = gate
-		})
+		result = l(channel.call,"game."..server,"msg","LS_LoginNotify",guid,false,gate)
+		if result == enum.ERROR_NONE then
+			reddb:hmset(strfmt("player:online:guid:%d",guid),{
+				gate = gate
+			})
+			s.gate = gate
+			s.server = server
+		end
 
-		l(channel.call,"game."..server,"msg","LS_LoginNotify",guid,false,gate)
-		s.gate = gate
-		s.server = server
-
-		return false,server
+		return result,false,server
 	end)
 end
 
