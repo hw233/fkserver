@@ -363,30 +363,19 @@ local function transfer_money_player2player(from,to,money_id,why,why_ext,operato
 	local amount = from.new_money - (from.old_money or 0)
 	log.info("transfer_money_player2player from:%s,to:%s,money_id:%s,amount:%s,why:%s,why_ext:%s,opertor:%s",
 		from_guid,to_guid,money_id,amount,why,why_ext,operator)
-	local sqls = {
-		{
-			[[
-				INSERT INTO t_player_money(guid,money_id,money) VALUES(%s,%s,%s),(%s,%s,%s) 
-				ON DUPLICATE KEY UPDATE money = VALUES(money);
-			]],from_guid,money_id,from.new_money,to_guid,money_id,to.new_money
-		},
-	}
 
-	log.dump(sqls)
-
-	local succ,res = dbopt.game:transaction(function(trans)
-		local res = trans:batchexec(sqls)
-		return not res.errno,res
-	end)
+	local res = dbopt.game:query([[
+		INSERT INTO t_player_money(guid,money_id,money) VALUES(%s,%s,%s),(%s,%s,%s) 
+		ON DUPLICATE KEY UPDATE money = VALUES(money);
+	]],from_guid,money_id,from.new_money,to_guid,money_id,to.new_money)
 	
-	if not succ then
+	if res.errno then
 		log.error("transfer_money_player2player do money error,err:%s",res and res.err or nil)
-		return enum.ERROR_INTERNAL_UNKOWN
 	end
 
 	log.dump(res)
 
-	local res = dbopt.log:query([[
+	res = dbopt.log:query([[
 			INSERT INTO t_log_recharge(source_id,target_id,type,operator,money,comment,created_time) VALUES(%d,%d,%d,%d,%s,'%s',%d);
 		]],
 		from_guid,to_guid,4,operator,"NULL","",os.time()
