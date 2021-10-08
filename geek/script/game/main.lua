@@ -10,8 +10,9 @@ require "random_mt19937"
 
 local reddb = redisopt.default
 
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 5000)
+collectgarbage("generational",10,50)
+-- collectgarbage("setpause", 100)
+-- collectgarbage("setstepmul", 5000)
 
 LOG_NAME = "game"
 
