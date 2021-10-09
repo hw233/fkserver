@@ -545,7 +545,7 @@ function pdk_table:check_discard_next_player_last_single(ctype,cvalue)
 	if not play then return end
 
 	-- 下家报单必出最大单牌
-	if play.bao_dan_discard_max and not self.last_discard then
+	if play.bao_dan_discard_max then
 		local next_player = self.players[self:next_chair()]
 		if table.nums(next_player.hand_cards) == 1 and ctype == CARD_TYPE.SINGLE then
 			local _,hand_max_value = table.max(self:cur_player().hand_cards,function(_,c) return cards_util.value(c) end)
