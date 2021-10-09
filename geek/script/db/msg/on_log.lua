@@ -1,4 +1,3 @@
-local club_utils = require "script.game.club.club_utils"
 -- 日志消息处理
 local log = require "log"
 local json = require "json"
