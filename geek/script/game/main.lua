@@ -10,7 +10,7 @@ require "random_mt19937"
 
 local reddb = redisopt.default
 
-collectgarbage("generational",20,70)
+collectgarbage("generational",15,50)
 -- collectgarbage("setpause", 100)
 -- collectgarbage("setstepmul", 5000)
 
