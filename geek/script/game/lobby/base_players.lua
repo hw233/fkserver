@@ -13,7 +13,7 @@ local table = table
 local tinsert = table.insert
 local tremove = table.remove
 
-local unused_player_info_elapsed = 30
+local unused_player_info_elapsed = 15
 
 local queue = require "skynet.queue"
 
