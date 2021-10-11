@@ -10,7 +10,7 @@ require "random_mt19937"
 
 local reddb = redisopt.default
 
-collectgarbage("generational",15,50)
+collectgarbage("generational",10,20)
 -- collectgarbage("setpause", 100)
 -- collectgarbage("setstepmul", 5000)
 
@@ -122,9 +122,6 @@ skynet.start(function()
 	skynet.dispatch("msg",function(_,_,cmd,...)
         skynet.retpack(msgopt(cmd,...))
 	end)
-	
-    collectgarbage("setpause", 100)
-	collectgarbage("setstepmul", 5000)
 	
     math.randomseed(tostring(os.time()):reverse():sub(1, 6))
 end)
