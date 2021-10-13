@@ -22,7 +22,7 @@ enum HU_TYPE{
 	JIAN_KE					= 18;	//箭刻
 	MEN_QING				= 19;	//门前清
 	AN_GANG					= 20;	//暗杠
-	DUAN_YAO				= 21;	//断幺
+	DUAN_YAO				= 21;	//断幺 中张
 	SI_GUI_YI				= 22;	//四归一
 	PING_HU					= 23;	//平胡
 	SHUANG_AN_KE			= 24;	//双暗刻
@@ -118,6 +118,11 @@ enum HU_TYPE{
 	QING_SI_DUI 			= 113;	//清四对
 	QING_LONG_SI_DUI		= 114;	//清龙四对
 	GU_MAI 					= 115;	//估卖
+	WU_JI 					= 116;	//无鸡
+	SI_JI 					= 117;	//四鸡
+	RUAN_AN_GANG 			= 118;	//软暗杠
+	RUAN_MING_GANG 			= 119;	//软明杠
+	RUAN_BA_GANG 			= 120;	//软巴杠
 }
 
 
@@ -145,6 +150,11 @@ enum ACTION{
 	ACTION_DING_QUE = 0x80000;
 	ACTION_HUAN_PAI = 0x100000;
 	ACTION_QIANG_GANG_HU = 0x200000;
+	ACTION_GANG_HUAN_PAI = 0x400000;
+	ACTION_RUAN_AN_GANG = 0x800000;	
+	ACTION_RUAN_MING_GANG = 0x1000000;	
+	ACTION_RUAN_BA_GANG = 0x2000000;	
+	ACTION_RUAN_PENG = 0x4000000;
 }
 
 enum SECTION_TYPE {
@@ -161,6 +171,10 @@ enum SECTION_TYPE {
 	RightChi = 10;
 	FreeBaGang = 11;
 	FreeAnGang = 12;
+	RuanAnGang = 13;
+	RuanMingGang = 14;
+	RuanBaGang = 15;
+	RuanPeng = 16;
 }
 
 enum FSM_STATE {
@@ -195,6 +209,7 @@ message Maajan_Tiles {
 message Maajan_MingPai{
 	int32 tile = 1;
 	int32 type = 2;
+	int32 substitute_num = 3; 
 }
 
 
@@ -342,6 +357,7 @@ message SC_Maajan_Game_Finish {
 message Action{
 	int32 action = 1;
 	int32 tile = 2;
+	int32 substitute_num = 3; 
 }
 
 message SC_WaitingDoActions { 
@@ -356,6 +372,7 @@ message CS_Maajan_Do_Action{
 	int32 action = 1;
 	int32 value_tile = 2;
 	int32 session_id = 3;
+	int32 substitute_num = 4; 
 }
 
 message SC_Maajan_Do_Action_Commit{
@@ -365,6 +382,7 @@ message SC_Maajan_Do_Action_Commit{
 	int32 value_tile = 3;
 	int32 target_chair_id = 4; //抢杠等
 	int32 session_id = 5;
+	int32 substitute_num = 6; 
 }
 
 message SC_Maajan_Do_Action{
@@ -374,6 +392,7 @@ message SC_Maajan_Do_Action{
 	int32 value_tile = 3;
 	int32 target_chair_id = 4; //抢杠等
 	int32 session_id = 5;
+	int32 substitute_num = 6; 
 }
 
 message CS_Maajan_Action_Discard{
