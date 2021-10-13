@@ -8,7 +8,7 @@ local table = table
 local tinsert = table.insert
 local tremove = table.remove
 
-local MAX_COUNT_PER_ONCE = 400
+local MAX_COUNT_PER_ONCE = 80
 local INTERVAL  = 0.3
 
 local syncqueue = {}
