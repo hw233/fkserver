@@ -29,7 +29,6 @@ local function do_broadcast()
 	while i > 0 do
 		local c = syncqueue[1]
 		if not c then break end
-		if now - c.time > INTERVAL then break end
 		local club = c.club
 		clubsync[club] = clubsync[club] or {}
 		tinsert(clubsync[club],c.msg)
