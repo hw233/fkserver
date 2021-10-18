@@ -3345,5 +3345,21 @@ function maajan_table:global_status_info()
 
     return info
 end
-
+function maajan_table:get_anti_cheat()
+    local info = base_table.get_anti_cheat(self)
+    self:foreach(function(p)
+        if p.hu and p.hu.whoee then
+			info[p.chair_id][p.hu.whoee].type_list[enum.ANTI_CHEAT_PINGHU] =1
+        end
+		if p.pai and p.pai.ming_pai then 
+			for _, s in pairs(p.pai.ming_pai) do
+				if s.whoee then
+					info[p.chair_id][s.whoee].type_list[enum.ANTI_CHEAT_PENGGANG] = info[p.chair_id][s.whoee].type_list[enum.ANTI_CHEAT_PENGGANG] or 0
+					info[p.chair_id][s.whoee].type_list[enum.ANTI_CHEAT_PENGGANG] = info[p.chair_id][s.whoee].type_list[enum.ANTI_CHEAT_PENGGANG] +1
+				end
+			end
+		end 
+    end)
+    return info
+end 
 return maajan_table

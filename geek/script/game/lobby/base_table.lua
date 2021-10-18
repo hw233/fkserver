@@ -847,6 +847,7 @@ function base_table:force_dismiss(reason)
 end
 
 function base_table:game_over()
+	self:log_statistics_anti_cheat()
 	self:on_game_overed()
 end
 
@@ -2485,6 +2486,36 @@ function base_table:global_status_info(op)
 	}
     
 	return info
+end
+function base_table:get_anti_cheat()
+	local club_id = self.club_id or 0 
+	local info = table.map(self.players,function (p1,chair1)
+		return chair1,table.map(self.players,function (p2,chair2)
+			if p1==p2 then return end 
+			return chair2,{
+				guid = p1.guid,
+				guid_other = p2.guid,
+				club = club_id,
+				game_id = 0, --预留def_first_game_type
+				type_list = {[enum.ANTI_CHEAT_DESKMATE]=1}
+			}
+		end)
+	end)
+	return info 
+end 
+function base_table:log_statistics_anti_cheat()
+	if not self:id() then 
+		log.warning("base_table:count_anti_cheat_mj [%s] got nil  id.",self:id())
+		return
+	end
+	local info = self:get_anti_cheat()
+	local sendinfo = {}
+	for _, k in pairs(info) do
+		for _, v in pairs(k) do
+			table.insert(sendinfo,v)
+		end 
+	end
+	game_util.log_statistics_anti_cheat(sendinfo)
 end
 
 return base_table

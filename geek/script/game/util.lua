@@ -32,5 +32,7 @@ function util.log_statistics_money(money_id,money,reason,club)
         time = os.time(),
     })
 end
-
+function util.log_statistics_anti_cheat(info)
+    channel.publish("statistics.?","msg","SS_LogAntiCheat",info)
+end
 return util
