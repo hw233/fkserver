@@ -2227,7 +2227,7 @@ function base_table:on_process_over(reason,l)
 	if not template_id then
 		log.info("base_table:on_process_over [%s] got nil template.",self.private_id)
 	end
-
+	l.dismissreason = reason
 	local msg = {
 		club = club_id,
 		template = template_id,

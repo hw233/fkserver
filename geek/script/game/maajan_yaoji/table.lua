@@ -460,11 +460,11 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     local all_pass = table.And(self.qiang_gang_actions or {},function(action) return action.done.action == ACTION.PASS end)
     if all_pass then
         self.qiang_gang_actions = nil
-        self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile,target_act.substitute_num)
+        self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile,done_action.substitute_num)
         chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
         chu_pai_player.gzh = nil
-        self:log_game_action(chu_pai_player,target_act,tile,target_act.substitute_num)
-        self:done_last_action(chu_pai_player,{action = target_act,tile = qiang_tile,substitute_num = target_act.substitute_num})
+        self:log_game_action(chu_pai_player,target_act,tile,done_action.substitute_num)
+        self:done_last_action(chu_pai_player,{action = target_act,tile = qiang_tile,substitute_num = done_action.substitute_num})
         self:mo_pai()
         return
     end
