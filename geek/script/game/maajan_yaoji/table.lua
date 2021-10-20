@@ -460,10 +460,10 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     local all_pass = table.And(self.qiang_gang_actions or {},function(action) return action.done.action == ACTION.PASS end)
     if all_pass then
         self.qiang_gang_actions = nil
-        self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile,done_action.substitute_num)
+        self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile,done_action.session_id,done_action.substitute_num)
         chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
         chu_pai_player.gzh = nil
-        self:log_game_action(chu_pai_player,target_act,tile,done_action.substitute_num)
+        self:log_game_action(chu_pai_player,target_act,qiang_tile,false,done_action.substitute_num)
         self:done_last_action(chu_pai_player,{action = target_act,tile = qiang_tile,substitute_num = done_action.substitute_num})
         self:mo_pai()
         return
@@ -475,7 +475,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     end)
     local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
     chu_pai_player.first_multi_pao = (hu_count_before == 0 and qiang_hu_count > 1) or nil
-
+  
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
         local done_action_tile = action.tile
@@ -492,7 +492,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         self:broadcast_player_hu(p,act,action.target,nil,action.substitute_num)
         p.statistics.hu = (p.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-
+        
         table.decr(chu_pai_player.pai.shou_pai,(action.substitute_num == 0) and done_action_tile or TY_VALUE)
         self:done_last_action(p,{action = act,tile = done_action_tile,substitute_num = action.substitute_num })
     end
@@ -2088,10 +2088,6 @@ end
 function maajan_table:hu_fan(player,in_pai,mo_pai,qiang_gang)
     local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
     local ext_hu = self:ext_hu(player,mo_pai,qiang_gang)
-    log.dump(player.pai.shou_pai)
-    if in_pai then  log.dump(in_pai) end 
-    log.dump(rule_hu)
-    log.dump(ext_hu)
     local hu = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
     local types = table.merge(hu,self:gang_types(player),function(l,r) return l or r end)
     local score,fan = self:calc_types(types)
@@ -2180,9 +2176,9 @@ end
 function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     local si_dui = self.rule.play and self.rule.play.si_dui
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
-
+    log.dump(p.pai)
     log.dump(actions)
-
+    
     if p.que then
         for act,tiles in pairs(actions) do
             for tile,_ in pairs(tiles) do
@@ -2830,6 +2826,7 @@ function maajan_table:adjust_shou_pai(player, action, tile,session_id,substitute
     local shou_pai = player.pai.shou_pai
     local ming_pai = player.pai.ming_pai
     substitute_num = substitute_num or 0 
+    log.dump(player.pai)
     if action == ACTION.AN_GANG then
         table.decr(shou_pai,tile,4)
         tinsert(ming_pai,{
@@ -2968,7 +2965,7 @@ function maajan_table:adjust_shou_pai(player, action, tile,session_id,substitute
             area = TILE_AREA.MING_TILE,
         })
     end
-
+    log.dump(player.pai)
     self:broadcast2client("SC_Maajan_Do_Action",{chair_id = player.chair_id,value_tile = tile,action = action,session_id = session_id,substitute_num = substitute_num})
 end
 
