@@ -16,7 +16,6 @@ function rule.tile_men(v)
 end
 
 
-local TILE_AREA = def.TILE_AREA
 local SECTION_TYPE = def.SECTION_TYPE
 
 local function ting(state)
@@ -31,7 +30,7 @@ local function ting(state)
 	end
 end
 
-local function ting_qi_dui(pai,counts)
+local function ting_qi_dui(counts)
 	local qi_dui_tiles = {}
 	if table.sum(counts) ~= 13 then 
 		return qi_dui_tiles 
@@ -81,7 +80,7 @@ local function ting_qi_dui(pai,counts)
 	return qi_dui_tiles
 end
 
-local function ting_si_dui(pai,counts)
+local function ting_si_dui(counts)
 	local si_dui_tiles = {}
 	if table.sum(counts) ~= 7 then 
 		return false 
@@ -601,7 +600,7 @@ local function unique_hu_types(base_hu_types)
 	end)
 end
 
-local function get_hu_types(pai,cache,in_pai)
+local function get_hu_types(cache)
 	local base_types = {}
 	local curcounts = clone(cache)
 	local ty_num = curcounts[TY_VALUE] or 0
@@ -633,16 +632,16 @@ local function get_hu_types(pai,cache,in_pai)
 			curty_num = curty_num -1
 			curtwo_count = curtwo_count -1
 		end
-		if curtwo_count == 1 and one_count+curty_num%3 ==0 then
+		if curtwo_count == 1 and (one_count+curty_num)%3 ==0 then
 			ke_zi_bj = true 
 		end
 	end
 	if ke_zi_bj then
-		if is_2_5_8(pai,cache) then
-			base_types[HU_TYPE.JIANG_DUI] = 1
-		else
+		--if is_2_5_8(pai,cache) then
+			--base_types[HU_TYPE.JIANG_DUI] = 1
+		--else
 			base_types[HU_TYPE.DA_DUI_ZI] = 1
-		end
+		--end
 	end
 	--if is_all_1_9(pai) then
 	---	base_types[HU_TYPE.QUAN_YAO_JIU] = 1
@@ -721,7 +720,7 @@ function rule.hu(pai,in_pai,mo_pai)
 		if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
 		if ji_num ==0 then common_types[HU_TYPE.WU_JI] = 1 end
 		if ji_num ==4 then common_types[HU_TYPE.SI_JI] = 1 end
-		local types = get_hu_types(pai,cache,in_pai or mo_pai)
+		local types = get_hu_types(cache)
 		gou = gou_count(pai,cache,(types[HU_TYPE.JIANG_DUI] or types[HU_TYPE.DA_DUI_ZI]) and 3 or -1,ji_num )
 		if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 		local sum = table.sum(pai.shou_pai)
@@ -750,7 +749,7 @@ function rule.ting_tiles(pai,si_dui)
 	for i = 1,30 do cache[i] = pai.shou_pai[i] or 0 end
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
-	local qi_dui_tiles = ting_qi_dui(pai,cache)
+	local qi_dui_tiles = ting_qi_dui(cache)
 	local tiles = state.feed_tiles
 	if table.sum(qi_dui_tiles) >0 then
 		for _, value in pairs(qi_dui_tiles) do
@@ -758,7 +757,7 @@ function rule.ting_tiles(pai,si_dui)
 		end
 	end
 	if si_dui then 
-		local si_dui_tile = ting_si_dui(pai,cache)
+		local si_dui_tile = ting_si_dui(cache)
 		if table.sum(si_dui_tile) >0 then
 			for _, value in pairs(si_dui_tile) do
 				tiles[value] = true 
