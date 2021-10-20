@@ -1865,11 +1865,7 @@ function base_table:set_trusteeship(player,trustee)
 end
 
 function base_table:check_kickout_no_ready()
-	self:lockcall(function() 
-		if not self:is_round_free() then
-			return
-		end
-
+	self:lockcall(function()
 		local ready_count = table.sum(self.players,function(p) 
 			return self.ready_list[p.chair_id] and 1 or 0 
 		end)
@@ -1877,6 +1873,10 @@ function base_table:check_kickout_no_ready()
 		local player_count = table.nums(self.players)
 		if player_count - ready_count ~= 1 or player_count ~= self.start_count then
 			self:cancel_kickout_no_ready_timer()
+			return
+		end
+
+		if not self:is_round_free() then
 			return
 		end
 
