@@ -445,8 +445,6 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         log.error("on_action_qiang_gang_hu,no wait qiang gang action,%s",player.guid)
         return
     end
-
-    local tile = msg.value_tile
     self:cancel_auto_action_timer(player)
     done_action.done = { action = msg.action,auto = auto }
     local all_done = table.And(self.qiang_gang_actions or {},function(action) return action.done ~= nil end) 
@@ -469,7 +467,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         return
     end
 
-    self:log_failed_game_action(chu_pai_player,target_act,tile)
+    self:log_failed_game_action(chu_pai_player,target_act,qiang_tile,false,done_action.substitute_num)
     local qiang_hu_count = table.sum(self.qiang_gang_actions or {},function(waiting)
         return (waiting.done and waiting.done.action & (ACTION.QIANG_GANG_HU | ACTION.HU)) and 1 or 0
     end)
@@ -2306,8 +2304,8 @@ function maajan_table:log_game_action(player,action,tile,auto,substitute_num)
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[action],msg = {tile = tile,substitute_num=substitute_num or 0 },auto = auto,time = timer.nanotime()})
 end
 
-function maajan_table:log_failed_game_action(player,action,tile,auto)
-    tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[action],msg = {tile = tile},auto = auto,failed = true,})
+function maajan_table:log_failed_game_action(player,action,tile,auto,substitute_num)
+    tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[action],msg = {tile = tile,substitute_num=substitute_num or 0},auto = auto,failed = true,})
 end
 
 function maajan_table:done_last_action(player,action)
