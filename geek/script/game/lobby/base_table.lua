@@ -985,6 +985,10 @@ function base_table:auto_ready(seconds)
 	end)
 
 	self:begin_ready_timer(seconds,function()
+		-- double check
+		if not self.ready_timer then
+			return
+		end
 		self:cancel_ready_timer()
 		self:foreach(function(p)
 			if not self.ready_list[p.chair_id] then
@@ -1577,6 +1581,10 @@ end
 
 function base_table:delay_normal_dismiss(reason)
 	self.dismiss_timer = self:new_timer(auto_dismiss_timeout,function()
+		-- double check
+		if not self.dismiss_timer then
+			return
+		end
 		log.info("base_table:delay_normal_dismiss timeout %s",self.private_id)
 		self:normal_dismiss(reason)
 	end)
@@ -1601,6 +1609,10 @@ function base_table:delay_kickout(player,reason)
 	end
 
 	player.kickout_timer = self:new_timer(auto_kickout_timeout,function()
+		-- double check
+		if not player.kickout_timer then
+			return
+		end
 		self:cancel_delay_kickout(player)
 		player:async_force_exit(reason)
 	end)
@@ -1883,6 +1895,10 @@ function base_table:check_kickout_no_ready()
 		local trustee,seconds = self:get_trustee_conf()
 		if trustee and seconds > 0 then
 			self:begin_kickout_no_ready_timer(seconds,function()
+				-- double check
+				if not self.kickout_no_ready_timer then
+					return
+				end
 				self:foreach(function(p)
 					if not self.ready_list[p.chair_id] then
 						p:force_exit(enum.STANDUP_REASON_NO_READY_TIMEOUT)
