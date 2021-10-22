@@ -43,6 +43,7 @@ local PLAYER_STATUS = {
 	WATCHER = pb.enum("OX_PLAYER_STATUS","PS_WATCHER"),
 	FREE = pb.enum("OX_PLAYER_STATUS","PS_FREE"),
 	PLAY = pb.enum("OX_PLAYER_STATUS","PS_PLAY"),
+	BANKRUPTCY = pb.enum("OX_PLAYER_STATUS","PS_BANKRUPTCY"),
 }
 
 local define = {

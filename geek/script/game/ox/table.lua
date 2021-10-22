@@ -117,10 +117,12 @@ function ox_table:check_start(part)
 		return
 	end
 
-	local is_all_gamer_ready = table.And(self.gamers,function(_,c) 
-		return self.ready_list[c] and true or false 
+	local is_all_gamer_ready = table.And(self.gamers,function(p,c) 
+		return  p.status == PLAYER_STATUS.BANKRUPTCY  or ( self.ready_list[c] and true or false )
 	end)
-	local gamer_count = table.nums(self.gamers)
+	local gamer_count =  table.sum(self.gamers,function (p)
+		return p.status == PLAYER_STATUS.BANKRUPTCY and 0 or 1
+	end)
 	if is_all_gamer_ready and ready_count >= gamer_count and gamer_count >= min_gamer_count then
 		self:start(player_count)
 	end
@@ -128,7 +130,7 @@ end
 
 function  ox_table:is_play(player)
 	if player then
-		return player.status and player.status == PLAYER_STATUS.PLAY
+		return player.status and (player.status == PLAYER_STATUS.PLAY or player.status  == PLAYER_STATUS.BANKRUPTCY)
 	end
 
 	return self.status and self.status ~= TABLE_STATUS.NIL and self.status ~= TABLE_STATUS.FREE
@@ -652,6 +654,9 @@ function ox_table:do_balance()
 		p.winlose_count = (p.winlose_count or 0) +  ((scores[chair] or 0) > 0 and 1 or -1)
 		p.total_score = (p.total_score or 0) + (scores[chair] or 0)
 		p.total_money = (p.total_money or 0) + (moneies[chair] or 0)
+		if self:is_bankruptcy(p) then
+			p.status = PLAYER_STATUS.BANKRUPTCY
+		end
 	end)
 
 	
@@ -668,7 +673,7 @@ function ox_table:do_balance()
 			cards_type = v.cards_type.type,
 		}
 	end)
-
+	
 	self:broadcast2client("SC_OxBalance",{
 		balances = table.series(self.gamers,function(p,chair)
 			return {
@@ -681,6 +686,7 @@ function ox_table:do_balance()
 				money = moneies[chair] or 0,
 				total_score = p.total_score,
 				total_money = p.total_money,
+				pstatus = p.status,
 			}
 		end)
 	})
@@ -699,7 +705,11 @@ function ox_table:do_balance()
 		self:game_over()
 	end)
 end
-
+function base_table:check_bankruptcy_fordismiss()
+	return  table.sum(self.gamers,function (p)
+		return p.status == PLAYER_STATUS.BANKRUPTCY and 0 or 1
+	end) < self:get_min_gamer_count()
+end 
 function ox_table:on_game_overed()
 	self.gamelog = nil
 	log.info("ox_table:on_game_overed table_id = %s", self.table_id_)
@@ -715,7 +725,7 @@ function ox_table:on_game_overed()
 		p.cards = nil
 		p.cards_type = nil
 	end)
-
+	
 	self.status = TABLE_STATUS.FREE
 
 	base_table.on_game_overed(self)
@@ -856,9 +866,15 @@ function ox_table:reconnect(player)
 				score = p.bet_score,
 				cards_pair = table.series(p.cards_pair or {},function(p) return {cards = p} end),
 			}
+		end),
+		pstatus_list = table.map(self.players,function(p,chair)
+			return chair,p.status or  PLAYER_STATUS.WATCHER
 		end)
 	}
-
+	if player.status and player.status == PLAYER_STATUS.BANKRUPTCY  then 
+		send2client(player,"SC_OxTableInfo",msg) 
+		return 
+	end 
 	if self.status == TABLE_STATUS.CALLBANKER then
 		local p = msg.players[chair_id]
 		p.cards = self:get_an_cards(player.cards)
@@ -886,12 +902,18 @@ end
 function ox_table:check_kickout_no_ready()
 	return
 end
-
+-- 检查是否可准备
+function base_table:check_ready(player)
+	if player and player.status and   player.status == PLAYER_STATUS.BANKRUPTCY then   
+		return false 
+	end 
+	return true 
+end
 function ox_table:auto_ready(seconds)
 	self:begin_kickout_no_ready_timer(seconds,function()
 		self:cancel_kickout_no_ready_timer()
 		table.foreach(self.gamers,function(p)
-			if not self.ready_list[p.chair_id] then
+			if (not p.status or p.status~= PLAYER_STATUS.BANKRUPTCY )and not self.ready_list[p.chair_id] then
 				self:ready(p)
 			end
 		end)
@@ -937,6 +959,9 @@ function ox_table:on_player_sit_downed(player,reconnect)
 					score = p.bet_score,
 					cards_pair = table.series(p.cards_pair or {},function(p) return {cards = p} end),
 				}
+			end),
+			pstatus_list = table.map(self.players,function(p,chair)
+				return chair,p.status or  PLAYER_STATUS.WATCHER
 			end)
 		}
 

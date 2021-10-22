@@ -543,14 +543,19 @@ function zhajinhua_table:on_process_over(reason)
 		p.total_score = nil
 		p.game_status = nil
 		p.winlose_count = nil
+		p.pstatus = nil
 	end)
 end
 
 -- 检查是否可准备
 function zhajinhua_table:check_ready(player)
+	if player and player.pstatus and   player.pstatus == PLAYER_STATUS.BANKRUPTCY then   
+		return false 
+	end 
 	if self.game_status ~= TABLE_STATUS.FREE and  self.game_status ~= TABLE_STATUS.READY then
 		return false
 	end
+	
 	return true
 end
 
@@ -678,7 +683,6 @@ function zhajinhua_table:get_min_gamer_count()
 		local private_room_conf = self:room_private_conf()
 		min_gamer_count = private_room_conf.min_gamer_count_option[self.rule.room.min_gamer_count + 1]
 	end
-
 	return min_gamer_count
 end
 
@@ -774,10 +778,12 @@ function zhajinhua_table:check_start(part)
 		return
 	end
 
-	local is_all_gamer_ready = table.logic_and(self.gamers,function(_,c) 
-		return self.ready_list[c] and true or false 
+	local is_all_gamer_ready = table.logic_and(self.gamers,function(p,c) 
+		return  (p.pstatus and p.pstatus == PLAYER_STATUS.BANKRUPTCY ) or (self.ready_list[c] and true or false) 
 	end)
-	local gamer_count = table.nums(self.gamers)
+	local gamer_count = table.sum(self.gamers,function (p)
+		return (p.pstatus and p.pstatus == PLAYER_STATUS.BANKRUPTCY ) and 0 or 1
+	end)
 	if is_all_gamer_ready and ready_count >= gamer_count and gamer_count >= min_gamer_count then
 		self:start(player_count)
 	end
@@ -798,6 +804,7 @@ function zhajinhua_table:reconnect(player)
 				bet_score = p.bet_score,
 				bet_chips = p.bet_scores,
 				is_look_cards = p.is_look_cards,
+				pstatus = p.pstatus or PLAYER_STATUS.WATCHER,
 			}
 		end),
 		status = self.game_status,
@@ -809,7 +816,7 @@ function zhajinhua_table:reconnect(player)
 		base_score = self.base_score,
 		cur_bet_score = self.last_score,
 	})
-
+	
 	if self.game_status == TABLE_STATUS.PLAY then
 		local turn = {
 			chair_id = self.cur_chair,
@@ -1678,6 +1685,9 @@ function zhajinhua_table:game_balance(winner)
 		p.winlose_count = (p.winlose_count or 0) +  (scores[chair] > 0 and 1 or -1)
 		p.total_score = (p.total_score or 0) + scores[chair]
 		p.total_money = (p.total_money or 0) + moneies[chair]
+		if self:is_bankruptcy(p) then
+			p.pstatus = PLAYER_STATUS.BANKRUPTCY
+		end
 	end)
 
 	self.gamelog.balance = table.series(self.gamers,function(v,i) 
@@ -1706,6 +1716,7 @@ function zhajinhua_table:game_balance(winner)
 				total_money = p.total_money,
 				cards = p.cards,
 				bet_score = p.bet_score,
+				pstatus = p.pstatus or PLAYER_STATUS.WATCHER,
 			}
 		end)
 	})
@@ -1729,7 +1740,11 @@ function zhajinhua_table:is_bankruptcy(player)
 	local money = player_money[player.guid][money_id]
 	return money < math.max(min_limit,base_limit)
 end
-
+function base_table:check_bankruptcy_fordismiss()
+	return  table.sum(self.gamers,function (p)
+		return (p.pstatus and p.pstatus== PLAYER_STATUS.BANKRUPTCY) and 0 or 1
+	end) < self:get_min_gamer_count()
+end 
 function zhajinhua_table:on_game_overed()
 	log.info("game end table_id =%s   guid=%s   timeis:%s", self.table_id_, self.log_guid, os.date("%y%m%d%H%M%S"))
 	self.gamelog = nil
@@ -2054,7 +2069,7 @@ function zhajinhua_table:auto_ready(seconds)
 	self:begin_kickout_no_ready_timer(seconds,function()
 		self:cancel_kickout_no_ready_timer()
 		table.foreach(self.gamers,function(p)
-			if not self.ready_list[p.chair_id] then
+			if (not p.pstatus or p.pstatus~= PLAYER_STATUS.BANKRUPTCY ) and not self.ready_list[p.chair_id] then
 				self:ready(p)
 			end
 		end)
@@ -2084,7 +2099,7 @@ end
 
 function zhajinhua_table:is_play(player)
 	if player then
-		return player.game_status and player.game_status ~= PLAYER_STATUS.WATCHER
+		return (player.pstatus and player.pstatus  == PLAYER_STATUS.BANKRUPTCY) or (player.game_status and player.game_status ~= PLAYER_STATUS.WATCHER )  
 	end
 
 	return self.game_status and self.game_status ~= TABLE_STATUS.FREE
@@ -2118,6 +2133,7 @@ function zhajinhua_table:on_player_sit_downed(player,reconnect)
 						bet_score = p.bet_score,
 						bet_chips = p.bet_scores,
 						is_look_cards = p.is_look_cards,
+						pstatus = p.pstatus
 					}
 				end),
 				status = self.game_status,

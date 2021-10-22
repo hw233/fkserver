@@ -38,6 +38,7 @@ enum ZHAJINHUA_PLAYER_STATUS{
 	PS_DROP = 7;           //弃牌
 	PS_LOSE = 8;           //淘汰
 	PS_EXIT = 9;           //离开
+	PS_BANKRUPTCY = 10; //破产
 }
 
 enum ZHAJINHUA_TABLE_STATUS {
@@ -151,6 +152,7 @@ message ZhaJinHuaPlayerBalance {
 	int32 status = 7;						//玩家是以什么状态结束的
 	int32 total_score = 8;
 	int32 total_money = 9;
+	ZHAJINHUA_PLAYER_STATUS pstatus = 10;//破产使用
 }
 
 message SC_ZhaJinHuaGameOver {
@@ -169,6 +171,7 @@ message ZhaJinHuaPlayerGamingInfo{
 	int32  total_score = 5;
 	int32  status = 6;
 	bool   is_look_cards = 7;
+	ZHAJINHUA_PLAYER_STATUS pstatus = 8;//破产使用
 }
 
 message SC_ZhaJinHuaReconnect {

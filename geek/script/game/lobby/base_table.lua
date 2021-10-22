@@ -1001,7 +1001,9 @@ function base_table:auto_ready(seconds)
 		end)
 	end)
 end
-
+function base_table:check_bankruptcy_fordismiss()
+	return table.logic_or(self.players,function(p) return self:is_bankruptcy(p) end)
+end 
 function base_table:on_game_overed()
 	self.old_moneies = nil
 	self:clear_ready()
@@ -1009,7 +1011,7 @@ function base_table:on_game_overed()
 		return
 	end
 
-	if table.logic_or(self.players,function(p) return self:is_bankruptcy(p) end) then
+	if  self:check_bankruptcy_fordismiss() then
 		self:notify_bankruptcy(enum.ERROR_BANKRUPTCY_WARNING)
 		self:force_dismiss(enum.STANDUP_REASON_BANKRUPCY)
 		return

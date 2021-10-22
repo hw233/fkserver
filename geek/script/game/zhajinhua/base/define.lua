@@ -30,6 +30,7 @@ local PLAYER_STATUS = {
     DROP = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_DROP"),           -- 弃牌
     LOSE = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_LOSE"),           -- 淘汰
     EXIT = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_EXIT"),           -- 离开
+	BANKRUPTCY = pb.enum("ZHAJINHUA_PLAYER_STATUS","PS_BANKRUPTCY"),--破产
 }
 
 local ACTION = {

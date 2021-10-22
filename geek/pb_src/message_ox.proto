@@ -52,6 +52,7 @@ enum OX_PLAYER_STATUS {
 	PS_WATCHER = 0;
 	PS_FREE = 1;
 	PS_PLAY = 2;
+	PS_BANKRUPTCY = 3; //破产
 }
 
 message OxCards{
@@ -162,6 +163,7 @@ message OxPlayerBalance {
 	int32 bet_money = 7;					//用户下注的钱
 	int32 total_score = 8;
 	int32 total_money = 9;
+	OX_PLAYER_STATUS pstatus  = 10;
 }
 
 //当前当庄庄家信息
@@ -200,6 +202,7 @@ message SC_OxTableInfo {  // 重连数据
 	map<int32,OxPlayerGamingInfo> players = 2;
 	int32 round = 3;
 	OX_TABLE_STATUS  status = 4;
+	map<int32,OX_PLAYER_STATUS>  pstatus_list = 5;
 }
 
 message CS_OxShowCards { // 亮牌
