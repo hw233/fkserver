@@ -632,7 +632,7 @@ local function get_hu_types(cache)
 			curty_num = curty_num -1
 			curtwo_count = curtwo_count -1
 		end
-		if curtwo_count == 1 and (one_count+curty_num)%3 ==0 then
+		if curtwo_count == 1 and  curty_num >=0 and curty_num == one_count*2 and (curty_num + one_count)%3 == 0 then
 			ke_zi_bj = true 
 		end
 	end
