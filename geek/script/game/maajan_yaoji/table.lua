@@ -712,7 +712,7 @@ function maajan_table:huan_pai()
             repeat
                 curmen,tilecounts = table.choice(men_tiles)
                 c = table.sum(tilecounts)
-            until c > huan_count and  curmen ~= ty_men
+            until c >= huan_count and  curmen ~= ty_men
 
             local huan_tiles = random_choice(self:tile_count_2_tiles(tilecounts),huan_count)
             self:lockcall(function()
