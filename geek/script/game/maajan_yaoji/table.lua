@@ -692,10 +692,7 @@ function maajan_table:huan_pai()
 
         local function auto_huan_pai(p,huan_type,huan_count)
             if huan_type ~= 1 then
-                local shou_pai_tiles = self:tile_count_2_tiles(p.pai.shou_pai,function (t) --剔除替用
-                    return (t == TY_VALUE ) and p.pai.shou_pai[t] or 0
-                end
-             )
+                local shou_pai_tiles = self:tile_count_2_tiles(p.pai.shou_pai,{[TY_VALUE] = p.pai.shou_pai[TY_VALUE] })--剔除替用
                 local huan_tiles = random_choice(shou_pai_tiles,huan_count)
                 log.dump(huan_tiles)
                 self:lockcall(function()
