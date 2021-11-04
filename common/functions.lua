@@ -686,6 +686,7 @@ end
 
 function table.fold_into(l,tb,fn)
     tb = tb or {}
+    l = l or {}
 
     local k,v
     for i = 1,#l,2 do
@@ -702,7 +703,7 @@ end
 
 function table.expand(tb,fn)
     local t = {}
-    for k,v in pairs(tb) do
+    for k,v in pairs(tb or {}) do
         if fn then
             k,v = fn(v,k)
         end
