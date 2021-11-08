@@ -284,7 +284,19 @@ function pdk_table:deal_cards()
 		self:send_desk_enter_data(p)
 	end)
 end
+function pdk_table:next_player_is_single()
+	local play = self.rule and self.rule.play
+	if not play then return end
 
+	-- 下家报单必出最大单牌
+	if play.bao_dan_discard_max then
+		local next_player = self.players[self:next_chair()]
+		if table.nums(next_player.hand_cards) == 1   then
+			return true 
+		end
+	end
+	return false 
+end
 function pdk_table:begin_discard()
 	self:broadcast2client("SC_PdkDiscardRound",{
 		chair_id = self.cur_discard_chair
@@ -294,15 +306,30 @@ function pdk_table:begin_discard()
 		if not self.last_discard then
 			local cards = cards_util.seek_greatest(player.hand_cards,self.rule,self.first_discard)
 			assert(cards and #cards > 0)
-			self:do_action_discard(player,cards,true)
-		else
-			local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
-			if not cards then
-				self:do_action_pass(player,true)
+			if #cards==1 and self:next_player_is_single() then 
+				local card,_ = table.max(player.hand_cards,function(_,c) return cards_util.value(c) end)
+				self:do_action_discard(player,{card},true)
 			else
-				assert(cards and #cards > 0)
 				self:do_action_discard(player,cards,true)
-			end
+			end 
+			
+		else
+			if self:next_player_is_single() and self.last_discard.type == CARD_TYPE.SINGLE then 
+				local card,hand_max_value = table.max(player.hand_cards,function(_,c) return cards_util.value(c) end)
+				if hand_max_value > self.last_discard.value then 
+					self:do_action_discard(player,{card},true)
+				else
+					self:do_action_pass(player,true)
+				end 
+			else 
+				local cards = cards_util.seek_great_than(player.hand_cards,self.last_discard.type,self.last_discard.value,self.last_discard.count,self.rule)
+				if not cards then
+					self:do_action_pass(player,true)
+				else
+					assert(cards and #cards > 0)
+					self:do_action_discard(player,cards,true)
+				end
+			end 
 		end
 	end
 
