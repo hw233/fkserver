@@ -65,6 +65,7 @@ message S2C_CLUB_INFO_RES {
     int32          root = 12;
     map<int32,int32> fast_templates = 13;
     TEAM_STATUS_INFO team_status = 15;
+    repeated int32 team_template_ids = 16;//团队模板id
 }
 
 
@@ -641,4 +642,30 @@ message SC_TEAM_STATUS_INFO{
     enum MsgID {NIL = 0;ID = 14129;}
     int32 result = 1;
     TEAM_STATUS_INFO status_info = 2;
+}
+//请求团队模板信息
+message CS_CLUB_TEAM_TEMPLATE_INFO{
+    enum MsgID {NIL = 0;ID = 14130;}
+    int32 club_id = 1;
+}
+
+//
+message SC_CLUB_TEAM_TEMPLATE_INFO{
+    enum MsgID {NIL = 0;ID = 14131;}
+    int32 result = 1;
+    repeated CLUB_TABLE_TEMPLATE table_templates =2;//所有的游戏列表和规则
+    repeated int32 team_template_ids = 3;//模板id
+}
+//团队模板信息开关
+message CS_CLUB_CHANGE_TEAM_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14132;}
+    int32 club_id = 1;
+    repeated int32 team_template_ids = 2;//团队模板id
+}
+
+//
+message SC_CLUB_CHANGE_TEAM_TEMPLATE{
+    enum MsgID {NIL = 0;ID = 14133;}
+    int32 result = 1;
+    repeated int32 team_template_ids = 2;//团队模板id
 }

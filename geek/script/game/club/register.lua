@@ -64,6 +64,8 @@ local h = {
 	CS_CLUB_IMPORT_PLAYER_FROM_TEAM = on_cs_club_import_player_from_team,
 
 	CS_TEAM_STATUS_INFO = on_cs_team_status_info,
+	CS_CLUB_TEAM_TEMPLATE_INFO = on_cs_team_template_info,
+	CS_CLUB_CHANGE_TEAM_TEMPLATE = on_cs_change_team_template,
 }
 
 local msgopt = require "msgopt"

@@ -40,7 +40,7 @@ local club_partner_conf = require "game.club.club_partner_conf"
 local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
 local game_util = require "game.util"
 local allonlineguid = require "allonlineguid"
-
+local club_team_template = require "game.club.club_team_template"
 local gutil = require "util"
 
 local queue = require "skynet.queue"
@@ -514,12 +514,33 @@ function on_cs_club_detail_info_req(msg,guid)
         money_id = money_id,
         commission = (role == enum.CRT_BOSS or role == enum.CRT_PARTNER) and club_partner_commission[club_id][guid] or 0,
     }
-
+ 
     local keygames = table.map(real_games,function(g) return g,true end)
     templates = table.select(templates,function(t) return keygames[t.game_id] end)
-
-    local closed_team_id = club:closed_team_id(guid)
     
+    local team_template_ids ={}
+    if role == enum.CRT_PARTNER then
+        team_template_ids = club_team_template[club_id][guid]
+        if table.nums(team_template_ids) == 0 then
+            team_template_ids = table.map(templates,function(template) return template.template_id,true end)
+        end 
+    elseif role == enum.CRT_PLAYER then
+        local partner_id = club_member_partner[club_id][guid]
+        local partner_role = club_role[club_id][partner_id] or enum.CRT_PLAYER
+        if partner_role == enum.CRT_PARTNER or  partner_role == enum.CRT_BOSS then
+            team_template_ids = club_team_template[club_id][partner_id]
+            if table.nums(team_template_ids) == 0 then
+                team_template_ids = table.map(templates,function(template) return template.template_id,true end)
+            end 
+        end 
+    end  
+    if table.nums(team_template_ids) ~= 0 then  
+        templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
+        tables = table.select(tables,function(t) return team_template_ids[t.template_id] end)   --处理游戏
+    end 
+    log.dump(team_template_ids)
+
+    local closed_team_id = club:closed_team_id(guid) 
     local club_info = {
         root = root.id,
         result = enum.ERROR_NONE,
@@ -544,9 +565,9 @@ function on_cs_club_detail_info_req(msg,guid)
             can_unblock = closed_team_id == guid,
             partner_id = club_member_partner[club_id][guid],
             club_id = club_id,
-        }
+        },
+        team_template_ids = table.keys(team_template_ids)
     }
-
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
 end
 
@@ -3179,3 +3200,123 @@ function on_cs_team_status_info(msg,guid)
         },
     })
 end
+
+function on_cs_team_template_info(msg,guid)
+    local club_id = msg.club_id
+    if not club_id then
+        onlineguid.send(guid,"SC_CLUB_TEAM_TEMPLATE_INFO",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"SC_CLUB_TEAM_TEMPLATE_INFO",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid] or enum.CRT_PLAYER
+    if role ~= enum.CRT_PARTNER and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"SC_CLUB_TEAM_TEMPLATE_INFO",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end 
+
+    local templates = club_utils.get_visiable_club_templates(club,role)
+    local real_games =  club_utils.get_game_list(guid,club_id)
+    local keygames = table.map(real_games,function(g) return g,true end)
+    templates = table.select(templates,function(t) return keygames[t.game_id] end)
+    local open_template_ids = table.map(templates,function(template) return template.template_id,true end)
+    local team_template_ids = club_team_template[club_id][guid]
+    if table.nums(team_template_ids) == 0 then  --团队模板没有设置默认全部开启
+        team_template_ids = table.map(templates,function (template) return template.template_id,true end)
+    end 
+    team_template_ids = table.select(team_template_ids,function(_,id) return open_template_ids[id] end)
+    log.dump(team_template_ids)
+
+    local team_template_info = {
+        result = enum.ERROR_NONE,
+        table_templates = table.series(templates,function(template)
+            return {
+                club_id = template.club_id,
+                template = {
+                    template_id = template.template_id,
+                    game_id = template.game_id,
+                    description = template.description,
+                    rule = json.encode(template.rule),
+                }
+            }
+        end),
+        team_template_ids = table.keys(team_template_ids)
+    }
+
+    onlineguid.send(guid,"SC_CLUB_TEAM_TEMPLATE_INFO",team_template_info)
+end 
+
+function on_cs_change_team_template(msg,guid)
+    log.dump(msg)
+    local club_id = msg.club_id
+    if not club_id then
+        onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    if not msg.team_template_ids or #msg.team_template_ids ==0 then
+        onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",{
+            result = enum.ERROR_PARAMETER_ERROR,
+        })
+        return
+    end
+    
+    local role = club_role[club_id][guid] or enum.CRT_PLAYER
+    if role ~= enum.CRT_PARTNER and role ~= enum.CRT_BOSS then
+        onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end 
+    
+    local templates = club_utils.get_visiable_club_templates(club,role)
+    local real_games =  club_utils.get_game_list(guid,club_id)
+    local keygames = table.map(real_games,function(g) return g,true end)
+    templates = table.select(templates,function(t) return keygames[t.game_id] end)
+    local open_template_ids = table.map(templates,function(template) return template.template_id,true end)
+    
+    local team_template_ids = msg.team_template_ids
+    if not table.logic_and(team_template_ids,function(team_template_id)
+        return table.logic_or(open_template_ids,function(_,open_template_id)
+            return open_template_id == team_template_id
+        end)
+    end) then 
+        onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",{
+            result = enum.ERROR_TEMPLATE_NOT_EXISTS,
+        })
+        return 
+    end 
+
+    reddb:del(string.format("club:team:template:%s:%s",club_id,guid))
+    reddb:sadd(string.format("club:team:template:%s:%s",club_id,guid),table.unpack(team_template_ids))
+
+    local info = {
+        result = enum.ERROR_NONE,
+        team_template_ids = team_template_ids
+    }
+    onlineguid.send(guid,"SC_CLUB_CHANGE_TEAM_TEMPLATE",info)
+    
+end 
