@@ -56,22 +56,24 @@ local function ting_qi_dui(counts)
 		end
 		count_tiles[4] =nil
 	end 
-	local even_count = count_tiles[2] and #count_tiles[2] or 0
+	local two_count = count_tiles[2] and #count_tiles[2] or 0
 	local one_count = count_tiles[1] and #count_tiles[1] or 0
-	local cureven_count = 7 - even_count 
-	local curty_num = ty_num
-	for i = 1, ty_num, 1 do
-		one_count = one_count -1
-		cureven_count = cureven_count - 1
-		curty_num = curty_num -1
-	end
-	if curty_num == 0  and cureven_count == one_count  and cureven_count ==1 then 
+	local need_count = 7 - two_count 
+	local for_num =    ty_num >one_count and  one_count or ty_num
+	if one_count >0 and ty_num >0 then 
+		for i = 1, for_num, 1 do
+			one_count = one_count -1
+			need_count = need_count - 1
+		end
+	end 
+	if (ty_num - for_num) == 0  and need_count == one_count  and need_count ==1 then 
 		for _, value in pairs(count_tiles[1]) do
 			table.insert(qi_dui_tiles,value)
 		end
+		table.insert(qi_dui_tiles,TY_VALUE)
 	end 
-	if one_count == 0  and curty_num - cureven_count == 1  then 
-		for i = 1, 30, 1 do
+	if one_count == 0  and (ty_num - for_num)+1   == need_count*2  then 
+		for i = 1, 29, 1 do
 			if i ~= 10  and i~=20 then 
 				table.insert(qi_dui_tiles,i)
 			end 
@@ -106,22 +108,24 @@ local function ting_si_dui(counts)
 		end
 		count_tiles[4] =nil
 	end 
-	local even_count = count_tiles[2] and #count_tiles[2] or 0
+	local two_count = count_tiles[2] and #count_tiles[2] or 0
 	local one_count = count_tiles[1] and #count_tiles[1] or 0
-	local cureven_count = 4 - even_count 
-	local curty_num = ty_num
-	for i = 1, ty_num, 1 do
-		one_count = one_count -1
-		cureven_count = cureven_count - 1
-		curty_num = curty_num -1
-	end
-	if curty_num == 0  and cureven_count == one_count  and cureven_count ==1 then 
+	local need_count = 4 - two_count 
+	local for_num =    ty_num >one_count and  one_count or ty_num
+	if one_count >0 and ty_num >0 then 
+		for i = 1, for_num, 1 do
+			one_count = one_count -1
+			need_count = need_count - 1
+		end
+	end 
+	if (ty_num - for_num) == 0  and need_count == one_count  and need_count ==1 then 
 		for _, value in pairs(count_tiles[1]) do
 			table.insert(si_dui_tiles,value)
 		end
+		table.insert(si_dui_tiles,TY_VALUE)
 	end 
-	if one_count == 0  and curty_num - cureven_count == 1  then 
-		for i = 1, 30, 1 do
+	if one_count == 0  and (ty_num - for_num)+1   == need_count*2  then 
+		for i = 1, 29, 1 do
 			if i ~= 10  and i~=20 then 
 				table.insert(si_dui_tiles,i)
 			end 
@@ -155,18 +159,17 @@ local function is_qi_dui(counts)
 		end
 		count_tiles[4] =nil
 	end 
-	local even_count = count_tiles[2] and #count_tiles[2] or 0
+	local two_count = count_tiles[2] and #count_tiles[2] or 0
 	local one_count = count_tiles[1] and #count_tiles[1] or 0
-	local cureven_count = 7 - even_count 
-	local curty_num = ty_num
-	if one_count >0 then 
-		for i = 1, ty_num, 1 do
+	local need_count = 7 - two_count 
+	local for_num =    ty_num >one_count and  one_count or ty_num
+	if one_count >0 and ty_num >0 then 
+		for i = 1, for_num, 1 do
 			one_count = one_count -1
-			cureven_count = cureven_count - 1
-			curty_num = curty_num -1
+			need_count = need_count - 1
 		end
 	end 
-	if cureven_count == 0 or  cureven_count == curty_num/2 then 
+	if need_count == 0 or  need_count == (ty_num -for_num)/2 then 
 		return true
 	end 
 
@@ -198,18 +201,17 @@ local function is_si_dui(counts)
 		end
 		count_tiles[4] =nil
 	end 
-	local even_count = count_tiles[2] and #count_tiles[2] or 0
+	local two_count = count_tiles[2] and #count_tiles[2] or 0
 	local one_count = count_tiles[1] and #count_tiles[1] or 0
-	local cureven_count = 4 - even_count 
-	local curty_num = ty_num
-	if one_count >0 then 
-		for i = 1, ty_num, 1 do
+	local need_count = 4 - two_count 
+	local for_num =    ty_num >one_count and  one_count or ty_num
+	if one_count >0 and ty_num >0 then 
+		for i = 1, for_num, 1 do
 			one_count = one_count -1
-			cureven_count = cureven_count - 1
-			curty_num = curty_num -1
+			need_count = need_count - 1
 		end
 	end 
-	if cureven_count == 0 or  cureven_count == curty_num/2 then 
+	if need_count == 0 or  need_count == (ty_num -for_num)/2 then 
 		return true
 	end 
 
