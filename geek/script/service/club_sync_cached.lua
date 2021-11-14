@@ -4,8 +4,8 @@ local timermgr = require "timermgr"
 
 local tinsert = table.insert
 
-local MAX_COUNT_PER_ONCE = 50
-local INTERVAL  = 0.3
+local MAX_COUNT_PER_ONCE = 300
+local INTERVAL  = 1
 
 local club_cache = {}
 
