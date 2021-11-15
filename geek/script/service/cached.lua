@@ -5,7 +5,6 @@ local agentcount = ...
 agentcount = agentcount and tonumber(agentcount) or 64
 
 local agentservice = {}
-local redisd
 
 skynet.start(function()
 	require "skynet.manager"
@@ -17,16 +16,9 @@ skynet.start(function()
 
 	skynet.register ".cached"
 
-	redisd = skynet.uniqueservice("redisd")
-
 	skynet.dispatch("lua",function(_,_,cmd)
 		if cmd == "AGENT" then
 			skynet.retpack(agentservice)
-			return
-		end
-
-		if cmd == "REDIS" then
-			skynet.retpack(redisd)
 			return
 		end
 	end)

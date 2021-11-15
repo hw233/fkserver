@@ -4,10 +4,9 @@ local log = require "log"
 local channel = require "channel"
 local rediscluster = require "skynet.db.redis.cluster"
 
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 1000)
-
 LOG_NAME = "redisd"
+
+local mgrd = tonumber(...)
 
 require "functions"
 
@@ -87,15 +86,6 @@ function CMD.close(db)
 end
 
 skynet.start(function()
-	require "skynet.manager"
-	local handle = skynet.localname ".redisd"
-	if handle then
-		skynet.exit()
-		return handle
-	end
-
-	skynet.register ".redisd"
-
 	skynet.dispatch("lua", function (_, _, cmd, ...)
 		local f = CMD[cmd]
 		if f then

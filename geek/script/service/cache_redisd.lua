@@ -2,8 +2,7 @@ local skynet = require "skynetproto"
 local log = require "log"
 local timer = require "timer"
 local queue = require "skynet.queue"
-require "functions"
-
+local redism = require "redism"
 require "functions"
 
 LOG_NAME = "redis_cached"
@@ -13,8 +12,6 @@ local cached = ...
 assert(cached)
 
 cached = tonumber(cached)
-
-local redisd
 
 local table = table
 local tinsert = table.insert
@@ -75,7 +72,7 @@ local function elapsed_cache_key()
 end
 
 local function do_redis_command(...)
-	return skynet.call(redisd,"lua","command",...)
+	return redism.command(...)
 end
 
 local function new_commander(cmd,fn)
@@ -380,7 +377,6 @@ setmetatable(command,{
 })
 
 skynet.start(function()	
-	redisd = skynet.call(cached,"lua","REDIS")
 	skynet.dispatch("lua", function (_, _,db,cmd,...)
 		local f = command[cmd]
 		skynet.retpack(f(cmd,...))
