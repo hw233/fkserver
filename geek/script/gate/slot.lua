@@ -183,12 +183,14 @@ local FORWARD = {}
 local function forward(guid,msgname,msg)
     local u = onlineguid[guid]
     if not u then
-        log.error("forward %s got nil session.",guid)
+        log.error("forward %s,%s got nil session.",guid,msgname)
+        log.dump(msg)
         return
     end
 
     if not u.fd then
-        log.error("forward %s got nil fd.",guid)
+        log.error("forward %s,%s got nil fd.",guid,msgname)
+        log.dump(msg)
         return
     end
 
