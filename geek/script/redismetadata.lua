@@ -105,6 +105,8 @@ tree.club.partner.member["%d+"]["%d+"] = "set"
 tree.club.partner.member["%d+"]["%d+"]["%d+"] = "number"
 tree.club.partner.commission["%d+"] = "number_hash"
 tree.club.partner.commission["%d+"]["%d"] = "number"
+tree.club.partner.commision.conf["%d+"] = "number_hash"
+tree.club.partner.commision.conf["%d+"]["%d+"] = "json"
 tree.club.role["%d+"] = "number_hash"
 tree.club.role["%d+"]["%d+"] = "number"
 tree.club.template["%d+"] = "set"
@@ -150,6 +152,8 @@ tree.club.partner.conf["%d+"]["%d+"] = {
     status = "number",
     commission = "json",
 }
+
+
 
 tree.club.notice["%d+"] = "set"
 tree.club.notice["%d+"]["%d+"] = "number"

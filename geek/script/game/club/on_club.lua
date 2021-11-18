@@ -41,6 +41,8 @@ local club_gaming_blacklist = require "game.club.club_gaming_blacklist"
 local game_util = require "game.util"
 local allonlineguid = require "allonlineguid"
 local club_team_template = require "game.club.club_team_template"
+local club_partner_commission_conf = require "game.club.club_partner_commission_conf"
+
 local gutil = require "util"
 
 local queue = require "skynet.queue"
@@ -2997,6 +2999,89 @@ function on_cs_club_edit_team_config(msg,guid)
 
     onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_CONFIG",msg)
 end
+
+function on_cs_club_get_team_partner_config(msg,guid)
+    
+    local club_id = msg.club_id
+    local club = base_clubs[club_id]
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_GET_TEAM_PARTNER_CONFIG",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    if (role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER) 
+    then 
+        onlineguid.send(guid,"S2C_CLUB_GET_TEAM_PARTNER_CONFIG",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end
+
+    local rmsg = {
+        club_id = club_id,
+        partner_conf = json.encode(club_partner_conf[club_id][guid].commission),
+        confs = table.series(club_partner_member[club_id][guid],function (_,mem_id)
+            local mrole = club_role[club_id][mem_id]
+            if mrole == enum.CRT_PARTNER then
+                local p = base_players[mem_id]
+                return {
+                    partner = mem_id,
+                    conf = json.encode(club_utils.get_partner_commission_conf(club_id,mem_id)),
+                    base_info = {
+                        guid = p.guid,
+                        nickname = p.nickname,
+                        icon = p.icon,
+                        sex = p.sex,
+                    }
+                }
+            end
+            return nil
+        end)
+    }
+
+    onlineguid.send(guid,"S2C_CLUB_GET_TEAM_PARTNER_CONFIG",rmsg)
+end
+
+function on_cs_club_edit_team_partner_config(msg,guid)
+    log.dump(msg)
+    local club_id = msg.club_id
+    local partner_id = msg.partner
+
+    local club = base_clubs[club_id]
+    if not club then 
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_PARTNER_CONFIG",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid]
+    local partner_role = club_role[club_id][partner_id]
+    if (role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER) or (partner_role ~= enum.CRT_PARTNER) or
+       (club_member_partner[club_id][partner_id] ~= guid )
+    then 
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_PARTNER_CONFIG",{
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+        })
+        return
+    end
+
+    local ok,conf = pcall(json.decode,msg.conf)
+    if not ok then
+        onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_PARTNER_CONFIG",{
+            result = enum.ERROR_PARAMETER_ERROR,
+        })
+        return
+    end
+
+    reddb:hset(string.format("club:partner:commision:conf:%s",club_id),partner_id,msg.conf)
+
+    onlineguid.send(guid,"S2C_CLUB_EDIT_TEAM_PARTNER_CONFIG",msg)
+end
+
 
 function on_cs_club_kickout_player(msg,kicker_guid)
     local club_id = msg.club_id

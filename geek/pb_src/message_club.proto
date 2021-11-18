@@ -656,6 +656,7 @@ message SC_CLUB_TEAM_TEMPLATE_INFO{
     repeated CLUB_TABLE_TEMPLATE table_templates =2;//所有的游戏列表和规则
     repeated int32 team_template_ids = 3;//模板id
 }
+
 //团队模板信息开关
 message CS_CLUB_CHANGE_TEAM_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14132;}
@@ -668,4 +669,39 @@ message SC_CLUB_CHANGE_TEAM_TEMPLATE{
     enum MsgID {NIL = 0;ID = 14133;}
     int32 result = 1;
     repeated int32 team_template_ids = 2;//团队模板id
+}
+
+
+message TEAM_PARTNER_CONFIG_INFO{
+    int32 partner = 1;
+    string conf = 2;
+    PLAYER_BASE_INFO base_info = 3;
+}
+
+message C2S_CLUB_GET_TEAM_PARTNER_CONFIG {
+    enum MsgID {NIL = 0;ID = 14134;}
+    int32 club_id = 1;
+}
+
+message S2C_CLUB_GET_TEAM_PARTNER_CONFIG {
+    enum MsgID {NIL = 0;ID = 14135;}
+    int32 result = 1;
+    int32 club_id = 2;
+    repeated TEAM_PARTNER_CONFIG_INFO confs=3;
+    string partner_conf = 4;
+}
+
+message C2S_CLUB_EDIT_TEAM_PARTNER_CONFIG {
+    enum MsgID {NIL = 0;ID = 14136;}
+    int32 club_id = 1;
+    int32 partner = 2;
+    string conf = 3;
+}
+
+message S2C_CLUB_EDIT_TEAM_PARTNER_CONFIG {
+    enum MsgID {NIL = 0;ID = 14137;}
+    int32 result = 1;
+    int32 club_id = 2;
+    int32 partner = 3;
+    string conf = 4;
 }

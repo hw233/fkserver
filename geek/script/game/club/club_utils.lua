@@ -27,6 +27,7 @@ local club_money_type = require "game.club.club_money_type"
 local club_team_money = require "game.club.club_team_money"
 local club_partner = require "game.club.club_partner"
 local club_partner_conf = require "game.club.club_partner_conf"
+local club_partner_commission_conf = require "game.club.club_partner_commission_conf"
 
 local table = table
 local string = string
@@ -385,18 +386,41 @@ end
 function utils.get_template_commission_conf(club_id,template_id,team_id)
     local conf = club_partner_template_commission[club_id][template_id][team_id]
     if not conf or table.nums(conf) == 0 then
-        local parent = club_member_partner[club_id][team_id]
-        if not parent or parent == 0 then
-            return nil
-        end
+        
+        local partner_commission_conf = club_partner_commission_conf[club_id][team_id]
+        conf = partner_commission_conf and partner_commission_conf.commission or nil
 
-        conf = club_partner_template_default_commission[club_id][template_id][parent]
         if not conf or table.nums(conf) == 0 then
-            local parent_conf = club_partner_conf[club_id][parent]
-            conf = parent_conf and parent_conf.commission or nil
-        end
+
+            local parent = club_member_partner[club_id][team_id]
+            if not parent or parent == 0 then
+                return nil
+            end
+            conf = club_partner_template_default_commission[club_id][template_id][parent]
+            
+            if not conf or table.nums(conf) == 0 then
+                local parent_conf = club_partner_conf[club_id][parent]
+                conf = parent_conf and parent_conf.commission or nil
+            end
+        end 
     end
 
+    return conf
+end
+
+function utils.get_partner_commission_conf(club_id,partner_id)
+    local partner_commission_conf = club_partner_commission_conf[club_id][partner_id]
+
+    local conf = partner_commission_conf and partner_commission_conf.commission or nil
+    if not conf or table.nums(conf) == 0 then
+
+        local parent = club_member_partner[club_id][partner_id]
+        if not parent or parent == 0 then
+            return {}
+        end
+        local parent_conf = club_partner_conf[club_id][parent]
+        conf = parent_conf and parent_conf.commission or {}
+    end
     return conf
 end
 

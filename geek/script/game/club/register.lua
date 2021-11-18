@@ -66,6 +66,11 @@ local h = {
 	CS_TEAM_STATUS_INFO = on_cs_team_status_info,
 	CS_CLUB_TEAM_TEMPLATE_INFO = on_cs_team_template_info,
 	CS_CLUB_CHANGE_TEAM_TEMPLATE = on_cs_change_team_template,
+
+	C2S_CLUB_GET_TEAM_PARTNER_CONFIG = on_cs_club_get_team_partner_config,
+
+	C2S_CLUB_EDIT_TEAM_PARTNER_CONFIG = on_cs_club_edit_team_partner_config,
+
 }
 
 local msgopt = require "msgopt"
