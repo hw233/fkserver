@@ -209,22 +209,28 @@ function MSG.SS_LogMoney(msg)
         log.error("%s",res.err)
     end
 end
+
 function MSG.SS_LogAntiCheat(info)
     log.dump(info)
+    local fmtsql = [[INSERT INTO t_log_anti_cheat(guid,guid_other,club,game_id,type,nums) VALUES %s
+        ON DUPLICATE KEY UPDATE nums = nums + VALUES(nums);]]
+    local valstrs = {}
     for _, msg in pairs(info) do
         for type, num in pairs(msg.type_list) do
-            local res = dbopt.log:query([[
-                    INSERT INTO t_log_anti_cheat(guid,guid_other,club,game_id,type,nums) VALUES(%s,%s,%s,%s,%s,%s)
-                    ON DUPLICATE KEY UPDATE nums = nums + VALUES(nums);
-                ]],
-                msg.guid,msg.guid_other,msg.club, msg.game_id,type,num
-            )
-            if res.errno then
-                log.error("%s",res.err)
-            end
+            table.insert(valstrs,
+                string.format("(%s,%s,%s,%s,%s,%s)",msg.guid,msg.guid_other,msg.club, msg.game_id,type,num))
         end 
     end
+    
+    if #valstrs > 0 then
+        local res = dbopt.log:query(string.format(fmtsql,table.concat(valstrs,",")))
+        if res.errno then
+            log.error("%s",res.err)
+        end
+    end
 end
+
+
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]
