@@ -15,7 +15,7 @@ local log_create_table_sql = [[
         date INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club,date,game_id)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_log_player_daily_commission_contribute(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -27,7 +27,7 @@ local log_create_table_sql = [[
         date INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(parent,son,club,date)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_log_team_daily_play_count(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -38,7 +38,7 @@ local log_create_table_sql = [[
         date INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club,date,game_id)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_log_player_daily_win_lose(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -49,7 +49,7 @@ local log_create_table_sql = [[
         date INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club,date,game_id)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_log_player_daily_big_win_count(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -60,7 +60,7 @@ local log_create_table_sql = [[
         date INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club,date,game_id)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
     
     CREATE TABLE IF NOT EXISTS t_log_coin_hour_change(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -70,7 +70,7 @@ local log_create_table_sql = [[
         time INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(money_id,time,reason)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_log_club_coin_hour_change(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -82,7 +82,7 @@ local log_create_table_sql = [[
         time INT(8) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(money_id,reason,game_id,club,time)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 ]]
 
 local game_create_table_sql = [[
@@ -95,7 +95,7 @@ local game_create_table_sql = [[
         count INT(4) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 
     CREATE TABLE IF NOT EXISTS t_team_money(
         id INT(8) NOT NULL AUTO_INCREMENT,
@@ -104,7 +104,7 @@ local game_create_table_sql = [[
         money INT(4) NOT NULL,
         PRIMARY KEY (`id`),
         UNIQUE(guid,club)
-    )ENGINE=MyISAM DEFAULT CHARSET=UTF8;
+    ) DEFAULT CHARSET=UTF8;
 ]]
 
 local function create_table()
