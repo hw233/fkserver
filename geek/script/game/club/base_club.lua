@@ -721,9 +721,12 @@ function base_club:is_block()
 end
 
 function base_club:is_block_gaming_with_others(tb,player)
+    if self:is_block_in_block_group(tb,player) then
+        return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+    end
+
     if tb.start_count > 2 then
-        if  self:is_block_in_block_group(tb,player) or
-            self:is_block_play_in_same_team_layer(tb,player) or
+        if  self:is_block_play_in_same_team_layer(tb,player) or
             self:is_block_in_same_team_branch(tb,player) or
             self:is_block_in_2_team_layer(tb,player)
         then
@@ -817,7 +820,7 @@ end
 
 
 function base_club:recusive_broadcast(msgname,msg,except)
-    bc.broadcast2club(self.id,msgname,msg,except)
+    bc.broadcast2club(self.id,msgname,msg)
 end
 
 function base_club:broadcast_not_gaming(msgname,msg)
