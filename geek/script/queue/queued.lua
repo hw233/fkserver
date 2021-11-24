@@ -131,7 +131,7 @@ function CMD.Login(guid,gate)
 					gate = gate
 				})
 
-				result = l(channel.call,"game."..s.server,"msg","LS_LoginNotify",guid,false,gate)
+				result = l(channel.call,"game."..server,"msg","LS_LoginNotify",guid,false,gate)
 				if result == enum.ERROR_NONE then
 					s.gate = gate
 					s.server = server
