@@ -11,7 +11,7 @@ local club_cache = {}
 
 local function guard()
 	for club_id,cache in pairs(club_cache) do
-		if skynet.time() - cache.time >= INTERVAL or #cache.msgs >= MAX_COUNT_PER_ONCE then
+		if (skynet.time() - cache.time >= INTERVAL and #cache.msgs > 0) or #cache.msgs >= MAX_COUNT_PER_ONCE then
 			bc.broadcast2club_not_gaming(club_id,"SC_CLUB_SYNC_TABLES",{
 				club_id = club_id,
 				syncs = cache.msgs,
