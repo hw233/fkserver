@@ -458,9 +458,21 @@ function on_cs_club_detail_info_req(msg,guid)
         return
     end
 
+    local role = club_role[club_id][guid] or enum.CRT_PLAYER
+    local templates = club_utils.get_visiable_club_templates(club,role)
+    
+    local team_template_ids = club_utils.get_team_template_ids(club_id,guid,role)
+    if table.nums(team_template_ids) == 0 then
+        team_template_ids = table.map(templates,function(template) return template.template_id,true end) --未设置全部添加
+    end 
+
+    templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
+    
+    log.dump(team_template_ids)
+
     local real_games =  club_utils.get_game_list(guid,club_id)
     local root = club_utils.root(club)
-    local tables = club_utils.get_club_tables(root)
+    local tables = club_utils.get_club_tables(root,team_template_ids)
 
     local online_count = reddb:get(string.format("club:member:online:count:%d",club_id)) or 0
     local total_count = reddb:get(string.format("club:member:count:%d",club_id)) or 0
@@ -481,9 +493,6 @@ function on_cs_club_detail_info_req(msg,guid)
         status_in_club = recusive_parent_status(club),
     }
 
-    local role = club_role[club_id][guid] or enum.CRT_PLAYER
-
-    local templates = club_utils.get_visiable_club_templates(club,role)
     local money_id = club_money_type[club_id]
     local boss = base_players[club.owner]
     local myself = base_players[guid]
@@ -527,29 +536,6 @@ function on_cs_club_detail_info_req(msg,guid)
  
     local keygames = table.map(real_games,function(g) return g,true end)
     templates = table.select(templates,function(t) return keygames[t.game_id] end)
-    
-    local team_template_ids ={}
-    if role == enum.CRT_PARTNER then
-        team_template_ids = club_team_template[club_id][guid]
-        if table.nums(team_template_ids) == 0 then
-            team_template_ids = table.map(templates,function(template) return template.template_id,true end)
-        end 
-    elseif role == enum.CRT_PLAYER then
-        local partner_id = club_member_partner[club_id][guid]
-        local partner_role = club_role[club_id][partner_id] or enum.CRT_PLAYER
-        if partner_role == enum.CRT_PARTNER or  partner_role == enum.CRT_BOSS then
-            team_template_ids = club_team_template[club_id][partner_id]
-            if table.nums(team_template_ids) == 0 then
-                team_template_ids = table.map(templates,function(template) return template.template_id,true end)
-            end 
-        end 
-    end  
-    if table.nums(team_template_ids) ~= 0 then  
-        templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
-        tables = table.select(tables,function(t) return team_template_ids[t.template_id] end)   --处理游戏
-    end 
-    log.dump(team_template_ids)
-
     local closed_team_id = club:closed_team_id(guid) 
     local club_info = {
         root = root.id,

@@ -28,6 +28,7 @@ local club_team_money = require "game.club.club_team_money"
 local club_partner = require "game.club.club_partner"
 local club_partner_conf = require "game.club.club_partner_conf"
 local club_partner_commission_conf = require "game.club.club_partner_commission_conf"
+local club_team_template = require "game.club.club_team_template"
 
 local table = table
 local string = string
@@ -109,7 +110,7 @@ function utils.get_visiable_club_templates(club,getter_role)
     end)
 end
 
-function utils.get_club_tables(club)
+function utils.get_club_tables(club,team_template_ids)
     if not club then return {} end
 
     local table_ids = club_table[club.id] or {}
@@ -121,6 +122,7 @@ function utils.get_club_tables(club)
             if not tb then break end
             local room_id = tb.room_id
             if not room_id then break end
+            if #team_template_ids ~= 0 and not team_template_ids[tb.template] then break end
             room_table[room_id] = room_table[room_id] or {}
             table.insert(room_table[room_id],tid)
         until true
@@ -566,6 +568,21 @@ function utils.team_commission(conf,commission,percentage)
 	else
 		return utils.fixed_commission(conf,commission) or 0
 	end
+end
+
+function utils.get_team_template_ids(club_id,guid,role)
+    local team_template_ids ={}
+    
+    if role == enum.CRT_PARTNER then
+        team_template_ids = club_team_template[club_id][guid]
+    elseif role == enum.CRT_PLAYER then
+        local partner_id = club_member_partner[club_id][guid]
+        local partner_role = club_role[club_id][partner_id] or enum.CRT_PLAYER
+        if partner_role == enum.CRT_PARTNER or  partner_role == enum.CRT_BOSS then
+            team_template_ids = club_team_template[club_id][partner_id]
+        end 
+    end  
+    return team_template_ids
 end
 
 return utils
