@@ -209,8 +209,16 @@ function on_cs_club_import_player_from_team(msg,guid)
         return
     end
 
-    local teamconf = club_partner_conf[from_id][team_id]
-    if teamconf.status ~= 0 and not from:is_close() then
+    local from_teamconf = club_partner_conf[from_id][team_id]
+    if from_teamconf.status ~= 0 and not from:is_close() then
+        onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
+            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED
+        })
+        return
+    end
+
+    local to_teamconf = club_partner_conf[to_id][team_id]
+    if to_teamconf.status ~= 0 and not to:is_close() then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
             result = enum.ERROR_CLUB_TEAM_NOT_CLOSED
         })
