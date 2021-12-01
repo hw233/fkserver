@@ -5,10 +5,10 @@ require "functions"
 local reddb = redisopt.default
 
 local club_partner_member = setmetatable({},{
-    __index = function(_,club_id)
-        return setmetatable({club_id = club_id},{
+    __index = function(tc,club_id)
+        local m = setmetatable({},{
             __index = function(t,guid)
-                local partner_ids = reddb:smembers(string.format("club:partner:member:%s:%s",t.club_id,guid))
+                local partner_ids = reddb:smembers(string.format("club:partner:member:%s:%s",club_id,guid))
                 if not partner_ids or table.nums(partner_ids) == 0 then
                     return {}
                 end
@@ -16,6 +16,10 @@ local club_partner_member = setmetatable({},{
                 return partner_ids
             end
         })
+
+        tc[club_id] = m
+        
+        return m 
     end
 })
 
