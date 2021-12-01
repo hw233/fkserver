@@ -199,53 +199,102 @@ function utils.import_team_branch_member(from,to,team_id)
         return enum.GAME_SERVER_RESULT_IN_GAME
     end
 
-    local function recursive_batch_import(team)
-        local failed_team,failed_member = 0,0
+    local function take_snapshot(team,snapshot)
+        snapshot.role = enum.CRT_PARTNER
+        snapshot.member = snapshot.member or {}
+        snapshot.guid = team
+
+        local member = snapshot.member
+
         for guid in pairs(club_partner_member[fid][team] or {}) do
             local role = club_role[fid][guid]
-            if not club_member[tid][guid] then
-                if role == enum.CRT_PARTNER then
-                    from:exchange_team_commission(guid,-1)
-                end
-
-                local money = player_money[guid][money_id_from] or 0
-                to:full_join(guid,team_id,team)
-
-                if money ~= 0 then
-                    transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
-                end
-
-                if role == enum.CRT_PARTNER then
-                    club_partner:create(tid,guid,team)
-                    local fteam,fmember = recursive_batch_import(guid)
-                    failed_team = failed_team + fteam
-                    failed_member = failed_member + fmember
-                    local team_money = player_money[guid][money_id_from]
-                    if team_money ~= 0 then
-                        transfer_money(from,guid,team,team_money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
-                    end
-                else
-                    if money ~= 0 then
-                        transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
-                    end
-                    from:full_exit(guid,team)
-                end
+            if role == enum.CRT_PARTNER then
+                member[guid] = member[guid] or {}
+                take_snapshot(guid,member[guid])
             else
-                if role == enum.CRT_PARTNER then
-                    failed_team = failed_team + 1
-                else
-                    failed_member = failed_member + 1
-                end
+                member[guid] = {money = player_money[guid][money_id_from] or 0}
             end
         end
 
-        return failed_team,failed_member
+        from:exchange_team_commission(team,-1)
+        snapshot.money = player_money[team][money_id_from] or 0
     end
 
-    local failed_team,faield_member = recursive_batch_import(team_id)
-    log.dump(failed_team)
-    log.dump(faield_member)
-    return enum.ERROR_NONE,failed_team,faield_member
+    local function snapshot_decr_money(snapshot)
+        local team = snapshot.guid
+        for guid,c in pairs(snapshot.member or {}) do
+            if c.role == enum.CRT_PARTNER then
+                snapshot_decr_money(c)
+                local money = player_money[guid][money_id_from]
+                if money ~= 0 then
+                    transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+                end
+            else
+                if not club_member[tid][guid] then
+                    local money = c.money
+                    if money and money ~= 0 then
+                        transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+                    end
+                end
+            end
+        end
+    end
+
+    local function snapshot_exit(snapshot)
+        local team = snapshot.guid
+        for guid,c in pairs(snapshot.member or {}) do
+            if c.role == enum.CRT_PARTNER then
+                snapshot_exit(c)
+                if not club_member[fid] or club_team_money[fid][guid] == 0 then
+                    from:full_exit(guid,team)
+                end
+            else
+                from:full_exit(guid,team)
+            end
+        end
+    end
+
+    local function snapshot_join(snapshot)
+        local team = snapshot.guid
+        for guid,c in pairs(snapshot.member or {}) do
+            if not club_member[tid][guid] then
+                to:full_join(guid,team_id,team)
+            end
+
+            if c.role == enum.CRT_PARTNER then
+                club_partner:create(tid,guid,team)
+                snapshot_join(c)
+            end
+        end
+    end
+
+    local function snapshot_incr_money(snapshot)
+        for guid,c in pairs(snapshot.member or {}) do
+            if club_member[tid][guid] then
+                local money = c.money
+                if money and money ~= 0 then
+                    transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
+                end
+            end
+        end
+    end
+
+    local team_snapshot = {}
+    take_snapshot(team_id,team_snapshot)
+    snapshot_decr_money(team_snapshot)
+    
+    snapshot_exit(team_snapshot)
+    club_member[fid] = nil
+    club_member_partner[fid] = nil
+    club_partner_member[fid] = nil
+
+    snapshot_join(team_snapshot)
+    club_member[tid] = nil
+    club_member_partner[tid] = nil
+    club_partner_member[tid] = nil
+
+    snapshot_incr_money(team_snapshot)
+    return enum.ERROR_NONE
 end
 
 function utils.is_recursive_in_club(club,guid)
@@ -283,8 +332,6 @@ function utils.rand_union_club_id()
             return id
         end
     end
-
-    return
 end
 
 function utils.rand_group_club_id()
@@ -299,8 +346,6 @@ function utils.rand_group_club_id()
             return id
         end
     end
-
-    return
 end
 
 local function member_money_sum(c,money_id)
