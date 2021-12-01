@@ -98,7 +98,7 @@ function club_partner:join(guid)
             reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,1)
             partner = club_member_partner[self.club_id][partner]
         end
-
+        club_member_partner[self.club_id] = nil 
         return enum.ERROR_NONE
     end)
 end
@@ -122,7 +122,7 @@ function club_partner:exit(mem)
             reddb:hincrby(string.format("club:team_player_count:%s",self.club_id),partner,-1)
             partner = club_member_partner[self.club_id][partner]
         end
-        
+        club_member_partner[self.club_id] = nil
         return enum.ERROR_NONE
     end)
 end

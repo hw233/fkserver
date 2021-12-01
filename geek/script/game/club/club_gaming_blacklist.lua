@@ -30,7 +30,12 @@ local m = {}
 setmetatable(m,{
     __index = function(t,club_id)
         return gaming_blacklist[club_id]
-    end
+    end,
+    _newindex = function(t,club_id,value)
+        if value == nil then 
+            gaming_blacklist[club_id] = nil 
+        end 
+    end,
 })
 
 return m

@@ -34,6 +34,11 @@ local m = {}
 setmetatable(m,{
     __index = function(t,club_id)
         return table_template[club_id]
-    end
+    end,
+    _newindex = function(t,club_id,value)
+        if value == nil then 
+            table_template[club_id] = nil 
+        end 
+    end,
 })
 return m 

@@ -32,7 +32,12 @@ local m = {}
 setmetatable(m,{
     __index = function(t,guid)
         return player_club[guid]
-    end
+    end,
+    _newindex = function(t,guid,value)
+        if value == nil then 
+            player_club[guid] = nil 
+        end 
+    end,
 })
 
 return m

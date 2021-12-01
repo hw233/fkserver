@@ -423,7 +423,7 @@ function base_club:exit(guid)
             reddb:decr(string.format("club:member:online:count:%d",self.id))
         end
 
-        club_member[self.id][guid] = nil
+        club_member[self.id] = nil
         player_money[guid][money_id] = nil
         player_club[guid][self.type] = nil
         club_role[self.id][guid] = nil
