@@ -1593,7 +1593,7 @@ local function on_cs_club_team_block(msg,guid)
     reddb:hmset(string.format("club:partner:conf:%s:%s",club_id,team_id),{
         status = isblock and 0 or 1
     })
-
+    club_partner_conf[club_id] = nil
     onlineguid.send(guid,"S2C_CLUB_OP_RES",{
         result = enum.ERROR_NONE,
         op = op,
@@ -3405,7 +3405,7 @@ function on_cs_change_team_template(msg,guid)
 
     reddb:del(string.format("club:team:template:%s:%s",club_id,guid))
     reddb:sadd(string.format("club:team:template:%s:%s",club_id,guid),table.unpack(team_template_ids))
-
+    club_team_template[club_id] = nil 
     local info = {
         result = enum.ERROR_NONE,
         team_template_ids = team_template_ids

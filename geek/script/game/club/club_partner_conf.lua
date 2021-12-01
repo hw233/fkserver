@@ -1,9 +1,9 @@
 local redisopt = require "redisopt"
+local wrap = require "fast_cache_wrap"
+
 local reddb  = redisopt.default
 
-local club_partner_conf = {}
-
-local function metafn(t,club_id)
+return wrap(function (t,club_id)
     local m = setmetatable({},{
         __index = function(c,partner_id)
             local conf = setmetatable({},{
@@ -27,33 +27,4 @@ local function metafn(t,club_id)
 
     t[club_id] = m
     return m
-end
-
-setmetatable(club_partner_conf,{
-    __index = metafn,
-})
-
-local timer_task = require "timer_task"
-
-local function guard()
-    club_partner_conf = setmetatable({},{
-        __index = metafn,
-    })
-end 
-
-timer_task.exec(3,guard)
-
-local m = {}
-
-setmetatable(m,{
-    __index = function(t,club_id)
-        return club_partner_conf[club_id]
-    end,
-    _newindex = function(t,club_id,value)
-        if value == nil then 
-            club_partner_conf[club_id] = nil 
-        end 
-    end,
-})
-
-return m
+end, 3)

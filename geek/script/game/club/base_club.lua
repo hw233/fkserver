@@ -802,7 +802,7 @@ function base_club:create_table_template(game_id,desc,rule)
 
     reddb:hmset(string.format("template:%d",id),info)
     reddb:sadd(string.format("club:template:%d",self.id),id)
-
+    table_template[id] = nil 
     club_template_conf[self.id][id] = nil
     club_template[self.id] = nil
     local _ = table_template[id]

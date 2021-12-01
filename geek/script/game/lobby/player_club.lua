@@ -1,7 +1,9 @@
 local redisopt = require "redisopt"
+local wrap = require "fast_cache_wrap"
+
 local reddb = redisopt.default
 
-local meta_func = function(t,guid)
+return wrap(function(t,guid)
     local tps = setmetatable({},{
         __index = function(tb,tp)
             local clubs = reddb:smembers(string.format("player:club:%d:%d",guid,tp))
@@ -11,33 +13,4 @@ local meta_func = function(t,guid)
     })
     t[guid] = tps
     return tps
-end
-
-local player_club = setmetatable({},{
-    __index = meta_func,
-})
-
-local timer_task = require "timer_task"
-
-local function guard()
-    player_club = setmetatable({},{
-        __index = meta_func,
-    })
-end 
-
-timer_task.exec(3,guard)
-
-local m = {}
-
-setmetatable(m,{
-    __index = function(t,guid)
-        return player_club[guid]
-    end,
-    _newindex = function(t,guid,value)
-        if value == nil then 
-            player_club[guid] = nil 
-        end 
-    end,
-})
-
-return m
+end, 3)

@@ -1,43 +1,14 @@
 local redisopt = require "redisopt"
-
+local wrap = require "fast_cache_wrap"
 require "functions"
 
 local reddb = redisopt.default
 
-local function metafn(t,club_id)
+return wrap(function (t,club_id)
     local partner_ids = reddb:hgetall(string.format("club:member:partner:%s",club_id))
     if not partner_ids or table.nums(partner_ids) == 0 then
         partner_ids =  {}
     end
     t[club_id] = partner_ids
     return partner_ids
-end
-
-local club_member_partner = setmetatable({},{
-    __index = metafn
-})
-
-local timer_task = require "timer_task"
-
-local function guard()
-    club_member_partner = setmetatable({},{
-        __index = metafn,
-    })
-end 
-
-timer_task.exec(3,guard)
-
-local m = {}
-
-setmetatable(m,{
-    __index = function(t,club_id)
-        return club_member_partner[club_id]
-    end,
-    _newindex = function(t,club_id,value)
-        if value == nil then 
-            club_member_partner[club_id] = nil 
-        end 
-    end,
-})
-
-return m
+end, 3)
