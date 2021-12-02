@@ -109,8 +109,8 @@ function on_ls_login_notify(guid,reconnect,gate)
 			end
 			return enum.ERROR_NONE
 		end
-
-		if g_common.is_in_maintain() and (player.vip and player.vip ~= 0) then
+		
+		if g_common.is_in_maintain() and (not player.vip or  player.vip == 0) then
 			return enum.LOGIN_RESULT_MAINTAIN
 		end
 
