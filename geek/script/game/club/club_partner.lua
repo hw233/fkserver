@@ -74,7 +74,8 @@ function club_partner:create(club_id,guid,parent)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
         reddb:zincrby(string.format("club:partner:zmember:%s:%s",club_id,parent),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
 
-        club_member_partner[self.club_id] = nil 
+        club_member_partner[club_id] = nil 
+        club_role[club_id] = nil 
 
         setmetatable(cp,{__index = club_partner})
 
@@ -101,6 +102,7 @@ function club_partner:join(guid)
             partner = club_member_partner[self.club_id][partner]
         end
         club_member_partner[self.club_id] = nil 
+        club_partner_member[self.club_id] = nil
         return enum.ERROR_NONE
     end)
 end
@@ -125,6 +127,7 @@ function club_partner:exit(mem)
             partner = club_member_partner[self.club_id][partner]
         end
         club_member_partner[self.club_id] = nil
+        club_partner_member[self.club_id] = nil
         return enum.ERROR_NONE
     end)
 end
@@ -153,6 +156,8 @@ function club_partner:dismiss()
         reddb:hdel(string.format("club:team_money:%s",self.club_id),self.guid)
 
         club_member_partner[self.club_id] = nil
+        club_partner_member[self.club_id] = nil
+        club_role[self.club_id] = nil 
         return enum.ERROR_NONE
     end)
 end
