@@ -254,17 +254,20 @@ local function get_node(id)
     return n
 end
 
+local function wakeup_queue(q)
+    local co
+    while true do
+        co = tremove(q,1)
+        if not co then break end
+        skynet.wakeup(co)
+    end
+end
+
 local function wakeup()
-    for id,w in pairs(waiting) do
+    for id,q in pairs(waiting) do
         local n = matcher[id]
         if n then
-            local co
-            repeat
-                co = tremove(w,1)
-                if co then
-                    skynet.wakeup(co)
-                end
-            until not co
+            wakeup_queue(q)
             waiting[id] = nil
         end
     end
@@ -371,6 +374,33 @@ local function sub_one(service,handle)
     end
 end
 
+function CMD.load_service(_,clusters)
+    for name in pairs(clusters) do
+        if name ~= selfprovider.name then 
+            local ok,services = pcall(cluster.call,name,"@channel","lua","reqeust_service")
+            if ok then
+                sub_many(services)
+                wakeup()
+            end
+        end
+    end
+end 
+
+function CMD.reqeust_service()
+    local localservices = {}
+    local localprovider = {
+        provider = selfprovider.name,
+        addr = selfprovider.addr,
+    }
+    for sid,c in pairs(address) do
+        if not c.global then
+            localservices[sid] = localprovider
+        end
+    end
+
+    return localservices
+end
+
 function CMD.exchange(_,service,handle,from)
     if type(service) == "table" then
         sub_many(service)
@@ -378,6 +408,8 @@ function CMD.exchange(_,service,handle,from)
     else
         sub_one(service,handle)
     end
+
+    wakeup()
 
     local localservices = {}
     local localprovider = {
@@ -416,7 +448,7 @@ function CMD.subscribe(_,service,handle,remote)
 
         sub_one(service,handle)
     end
-
+    
     wakeup()
 end
 

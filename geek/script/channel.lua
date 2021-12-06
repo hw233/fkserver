@@ -71,6 +71,10 @@ function channel.term()
     return skynet.call(channeld,"lua","term")
 end
 
+function channel.load_service(clusters)
+    return skynet.call(channeld,"lua","load_service",clusters)
+end
+
 skynet.init(function()
     channeld = skynet.uniqueservice("service.channeld")
 end)

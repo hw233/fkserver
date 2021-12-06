@@ -41,10 +41,11 @@ local function checkgameconf(conf)
 end
 
 local function init_server_online_count()
+	reddb:sadd("game:all",def_first_game_type)
+	reddb:sadd(string.format("game:level:%d",def_first_game_type),def_second_game_type)
 	reddb:zadd(string.format("player:online:count:%d",def_first_game_type),0,def_game_id)
 	reddb:zadd(string.format("player:online:count:%d:%d",def_first_game_type,def_second_game_type),0,def_game_id)
 end
-
 
 local CMD = {}
 
@@ -108,6 +109,7 @@ function CMD.reloadconf()
 end
 
 skynet.start(function()
+	channel.call("init.?","lua","initd") --保证初始化服 启动完在启动游戏服
 	skynet.dispatch("lua",function(_,_,cmd,...) 
         local f = CMD[cmd]
         if not f then

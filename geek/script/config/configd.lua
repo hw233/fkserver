@@ -263,40 +263,12 @@ function CMD.cleancache()
     clean_cache()
 end
 
-local function clean_when_start()
-    local reddb = redisopt.default
-    local onlineguids = reddb:smembers("player:online:all")
-    for guid,_ in pairs(onlineguids) do
-        reddb:del(string.format("player:online:guid:%s",guid))
-        reddb:del(string.format("player:table:%s",guid))
-        reddb:srem("player:online:all",guid)
-    end
-
-    reddb:del("player:online:all")
-    reddb:set("player:online:count",0)
-
-    local tables = reddb:smembers("table:all")
-    for id,_ in pairs(tables) do
-        reddb:del(string.format("table:info:%s",id))
-        reddb:del(string.format("table:player:%s",id))
-        reddb:srem("table:all",id)
-    end
-
-    local clubs = reddb:smembers("club:all")
-    for cid,_ in pairs(clubs) do
-        reddb:del(string.format("club:table:%s",cid))
-        reddb:del(string.format("club:member:online:guid:%s",cid))
-        reddb:del(string.format("club:member:online:count:%s",cid))
-    end
-end
-
 local function setup_default_redis_value()
     local reddb = redisopt.default
     local global_conf = globalconf
     local first_guid = global_conf.first_guid or 100001
     reddb:setnx("player:global:guid",math.floor(first_guid))
 end
-
 
 skynet.start(function()
     skynet.dispatch("lua",function(_,_,cmd,...)
@@ -324,11 +296,6 @@ skynet.start(function()
     dbopt.open(bootconf.service.conf.db)
 
     load_global()
-
-    timer.timeout(0,function()
-        clean_when_start()
-        -- setup_default_redis_value()
-    end)
 
     local function clean()
         clean_cache()

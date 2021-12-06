@@ -15,6 +15,7 @@ local nameservice = {
     TNBROKER = "broker",
     TNQUEUE = "queue",
     TNMUTEX = "mutex",
+    TNINIT = "init",
     TIDDB = 1,
     TIDCONFIG = 2,
     TIDLOGIN = 3,
@@ -25,6 +26,7 @@ local nameservice = {
     TIBROKER = 8,
     TIQUEUE = 12,
     TIMUTEX = 13,
+    TIINIT = 15,
 }
 
 function nameservice.unique(id,name,...)

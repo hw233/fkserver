@@ -21,6 +21,7 @@ local servicepath = {
     [nameservice.TIBROKER] = "broker.main",
     [nameservice.TIQUEUE] = "queue.main",
     [nameservice.TIMUTEX] = "mutex.main",
+    [nameservice.TNINIT] = "init.main",
 
     [nameservice.TNDB] = "db.main",
     [nameservice.TNCONFIG] = "config.main",
@@ -32,6 +33,7 @@ local servicepath = {
     [nameservice.TNBROKER] = "broker.main",
     [nameservice.TNQUEUE] = "queue.main",
     [nameservice.TNMUTEX] = "mutex.main",
+    [nameservice.TIINIT] = "init.main",
 }
 
 local function cluster_name(conf)
@@ -106,6 +108,7 @@ local function setupcluster(clusterconfs)
             channel.localprovider({
                 name = name,
                 addr = hostaddr,
+                id = c.id,
             })
 
             return name,hostaddr
@@ -162,10 +165,7 @@ local function setupbootcluster()
     end
 
     local sid,handle = launchservice(bootconf.service)
-    channel.subscribe({
-        [sid] = handle,
-    })
-    return
+    channel.subscribe(sid,handle)
 end
 
 local function cluster_services(serviceconfs,c_conf)
@@ -185,29 +185,61 @@ local function cluster_services(serviceconfs,c_conf)
     return services
 end
 
+local function setupintiservice(serviceconfs)
+    local ss = channel.list()
+    if ss and table.nums(ss) ~= 0 and table.Or(ss,function (_,name)
+        return string.match(name,"init.%d") and true or false
+    end) then
+        return
+    end
+    local id,handle,conf
+    for _,s in pairs(serviceconfs) do
+        if s.type == nameservice.TIINIT and s.name ==  nameservice.TNINIT  and 
+            s.is_launch ~= 0 and s.cluster == clusterid 
+        then
+            id,handle = launchservice(s)
+            assert(id)
+            assert(handle)
+            conf = s
+            break
+        end
+    end
+
+    channel.subscribe(id,handle)
+    return id,conf
+end 
 local function setup()
     setupbootcluster()
     checkbootconf()
-    
-    local serviceconfs = channel.call(bootconf.service.name..".?","msg","query_service_conf")
-    local localservices = setupservice(serviceconfs)
 
-    local clusterconfs = channel.call("config.?","msg","query_cluster_conf")
-    clusterconfs = table.map(clusterconfs,function(conf) return conf.id,conf end)
+    local clusterconfs = table.map(
+        channel.call("config.?","msg","query_cluster_conf"),
+        function(c)  return c.id,c end
+    )
     local localname,localaddr = setupcluster(clusterconfs)
-
-    localservices = table.map(localservices,function(_,sid)
-        return sid,{
-            provider = localname,
-            addr = localaddr,
-        }
-    end)
-
     local clusters = table.map(clusterconfs,function(c) 
         return cluster_name(c),cluster_hostaddr(c)
     end)
-
     cluster.reload(clusters)
+    channel.load_service(clusters)
+
+    local serviceconfs = table.map(
+        channel.call(bootconf.service.name..".?","msg","query_service_conf"),
+        function(c) return c.id,c end
+    )
+
+    local init_sid,init_conf  = setupintiservice(serviceconfs)
+    if init_conf then serviceconfs[init_conf.id] = nil end
+    local localservices = setupservice(serviceconfs)
+    local localprovider = {provider = localname, addr = localaddr,}
+    localservices = table.map(localservices,function(_,sid)
+        return sid,localprovider
+    end)
+
+    if init_sid then
+        localservices[init_sid] = localprovider
+        localservices['service.'..init_conf.id] = localprovider
+    end
 
     for _,conf in pairs(clusterconfs) do
         if conf.is_launch ~= 0 and not is_selfcluster(conf.id) then
@@ -226,9 +258,9 @@ skynet.start(function()
 
     setup()
 
-    if debug == nil or debug == "debug" then
-        skynet.newservice("debug_console", 8008)
-    end
+    -- if debug == nil or debug == "debug" then
+    --     skynet.newservice("debug_console", 8008)
+    -- end
 
     skynet.exit()
 end)
