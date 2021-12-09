@@ -119,6 +119,14 @@ tree.club.block.player.group["%d+"]["%d+"]["%d+"] = "number"
 tree.club.block.group.player["%d+"]["%d+"] = "set"
 tree.club.block.group.player["%d+"]["%d+"]["%d+"] = "number"
 
+tree.club.block.tgroup.id = "number"
+tree.club.block.team.group.all["%d+"] = "set"
+tree.club.block.team.group.all["%d+"]["%d+"] = "number"
+tree.club.block.team.group["%d+"]["%d+"] = "set"
+tree.club.block.team.group["%d+"]["%d+"]["%d+"] = "number"
+tree.club.block.group.team["%d+"]["%d+"] = "set"
+tree.club.block.group.team["%d+"]["%d+"]["%d+"] = "number"
+
 tree.club.blacklist.gaming["%d+"] = "set"
 tree.club.blacklist.gaming["%d+"]["%d+"] = "number"
 

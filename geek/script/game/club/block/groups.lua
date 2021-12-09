@@ -10,9 +10,6 @@ local groups = setmetatable({},{
         local gs = reddb:smembers(string.format("club:block:groups:%s",club_id))
         return gs
     end,
-    __newindex = function(_,club_id,group_id)
-        reddb:sadd(string.format("club:block:groups:%s",club_id),group_id)
-    end,
 })
 
 return groups

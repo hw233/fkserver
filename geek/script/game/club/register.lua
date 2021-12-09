@@ -71,6 +71,11 @@ local h = {
 
 	C2S_CLUB_EDIT_TEAM_PARTNER_CONFIG = on_cs_club_edit_team_partner_config,
 
+	C2S_CLUB_BLOCK_TEAM_PULL_GROUPS = on_cs_pull_block_team_groups,
+	C2S_CLUB_BLOCK_TEAM_NEW_GROUP = on_cs_new_block_team_group,
+	C2S_CLUB_BLOCK_TEAM_DEL_GROUP = on_cs_del_block_team_group,
+	C2S_CLUB_BLOCK_TEAM_ADD_TEAM_TO_GROUP = on_cs_add_team_to_block_team_group,
+	C2S_CLUB_BLOCK_TEAM_REMOVE_TEAM_FROM_GROUP = on_cs_remove_team_from_block_team_group,
 }
 
 local msgopt = require "msgopt"

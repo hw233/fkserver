@@ -38,6 +38,9 @@ local bc = require "broadcast"
 local game_util = require "game.util"
 local queue = require "skynet.queue"
 local club_sync_cache = require "game.club.club_sync_cache"
+local club_block_team_group_all = require "game.club.block.team_group_all"
+local club_block_group_teams = require "game.club.block.group_teams"
+local club_block_team_groups = require "game.club.block.team_groups"
 
 local reddb = redisopt.default
 
@@ -169,6 +172,15 @@ function base_club:dismiss()
         end
         reddb:del(string.format("club:block:groups:%d",self.id))
 
+        for group_id,_ in pairs(club_block_team_group_all[self.id]) do
+            for team,_ in pairs(club_block_group_teams[self.id][group_id]) do
+                reddb:del(string.format("club:block:team:group:%s:%s",self.id,team))
+            end
+            reddb:del(string.format("club:block:group:team:%s:%s",self.id,group_id))
+        end
+        reddb:del(string.format("club:block:team:group:all:%d",self.id))
+        
+        
         for req_id,_ in pairs(club_request[self.id]) do
             reddb:del(string.format("request:%s",req_id))
             reddb:srem("request:all",req_id)
@@ -226,6 +238,14 @@ function base_club:del()
         end
         reddb:del(string.format("club:block:groups:%d",self.id))
 
+        for group_id,_ in pairs(club_block_team_group_all[self.id]) do
+            for team,_ in pairs(club_block_group_teams[self.id][group_id]) do
+                reddb:del(string.format("club:block:team:group:%s:%s",self.id,team))
+            end
+            reddb:del(string.format("club:block:group:team:%s:%s",self.id,group_id))
+        end
+        reddb:del(string.format("club:block:team:group:all:%d",self.id))
+        
         for req_id,_ in pairs(club_request[self.id]) do
             reddb:del(string.format("request:%s",req_id))
             reddb:srem("request:all",req_id)
@@ -645,10 +665,77 @@ function base_club:is_block_in_block_group(tb,player)
     end)
 end
 
+function base_club:block_team_branch(guid)
+    local block_teams = {}
+    local team_id = guid
+    local role = club_role[self.id][team_id]
+    if role == enum.CRT_PARTNER then
+        block_teams[team_id] = club_block_team_groups[self.id][team_id]
+    end
+    while true do
+        local partner = club_member_partner[self.id][team_id]
+        if not partner or partner == 0 then
+            break
+        end
+        role = club_role[self.id][partner]
+        if role == enum.CRT_BOSS then
+            break
+        end
+        team_id = partner
+        block_teams[team_id] = club_block_team_groups[self.id][team_id]
+    end
+    return block_teams
+end
+
+function base_club:is_block_in_block_team_group(tb,player)
+    local dteams = self:block_team_branch(player.guid)
+    local dgroup_teams = {}
+    for team_id,groups in pairs(dteams) do
+        for g in pairs(groups) do
+            dgroup_teams[g] = dgroup_teams[g] or {}
+            dgroup_teams[g][team_id] = true
+        end
+    end
+
+    local players_teams = table.series(tb.players,function(p) 
+        return self:block_team_branch(p.guid)
+    end)
+
+    local sgroup_teams = {}
+    for _, players_team in pairs(players_teams) do
+        for team_id,groups in pairs(players_team) do
+            for g in pairs(groups) do
+                sgroup_teams[g] = sgroup_teams[g] or {}
+                sgroup_teams[g][team_id] = true
+            end
+        end
+    end
+    
+    return table.Or(dgroup_teams,function(teams,g) 
+        if not sgroup_teams[g] then return false end 
+        
+        if table.nums(sgroup_teams[g]) == 1  and table.Or(sgroup_teams[g],function(_,guid)
+            return teams[guid]
+        end) then return false  end
+
+        return true
+        end)
+    
+
+    -- return table.Or(players_teams,function(teams)
+    --     return table.Or(teams,function(groups,team_id)
+    --         return table.Or(groups,function(_,g)
+    --             return table.Or(dteams,function(dgroups,dteam_id)
+    --                 return dgroups[g] and team_id ~= dteam_id
+    --             end)
+    --         end)
+    --     end)
+    -- end)
+end
+
 function base_club:team_parents_within_layer(player,layer)
     local pids = {}
     local pid = player.guid
-    local role = club_role[self.id][pid]
     if club_role[self.id][pid] == enum.CRT_PARTNER then
         table.insert(pids,pid)
     end
@@ -721,7 +808,7 @@ function base_club:is_block()
 end
 
 function base_club:is_block_gaming_with_others(tb,player)
-    if self:is_block_in_block_group(tb,player) then
+    if self:is_block_in_block_group(tb,player) or self:is_block_in_block_team_group(tb,player) then
         return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
     end
 
