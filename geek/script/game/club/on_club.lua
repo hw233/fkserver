@@ -182,7 +182,8 @@ function on_cs_club_import_player_from_team(msg,guid)
 
     if team_id ~= guid then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-            result = enum.ERROR_PLAYER_NO_RIGHT
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            error_info  = json.encode({err = "没有权限!"})
         })
         return
     end
@@ -191,7 +192,8 @@ function on_cs_club_import_player_from_team(msg,guid)
     local to = base_clubs[to_id]
     if not from or not to then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-            result = enum.ERROR_CLUB_NOT_FOUND
+            result = enum.ERROR_CLUB_NOT_FOUND,
+            error_info  = json.encode({err = "没有此联盟!"})
         })
         return
     end
@@ -204,7 +206,8 @@ function on_cs_club_import_player_from_team(msg,guid)
     local role_to = club_role[to_id][team_id]
     if  not authroles[role_from] or not authroles[role_to] then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-            result = enum.ERROR_PLAYER_NO_RIGHT
+            result = enum.ERROR_PLAYER_NO_RIGHT,
+            error_info  = json.encode({err = "没有权限!"})
         })
         return
     end
@@ -212,7 +215,8 @@ function on_cs_club_import_player_from_team(msg,guid)
     local from_teamconf = club_partner_conf[from_id][team_id]
     if from_teamconf.status ~= 0 and not from:is_close() then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED
+            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED,
+            error_info  = json.encode({err = "源联盟没打烊!"})
         })
         return
     end
@@ -220,14 +224,21 @@ function on_cs_club_import_player_from_team(msg,guid)
     local to_teamconf = club_partner_conf[to_id][team_id]
     if to_teamconf.status ~= 0 and not to:is_close() then
         onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED
+            result = enum.ERROR_CLUB_TEAM_NOT_CLOSED,
+            error_info  = json.encode({err = "目标联盟没打烊!"})
         })
         return
     end
 
-    local result = club_utils.import_team_branch_member(from,to,team_id)
+    local result,error_info = club_utils.import_team_branch_member(from,to,team_id)
+    if error_info.failed_info then
+        error_info.failed_info =  table.series(error_info.failed_info,function (s,g)
+            return {guid = g,status = s,name = base_players[g].nickname}
+        end)
+    end
     onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
-        result = result
+        result = result,
+        error_info  = json.encode(error_info),
     })
 end
 

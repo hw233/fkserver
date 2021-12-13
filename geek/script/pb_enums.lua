@@ -311,6 +311,11 @@ local enums = {
 
     AC_UPGRADE = pb.enum("ALTER_CODE","AC_UPGRADE"),
     AC_NEW_VERSION = pb.enum("ALTER_CODE","AC_NEW_VERSION"),
+
+    IEC_IN_GAME = pb.enum("IMPORT_ERROR_CODE","IEC_IN_GAME"),
+    IEC_IN_CLUB = pb.enum("IMPORT_ERROR_CODE","IEC_IN_CLUB"),
+    IEC_ROLE = pb.enum("IMPORT_ERROR_CODE","IEC_ROLE"),
+    IEC_PARTNER = pb.enum("IMPORT_ERROR_CODE","IEC_PARTNER"),
 }
 
 return enums

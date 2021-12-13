@@ -631,6 +631,7 @@ message CS_CLUB_IMPORT_PLAYER_FROM_TEAM{
 message SC_CLUB_IMPORT_PLAYER_FROM_TEAM{
     enum MsgID {NIL = 0;ID = 14127;}
     int32 result = 1;
+    string error_info = 2;
 }
 
 message CS_TEAM_STATUS_INFO{

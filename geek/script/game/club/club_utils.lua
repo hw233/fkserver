@@ -144,13 +144,11 @@ local function team_branch_member(c,team_id)
     local cid = c.id
     local guids = {}
     for guid,_ in pairs(club_partner_member[cid][team_id] or {}) do
+        tinsert(guids,guid)
         if club_role[cid][guid] == enum.CRT_PARTNER then
             guids = table.union(guids,team_branch_member(c,guid))
-        else
-            tinsert(guids,guid)
         end
     end
-
     return guids
 end
 
@@ -181,6 +179,7 @@ function utils.import_union_player_from_group(from,to)
 end
 
 function utils.import_team_branch_member(from,to,team_id)
+    local failed_info = {}
     local fid = from.id
     local tid = to.id
     local money_id_from = club_money_type[fid]
@@ -188,15 +187,35 @@ function utils.import_team_branch_member(from,to,team_id)
     local money_from = club_team_money[fid][team_id] or 0
     local money_to = player_money[team_id][money_id_to] or 0
     if money_to < money_from then
-        return enum.ERROR_LESS_GOLD
+        return enum.ERROR_LESS_GOLD,{err = "所在目标联盟金币不足!"}
     end
 
-    local team_member = team_branch_member(from,team_id)
-    if table.Or(team_member,function(guid)
-        local og = onlineguid[guid]
-        return og and og.table
-    end) then
-        return enum.GAME_SERVER_RESULT_IN_GAME
+    local function in_game_count(members)
+        local c = 0
+        local failed = {}
+
+        table.foreach(members,function (_,guid)
+            local og = onlineguid[guid]
+            if og and og.table then 
+                local tinfo = base_private_table[og.table]
+                if  tinfo and (tinfo.club_id == fid or tinfo.club_id == tid) then 
+                    failed[guid] = (failed[guid] or 0) | enum.IEC_IN_GAME
+                    c = c + 1
+                end 
+            end
+        end)
+
+        return c,failed
+    end
+
+    local from_members = table.map(team_branch_member(from,team_id),function(guid) return guid,true end)
+    local to_members = table.map(team_branch_member(to,team_id),function (guid) return guid,true end)
+    local both_members = table.merge(from_members,to_members,function(l,r) return l or r end)
+    local c,failed_info = in_game_count(both_members)
+    if c > 0 then
+        log.info("import_team_branch_member  from[%d] to[%d] team_id[%d] in_game_count[%d]",fid,tid,team_id,c) 
+        log.dump(failed_info,"failed_info")
+        return enum.GAME_SERVER_RESULT_IN_GAME, {err = "源/目标 联盟有玩家正在游戏中!",failed_info = failed_info}
     end
 
     local function take_snapshot(team,snapshot)
@@ -215,86 +234,123 @@ function utils.import_team_branch_member(from,to,team_id)
                 member[guid] = {money = player_money[guid][money_id_from] or 0}
             end
         end
-
         from:exchange_team_commission(team,-1)
         snapshot.money = player_money[team][money_id_from] or 0
     end
 
-    local function snapshot_decr_money(snapshot)
-        local team = snapshot.guid
-        for guid,c in pairs(snapshot.member or {}) do
-            if c.role == enum.CRT_PARTNER then
-                snapshot_decr_money(c)
-                local money = player_money[guid][money_id_from]
-                if money ~= 0 then
-                    transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
-                end
-            else
-                if not club_member[tid][guid] then
-                    local money = c.money
-                    if money and money ~= 0 then
-                        transfer_money(from,guid,team,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
-                    end
-                end
-            end
-        end
-    end
-
-    local function snapshot_exit(snapshot)
-        local team = snapshot.guid
-        for guid,c in pairs(snapshot.member or {}) do
-            if c.role == enum.CRT_PARTNER then
-                snapshot_exit(c)
-                if not club_member[fid] or club_team_money[fid][guid] == 0 then
-                    from:full_exit(guid,team)
-                end
-            else
-                from:full_exit(guid,team)
-            end
-        end
-    end
-
-    local function snapshot_join(snapshot)
-        local team = snapshot.guid
-        for guid,c in pairs(snapshot.member or {}) do
-            if not club_member[tid][guid] then
-                to:full_join(guid,team_id,team)
-            end
-
-            if c.role == enum.CRT_PARTNER then
-                club_partner:create(tid,guid,team)
-                snapshot_join(c)
-            end
-        end
-    end
-
-    local function snapshot_incr_money(snapshot)
-        for guid,c in pairs(snapshot.member or {}) do
-            if club_member[tid][guid] then
-                local money = c.money
-                if money and money ~= 0 then
-                    transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
-                end
-            end
-        end
-    end
-
     local team_snapshot = {}
     take_snapshot(team_id,team_snapshot)
-    snapshot_decr_money(team_snapshot)
+
+    local to_club_members = club_member[tid]
+    local to_member_partner = club_member_partner[tid]
+    local to_club_role = club_role[tid][nil]
+    local to_money_id = club_money_type[tid]
+    local from_money_id = club_money_type[fid]
+    local function execute(snapshot)
+        local count = 0 
+        local failed = {}
+        local scount = 0 
+        local success = {}
+        local team = snapshot.guid
+        table.foreach(snapshot.member or {},function(c,guid) 
+            local money = c.money or 0
+            local frole = c.role
+            if frole == enum.CRT_PARTNER then
+                if not to_club_members[guid] then
+                    to:full_join(guid,team_id,team)
+                    club_partner:create(tid,guid,team)
+
+                    success[guid] = money
+                    scount = scount + 1
+
+                    if money ~= 0 then
+                        transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
+                    end
     
-    snapshot_exit(team_snapshot)
+                    local failed_count,team_failed,success_count,team_success = execute(c)
+                    count = count + failed_count
+                    table.mergeto(failed,team_failed,function(l,r) return (l or 0) | (r or 0) end)
+                    
+                    table.mergeto(success,team_success)
+                    scount = scount + success_count
+
+                    local fmoney = player_money[guid][from_money_id]
+                    if fmoney ~= 0 then
+                        transfer_money(from,guid,team_id,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+                    end
+                    if failed_count == 0 then
+                        from:full_exit(guid,team)
+                    end
+                else
+                    count = count + 1
+                    local trole = to_club_role[guid]
+                    if trole ~= frole then
+                        failed[guid] = (failed[guid] or 0) | enum.IEC_ROLE
+                        return
+                    end
+                    local tpartner = to_member_partner[guid]
+                    if tpartner ~= team then
+                        failed[guid] = (failed[guid] or 0) | enum.IEC_PARTNER
+                        return
+                    end
+
+                    local failed_count,team_failed,success_count,team_success = execute(c)
+                    count = count + failed_count
+                    table.mergeto(failed,team_failed,function(l,r) return (l or 0) | (r or 0) end)
+
+                    table.mergeto(success,team_success)
+                    scount = scount + success_count
+                end
+                return 
+            end
+
+            if to_club_members[guid] then
+                local trole = to_club_role[guid]
+                if trole ~= frole then
+                    failed[guid] = (failed[guid] or 0) | enum.IEC_ROLE | enum.IEC_IN_CLUB        
+                end
+
+                local tpartner = to_member_partner[guid]
+                if tpartner ~= team then
+                    failed[guid] = (failed[guid] or 0) | enum.IEC_PARTNER | enum.IEC_IN_CLUB
+                end
+                count = count + 1
+                return 
+            end
+            
+            success[guid] = money
+            scount = scount + 1
+
+            to:full_join(guid,team_id,team)
+            if money ~= 0 then
+                transfer_money(to,team_id,guid,money,enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB)
+            end
+
+            if money ~= 0 then
+                transfer_money(from,guid,team_id,money,enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB)
+            end
+
+            from:full_exit(guid,team)
+        end)
+        return count,failed,scount,success
+    end
+
+    local failed_count,failed_info,success_count,success_info = execute(team_snapshot)
+    log.info("import_team_branch_member from[%d] to[%d] team_id[%d] success_count[%d] failed_count[%d] ",fid,tid,team_id,success_count,failed_count) 
+    log.dump(success_info,"success_info")
+    log.dump(failed_info,"failed_info")
+  
+
     club_member[fid] = nil
     club_member_partner[fid] = nil
     club_partner_member[fid] = nil
-
-    snapshot_join(team_snapshot)
+    club_role[fid] = nil
     club_member[tid] = nil
     club_member_partner[tid] = nil
     club_partner_member[tid] = nil
+    club_role[tid] = nil
 
-    snapshot_incr_money(team_snapshot)
-    return enum.ERROR_NONE
+    return  enum.ERROR_NONE,{err = "执行完成!",failed_info = failed_info,}
 end
 
 function utils.is_recursive_in_club(club,guid)

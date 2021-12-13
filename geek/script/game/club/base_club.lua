@@ -1012,8 +1012,13 @@ end
 
 function base_club:incr_member_money(guid,delta_money,why,why_ext)
     local player = base_players[guid]
-    if not player or not club_member[self.id][guid] then
-        log.error("base_club:incr_member_money got nil player or not member,club:%s,guid:%s",self.id,guid)
+    if not player then
+        log.error("base_club:incr_member_money got nil player,club:%s,guid:%s",self.id,guid)
+        return
+    end
+
+    if not club_member[self.id][guid] then
+        log.error("base_club:incr_member_money not member,club:%s,guid:%s",self.id,guid)
         return
     end
 

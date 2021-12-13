@@ -216,3 +216,11 @@ enum EXT_ROUND_STATUS{
 	ERS_GAMING = 2;
 	ERS_END = 3;
 }
+
+enum IMPORT_ERROR_CODE{
+	IEC_NIL = 0;
+	IEC_IN_GAME = 0x1;
+	IEC_IN_CLUB = 0x2;
+    IEC_ROLE = 0x4;
+    IEC_PARTNER  = 0x8;
+}
