@@ -55,8 +55,8 @@ function CMD.start(conf)
 	local gameconf = sconf.conf
 	def_game_name = gameconf.gamename
 	def_game_id = sconf.id
-	def_first_game_type = gameconf.first_game_type
-	def_second_game_type = gameconf.second_game_type
+	def_first_game_type = math.floor(gameconf.first_game_type)
+	def_second_game_type = math.floor(gameconf.second_game_type)
 	global_conf = channel.call("config.?","msg","global_conf")
 
 	LOG_NAME = string.format("%s.%d.%d",def_game_name,def_first_game_type,def_game_id)

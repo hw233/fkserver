@@ -266,4 +266,11 @@ tree.runtime_conf.game_maintain_switch["%d+"] = "bool"
 tree.runtime_conf.global.maintain_switch = "bool"
 tree.club.team.template["%d+"]["%d+"] = "set"
 tree.club.team.template["%d+"]["%d+"]["%d+"] = "number"
+
+
+tree.game.all = "set"
+tree.game.all["%d+"] = "number"
+
+tree.game.level["%d+"] = "set"
+tree.game.level["%d+"]["%d+"] = "number"
 return tree
