@@ -16,8 +16,8 @@ local function init_games()
     for first in pairs(first_game_types) do
         local seconds = reddb:smembers(string.format("game:level:%d",first))
         for second in pairs(seconds) do
-            reddb:del(string.format("player_online:count:%d",first))
-            reddb:del(string.format("player_online:count:%d:%d",first,second))
+            reddb:del(string.format("player:online:count:%d",first))
+            reddb:del(string.format("player:online:count:%d:%d",first,second))
         end
         reddb:del(string.format("game:level:%d",first))
     end
