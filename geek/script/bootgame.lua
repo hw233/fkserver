@@ -258,9 +258,9 @@ skynet.start(function()
 
     setup()
 
-    -- if debug == nil or debug == "debug" then
-    --     skynet.newservice("debug_console", 8008)
-    -- end
+    if debug == nil or debug == "debug" then
+        skynet.newservice("debug_console", 8008)
+    end
 
     skynet.exit()
 end)
