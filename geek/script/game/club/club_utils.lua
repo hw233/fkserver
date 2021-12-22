@@ -419,11 +419,17 @@ function utils.deep_member_money_sum(c,money_id)
     end)
 end
 
+function utils.is_in_gaming(guid,club_id)
+    local og = onlineguid[guid]
+    if not og or not og.table then return end
+    local tinfo = base_private_table[og.table]
+    return tinfo and (not club_id or tinfo.club_id == club_id)
+end
+
 local function is_member_in_gaming(c)
     if not c then return false end
-    return table.Or(club_member[c.id] or {},function(_,mid)
-        local os = onlineguid[mid]
-        return os and os.table
+    return table.Or(club_member[c.id] or {},function(_,guid)
+        return utils.is_in_gaming(guid,c.id)
     end)
 end
 

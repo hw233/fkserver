@@ -475,11 +475,9 @@ function on_cs_club_detail_info_req(msg,guid)
     local team_template_ids = club_utils.get_team_template_ids(club_id,guid,role)
     if table.nums(team_template_ids) == 0 then
         team_template_ids = table.map(templates,function(template) return template.template_id,true end) --未设置全部添加
-    end 
+    end
 
     templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
-    
-    log.dump(team_template_ids)
 
     local real_games =  club_utils.get_game_list(guid,club_id)
     local root = club_utils.root(club)
@@ -1387,8 +1385,7 @@ function on_cs_club_kickout(msg,guid)
         return
     end
 
-    local os = onlineguid[target_guid]
-    if os and os.table then
+    if club_utils.is_in_gaming(target_guid,club_id) then 
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_IN_GAME
         })
@@ -2099,8 +2096,7 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         gaming_guid = to_guid
     end
 
-    local og = onlineguid[gaming_guid]
-    if og and (og.table or og.chair) then
+    if club_utils.is_in_gaming(gaming_guid,club_id) then
         res.result = enum.GAME_SERVER_RESULT_IN_GAME
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
         return
