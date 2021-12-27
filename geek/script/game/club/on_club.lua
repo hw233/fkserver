@@ -1615,12 +1615,16 @@ local operator = {
 }
 
 function on_cs_club_operation(msg,guid)
+    local op = msg.op
+	log.info("on_cs_club_operation %s,%s",guid,op)
+	log.dump(msg)
     local f = operator[msg.op]
     if f then
         f(msg,guid)
+	else
+		log.error("on_cs_club_operation %s,%s",guid,op)
     end
 end
-
 
 function on_cs_club_dismiss_table(msg,guid)
     
