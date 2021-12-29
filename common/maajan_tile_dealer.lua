@@ -22,10 +22,10 @@ function maajan_tile_dealer:shuffle()
     math.randomseed(math.floor(chronos.nanotime() * 10000))
 	for _ = 1,10 do math.random() end
 
-    local c = #self.tiles
-    for i = #self.tiles,1,-1 do
-        local j = math.random(c)
-        if i ~= j then self.tiles[j],self.tiles[i] = self.tiles[i],self.tiles[j] end
+    local tiles = self.tiles
+    for i = #tiles,2,-1 do
+        local j = math.random(i - 1)
+        tiles[j],tiles[i] = tiles[i],tiles[j]
     end
 
     self.remain_count = #self.tiles

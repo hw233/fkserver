@@ -19,11 +19,11 @@ function card_dealer:shuffle()
 	math.randomseed(math.floor(chronos.nanotime() * 10000))
 	for _ = 1,10 do math.random() end
 
-    local j = 1
-    local c = #self.cards
-    for i = #self.cards,1,-1 do
-        j = math.random(c)
-        self.cards[j],self.cards[i] = self.cards[i],self.cards[j]
+    local j
+    local cards = self.cards
+    for i = #cards,2,-1 do
+        j = math.random(i - 1)
+        cards[j],cards[i] = cards[i],cards[j]
     end
 
     self.remainder_card_count = #self.cards
