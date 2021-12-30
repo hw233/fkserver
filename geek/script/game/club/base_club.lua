@@ -601,7 +601,7 @@ end
 function base_club:can_sit_down(rule,player)
     local member = club_member[self.id][player.guid]
     if not member then
-        log.warning("create club table,but guid [%s] not exists",player.guid)
+        log.warning("base_club:can_sit_down,%s but guid [%s] not member",self.id,player.guid)
         return enum.ERROR_NOT_MEMBER
     end
 
