@@ -1103,17 +1103,17 @@ function base_club:incr_member_money(guid,delta_money,why,why_ext)
         log.error("base_club:incr_member_money got nil player,club:%s,guid:%s",self.id,guid)
         return
     end
-
-    if not club_member[self.id][guid] then
-        log.error("base_club:incr_member_money not member,club:%s,guid:%s",self.id,guid)
-        return
-    end
-
+    
     delta_money = math.floor(delta_money)
     player:incr_money({
             money_id = club_money_type[self.id],
             money = delta_money,
         },why,why_ext)
+
+    if not club_member[self.id][guid] then
+        log.error("base_club:incr_member_money not member,club:%s,guid:%s",self.id,guid)
+        return
+    end
 
     local partner = club_member_partner[self.id][guid]
     while partner and partner ~= 0 do
