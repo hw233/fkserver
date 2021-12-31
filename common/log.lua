@@ -8,6 +8,7 @@ local print = print
 local SERVICE_NAME = SERVICE_NAME
 local logd = ".logd"
 local debuglayer = 3
+local string = string
 
 local bootconf = require "conf.boot"
 local stdout_enable = bootconf.stdout_log
@@ -47,47 +48,77 @@ local function log_out(s,level)
     print(s)
 end
 
+local function concat(tb,sep,i,j)
+	i = i or 1
+	i = i < 1 and 1 or i
+	sep = sep or " "
+	j = j or #tb
+	if i > #tb then return "" end
+	local s = tostring(tb[i])
+    for n = i + 1,j do
+        s = s .. sep .. tostring(tb[n])
+    end
+    return s
+end
+
+local function format(fmt,...)
+    local i = 0
+    local params = {...}
+    local s = string.gsub(fmt,"%%[0-9.+-]*%a",function(s)
+		if i < 0 then return "" end
+		
+        i = i + 1
+		if s == "%p" or s == "%P" then
+			local repl = concat(params," ",i)
+			i = -1
+			return repl
+		end
+        return tostring(params[i])
+    end)
+	return s
+end
+
 local log = {}
 
 function log.info(fmt, ...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"INFO",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"INFO",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
 
     log_out(s)
 end
 
 function log.trace(fmt, ...)
-    local s = string.format("%s %-8s"..fmt,strtime(),"TRACE",...) .. "\n" .. traceback()
+    local s = string.format("%s %-8s%-10s",strtime(),"TRACE",format(fmt,...)) .. "\n" .. traceback()
     log_out(s)
 end
 
 function log.debug(fmt, ...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"DEBUG",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"DEBUG",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s)
 end
 
 function log.assert(fmt,...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"ASSERT",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"ASSERT",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s)
 end
 
 function log.warning(fmt, ...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"WARNING",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"WARNING",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s,"WARNING")
 end
 
 function log.exception(fmt, ...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"EXCEPTION",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"EXCEPTION",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s,"ERROR")
 end
 
 function log.error(fmt, ...)
     local d = debuginfo()
-    local s = string.format("%s %-8s"..fmt,strtime(),"ERROR",...) .. string.format("(%s:%d)",d.short_src,d.currentline)
+    local s = string.format("%s %-8s%-10s",strtime(),"ERROR",format(fmt,...)) .. string.format("(%s:%d)",d.short_src,d.currentline)
     log_out(s,"ERROR")
 end
 
