@@ -54,6 +54,8 @@ function CMD.S(guid,...)
 			return
 		end
 
+		log.info("S %s %p",guid,...)
+
 		return channel.call("service." .. s.server,...)
 	end,...)
 end
@@ -74,6 +76,8 @@ function CMD.C(guid,...)
 			return
 		end
 
+		log.info("C %s %p",guid,...)
+
 		return channel.call("service." .. s.server,...)
 	end,...)
 end
@@ -90,6 +94,7 @@ function CMD.P(...)
 end
 
 function CMD.Login(guid,gate)
+	log.info("Login %s %s",guid,gate)
 	local s = rawget(sessions,guid)
 	if s then
 		local old_gate = s.gate
@@ -154,6 +159,7 @@ function CMD.Login(guid,gate)
 end
 
 function CMD.Quit(guid)
+	log.info("Quit %s",guid)
 	local s = rawget(sessions,guid)
 	if not s then
 		log.error("Exit got nil session,%s",guid)
@@ -165,6 +171,8 @@ function CMD.Quit(guid)
 end
 
 function CMD.GoServer(guid,to)
+	log.info("GoServer %s %s",guid,to)
+
 	local s = rawget(sessions,guid)
 	if not s then
 		log.error("Go Server %s,%s got nil session",guid,to)
