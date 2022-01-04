@@ -1219,7 +1219,7 @@ local function on_cs_club_partner(msg,guid)
                 return
             end
         end
-
+        local is_empty = true   
         local function recursive_sum_member_all_money(c,partner_id)
             local sum = club_partner_commission[c.id][partner_id] or 0
             local money_id = club_money_type[c.id]
@@ -1229,7 +1229,11 @@ local function on_cs_club_partner(msg,guid)
                     sum = sum + recursive_sum_member_all_money(c,mem_id)
                 end
 
-                sum = sum + player_money[mem_id][money_id]
+                local curplayer_money = player_money[mem_id][money_id]
+                sum = sum + curplayer_money
+                if  curplayer_money ~= 0 then
+                    is_empty = false
+                end
             end
 
             return sum
@@ -1251,7 +1255,7 @@ local function on_cs_club_partner(msg,guid)
             return partner:dismiss()
         end
 
-        if recursive_sum_member_all_money(club,target_guid) > 0 then
+        if recursive_sum_member_all_money(club,target_guid) > 0 or not is_empty then
             res.result = enum.ERROR_MORE_MAX_LIMIT
             onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
             return
