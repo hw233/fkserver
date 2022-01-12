@@ -13,7 +13,6 @@ require "login.msg.runtime"
 local runtime_conf = require "game.runtime_conf"
 local g_common = require "common"
 local game_util = require "game.util"
-local spinlock = require "spinlock"
 local mutex = require "mutex"
 
 local reddb = redisopt.default

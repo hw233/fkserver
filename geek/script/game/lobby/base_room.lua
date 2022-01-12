@@ -11,7 +11,6 @@ local club_money = require "game.club.club_money"
 local allonlineguid = require "allonlineguid"
 local player_club = require "game.lobby.player_club"
 local base_private_table = require "game.lobby.base_private_table"
-local spinlock = require "spinlock"
 local mutex = require "mutex"
 
 require "game.net_func"
