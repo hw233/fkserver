@@ -26,7 +26,6 @@ function CMD.start(conf)
     LOG_NAME = "login."..conf.id
 
     global_conf = channel.call("config.?","msg","global_conf")
-    log.dump(global_conf)
     default_open_id_icon = global_conf.default_open_id_icon
 end
 
