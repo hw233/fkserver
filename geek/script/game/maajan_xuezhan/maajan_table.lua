@@ -536,7 +536,7 @@ function maajan_table:qiang_gang_hu(player,actions,tile)
         local function auto_action(p,action)
             self:lockcall(function()
                 self:on_action_qiang_gang_hu(p,{
-                    action = ACTION.HU,
+                    action = ACTION.QIANG_GANG_HU,
                     value_tile = tile,
                     session_id = action.session_id,
                 })
