@@ -457,7 +457,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile)
         chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
         chu_pai_player.gzh = nil
-        self:log_game_action(chu_pai_player,target_act,tile)
+        self:log_game_action(chu_pai_player,target_act,qiang_tile)
         self:done_last_action(chu_pai_player,{action = target_act,tile = qiang_tile})
         self:mo_pai()
         return
