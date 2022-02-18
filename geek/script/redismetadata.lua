@@ -281,4 +281,15 @@ tree.game.all["%d+"] = "number"
 
 tree.game.level["%d+"] = "set"
 tree.game.level["%d+"]["%d+"] = "number"
+
+tree.verify.ip_accounts["%s+"] = "set"
+tree.verify.ip_accounts["%s+"]["%d+"] = "number"
+tree.verify.imei_accounts["%s+"] = "set"
+tree.verify.imei_accounts["%s+"]["%d+"] = "number"
+
+
+tree.verify.password_error_counts["%d+"] = "hash"
+tree.verify.password_error_counts["%d+"]["%s+"] = "number"
+
+tree.verify.account_lock_imei["%d+"] = "set"
 return tree

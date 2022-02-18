@@ -221,6 +221,7 @@ function MSG.CL_Auth(msg,session)
         package_name = msg.package_name,
         phone_type = msg.phone_type,
         version = msg.version,
+        imei = msg.imei
     }
 
     do_cl_login(do_login_msg,session)

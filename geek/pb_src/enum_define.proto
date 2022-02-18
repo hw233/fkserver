@@ -54,6 +54,9 @@ enum LOGIN_RESULT {
 	LOGIN_RESULT_NEED_INVITE_CODE = 43;						// 有邀请码才能注册
 	LOGIN_RESULT_AUTH_CHECK_ERROR = 44;						//平台授权参数错误
 	LOGIN_RESULT_ACCOUNT_NOT_EXISTS = 45;					//帐号登陆帐号或密码错误
+	LOGIN_RESULT_ACCOUNT_IP_LIMIT = 46;					    // 同IP限制登录账号数
+	LOGIN_RESULT_ACCOUNT_IMEI_LIMIT = 47;					// 同设备限制登录账号数
+	LOGIN_RESULT_ACCOUNT_PASSWOLD_ERRPR_LIMIT = 48;			// 密码错误次数过多限制登录
 }
 
 // 银行操作结果

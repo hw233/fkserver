@@ -35,6 +35,7 @@ message CL_Auth{
 	int64  promoter = 6;
 	string channel_id = 7;
 	string sid = 8;
+	string imei = 9;						// 设备唯一码
 }
 
 message LC_Auth{
@@ -118,6 +119,7 @@ message LC_Login {
 	string  invite_code = 29;
 	int32   invite_type = 30;
 	int32 	reconnect = 31;
+	int32 	ps_error_counts = 32; //剩余密码错误次数
 }
 
 // 申请短信验证

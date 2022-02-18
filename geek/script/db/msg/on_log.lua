@@ -215,13 +215,14 @@ function on_ld_log_login(msg)
     end
 
     res = dbopt.log:query(
-        [[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,platform_id)
-            values(%d,'%s','%s','%s',NOW(),NOW(),'%s');]],
+        [[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,platform_id,login_imei)
+            values(%d,'%s','%s','%s',NOW(),NOW(),'%s','%s');]],
         msg.guid,
         msg.version,
         msg.phone_type or "unkown",
         msg.ip,
-        msg.platform_id or "")
+        msg.platform_id or "",
+        msg.imei or "")
 
     if res.errno then
         log.error("on_ld_log_login insert into t_log_login info throw exception.[%d],[%s]",res.errno,res.err)

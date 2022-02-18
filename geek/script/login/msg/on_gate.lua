@@ -14,7 +14,7 @@ local runtime_conf = require "game.runtime_conf"
 local g_common = require "common"
 local game_util = require "game.util"
 local mutex = require "mutex"
-
+local verify = require "login.verify.verify"
 local reddb = redisopt.default
 
 local function gen_uuid(basestr)
@@ -159,7 +159,7 @@ local function reg_account(msg)
         version = msg.version,
         login_ip = msg.ip,
         level = 0,
-        imei = "",
+        imei = msg.imei,
         is_guest = true,
         login_time = os.time(),
         package_name = msg.package_name,
@@ -219,8 +219,16 @@ local function open_id_login(msg)
     local ip = msg.ip 
     if ip then
         reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+        if not verify.check_ip(ip,guid) then
+            return enum.LOGIN_RESULT_ACCOUNT_IP_LIMIT
+        end
     end
 
+    local imei = msg.imei
+    if not verify.check_imei(imei,guid) then
+        return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT 
+    end
+    
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
 
     local info = {
@@ -290,6 +298,7 @@ function on_cl_auth(msg)
         channel_id = msg.channel_id,
         union_id = auth.unionid,
         sid = msg.sid,
+        imei = msg.imei
     })
 end
 
@@ -373,7 +382,16 @@ local function sms_login(msg)
         local ip = msg.ip 
         if ip then
             reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+            if not verify.check_ip(ip,guid) then
+                return enum.LOGIN_RESULT_ACCOUNT_IP_LIMIT
+            end
         end
+
+        local imei = msg.imei
+        if not verify.check_imei(imei,guid) then
+            return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT 
+        end
+      
         reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
         
         info = {
@@ -418,6 +436,7 @@ local function h5_login(msg)
             phone_type = msg.phone_type,
             package_name = msg.package_name,
             ip = msg.ip,
+            imei = msg.imei,
             sex = msg.sex or false,
             promoter = msg.promoter,
             channel_id = msg.channel_id,
@@ -481,10 +500,15 @@ local function account_login(msg)
         end
         guid = tonumber(uuid)
     end
-
+    
     local player = base_players[guid]
     if player and player.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED
+    end
+
+    local imei = msg.imei
+    if verify.check_account_lock_imei(imei,guid) then
+        return enum.LOGIN_RESULT_ACCOUNT_PASSWOLD_ERRPR_LIMIT
     end
 
     local password = msg.password
@@ -497,15 +521,25 @@ local function account_login(msg)
         local strguid = tostring(math.floor(guid))
         rdpassword = string.sub(strguid,-6)
     end
+   
 
     if password ~= rdpassword then
-        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
+        local remain_error_counts =  verify.check_password_error(imei,guid)
+        return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR ,{ ps_error_counts = remain_error_counts }
     end
 
     local ip = msg.ip
     if ip then
         reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)
+        if not verify.check_ip(ip,guid) then
+            return enum.LOGIN_RESULT_ACCOUNT_IP_LIMIT
+        end
     end
+   
+    if not verify.check_imei(imei,guid) then
+        return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT 
+    end
+    
 
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
     
@@ -563,6 +597,7 @@ function on_cl_login(msg,gate)
     if ret ~= enum.LOGIN_RESULT_SUCCESS then
         return {
             result = ret,
+            ps_error_counts = info and  info.ps_error_counts
         }
     end
 

@@ -46,10 +46,10 @@ function on_ld_reg_account(msg)
 			[[
 				INSERT INTO account.t_account(
 					guid,account,nickname,level,last_login_ip,openid,head_url,create_time,login_time,
-					register_time,ip,version,phone_type,package_name,phone,union_id
+					register_time,ip,version,phone_type,package_name,phone,union_id,imei
 				)
 				VALUES(
-					%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s','%s'
+					%d,'%s','%s','%s','%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s','%s','%s','%s','%s'
 				);
 			]],
 			guid,
@@ -64,7 +64,8 @@ function on_ld_reg_account(msg)
 			msg.phone_type or "unkown",
 			msg.package_name or "",
 			msg.phone or "",
-			msg.union_id or ""
+			msg.union_id or "",
+			msg.imei or ""
 		)
 
 	if rs.errno then
@@ -99,15 +100,16 @@ function on_ld_reg_account(msg)
 	end
 
 	rs = dbopt.log:batchquery([[
-				INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone)
-				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');
+				INSERT INTO t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_phone,login_imei)
+				VALUES(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s','%s');
 			]],
 			guid,
 			msg.version,
 			msg.phone_type or "unkown",
 			msg.ip,
 			msg.platform_id or "",
-			msg.phone or "")
+			msg.phone or "",
+			msg.imei or "")
 	if rs.errno then
 		log.error("on_ld_reg_account insert into log login info throw exception.[%d],[%s]",rs.errno,rs.errstr)
 	end
@@ -151,13 +153,14 @@ function on_reg_account(msg)
 	end
 
 	res = dbopt.log:batchquery(
-		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id)
-			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s');]],
+		[[insert into t_log_login(guid,login_version,login_phone_type,login_ip,login_time,create_time,register_time,platform_id,login_imei)
+			values(%d,'%s','%s','%s',NOW(),NOW(),NOW(),'%s','%s');]],
 		msg.guid,
 		msg.version,
 		msg.phone_type or "unkown",
 		msg.ip,
-		msg.platform_id or ""
+		msg.platform_id or "",
+		msg.imei or ""
 	)
 
 	if res.errno then

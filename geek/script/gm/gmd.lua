@@ -13,6 +13,7 @@ local club_money = require "game.club.club_money"
 local club_notice = require "game.notice.club_notice"
 local base_notices = require "game.notice.base_notices"
 local g_common = require "common"
+local verify = require "login.verify.verify"
 local json = require "json"
 require "functions"
 
@@ -996,6 +997,98 @@ function gmd.agency_free_cost(data)
     }
 end
 
+function gmd.verify_remove_lock_imei(data)
+    local guid = tonumber(data.guid)
+    if not guid then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "guid can not be nil",
+        }
+    end
+
+    local player = base_players[guid]
+    if not player then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "player not found",
+        }
+    end
+
+
+
+    verify.remove_account_lock_imei(guid)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.verify_remove_ip(data)
+    local ip = tostring(data.ip)
+   
+    if not ip then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "ip can not be nil",
+        }
+    end
+
+    verify.remove_ip_accounts(ip)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.verify_remove_imei(data)
+    local imei = tostring(data.imei)
+    if not imei then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "imei can not be nil",
+        }
+    end
+
+    verify.remove_imei_accounts(imei)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
+function gmd.verify_lock_imei(data)
+    local guid = tonumber(data.guid)
+    if not guid then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "guid can not be nil",
+        }
+    end
+
+    local player = base_players[guid]
+    if not player then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "player not found",
+        }
+    end
+
+    local imei = tostring(data.imei)
+    if not imei then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "imei can not be nil",
+        }
+    end
+
+
+    verify.set_account_lock_imei(imei,guid)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
@@ -1011,5 +1104,9 @@ gmd["player/update"] = gmd.update_player
 gmd['notice/publish'] = gmd.publish_notice
 gmd['notice/edit'] = gmd.edit_notice
 gmd["notice/del"] = gmd.del_notice
+gmd["verify/remove/lockimei"] = gmd.verify_remove_lock_imei
+gmd["verify/remove/ip"] = gmd.verify_remove_ip
+gmd["verify/remove/imei"] = gmd.verify_remove_imei
+gmd["verify/lock/imei"] = gmd.verify_lock_imei
 
 return gmd
