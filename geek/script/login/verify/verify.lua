@@ -13,8 +13,7 @@ local account_lock_imei = require "login.verify.account_lock_imei"
 local IP_LIMIT = 5 --同IP允许登录的账号数
 local IMEI_LIMIT = 2 --同设备允许登录的账号数
 local PSERROR_LIMIT = 5 --同IMEI一个账号允许密码错误次数
-
-
+local IP_CHECK = false 
 local function ip2rdip(ip)
     local rdip 
     if ip and type(ip)=="string" then
@@ -27,6 +26,9 @@ local verify = {}
 
 function verify.check_ip(ip,account)
     --log.info(string.format("check_ip ip[%s] account[%s] ",ip,account))
+    if not IP_CHECK then
+        return true
+    end
     if not ip or ip =="" or not account then
         return  true
     end
