@@ -469,7 +469,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     end)
     local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
     chu_pai_player.first_multi_pao = (hu_count_before == 0 and qiang_hu_count > 1) or nil
-
+    local qianggangdecr = true 
     local function do_qiang_gang_hu(p,action)
         local act = action.done.action
         local done_action_tile = action.tile
@@ -486,9 +486,10 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         self:broadcast_player_hu(p,act,action.target)
         p.statistics.hu = (p.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-
-        table.decr(chu_pai_player.pai.shou_pai,done_action_tile)
-
+        if  qianggangdecr then 
+            table.decr(chu_pai_player.pai.shou_pai,done_action_tile)
+            qianggangdecr = false 
+        end 
         self:done_last_action(p,{action = act,tile = done_action_tile})
     end
 
