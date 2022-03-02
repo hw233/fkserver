@@ -361,6 +361,20 @@ function utils.is_recursive_in_club(club,guid)
         end)
 end
 
+function utils.is_club_size_limit(club_id)
+    if not club_id or not base_clubs[club_id] then
+        return false 
+    end
+
+    local club_size_limit = global_conf.club_size_limit and tonumber(global_conf.club_size_limit) or 0
+    if not club_size_limit or club_size_limit == 0 then
+        return false
+    end
+
+    local total_count = reddb:get(string.format("club:member:count:%d",club_id)) or 0
+    return tonumber(total_count) >= club_size_limit
+end
+
 function utils.is_recursive_in_team(club,team_id,guid)
     if not club or not guid or not team_id then 
         return

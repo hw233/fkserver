@@ -379,6 +379,14 @@ function on_cs_club_invite_join_club(msg,guid)
         return
     end
 
+    if club_utils.is_club_size_limit(club_id) then
+        log.warning("invite_join_club club_size_limit  club:%s",club_id)
+        onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
+            result = enum.ERROR_CLUB_SIZE_LIMIT,
+        })
+        return
+    end
+
     if club_member[club_id][invitee] then
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
@@ -636,6 +644,14 @@ function on_cs_club_join_req(msg,guid)
         log.warning("club member:%s join self club:%s",guid,club_id)
         onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
             result = enum.ERROR_AREADY_MEMBER,
+        })
+        return
+    end
+
+    if club_utils.is_club_size_limit(club_id) then
+        log.warning("club_join_req club_size_limit  club:%s",club_id)
+        onlineguid.send(guid,"S2C_JOIN_CLUB_RES",{
+            result = enum.ERROR_CLUB_SIZE_LIMIT,
         })
         return
     end
@@ -1047,6 +1063,14 @@ local function on_cs_club_agree_request(msg,guid)
         return
     end
 
+    if club_utils.is_club_size_limit(msg.club_id) then
+        log.warning(" club_agree_request club_size_limit  club:%s",msg.club_id)
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = enum.ERROR_CLUB_SIZE_LIMIT,
+        })
+        return
+    end
+    
     if not msg.request_id and (not msg.sid or msg.sid == "") then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PARAMETER_ERROR,
@@ -1080,6 +1104,8 @@ local function on_cs_club_agree_request(msg,guid)
 
         return
     end
+
+ 
 
     reddb:srem(string.format("player:request:%s",request.whoee),request.id)
     -- 更新数据
