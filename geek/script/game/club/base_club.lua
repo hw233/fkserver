@@ -812,12 +812,15 @@ function base_club:is_block_gaming_with_others(tb,player)
         return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
     end
 
-    if tb.start_count >= 2 and self:is_block_play_in_same_team_layer(tb,player) then
-        return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
-    end
+    --if tb.start_count >= 2 and self:is_block_play_in_same_team_layer(tb,player) then
+        --return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
+    --end
 
     if tb.start_count > 2 then
-        if self:is_block_in_same_team_branch(tb,player) or self:is_block_in_2_team_layer(tb,player) then
+        if  self:is_block_play_in_same_team_layer(tb,player) or
+            self:is_block_in_same_team_branch(tb,player) or
+            self:is_block_in_2_team_layer(tb,player)
+        then
             return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
         end
     end
