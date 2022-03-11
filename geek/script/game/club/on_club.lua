@@ -48,7 +48,6 @@ local club_block_team_groups = require "game.club.block.team_groups"
 local gutil = require "util"
 
 local queue = require "skynet.queue"
-
 local money_locks = setmetatable({},{
     __index = function(t,money_id)
         local l = queue()
@@ -1369,77 +1368,77 @@ function on_cs_club_kickout(msg,guid)
     local target_guid = msg.target_id
 
     log.dump(msg)
-
-    local player = base_players[guid]
-    if not player then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_NOT_EXIST
-        })
-        return
-    end
-
-    local club = base_clubs[club_id]
-    if not club then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_CLUB_NOT_FOUND
-        })
-        return
-    end
-
-    local role = club_role[club_id][guid]
-    if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_NO_RIGHT
-        })
-        return
-    end
-
-    local target_role = club_role[club_id][target_guid]
-    if target_role == enum.CRT_ADMIN or target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_OPERATION_INVALID
-        })
-        return
-    end
-
-    local target = base_players[target_guid]
-    if not target then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_NOT_EXIST
-        })
-        return
-    end
-
-    if not club_member[club_id][target_guid] then
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_NOT_MEMBER
-        })
-        return
-    end
-
-    if club_utils.is_in_gaming(target_guid,club_id) then 
-        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-            result = enum.ERROR_PLAYER_IN_GAME
-        })
-        return
-    end
-
-    if club.type == enum.CT_UNION then
-        local money_id = club_money_type[club_id]
-        if player_money[target_guid][money_id] ~= 0 then
+    club_utils.lock_action(club_id,guid,function()
+        local player = base_players[guid]
+        if not player then
             onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-                result = enum.ERROR_MORE_MAX_LIMIT
+                result = enum.ERROR_PLAYER_NOT_EXIST
             })
             return
         end
-    end
 
-    local result = club:full_exit(target_guid,guid)
-    onlineguid.send(guid,"S2C_CLUB_OP_RES",{
-        result = result,
-        op = CLUB_OP.EXIT_AGREED,
-        target_id = target_guid,
-    })
+        local club = base_clubs[club_id]
+        if not club then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_CLUB_NOT_FOUND
+            })
+            return
+        end
+
+        local role = club_role[club_id][guid]
+        if role ~= enum.CRT_ADMIN and role ~= enum.CRT_BOSS and role ~= enum.CRT_PARTNER then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_PLAYER_NO_RIGHT
+            })
+            return
+        end
+
+        local target_role = club_role[club_id][target_guid]
+        if target_role == enum.CRT_ADMIN or target_role == enum.CRT_BOSS or target_role == enum.CRT_PARTNER then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_OPERATION_INVALID
+            })
+            return
+        end
+
+        local target = base_players[target_guid]
+        if not target then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_PLAYER_NOT_EXIST
+            })
+            return
+        end
+
+        if not club_member[club_id][target_guid] then
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_NOT_MEMBER
+            })
+            return
+        end
+
+        if club_utils.is_in_gaming(target_guid,club_id) then 
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                result = enum.ERROR_PLAYER_IN_GAME
+            })
+            return
+        end
+
+        if club.type == enum.CT_UNION then
+            local money_id = club_money_type[club_id]
+            if player_money[target_guid][money_id] ~= 0 then
+                onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+                    result = enum.ERROR_MORE_MAX_LIMIT
+                })
+                return
+            end
+        end
+        local result = club:full_exit(target_guid,guid)
+        onlineguid.send(guid,"S2C_CLUB_OP_RES",{
+            result = result,
+            op = CLUB_OP.EXIT_AGREED,
+            target_id = target_guid,
+        })
+    end)
 end
 
 
@@ -2132,89 +2131,91 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         gaming_guid = to_guid
     end
 
-    if club_utils.is_in_gaming(gaming_guid,club_id) then
-        res.result = enum.GAME_SERVER_RESULT_IN_GAME
-        onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
-    end
-
-    if from_role == enum.CRT_PARTNER and to_role == enum.CRT_PLAYER then
-        if not recursive_search_partner(club_id,from_guid,to_guid) then
-            res.result = enum.ERROR_PLAYER_NO_RIGHT
+    club_utils.lock_action(club_id,gaming_guid,function()
+        if club_utils.is_in_gaming(gaming_guid,club_id) then
+            res.result = enum.GAME_SERVER_RESULT_IN_GAME
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
-
-        local can = can_transfer(club_id,from_guid)
-        if can ~= enum.ERROR_NONE then
-            res.result = can
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-    elseif to_role == enum.CRT_PARTNER and from_role == enum.CRT_PLAYER then
-        local can = can_transfer(club_id,to_guid)
-        if can ~= enum.ERROR_NONE then
-            res.result = can
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-
-        if not recursive_search_partner(club_id,to_guid,from_guid) then
-            res.result = enum.ERROR_PLAYER_NO_RIGHT
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-    elseif from_role == enum.CRT_PARTNER and to_role == enum.CRT_PARTNER then
-        local can = can_transfer(club_id,from_guid)
-        if can ~= enum.ERROR_NONE then
-            res.result = can
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-
-        if recursive_search_partner(club_id,from_guid,to_guid) then
-            why = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB
-        elseif recursive_search_partner(club_id,to_guid,from_guid) then
-            why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB
-        else
-            res.result = enum.ERROR_PLAYER_NO_RIGHT
-            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-            return
-        end
-    end
-
-    local money_id = club_money_type[club_id]
     
-    local orgin_money = player_money[from_guid][money_id]
-    if orgin_money < money then
-        res.result = enum.ERROR_PARAMETER_ERROR
+        if from_role == enum.CRT_PARTNER and to_role == enum.CRT_PLAYER then
+            if not recursive_search_partner(club_id,from_guid,to_guid) then
+                res.result = enum.ERROR_PLAYER_NO_RIGHT
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+    
+            local can = can_transfer(club_id,from_guid)
+            if can ~= enum.ERROR_NONE then
+                res.result = can
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+        elseif to_role == enum.CRT_PARTNER and from_role == enum.CRT_PLAYER then
+            local can = can_transfer(club_id,to_guid)
+            if can ~= enum.ERROR_NONE then
+                res.result = can
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+    
+            if not recursive_search_partner(club_id,to_guid,from_guid) then
+                res.result = enum.ERROR_PLAYER_NO_RIGHT
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+        elseif from_role == enum.CRT_PARTNER and to_role == enum.CRT_PARTNER then
+            local can = can_transfer(club_id,from_guid)
+            if can ~= enum.ERROR_NONE then
+                res.result = can
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+    
+            if recursive_search_partner(club_id,from_guid,to_guid) then
+                why = enum.LOG_MONEY_OPT_TYPE_RECHAGE_MONEY_IN_CLUB
+            elseif recursive_search_partner(club_id,to_guid,from_guid) then
+                why = enum.LOG_MONEY_OPT_TYPE_CASH_MONEY_IN_CLUB
+            else
+                res.result = enum.ERROR_PLAYER_NO_RIGHT
+                onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+                return
+            end
+        end
+    
+        local money_id = club_money_type[club_id]
+        
+        local orgin_money = player_money[from_guid][money_id]
+        if orgin_money < money then
+            res.result = enum.ERROR_PARAMETER_ERROR
+            onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+            return
+        end
+    
+        local old_from_money = player_money[from_guid][money_id]
+        local new_from_money = club:incr_member_redis_money(from_guid,-money)
+        local old_to_money = player_money[to_guid][money_id]
+        local new_to_money = club:incr_member_redis_money(to_guid,money)
+    
+        channel.publish("db.?","msg","SD_TransferMoney",{
+            from = {
+                guid = from_guid,
+                old_money = old_from_money,
+                new_money = new_from_money,
+            },
+            to = {
+                guid = to_guid,
+                old_money = old_to_money,
+                new_money = new_to_money,
+            },
+            type = 4,
+            money_id = money_id,
+            why = why,
+            operator = guid,
+        })
+    
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
-        return
-    end
-
-    local old_from_money = player_money[from_guid][money_id]
-    local new_from_money = club:incr_member_redis_money(from_guid,-money)
-    local old_to_money = player_money[to_guid][money_id]
-    local new_to_money = club:incr_member_redis_money(to_guid,money)
-
-    channel.publish("db.?","msg","SD_TransferMoney",{
-        from = {
-            guid = from_guid,
-            old_money = old_from_money,
-            new_money = new_from_money,
-        },
-        to = {
-            guid = to_guid,
-            old_money = old_to_money,
-            new_money = new_to_money,
-        },
-        type = 4,
-        money_id = money_id,
-        why = why,
-        operator = guid,
-    })
-
-    onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
+    end)
 end
 
 

@@ -25,6 +25,7 @@ local g_util = require "util"
 local base_rule = require "game.lobby.base_rule"
 local club_table = require "game.club.club_table"
 local g_common = require "common"
+local club_utils = require "game.club.club_utils"
 
 local reddb = redisopt.default
 
@@ -32,7 +33,6 @@ local string = string
 local strfmt = string.format
 local table = table
 local tinsert = table.insert
-
 -- 登陆验证框相关
 local validatebox_ch = {}
 for i=243,432 do
@@ -661,7 +661,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 			return
 		end
 
-		local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil,nil
+		local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil
 		if pay_option == enum.PAY_OPTION_BOSS then
 			if not club then
 				onlineguid.send(guid,"SC_CreateRoom",{
@@ -672,7 +672,9 @@ function on_cs_create_private_room(msg,guid,game_id)
 
 			log.dump(template)
 			
-			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
+			 club_utils.lock_action(club_id,guid,function()
+				result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
+			end)
 		elseif pay_option == enum.PAY_OPTION_AA then
 			result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
 		elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
@@ -858,7 +860,6 @@ end
 function on_cs_join_private_room(msg,guid,game_id)
 	log.info("on_cs_join_private_room guid:%s,from:%s",guid,game_id)
 	local player = base_players[guid]
-
 	player:lockcall(function()
 		local reconnect = msg.reconnect and msg.reconnect ~= 0
 		local table_id = msg.table_id
@@ -946,8 +947,9 @@ function on_cs_join_private_room(msg,guid,game_id)
 				})
 				return
 			end
-
-			result,tb = club:join_table(player,private_table,chair_count)
+			club_utils.lock_action(club_id,guid,function() 
+				result,tb = club:join_table(player,private_table,chair_count)
+			end)
 		elseif pay_option == enum.PAY_OPTION_AA then
 			result,tb = g_room:join_private_table(player,private_table,chair_count)
 		elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
@@ -1008,7 +1010,6 @@ function on_cs_join_private_room(msg,guid,game_id)
 				round_id = tb:hold_ext_game_id(),
 			} or nil,
 		})
-
 		tb:on_player_sit_downed(player)
 	end)
 end
@@ -1252,48 +1253,50 @@ function on_cs_fast_join_room(msg,guid)
 		return
 	end
 
-	player:lockcall(function()
-		-- double check
-		local og = onlineguid[guid]
-		if og and (og.table or og.chair) then
-			onlineguid.send(guid,"SC_FastJoinRoom",{
-				result = enum.GAME_SERVER_RESULT_IN_GAME,
-			})
-			return
-		end
-		
-		local room_weights = common.all_game_server(temp.game_id)
-		local rooms = table.series(room_weights,function(weight,roomid) 
-			return { room_id = roomid,weight = weight,}
-		end)
-		table.sort(rooms,function(l,r) return l.weight > r.weight end)
-
-		for _,v in pairs(rooms) do
-			local room_id = v.room_id
-			local result = fast_join_room(msg,guid,room_id)
-
-			if 	result == enum.GAME_SERVER_RESULT_MAINTAIN or
-				result == enum.GAME_SERVER_RESULT_IN_ROOM or
-				result == enum.GAME_SERVER_RESULT_IN_GAME
-			then
+	club_utils.lock_action(club_id,guid,function()
+		player:lockcall(function()
+			-- double check
+			local og = onlineguid[guid]
+			if og and (og.table or og.chair) then
 				onlineguid.send(guid,"SC_FastJoinRoom",{
-					result = result,
+					result = enum.GAME_SERVER_RESULT_IN_GAME,
 				})
 				return
 			end
+			
+			local room_weights = common.all_game_server(temp.game_id)
+			local rooms = table.series(room_weights,function(weight,roomid) 
+				return { room_id = roomid,weight = weight,}
+			end)
+			table.sort(rooms,function(l,r) return l.weight > r.weight end)
 
-			if result == enum.ERROR_NONE then
-				return
+			for _,v in pairs(rooms) do
+				local room_id = v.room_id
+				local result = fast_join_room(msg,guid,room_id)
+
+				if 	result == enum.GAME_SERVER_RESULT_MAINTAIN or
+					result == enum.GAME_SERVER_RESULT_IN_ROOM or
+					result == enum.GAME_SERVER_RESULT_IN_GAME
+				then
+					onlineguid.send(guid,"SC_FastJoinRoom",{
+						result = result,
+					})
+					return
+				end
+
+				if result == enum.ERROR_NONE then
+					return
+				end
 			end
-		end
 
-		local room_id = rooms[#rooms].room_id
-		local result = fast_create_room(msg,guid,room_id)
-		if result ~= enum.ERROR_NONE then
-			onlineguid.send(guid,"SC_FastJoinRoom",{
-				result = result,
-			})
-		end
+			local room_id = rooms[#rooms].room_id
+			local result = fast_create_room(msg,guid,room_id)
+			if result ~= enum.ERROR_NONE then
+				onlineguid.send(guid,"SC_FastJoinRoom",{
+					result = result,
+				})
+			end
+		end)
 	end)
 end
 
