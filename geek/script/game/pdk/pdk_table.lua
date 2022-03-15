@@ -589,9 +589,7 @@ function pdk_table:check_discard_cards_type(ctype,cards)
 	if ( (ctype == CARD_TYPE.FOUR_WITH_TWO or ctype == CARD_TYPE.FOUR_WITH_ONE)  and not play.si_dai_er ) or --四带二
 		(ctype == CARD_TYPE.FOUR_WITH_THREE and not play.si_dai_san) or --四带三
 		(ctype == CARD_TYPE.THREE_WITH_ONE and (not play.san_dai_yi or handcard_count ~= #cards)) or  --三带一
-		(
-			(ctype == CARD_TYPE.PLANE_WITH_ONE or ctype == CARD_TYPE.PLANE_WITH_MIX) and
-			(play.plane_with_mix == false or handcard_count ~= #cards or self.last_discard ~= nil)
+		(ctype == CARD_TYPE.PLANE_WITH_MIX and (play.plane_with_mix == false or handcard_count ~= #cards or self.last_discard ~= nil)
 		) --最后一手混合带飞机
 	then
 		return true
