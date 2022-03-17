@@ -396,6 +396,9 @@ function cards_util.seek_great_than(kcards,ctype,cvalue,ccount,rule)
 		cards = seek_any_bomb()
 	end
 
+	if not cards and ctype == PDK_CARD_TYPE.BOMB and has_missle then
+		cards = seek_func[PDK_CARD_TYPE.MISSLE]()
+	end
 	assert((not cards or #cards > 0) and not check_cards_repeat(cards))
 
 	return cards
