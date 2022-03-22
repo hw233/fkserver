@@ -1,6 +1,6 @@
 
 local channel = require "channel"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local onlineguid = require "netguidopt"
 local redisopt = require "redisopt"
 local error = require "gm.errorcode"
@@ -61,7 +61,7 @@ local function recharge_team(team_id,coin_type,count)
 end
 
 local function recharge_player(guid,money_id,amount,money,comment,operator)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("recharge_player player [%d] not exists.",guid)
         return {
@@ -178,7 +178,7 @@ function gmd.create_club(data)
 
     log.dump(type)
 
-    local player = base_players[owner_id]
+    local player = player_data[owner_id]
     if not player then
         return {
             errcode = error.DATA_ERROR,
@@ -299,7 +299,7 @@ function gmd.block_player(data)
 
     guid = math.floor(guid)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if  not player then
         return {
             errcode = error.DATA_ERROR,
@@ -334,7 +334,7 @@ function gmd.agency_create(data)
     guid = math.floor(guid + 0.0000001)
     role = math.floor(role + 0.0000001)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if  not player then
         return {
             errcode = error.DATA_ERROR,
@@ -359,7 +359,7 @@ function gmd.agency_remove(data)
 
     guid = math.floor(guid)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if  not player then
         return {
             errcode = error.DATA_ERROR,
@@ -382,7 +382,7 @@ function gmd.online_player(_)
 end
 
 local function transfer_money_player2club(guid,club_id,coin_type,amount)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         return {
             result = error.DATA_ERROR,
@@ -445,7 +445,7 @@ local function transfer_money_player2club(guid,club_id,coin_type,amount)
 end
 
 local function transfer_money_club2player(club_id,guid,coin_type,amount)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         return {
             result = error.DATA_ERROR,
@@ -602,7 +602,7 @@ end
 
 function gmd.update_player(data)
     local guid = tonumber(data.guid) or nil
-    if not guid or not base_players[guid] then
+    if not guid or not player_data[guid] then
         return {
             errcode = error.DATA_ERROR,
             errstr = "player not exists!",
@@ -684,7 +684,7 @@ end
 
 function gmd.promoter_game(data)
     local promoter = tonumber(data.promoter) or nil
-    if not promoter or not base_players[promoter] then
+    if not promoter or not player_data[promoter] then
         return {
             errcode = error.DATA_ERROR,
             errstr = "promoter not exists!",
@@ -974,7 +974,7 @@ function gmd.agency_free_cost(data)
         }
     end
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         return {
             errcode = error.PARAMETER_ERROR,
@@ -1006,7 +1006,7 @@ function gmd.verify_remove_lock_imei(data)
         }
     end
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         return {
             errcode = error.PARAMETER_ERROR,
@@ -1065,7 +1065,7 @@ function gmd.verify_lock_imei(data)
         }
     end
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         return {
             errcode = error.PARAMETER_ERROR,

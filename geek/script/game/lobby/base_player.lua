@@ -14,6 +14,7 @@ local base_active_android = base_active_android
 local club_partner_commission = require "game.club.club_partner_commission"
 local queue = require "skynet.queue"
 local timer = require "timer"
+local sessions = require "game.sessions"
 
 require "game.net_func"
 local send2client_pb = send2client_pb
@@ -54,9 +55,10 @@ function base_player:on_enter_room_and_sit_down(room_id_, table_id_, chair_id_, 
 		}
 		log.info("first_game_type = [%d] second_game_type = [%d]",def_first_game_type,def_second_game_type)
 		tb:foreach_except(chair_id_, function (p)
-			if p.chair_id then
+			local s = sessions[p.guid]
+			if s.chair_id then
 				local v = {
-					chair_id = p.chair_id,
+					chair_id = s.chair_id,
 					guid = p.guid,
 					account = p.account,
 					nickname = p.nickname,
@@ -90,8 +92,9 @@ function base_player:change_table( room_id_, table_id_, chair_id_, result_, tb )
 			result = result_,
 		}
 		tb:foreach_except(chair_id_, function (p)
+			local s = sessions[p.guid]
 			local v = {
-				chair_id = p.chair_id,
+				chair_id = s.chair_id,
 				guid = p.guid,
 				account = p.account,
 				nickname = p.nickname,
@@ -141,8 +144,9 @@ function base_player:on_change_chair(table_id_, chair_id_, result_, tb)
 			ip_area = self.ip_area,
 		}
 		tb:foreach_except(chair_id_, function (p)
+			local s = sessions[p.guid]
 			local v = {
-				chair_id = p.chair_id,
+				chair_id = s.chair_id,
 				guid = p.guid,
 				account = p.account,
 				nickname = p.nickname,
@@ -283,8 +287,9 @@ end
 
 --通知离线
 function base_character:notify_online(is_online)
+	local s = sessions[self.guid]
 	send2client_pb(self,"SC_NotifyOnline",{
-		chair_id = self.chair_id,
+		chair_id = s.chair_id,
 		guid = self.guid,
 		is_online = is_online,
 	})
@@ -352,11 +357,9 @@ function base_player:lockcall(fn,...)
 end
 
 function base_player:incr_redis_money(money_id,money,club_id)
-	return self:lockcall(function()
-		local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
-		self:notify_money(money_id,newmoney,club_id)
-		return newmoney
-	end)
+	local newmoney = reddb:hincrby(string.format("player:money:%d",self.guid),money_id,math.floor(money))
+	self:notify_money(money_id,newmoney,club_id)
+	return newmoney
 end
 
 function base_player:incr_money(item,why,why_ext)
@@ -692,7 +695,8 @@ end
 
 function base_player:force_stand_up(reason)
 	reason = reason or enum.STANDUP_REASON_FORCE
-	if not self.table_id or not self.chair_id then
+	local s = sessions[self.guid]
+	if not s.table_id or not s.chair_id then
 		self:kickout_room(reason)
 		return true
 	end
@@ -700,13 +704,13 @@ function base_player:force_stand_up(reason)
 	local tb = g_room:find_table_by_player(self)
 	if not tb then
 		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,not find table",
-		self.guid,self.table_id,self.chair_id)
+		self.guid,s.table_id,s.chair_id)
 		return
 	end
 
 	local result = tb:player_stand_up(self,reason)
 	if result ~= enum.ERROR_NONE then
-		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,%s,failed",self.guid,self.table_id,self.chair_id,reason,result)
+		log.warning("force_stand_up,guid:%s,table_id:%s,chair_id:%s,%s,failed",self.guid,s.table_id,s.chair_id,reason,result)
 		return
 	end
 

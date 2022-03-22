@@ -1,5 +1,5 @@
 local skynet = require "skynetproto"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local json = require "json"
 local log = require "log"
 local base_mails = require "game.mail.base_mails"
@@ -19,8 +19,8 @@ local function new_mail_id()
 end
 
 function base_mail.create_mail(sender,receiver,title,content)
-    sender = type(sender) == "table" and sender or base_players[sender]
-    receiver = type(receiver) == "table" and receiver or base_players[receiver]
+    sender = type(sender) == "table" and sender or player_data[sender]
+    receiver = type(receiver) == "table" and receiver or player_data[receiver]
     
 	local mail_info = {
 		id = new_mail_id(),
@@ -57,13 +57,13 @@ function base_mail.get_reddot_info(guid)
 end
 
 function base_mail.send_mail(mail_info)
-    local sender = base_players[mail_info.sender]
+    local sender = player_data[mail_info.sender]
     if not sender then
         log.warning("send mail failed,invalid sender.")
         return
     end
 
-    local receiver = base_players[mail_info.receiver]
+    local receiver = player_data[mail_info.receiver]
     if not receiver then
         log.warning("send mail failed,invalid recevier.")
         return

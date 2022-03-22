@@ -3,7 +3,7 @@ local dbopt = require "dbopt"
 local json = require "cjson"
 local log = require "log"
 local channel = require "channel"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 
 local def_expiration_time = 30*24*60*60 -- 邮件30天过期
 
@@ -12,7 +12,7 @@ function on_sd_send_mail(game_id, msg)
 	local mail_ = msg.pb_mail
 	mail_.pb_attachment = msg.pb_attachment
 	
-	local player = base_players[mail_.send_guid]
+	local player = player_data[mail_.send_guid]
 	if not player then
 		log.warning("on_sd_send_mail guid[%d] not find in db", mail_.send_guid)
 		return
@@ -42,7 +42,7 @@ function on_sd_send_mail(game_id, msg)
 	
 	mail_.mail_id = tostring(data.id)
 	
-	local target = base_players[mail_.guid]
+	local target = player_data[mail_.guid]
 	if target then
 		target.pb_mail_list.mails = target.pb_mail_list.mails or {}
 		table.insert(target.pb_mail_list.mails, mail_)
@@ -65,7 +65,7 @@ end
 
 -- 删除邮件
 function on_sd_del_mail(game_id, msg)
-	local player = base_players[msg.guid]
+	local player = player_data[msg.guid]
 	if not player then
 		log.warning("on_sd_del_mail guid[%d] not find in db", msg.guid)
 		return
@@ -87,7 +87,7 @@ end
 
 -- 提取附件
 function on_sd_receive_mail_attachment(game_id, msg)
-	local player = base_players[msg.guid]
+	local player = player_data[msg.guid]
 	if not player then
 		log.warning("on_sd_receive_mail_attachment guid[%d] not find in db", msg.guid)
 		return

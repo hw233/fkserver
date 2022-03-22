@@ -1,7 +1,7 @@
 local redisopt = require "redisopt"
 local log = require "log"
 require "functions"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local club_member = require "game.club.club_member"
 local base_private_table = require "game.lobby.base_private_table"
 local table_template = require "game.lobby.table_template"
@@ -318,7 +318,7 @@ function base_club:agree_request(request)
     local who = request.who
     local whoee = request.whoee
 
-	local player = base_players[whoee]
+	local player = player_data[whoee]
 	if not player then
 		log.error("agree club request,who is unkown,guid:%s",whoee)
 		return enum.ERROR_PLAYER_NOT_EXIST
@@ -347,7 +347,7 @@ end
 
 function base_club:reject_request(request)
     local whoee = request.whoee
-	local player = base_players[whoee]
+	local player = player_data[whoee]
 	if not player then
 		log.error("agree club request,who is unkown,guid:%s",whoee)
 		return enum.ERROR_PLAYER_NOT_EXIST
@@ -394,7 +394,7 @@ function base_club:full_join(guid,inviter,team_id)
         return enum.ERROR_PLAYER_NO_RIGHT
     end
     
-    if not base_players[team_id] then
+    if not player_data[team_id] then
         return enum.ERROR_PLAYER_NOT_EXIST
     end
 
@@ -1102,7 +1102,7 @@ function base_club:check_money_limit(money,money_id)
 end
 
 function base_club:incr_member_money(guid,delta_money,why,why_ext)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("base_club:incr_member_money got nil player,club:%s,guid:%s",self.id,guid)
         return
@@ -1128,7 +1128,7 @@ end
 
 function base_club:incr_member_redis_money(guid,delta_money)
     log.info("base_club:incr_member_redis_money club:%s,guid:%s,money:%s",self.id,guid,delta_money)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player or not club_member[self.id][guid] then
         log.error("base_club:incr_member_money got nil player or not member,club:%s,guid:%s",self.id,guid)
         return

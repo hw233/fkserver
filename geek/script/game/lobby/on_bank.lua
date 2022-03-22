@@ -3,13 +3,13 @@ local log = require "log"
 require "game.net_func"
 local send2client_pb = send2client_pb
 
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local enum = require "pb_enums"
 local channel = require "channel"
 
 -- 设置银行密码
 function on_cs_bank_set_password(msg,guid)
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if player.has_bank_password then
 		log.info("guid[%d] password is already set", player.guid)
 		send2client_pb(player, "SC_BankSetPassword", {
@@ -34,7 +34,7 @@ end
 
 -- 重置银行密码
 function  on_cl_ResetBankPW( msg,guid)
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if not player.has_bank_password then
 		send2client_pb(player, "SC_ResetBankPW", {
 			result = enum.BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
@@ -58,7 +58,7 @@ end
 
 -- 修改银行密码
 function on_cs_bank_change_password(msg,guid)
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if not player.has_bank_password then
 		send2client_pb(player, "SC_BankChangePassword", {
 			result = enum.BANK_OPT_RESULT_PASSWORD_IS_NOT_SET,
@@ -78,7 +78,7 @@ end
 
 -- 登录银行
 function on_cs_bank_login(msg,guid)
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if player.bank_login then
 		send2client_pb(player, "SC_BankLogin", {
 			result = enum.BANK_OPT_RESULT_ALREADY_LOGGED,
@@ -103,7 +103,7 @@ function on_cs_bank_deposit(msg,guid)
 		})
 		return
 	end]]-- 策划说不需要密码了
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if not player then
 		return
 	end
@@ -184,7 +184,7 @@ function on_cs_bank_draw(msg,guid)
 		})
 		return
 	end]]-- 策划说不需要密码了
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if not player then
 		return
 	end

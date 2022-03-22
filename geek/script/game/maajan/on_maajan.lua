@@ -3,7 +3,7 @@
 require "game.net_func"
 local send2client_pb = send2client_pb
 
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
 
 function on_cs_act_win(player, msg)
 	print ("test .................. on_cs_act_win")

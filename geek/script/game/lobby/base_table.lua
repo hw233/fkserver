@@ -3,7 +3,8 @@
 require "game.net_func"
 local log = require "log"
 local enum = require "pb_enums"
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
+local player_data = require "game.lobby.player_data"
 local base_private_table = require "game.lobby.base_private_table"
 local redisopt = require "redisopt"
 local club_table = require "game.club.club_table"
@@ -2052,7 +2053,7 @@ function base_table:check_private_fee()
 		end)
 		return not all and enum.ERROR_LESS_ROOM_CARD or enum.ERROR_NONE
 	elseif payopt == enum.PAY_OPTION_OWNER then
-		local owner = base_players[self.owner_guid]
+		local owner = player_data[self.owner_guid]
 		return self.room_:check_room_fee(self.rule,self.conf.club,owner)
 	elseif payopt == enum.PAY_OPTION_BOSS then
 		if not self.conf.club then
@@ -2103,7 +2104,7 @@ function base_table:cost_private_fee()
 			return
 		end
 
-		local boss = base_players[root.owner]
+		local boss = player_data[root.owner]
 
 		boss:incr_money({
 			money_id = 0,
@@ -2159,7 +2160,7 @@ function base_table:balance(moneies,why)
 	if self:is_private() and self.conf.club and self.conf.club.type  == enum.CT_UNION then
 		-- local minrate = 1
 		-- for pid,money in pairs(moneies) do
-		-- 	local p = self.players[pid] or base_players[pid]
+		-- 	local p = self.players[pid] or player_context[pid]
 		-- 	local p_money = self.old_moneies and self.old_moneies[pid] or player_money[p.guid][money_id]
 		-- 	if p_money + money < 0 then
 		-- 		local r = math.abs(p_money) / math.abs(money)
@@ -2179,7 +2180,7 @@ function base_table:balance(moneies,why)
 			for chair_or_guid,money in pairs(moneies) do
 				if money ~= 0 then
 					money = math.floor(money)
-					local p = self.players[chair_or_guid] or base_players[chair_or_guid]
+					local p = self.players[chair_or_guid] or player_data[chair_or_guid]
 					club:incr_member_money(p.guid,money,why,self.round_id)
 					player_winlose.incr_money(p.guid,money_id,money)
 					self:log_statistics_money(money_id,money,why)
@@ -2193,7 +2194,7 @@ function base_table:balance(moneies,why)
 	for chair_or_guid,money in pairs(moneies) do
 		if money ~= 0 then
 			money = math.floor(money)
-			local p = self.players[chair_or_guid] or base_players[chair_or_guid]
+			local p = self.players[chair_or_guid] or player_data[chair_or_guid]
 			p:incr_money({
 				money_id = money_id,
 				money = money,

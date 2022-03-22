@@ -1,5 +1,5 @@
 local base_clubs = require "game.club.base_clubs"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local runtime_conf = require "game.runtime_conf"
 local onlineguid = require "netguidopt"
 local log = require "log"
@@ -72,7 +72,7 @@ function utils.level(club,level)
 end
 
 function utils.get_game_list(guid,club_id)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if player then
         local alive_games = g_util.alive_game_ids()
         local alives = table.map(alive_games,function(gameid) return gameid,true end)

@@ -179,8 +179,6 @@ function base_character:force_exit(reason)
 	return enum.ERROR_NONE
 end
 
-base_character.forced_exit = base_character.force_exit
-
 function base_character:kickout(reason)
 	return g_room:kickout_server(self,reason)
 end

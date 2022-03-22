@@ -1,7 +1,7 @@
 local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
 local base_clubs = require "game.club.base_clubs"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local log = require "log"
 local club_member = require "game.club.club_member"
 local club_role = require "game.club.club_role"
@@ -21,7 +21,7 @@ local reddb = redisopt.default
 local strfmt = string.format
 
 function on_cs_get_club_template_commission(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then 
         onlineguid.send(guid,"S2C_GET_CLUB_TEMPLATE_COMMISSION",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -107,7 +107,7 @@ function on_cs_get_club_template_commission(msg,guid)
 end
 
 function on_cs_config_club_template_commission(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then 
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEMPLATE_COMMISSION",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -200,7 +200,7 @@ function on_cs_config_club_template_commission(msg,guid)
 end
 
 function on_cs_reset_club_teamplate_commission(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then 
         onlineguid.send(guid,"S2C_RESET_CLUB_TEMPLATE_COMMISSION",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -262,7 +262,7 @@ function on_cs_reset_club_teamplate_commission(msg,guid)
 end
 
 function on_cs_config_club_team_template(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         onlineguid.send(guid,"S2C_CONFIG_CLUB_TEAM_TEMPLATE",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -340,7 +340,7 @@ function on_cs_config_club_team_template(msg,guid)
 end
 
 function on_cs_get_club_team_template_conf(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then 
         onlineguid.send(guid,"S2C_GET_CLUB_TEAM_TEMPLATE_CONFIG",{
             result = enum.ERROR_PLAYER_NOT_EXIST

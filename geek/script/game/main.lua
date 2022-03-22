@@ -1,7 +1,7 @@
 local skynet = require "skynetproto"
 local log = require "log"
 local channel = require "channel"
-local base_players  = require "game.lobby.base_players"
+local player_data  = require "game.lobby.player_data"
 require "functions"
 local msgopt = require "msgopt"
 local redisopt = require "redisopt"
@@ -92,7 +92,7 @@ function CMD.afk(guid,offline)
 		return
 	end
 
-	local player = base_players[guid]
+	local player = player_data[guid]
 	if not player then
 		return
 	end

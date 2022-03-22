@@ -1,6 +1,7 @@
 local redisopt = require "redisopt"
 local wrap = require "fast_cache_wrap"
 local queue = require "skynet.queue"
+local base_player = require "game.lobby.base_player"
 
 local reddb = redisopt.default
 
@@ -9,7 +10,7 @@ local mfloor = math.floor
 local strfmt = string.format
 
 
-local infolock = setmetatable({},{
+local guard = setmetatable({},{
 	__index = function(t,guid)
 		local l = queue()
 		t[guid] = l
@@ -19,9 +20,10 @@ local infolock = setmetatable({},{
 
 local mgr = setmetatable({},{
 	__index = function(t,guid)
-		assert(guid)
-		guid = mfloor(tonumber(guid))
-		local l = infolock[guid]
+		if type(guid) ~= "number" then
+            return
+        end
+		local l = guard[guid]
 		return l(function()
 			-- double check
 			local p = rawget(t,guid)
@@ -32,13 +34,14 @@ local mgr = setmetatable({},{
 				return
 			end
 	
+			setmetatable(p,{__index = base_player})
 			t[guid] = p
 			return p
 		end)
 	end,
 	__newindex = function(t,guid,v)
 		if v == nil then
-			infolock[guid] = nil
+			guard[guid] = nil
 			t[guid] = nil
 		end
 	end,

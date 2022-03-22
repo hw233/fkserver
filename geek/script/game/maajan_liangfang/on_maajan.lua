@@ -3,11 +3,11 @@ local log = require "log"
 require "game.net_func"
 local send2client_pb = send2client_pb
 
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
 
 function on_cs_act_win(msg,guid)
 	log.info ("test .................. on_cs_act_win")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -20,7 +20,7 @@ end
 
 function on_cs_act_double(msg,guid)
 	log.info ("test .................. on_cs_act_double")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -33,7 +33,7 @@ end
 
 function on_cs_act_discard(msg,guid)
 	log.info ("test .................. on_cs_act_discard")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -47,7 +47,7 @@ end
 
 function on_cs_act_peng(msg,guid)
 	log.info ("test .................. on_cs_act_peng")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -61,7 +61,7 @@ end
 
 function on_cs_act_gang(msg,guid)
 	log.info ("test .................. on_cs_act_gang")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -75,7 +75,7 @@ end
 
 function on_cs_act_pass(msg,guid)
 	log.info ("test .................. on_cs_act_pass")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -89,7 +89,7 @@ end
 
 function on_cs_act_chi(msg,guid)
 	log.info ("test .................. on_cs_act_chi")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -103,7 +103,7 @@ end
 
 function on_cs_act_trustee(msg,guid)
 	log.info ("test .................. on_cs_act_trustee")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -117,7 +117,7 @@ end
 
 function on_cs_act_baoting(msg,guid)
 	log.info ("test .................. on_cs_act_baoting")
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -131,7 +131,7 @@ end
 
 function on_cs_do_action(msg,guid)
 	log.info ("test .................. on_cs_do_action,guid:%s",guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_act_win no player,guid:%s",guid)
 		return
@@ -145,7 +145,7 @@ end
 
 function on_cs_get_ting_tiles_info(msg,guid)
 	log.info ("test .................. on_cs_get_ting_tiles_info,guid:%s",guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_get_ting_tiles_info no player,guid:%s",guid)
 		return

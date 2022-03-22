@@ -2,7 +2,9 @@ local log = require "log"
 local base_club = require "game.club.base_club"
 local pb = require "pb_files"
 local redisopt = require "redisopt"
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
+local sessions = require "game.sessions"
+local player_data = require "game.lobby.player_data"
 local base_clubs = require "game.club.base_clubs"
 local club_member = require "game.club.club_member"
 local player_club = require "game.lobby.player_club"
@@ -91,7 +93,7 @@ function on_bs_club_create(owner,name,type,creator)
     local guid = owner
 
     log.dump(creator)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("internal error,recv msg but no player.")
         return
@@ -126,7 +128,7 @@ function on_bs_club_create_with_group(group_id,name)
         return enum.ERROR_PARAMETER_ERROR
     end
 
-    local player = base_players[group.owner]
+    local player = player_data[group.owner]
     if not player then
         return enum.ERROR_PLAYER_NOT_EXIST
     end
@@ -147,7 +149,7 @@ end
 
 function on_cs_club_create(msg,guid)
     local club_info = msg.info
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("internal error,recv msg but no player.")
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
@@ -234,7 +236,7 @@ function on_cs_club_import_player_from_team(msg,guid)
     local result,error_info = club_utils.import_team_branch_member(from,to,team_id)
     if error_info.failed_info then
         error_info.failed_info =  table.series(error_info.failed_info,function (s,g)
-            return {guid = g,status = s,name = base_players[g].nickname}
+            return {guid = g,status = s,name = player_data[g].nickname}
         end)
     end
     onlineguid.send(guid,"SC_CLUB_IMPORT_PLAYER_FROM_TEAM",{
@@ -306,7 +308,7 @@ function on_cs_club_create_club_with_mail(msg,guid)
         return
     end
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("internal error,recv msg but no player.")
         onlineguid.send(guid,"S2C_CREATE_CLUB_RES",{
@@ -394,7 +396,7 @@ function on_cs_club_invite_join_club(msg,guid)
         return
     end
 
-    if not base_players[guid] then
+    if not player_data[guid] then
         log.warning("invite join club but inviter is not exists,guid:%s",guid)
         onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
             result = enum.ERROR_OPERATION_INVALID,
@@ -403,7 +405,7 @@ function on_cs_club_invite_join_club(msg,guid)
     end
 
     if invite_type == "invite_join" then
-        if not base_players[invitee] then
+        if not player_data[invitee] then
             onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
                     result = enum.ERROR_PLAYER_NOT_EXIST
                 })
@@ -425,7 +427,7 @@ function on_cs_club_invite_join_club(msg,guid)
             return
         end
     elseif invite_type == "invite_create" then
-        local p = base_players[invitee]
+        local p = player_data[invitee]
         if not p then
             onlineguid.send(guid,"S2C_INVITE_JOIN_CLUB",{
                 result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -512,8 +514,8 @@ function on_cs_club_detail_info_req(msg,guid)
     }
 
     local money_id = club_money_type[club_id]
-    local boss = base_players[club.owner]
-    local myself = base_players[guid]
+    local boss = player_data[club.owner]
+    local myself = player_data[guid]
     local my_team_info = {
         info = {
             guid = myself.guid,
@@ -740,12 +742,12 @@ function on_cs_club_query_memeber(msg,guid)
     end
 
     local ms = table.series(mems,function(m)
-        local p = base_players[tonumber(m)]
+        local p = player_data[tonumber(m)]
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
         local parent_guid = club_member_partner[club_id][p.guid]
-        local parent = base_players[parent_guid]
+        local parent = player_data[parent_guid]
         if not req_role or req_role == 0 or req_role == role then
             return {
                 info = {
@@ -808,7 +810,7 @@ function on_cs_club_request_list_req(msg,guid)
         local req = base_request[rid]
         if not req then return end
 
-        local player = base_players[req.who]
+        local player = player_data[req.who]
         return {
             req_id = req.id,
             type = req.type,
@@ -859,7 +861,7 @@ local function on_cs_club_blacklist(msg,guid)
         return
     end
 
-    if not base_players[target_guid] then
+    if not player_data[target_guid] then
         res.result = enum.ERROR_PLAYER_NOT_EXIST
         onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
         return
@@ -972,7 +974,7 @@ local function on_cs_club_administrator(msg,guid)
 end
 
 local function on_cs_club_player(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("unknown player when kickout player out club:%s",msg.club_id)
         return
@@ -984,7 +986,7 @@ local function on_cs_club_player(msg,guid)
 end
 
 local function on_cs_club_exit(msg,guid)
-    local operator = base_players[guid]
+    local operator = player_data[guid]
     local club_id = msg.club_id
     local role = club_role[club_id][guid]
     local exit_guid = msg.target_id
@@ -998,7 +1000,7 @@ local function on_cs_club_exit(msg,guid)
         return enum.ERROR_OPERATION_INVALID
     end
     
-    if base_players[exit_guid] then
+    if player_data[exit_guid] then
         local club = base_clubs[club_id]
         if not club then
             return enum.ERROR_CLUB_NOT_FOUND
@@ -1051,7 +1053,7 @@ local function on_cs_club_agree_join_club_with_share_id(msg,guid)
 end
 
 local function on_cs_club_agree_request(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("unknown player when agree request id:%s",msg.request_id)
         
@@ -1121,7 +1123,7 @@ end
 
 local function on_cs_club_reject_request(msg,guid)
     log.dump(msg)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         log.error("unknown player when reject request request_id:%s",msg.request_id)
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -1369,7 +1371,7 @@ function on_cs_club_kickout(msg,guid)
 
     log.dump(msg)
     club_utils.lock_action(club_id,{guid,target_guid},function()
-        local player = base_players[guid]
+        local player = player_data[guid]
         if not player then
             onlineguid.send(guid,"S2C_CLUB_OP_RES",{
                 result = enum.ERROR_PLAYER_NOT_EXIST
@@ -1401,7 +1403,7 @@ function on_cs_club_kickout(msg,guid)
             return
         end
 
-        local target = base_players[target_guid]
+        local target = player_data[target_guid]
         if not target then
             onlineguid.send(guid,"S2C_CLUB_OP_RES",{
                 result = enum.ERROR_PLAYER_NOT_EXIST
@@ -1447,7 +1449,7 @@ local function on_cs_club_block(msg,guid,status)
     local target_club_id = msg.target_id
     local op = (status == 0 and CLUB_OP.UNBLOCK_CLUB or CLUB_OP.BLOCK_CLUB)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -1532,7 +1534,7 @@ local function on_cs_club_close(msg,guid,status)
     local club_id = msg.club_id
     local oper = (status == 0 and CLUB_OP.OPEN_CLUB or CLUB_OP.CLOSE_CLUB)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -1588,7 +1590,7 @@ local function on_cs_club_team_block(msg,guid)
         return
     end
 
-    local player = base_players[team_id]
+    local player = player_data[team_id]
     if not player then
         onlineguid.send(guid,"S2C_CLUB_OP_RES",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -1685,7 +1687,7 @@ function on_cs_club_team_list(msg,guid)
     for team_id,_ in pairs(team_ids) do
         local team_club = base_clubs[team_id]
         local team_money_id = club_money_type[team_id]
-        local boss = base_players[team_club.owner]
+        local boss = player_data[team_club.owner]
         local moneies = {{
             money_id = team_money_id,
             count = club_money[team_id][team_money_id]
@@ -1757,7 +1759,7 @@ local function transfer_money_player2club(source_guid,target_club_id,money,guid)
         target_id = target_club_id,
     }
 
-    local p = base_players[source_guid]
+    local p = player_data[source_guid]
     if not p then
         res.result = enum.ERROR_PLAYER_NOT_EXIST
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -1958,7 +1960,7 @@ local function transfer_money_club2player(source_club_id,target_guid,money,guid)
         target_id = target_guid,
     }
 
-    local p = base_players[target_guid]
+    local p = player_data[target_guid]
     if not p then
         res.result = enum.ERROR_PLAYER_NOT_EXIST
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -2108,8 +2110,8 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
     local from_role = club_role[club_id][from_guid] or enum.CRT_PLAYER
     local to_role = club_role[club_id][to_guid] or enum.CRT_PLAYER
 
-    local from = base_players[from_guid]
-    local to = base_players[to_guid]
+    local from = player_data[from_guid]
+    local to = player_data[to_guid]
     if not from or not to then
         res.result = enum.ERROR_PLAYER_NOT_EXIST
         onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
@@ -2356,7 +2358,7 @@ end
 
 function on_cs_config_fast_game_list(msg,guid)
     log.info("on_cs_config_fast_game_list")
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         onlineguid.send(guid,"S2C_CONFIG_FAST_GAME_LIST",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -2481,7 +2483,7 @@ function on_cs_pull_block_groups(msg,guid)
         return {
             group_id = gid, 
             players = table.series(club_block_group_players[club_id][gid],function(_,gpid)
-                local p = base_players[gpid]
+                local p = player_data[gpid]
                 return {
                     guid = p.guid,
                     nickname = p.nickname,
@@ -2582,7 +2584,7 @@ function on_cs_add_player_to_block_group(msg,guid)
         return
     end
 
-    local p = base_players[group_guid]
+    local p = player_data[group_guid]
     if not p then
         onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -2636,7 +2638,7 @@ function on_cs_remove_player_from_block_group(msg,guid)
         return
     end
 
-    local p = base_players[group_guid]
+    local p = player_data[group_guid]
     if not p then
         onlineguid.send(guid,"S2C_CLUB_BLOCK_ADD_PLAYER_TO_GROUP",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -2666,7 +2668,7 @@ function on_cs_club_edit_info(msg,guid)
     local club_id = msg.club_id
     local name = msg.name
 
-    local operator = base_players[guid]
+    local operator = player_data[guid]
     if not operator then
         onlineguid.send(guid,"S2C_CLUB_EDIT_INFO",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -2717,7 +2719,7 @@ function on_cs_club_get_config(msg,guid)
     local club_id = msg.club_id
     local conf = msg.conf
 
-    local operator = base_players[guid]
+    local operator = player_data[guid]
     if not operator then
         onlineguid.send(guid,"S2C_CLUB_GET_CONFIG",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -2756,7 +2758,7 @@ function on_cs_club_edit_config(msg,guid)
     local club_id = msg.club_id
     local conf = msg.conf
 
-    local operator = base_players[guid]
+    local operator = player_data[guid]
     if not operator then
         onlineguid.send(guid,"S2C_CLUB_EDIT_CONFIG",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -2813,7 +2815,7 @@ end
 
 
 function on_cs_club_invite_join_room(msg,guid)
-    local player = base_players[guid]
+    local player = player_data[guid]
     if not player then
         onlineguid.send(guid,"S2C_CLUB_INVITE_JOIN_ROOM",{
             result = enum.ERROR_OPERATION_INVALID,
@@ -2957,12 +2959,12 @@ function on_cs_search_club_player(msg,guid)
 
     json.encode_sparse_array(true)
     local infos = table.series(mems,function(m)
-        local p = base_players[tonumber(m)]
+        local p = player_data[tonumber(m)]
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
         local parent_guid = club_member_partner[club_id][p.guid]
-        local parent = base_players[parent_guid]
+        local parent = player_data[parent_guid]
         return {
             info = {
                 guid = p.guid,
@@ -3067,7 +3069,7 @@ function on_cs_club_get_team_partner_config(msg,guid)
         confs = table.series(club_partner_member[club_id][guid],function (_,mem_id)
             local mrole = club_role[club_id][mem_id]
             if mrole == enum.CRT_PARTNER then
-                local p = base_players[mem_id]
+                local p = player_data[mem_id]
                 return {
                     partner = mem_id,
                     conf = json.encode(club_utils.get_partner_commission_conf(club_id,mem_id)),
@@ -3153,7 +3155,7 @@ function on_cs_club_kickout_player(msg,kicker_guid)
         return
     end
 
-    local player = base_players[guid]
+    local player = player_context[guid]
     if not player then
         onlineguid.send(kicker_guid,"SC_ForceKickoutPlayer",{
             result = enum.ERROR_PLAYER_NOT_EXIST,
@@ -3162,7 +3164,7 @@ function on_cs_club_kickout_player(msg,kicker_guid)
         return
     end
 
-    local kicker = base_players[kicker_guid]
+    local kicker = player_context[kicker_guid]
     local kicker_table = g_room:find_table_by_player(kicker)
     local kickee_table = g_room:find_table_by_player(player)
     local result = enum.ERROR_NONE
@@ -3249,7 +3251,7 @@ function on_cs_club_member_info(msg,guid)
         return
     end
 
-    local p = base_players[member]
+    local p = player_data[member]
     if not p then 
         send2client(guid,"SC_CLUB_MEMBER_INFO",{
             result = enum.ERROR_MEMBERS_NOT_FOUND,
@@ -3260,7 +3262,7 @@ function on_cs_club_member_info(msg,guid)
     local money_id = club_money_type[club_id]
     local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
     local parent_guid = club_member_partner[club_id][p.guid]
-    local parent = base_players[parent_guid]
+    local parent = player_data[parent_guid]
     local info = {
         info = {
             guid = p.guid,
@@ -3469,7 +3471,7 @@ function on_cs_pull_block_team_groups(msg,guid)
         return {
             group_id = gid, 
             players = table.series(club_block_group_teams[club_id][gid],function(_,gtid)
-                local p = base_players[gtid]
+                local p = player_data[gtid]
                 return {
                     guid = p.guid,
                     nickname = p.nickname,
@@ -3568,7 +3570,7 @@ function on_cs_add_team_to_block_team_group(msg,guid)
         return
     end
 
-    local p = base_players[group_team]
+    local p = player_data[group_team]
     if not p then
         onlineguid.send(guid,"S2C_CLUB_BLOCK_TEAM_ADD_TEAM_TO_GROUP",{
             result = enum.ERROR_PLAYER_NOT_EXIST
@@ -3643,7 +3645,7 @@ function on_cs_remove_team_from_block_team_group(msg,guid)
         return
     end
 
-    local p = base_players[group_team]
+    local p = player_data[group_team]
     if not p then
         onlineguid.send(guid,"S2C_CLUB_BLOCK_TEAM_REMOVE_TEAM_FROM_GROUP",{
             result = enum.ERROR_PLAYER_NOT_EXIST

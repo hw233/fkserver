@@ -1,12 +1,12 @@
 -- 跑得快消息处理
 
 local log = require "log"
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
 local room = require "game.land.land_room"
 
 -- 出牌
 function on_cs_land_do_action(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_land_do_action player not found.")
 		return
@@ -21,7 +21,7 @@ function on_cs_land_do_action(msg,guid)
 end
 
 function  on_cs_land_trustee(msg, guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_land_trustee player not found.")
 		return
@@ -36,7 +36,7 @@ function  on_cs_land_trustee(msg, guid)
 end
 
 function on_cs_land_compete_landlord(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_land_compete_landlord player not found.")
 		return

@@ -9,7 +9,7 @@ local reddot = require "game.reddot.reddot"
 require "functions"
 
 local reddb = redisopt.default
-local base_players = require "game.lobby.base_players"
+local player_context = require "game.lobby.player_context"
 local player_mail = require "game.mail.player_mail"
 local base_mails = require "game.mail.base_mails"
 local base_mail = require "game.mail.base_mail"
@@ -22,13 +22,13 @@ local send2client_pb = send2client_pb
 -- 发送邮件
 function on_cs_send_mail(msg,guid)
 	local mail = msg.mail
-	local sender = base_players[guid]
+	local sender = player_context[guid]
 	if not sender then
 		log.warning("on_cs_send_mail found illigel sender.guid:%s",guid)
 		return
 	end
 
-	local receiver = base_players[mail.receiver.guid]
+	local receiver = player_context[mail.receiver.guid]
 	if not receiver then
 		log.warning("on_cs_send_mail found illigel receiver.guid:%s",mail.receiver.guid)
 		return
@@ -54,7 +54,7 @@ end
 
 -- 提取附件
 function on_cs_receive_mail_attachment(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_receive_mail_attachment no player.guid:%d",guid)
 		return
@@ -100,7 +100,7 @@ end
 
 
 function on_cs_pull_summary_mails(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_pull_summary_mails illegal player.guid:%d",guid)
 		return
@@ -139,7 +139,7 @@ function on_cs_pull_summary_mails(msg,guid)
 end
 
 function on_cs_pull_mail_detail(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_pull_mail_detail illegal player.guid:%d",guid)
 		return
@@ -158,7 +158,7 @@ function on_cs_pull_mail_detail(msg,guid)
 		return
 	end
 
-	local sender = base_players[mail_info.sender]
+	local sender = player_context[mail_info.sender]
 	if not sender then
 		log.error("on_cs_pull_mail_detail no sender.guid:%d",mail_info.sender)
 		return
@@ -184,7 +184,7 @@ end
 
 
 function on_cs_read_mail(msg,guid)
-	local player = base_players[guid]
+	local player = player_context[guid]
 	if not player then
 		log.error("on_cs_read_mail illegal player.guid:%s",guid)
 		return

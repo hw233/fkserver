@@ -4,7 +4,7 @@ local channel = require "channel"
 local onlineguid = require "netguidopt"
 local skynet = require "skynetproto"
 local log = require "log"
-local base_players = require "game.lobby.base_players"
+local player_data = require "game.lobby.player_data"
 local enum = require "pb_enums"
 local util = require "util"
 local player_money = require "game.lobby.player_money"
@@ -73,7 +73,7 @@ local function reg_account(msg)
     local guid = reddb:get("player:account:"..tostring(msg.open_id))
     if guid then
         guid = tonumber(guid)
-        local p = base_players[guid]
+        local p = player_data[guid]
         if p and p.status == 0 then
             return enum.ERROR_PLAYER_IS_LOCKED
         end
@@ -188,7 +188,7 @@ local function reg_account(msg)
     -- -- 注册时加默认房卡
     local register_money = global_conf.register_money
     if register_money and register_money > 0  then
-        local player = base_players[guid]
+        local player = player_data[guid]
         player:incr_money({
             money_id = 0,
             money = register_money,
@@ -211,7 +211,7 @@ local function open_id_login(msg)
         return enum.LOGIN_RESULT_ACCOUNT_NOT_EXISTS
     end
 
-    local player = base_players[guid]
+    local player = player_data[guid]
     if player and player.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED
     end
@@ -253,8 +253,6 @@ local function open_id_login(msg)
         channel_id = player.channel_id,
         vip = player.vip,
     }
-
-    base_players[guid] = nil
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
@@ -374,7 +372,7 @@ local function sms_login(msg)
     else
         local guid = reddb:get("player:account:"..tostring(uuid))
         guid = tonumber(guid)
-        local player = base_players[guid]
+        local player = player_data[guid]
         if player and player.status == 0 then
             return enum.ERROR_PLAYER_IS_LOCKED
         end
@@ -416,8 +414,6 @@ local function sms_login(msg)
             channel_id = player.channel_id,
             vip = player.vip,
         }
-
-        base_players[guid] = nil
     end
 
 	return enum.LOGIN_RESULT_SUCCESS,info
@@ -445,7 +441,7 @@ local function h5_login(msg)
 
     guid = tonumber(guid)
 
-    local player = base_players[guid]
+    local player = player_data[guid]
 
     local ip = msg.ip
     if ip then
@@ -477,8 +473,6 @@ local function h5_login(msg)
         vip = player.vip,
     }
 
-    base_players[guid] = nil
-
     log.dump(player)
 
     return enum.LOGIN_RESULT_SUCCESS,info
@@ -501,7 +495,7 @@ local function account_login(msg)
         guid = tonumber(uuid)
     end
     
-    local player = base_players[guid]
+    local player = player_data[guid]
     if player and player.status == 0 then
         return enum.ERROR_PLAYER_IS_LOCKED
     end
@@ -565,8 +559,6 @@ local function account_login(msg)
         channel_id = player.channel_id,
         vip = player.vip,
     }
-
-    base_players[guid] = nil
 
     return enum.LOGIN_RESULT_SUCCESS,info
 end
