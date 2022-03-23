@@ -3239,7 +3239,9 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
     table.sort(types,function(l,r)
         local lscore,lfan = self:calc_types(l)
         local rscore,rfan = self:calc_types(r)
-        return lscore + 2 ^ lfan > rscore + 2 ^ rfan
+        local curlscore = lscore + 2 ^ lfan
+        local currscore = rscore + 2 ^ rfan
+        return ( curlscore == currscore ) and (lfan > rfan) or curlscore > currscore
     end)
 
     return types[1] or {}
