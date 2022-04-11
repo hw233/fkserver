@@ -451,8 +451,25 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     local target_act = done_action.target_action
     local qiang_tile = done_action.tile
     local chu_pai_player = self:chu_pai_player()
+
+    local function check_all_pass(actions)
+        for _,act in pairs(actions) do
+            if act.done.action == ACTION.PASS then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.QIANG_GANG_HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,act.tile)
+                    end
+                end
+            end
+        end
+    end
+
+
     local all_pass = table.And(self.qiang_gang_actions or {},function(action) return action.done.action == ACTION.PASS end)
     if all_pass then
+        check_all_pass(self.qiang_gang_actions)
         self.qiang_gang_actions = nil
         self:adjust_shou_pai(chu_pai_player,target_act,qiang_tile)
         chu_pai_player.statistics.ming_gang = (chu_pai_player.statistics.ming_gang or 0) + 1
@@ -492,7 +509,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         end 
         self:done_last_action(p,{action = act,tile = done_action_tile})
     end
-
+    check_all_pass(self.qiang_gang_actions)
     table.foreach(self.qiang_gang_actions or {},function(action,chair)
         local done_act = action.done.action
         if (done_act & (ACTION.QIANG_GANG_HU | ACTION.HU)) > 0 then
