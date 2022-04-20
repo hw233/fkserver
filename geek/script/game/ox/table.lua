@@ -871,7 +871,7 @@ function ox_table:reconnect(player)
 			return chair,p.status or  PLAYER_STATUS.WATCHER
 		end)
 	}
-	if player.status and player.status == PLAYER_STATUS.BANKRUPTCY  then 
+	if not msg.players[chair_id] or (player.status and player.status == PLAYER_STATUS.BANKRUPTCY ) then 
 		send2client(player,"SC_OxTableInfo",msg) 
 		return 
 	end 
