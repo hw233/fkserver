@@ -482,6 +482,7 @@ function zhajinhua_table:on_private_dismissed(reason)
 	self:stop_start_ticker()
 	self:cancel_clock_timer()
 	self:cancel_action_timer()
+	self:compare_animate_done()
 end
 
 function zhajinhua_table:on_process_start(player_count)
