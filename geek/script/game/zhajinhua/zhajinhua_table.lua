@@ -1189,6 +1189,13 @@ function zhajinhua_table:follow(player,msg,auto)
 			self:game_balance(player)
 			return
 		end
+
+		player.death = true
+		
+		if self:is_end() then
+			self:game_balance()
+			return
+		end
 	end
 
 	self:next_turn()
@@ -1338,6 +1345,11 @@ function zhajinhua_table:add_score(player,msg)
 		end
 
 		player.death = true
+
+		if self:is_end() then
+			self:game_balance()
+			return
+		end
 	end
 
 	self:next_turn()
