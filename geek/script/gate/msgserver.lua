@@ -23,7 +23,7 @@ function server.closeclient(fd)
 	connection[fd] = nil
 	queues[fd] = nil
 
-	gateserver.closeclient(fd)
+	gateserver.close(fd)
 end
 
 function server.ip(fd)
@@ -37,13 +37,19 @@ function server.start(conf)
 	local protocol = conf.protocol
 	gateserver = require(protocol == "ws" and "gate.gateserver_ws" or "gate.gateserver")
 
-	local expired_number = conf.expired_number or 128
-
+	local function try(method,...)
+		local f = conf[method]
+		if f then
+			f(...)
+		end
+	end
+	
 	local handler = {
-		conf = conf,
+		host = conf.address,
+		port = conf.port,
 	}
 
-	function handler.open(source, gateconf)
+	function handler.open()
 		
 	end
 
@@ -58,22 +64,19 @@ function server.start(conf)
 			open_time = os.time(),
 		}
 
-		if conf.connect_handler then
-			conf.connect_handler(fd,addr)
-		end
+		try("connect_handler",fd,addr)
 	end
 
 	function handler.disconnect(fd)
 		local c = connection[fd]
 		if c then
-			if conf.disconnect_handler then
-				conf.disconnect_handler(c)
-			end
+			try("disconnect_handler",c)
 			connection[fd] = nil
 			queues[fd] = nil
-		else
-			log.warning("msgserver.disconnect got nil session,%s",fd)
+			return
 		end
+
+		log.warning("msgserver.disconnect got nil session,%s",fd)
 	end
 
 	handler.error = handler.disconnect
@@ -114,7 +117,6 @@ function server.start(conf)
 	end
 
 	gateserver.start(handler)
-	gateserver.open(conf)
 end
 
 return server
