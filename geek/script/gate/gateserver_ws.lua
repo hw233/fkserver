@@ -269,7 +269,9 @@ function gateserver.start(conf)
             return
         end
 
-        skynet.fork(dispatch_queue,fd)
+        if framecode ~= ws.OPCODE_CLOSE then
+            skynet.fork(dispatch_queue,fd)
+        end
         ws_frame_dispatch[framecode](fd,msg,reason)
     end
 
