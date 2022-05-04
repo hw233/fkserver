@@ -308,6 +308,12 @@ function gateserver.start(conf)
             log.info("websocket redirect addr %s",addr)
         end
 
+        local real_ip = header["X-Real-Ip"] or header["x-real-ip"]
+        if real_ip then
+            addr = real_ip .. ":" .. (header["x-real-port"] or header["X-Real-Port"] or "0")
+            log.info("websocket redirect addr %s",addr)
+        end
+
         handler.connect(fd,addr)
 
         skynet.fork(dispatch_queue,fd)
