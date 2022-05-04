@@ -63,18 +63,18 @@ function ws.handshake(interface)
     local code, uri, _, header, _ = httpd.read_request(interface.read)
     if not code then
         log.warning(string.format("accept request error:%s,url:%s",code,uri))
-        return nil,uri,header
+        return uri,header
     end
 
     local content
     code,content = accept_connection(header)
     if code then
         httpd.write_response(interface.write,code,content)
-        return true,uri,header
+        return uri,header
     end
 
     interface.write(content)
-    return true,uri,header
+    return uri,header
 end
 
 -- function ws.build_frame(fin, opcode, msg)
@@ -272,15 +272,13 @@ function ws.parse_frame(readbytes)
         frame_data = websocket_mask(frame_mask, frame_data, frame_length)
     end
 
-    if frame_opcode == ws.OPCODE_CLOSE and final_frame then
-        local code,reason
-        code = #frame_data >= 2 and string.unpack(">H",frame_data:sub(1,2)) or -1
-        reason = #frame_data > 2 and frame_data:sub(3) or ""
-
-        return frame_opcode,final_frame,code,reason
-    end
-
     return frame_opcode, final_frame, frame_data
+end
+
+function ws.parse_close(payload)
+    local code = string.unpack(">H",payload:sub(1,2)) or 0
+    local reason = payload:sub(3)
+    return code,reason
 end
 
 return ws

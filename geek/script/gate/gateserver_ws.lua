@@ -2,17 +2,20 @@ local skynet = require "skynet"
 local socketdriver = require "skynet.socketdriver"
 local ws = require "websocket"
 local log = require "log"
-
+local timermgr = require "timermgr"
 
 local gateserver = {}
 
 local socket	-- listen socket
-local maxclient	-- max client
 local client_number = 0
 local buffer_pool = {}
-local nodelay
+local handshake_timeout = 5
 
 local connection = setmetatable({}, { __gc = function() socketdriver.clear(buffer_pool) end })
+
+local function is_socket_close(fd)
+    return not connection[fd]
+end
 
 local function wakeup(c)
     local co = c.co
@@ -93,14 +96,18 @@ local function writefunc(fd)
     end
 end
 
-function gateserver.openclient(fd)
+local function openclient(fd)
     log.info("openclient %d",fd)
 	if connection[fd] then
 		socketdriver.start(fd)
 	end
 end
 
-function gateserver.closeclient(fd)
+function gateserver.openclient(fd)
+    openclient(fd)
+end
+
+local function closeclient(fd)
     log.warning("closeclient %d",fd)
 	local c = connection[fd]
     if c then
@@ -108,6 +115,10 @@ function gateserver.closeclient(fd)
         socketdriver.close(fd)
         connection[fd] = nil
 	end
+end
+
+function gateserver.closeclient(fd)
+    closeclient(fd)
 end
 
 local handler 
@@ -136,6 +147,8 @@ function gateserver.start(conf)
     assert(conf.connect)
     
     handler = conf
+
+ 
 
     local function data(fd,size,msg) 
         local c = connection[fd]
@@ -200,7 +213,7 @@ function gateserver.start(conf)
 		end
     end
 
-    local function dispatch_msg(fd, msg)
+    local function dispatch(fd, msg)
 		if connection[fd] then
 			handler.message(fd, msg)
 		else
@@ -208,71 +221,48 @@ function gateserver.start(conf)
 		end
     end
 
-    local function ws_close(fd,code,reason)
-        log.warning("websocket close,%d code:%s,reason:%s",fd,code,reason)
-        socketdriver.close(fd)
-    end
-    
-    local ws_frame_dispatch = {
-        [ws.OPCODE_CLOSE] = function(fd,code,reason)
-            ws_close(fd,code,reason)
-        end,
-        [ws.OPCODE_BINARY] = function(fd,msg,_)
-            dispatch_msg(fd,msg)
-        end,
-        [ws.OPCODE_PING] = function(fd,msg,_)
-            socketdriver.send(fd,ws.build_pong(msg))
-        end,
-        [ws.OPCODE_PONG] = function(fd,msg,_)
-
-        end,
-        [ws.OPCODE_TEXT] = function(fd,msg,_)
-            return
-        end,
-    }
-
-    local function ws_pick_msg(fd)
-        local framecode,reason
-        local msg = ""
-        local final
-        local partialmsg
+    local MAX_FRAME_SIZE = 256 * 1024 -- max frame is 256K
+    local function recv(fd)
+        local recv_count = 0
+        local recv_buf = {}
+        local first_op
         while true do
-            framecode,final,partialmsg,reason = ws.parse_frame(readfunc(fd))
-            if not framecode then
-                msg = partialmsg
-                break
-            end
-
-            if final then
-                if framecode == ws.OPCODE_CLOSE then
-                    return framecode,partialmsg,reason
-                end
-
-                msg = msg..partialmsg
-                break
-            end
-
-            msg = msg..partialmsg
-        end
-        
-        return framecode,msg,reason
-    end
-    
-    local function dispatch_queue(fd)
-        local framecode,msg,reason = ws_pick_msg(fd)
-        if not framecode then
             local c = connection[fd]
-            if c then
-                close(c.fd)
+            if not c then
+                break
             end
-            log.warning("websocket parse frame got nil framecode,maybe lost connection:%s",msg)
-            return
-        end
 
-        if framecode ~= ws.OPCODE_CLOSE then
-            skynet.fork(dispatch_queue,fd)
+            local op, fin , payload_data = ws.parse_frame(readfunc(fd))
+            if not op or op == ws.OPCODE_CLOSE then
+                socketdriver.send(fd,ws.build_close())
+                close(fd)
+                break
+            end
+
+            if op == ws.OPCODE_PING then
+                socketdriver.send(fd,ws.build_pong())
+            elseif op == ws.OPCODE_PONG then
+                
+            else
+                if fin and #recv_buf == 0 then
+                    dispatch(fd,payload_data)
+                else
+                    table.insert(recv_buf,payload_data)
+                    recv_count = recv_count + #payload_data
+                    if recv_count > MAX_FRAME_SIZE then
+                        log.error("payload_len is too large")
+                    end
+                    first_op = first_op or op
+                    if fin then
+                        local s = table.concat(recv_buf)
+                        dispatch(fd,s)
+                        recv_buf = {}  -- clear recv_buf
+                        recv_count = 0
+                        first_op = nil
+                    end
+                end
+            end
         end
-        ws_frame_dispatch[framecode](fd,msg,reason)
     end
 
 
@@ -289,34 +279,56 @@ function gateserver.start(conf)
 
         gateserver.openclient(fd)
 
-        local ok,_,header = ws.handshake({
+        c.handshaking = true
+
+        local timer = timermgr:calllater(handshake_timeout,function() 
+            log.warning("handshake timeout %s",fd)
+            if c.handshaking then
+                closeclient(fd)
+            end
+        end)
+
+        local ok,err,header = xpcall(ws.handshake,debug.traceback,{
             read = readfunc(fd),
             write = writefunc(fd),
         })
         
         if not ok then
-            log.error("websocket handshake failed,fd:",fd,addr)
-            gateserver.closeclient(fd)
+            log.error("websocket handshake failed,%s,%s,%s",fd,addr,err)
+            if not is_socket_close(fd) then 
+                closeclient(fd)
+            end
+            timer:kill()
             return
         end
 
-        log.dump(header)
+        c.handshaking = nil
 
+        timer:kill()
+
+        log.dump(header)
+        
         local real_host = header['X-Real-Host'] or header["x-real-host"]
+        local real_ip = header["X-Real-Ip"] or header["x-real-ip"]
         if real_host then
             addr = string.match(real_host,"%d+%.%d+%.%d+%.%d+:%d+") or addr
-            log.info("websocket redirect addr %s",addr)
-        end
-
-        local real_ip = header["X-Real-Ip"] or header["x-real-ip"]
-        if real_ip then
+            log.info("websocket real-host redirect addr %s",addr)
+        elseif real_ip then
             addr = real_ip .. ":" .. (header["x-real-port"] or header["X-Real-Port"] or "0")
-            log.info("websocket redirect addr %s",addr)
+            log.info("websocket real-ip redirect addr %s",addr)
         end
 
         handler.connect(fd,addr)
 
-        skynet.fork(dispatch_queue,fd)
+        local ok,err = xpcall(recv,debug.traceback,fd)
+        local connecting = connection[fd]
+        if not ok then
+            if connecting then
+                close(fd)
+            end
+
+            log.error("websocket recv got error:%s",err)
+        end
     end
 
     local socket_message = {
