@@ -65,8 +65,8 @@ local h = {
 	CS_RequestBindPhone = on_cs_bind_account,
 	CS_RequestSmsVerifyCode = on_cs_request_sms_verify_code,
 
-	CS_RequestBindWx = on_cs_request_bind_wx,
-
+	--CS_RequestBindWx = on_cs_request_bind_wx,
+	CS_RequestBindWx = function () end,
 	CS_PERSONAL_ID_BIND = on_cs_personal_id_bind,
 
 	CS_SearchPlayer = on_cs_search_player,
