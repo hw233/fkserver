@@ -7,14 +7,14 @@ local timermgr = require "timermgr"
 local gateserver = {}
 
 local socket	-- listen socket
-local client_number = 0
 local buffer_pool = {}
 local handshake_timeout = 5
 
 local connection = setmetatable({}, { __gc = function() socketdriver.clear(buffer_pool) end })
 
 local function is_socket_close(fd)
-    return not connection[fd]
+    local c = connection[fd]
+    return not c or c.closed
 end
 
 local function wakeup(c)
@@ -29,11 +29,6 @@ local function suspend(c)
     assert(not c.co)
     c.co = coroutine.running()
     skynet.wait(c.co)
-    -- wakeup closing corouting every time suspend,
-    -- because socket.close() will wait last socket buffer operation before clear the buffer.
-    if not connection[c.fd] then
-        skynet.wakeup(c.closing)
-    end
 end
 
 local function read(fd,sz)
@@ -49,7 +44,7 @@ local function read(fd,sz)
 			return ret
 		end
 
-		if not connection[fd] then
+		if c.closed then
 			return nil, ret
         end
 
@@ -69,7 +64,7 @@ local function read(fd,sz)
 		return ret
     end
 
-	if not connection[fd] then
+	if c.closed then
 		return nil, socketdriver.readall(c.buffer, buffer_pool)
 	end
 
@@ -107,18 +102,20 @@ function gateserver.openclient(fd)
     openclient(fd)
 end
 
-local function closeclient(fd)
+local function closesocket(fd)
     log.warning("closeclient %d",fd)
 	local c = connection[fd]
     if c then
         log.warning("positive close socket %d",fd)
         socketdriver.close(fd)
         connection[fd] = nil
+        c.closed = true
+        wakeup(c)
 	end
 end
 
 function gateserver.closeclient(fd)
-    closeclient(fd)
+    closesocket(fd)
 end
 
 local handler 
@@ -148,8 +145,6 @@ function gateserver.start(conf)
     
     handler = conf
 
- 
-
     local function data(fd,size,msg) 
         local c = connection[fd]
         if c == nil then
@@ -173,15 +168,13 @@ function gateserver.start(conf)
             return 
         end
 
+        c.closed = true
         connection[fd] = nil        
-        if c.co then
-            wakeup(c)
-        end
+        wakeup(c)
+        
         if handler.disconnect then
             handler.disconnect(fd)
         end
-
-        client_number = client_number - 1
 	end
 
     local function close(fd)
@@ -275,7 +268,6 @@ function gateserver.start(conf)
         }
 
         connection[fd] = c
-        client_number = client_number + 1
 
         gateserver.openclient(fd)
 
@@ -284,7 +276,7 @@ function gateserver.start(conf)
         local timer = timermgr:calllater(handshake_timeout,function() 
             log.warning("handshake timeout %s",fd)
             if c.handshaking then
-                closeclient(fd)
+                closesocket(fd)
             end
         end)
 
@@ -296,7 +288,7 @@ function gateserver.start(conf)
         if not ok then
             log.error("websocket handshake failed,%s,%s,%s",fd,addr,err)
             if not is_socket_close(fd) then 
-                closeclient(fd)
+                closesocket(fd)
             end
             timer:kill()
             return
