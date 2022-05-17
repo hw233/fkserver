@@ -671,7 +671,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 
 		log.dump(template)
 		
-			club_utils.lock_action(club_id,guid,function()
+		club_utils.lock_action(club_id,{guid},function()
 			result,global_table_id,tb = on_club_create_table(club,player,chair_count,round,rule,template)
 		end)
 	elseif pay_option == enum.PAY_OPTION_AA then
@@ -945,7 +945,7 @@ function on_cs_join_private_room(msg,guid,game_id)
 			})
 			return
 		end
-		club_utils.lock_action(club_id,guid,function() 
+		club_utils.lock_action(club_id,{guid},function() 
 			result,tb = club:join_table(player,private_table,chair_count)
 		end)
 	elseif pay_option == enum.PAY_OPTION_AA then
@@ -1250,7 +1250,7 @@ function on_cs_fast_join_room(msg,guid)
 		return
 	end
 
-	club_utils.lock_action(club_id,guid,function()
+	club_utils.lock_action(club_id,{guid},function()
 		-- double check
 		local og = onlineguid[guid]
 		if og and (og.table or og.chair) then

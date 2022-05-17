@@ -29,7 +29,7 @@ local club_partner = require "game.club.club_partner"
 local club_partner_conf = require "game.club.club_partner_conf"
 local club_partner_commission_conf = require "game.club.club_partner_commission_conf"
 local club_team_template = require "game.club.club_team_template"
-local mutex = require "mutex"
+local mutex_batch = require "mutex_batch"
 
 local table = table
 local string = string
@@ -707,12 +707,15 @@ function utils.get_team_template_ids(club_id,guid,role)
     return team_template_ids
 end
 
-function utils.lock_action(club_id,guid,fn,...)
-    if not club_id or not guid then
+function utils.lock_action(club_id,guids,fn,...)
+    if not club_id or not guids then
         return fn(...)
     end
+    assert(type(guids) == "table")
+    local action_ids = table.map(table.unique(guids,true),function(guid,i)
+        return i,string.format("action_%d_%d",club_id,guid)
+    end)
 
-    local action_lock_id = "action_" .. club_id .. "_" .. guid
-    return mutex(action_lock_id,fn,...)
+    return mutex_batch(action_ids,fn,...)
 end
 return utils

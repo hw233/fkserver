@@ -8,19 +8,14 @@ local traceback = debug.traceback
 
 local mutexd = "mutex.?"
 
-local function gen_req(id)
-	return tostring(id) .. tostring(timer.milliseconds_time()) .. "." .. tostring(math.random(1000000))
-end
-
-local function release_ret(id,req,ok,...)
-	local release_ok,succ,q = channel.pcall(mutexd,"lua","release",id,req)
-	assert(release_ok and succ and q == req)
+local function release_ret(id,ok,...)
+	local release_ok,succ = channel.pcall(mutexd,"lua","release",id)
+	assert(release_ok and succ)
 	return ok,...
 end
 
 return function(id,fn,...)
-		local req = gen_req(id)
-		local ok = channel.pcall(mutexd,"lua","aquire",id,req)
+		local ok = channel.pcall(mutexd,"lua","aquire",id)
 		assert(ok)
-		return release_ret(id,req,xpcall(fn,traceback,...))
+		return release_ret(id,xpcall(fn,traceback,...))
 	end

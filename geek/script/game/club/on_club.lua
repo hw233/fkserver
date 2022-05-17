@@ -1368,7 +1368,7 @@ function on_cs_club_kickout(msg,guid)
     local target_guid = msg.target_id
 
     log.dump(msg)
-    club_utils.lock_action(club_id,guid,function()
+    club_utils.lock_action(club_id,{guid,target_guid},function()
         local player = base_players[guid]
         if not player then
             onlineguid.send(guid,"S2C_CLUB_OP_RES",{
@@ -2131,7 +2131,7 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
         gaming_guid = to_guid
     end
 
-    club_utils.lock_action(club_id,gaming_guid,function()
+    club_utils.lock_action(club_id,{from_guid,to_guid},function()
         if club_utils.is_in_gaming(gaming_guid,club_id) then
             res.result = enum.GAME_SERVER_RESULT_IN_GAME
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
