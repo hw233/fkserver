@@ -59,10 +59,10 @@ local function aquire_batch(...)
 	for _,id in pairs({...}) do
 		local q = batch_queue[id]
 		if not q then
-			q = {}
+			q = { threads = {} }
 			batch_queue[id] = q
 		else
-			table.insert(q,co)
+			table.insert(q.threads,co)
 			wait = wait + 1
 		end
 	end
@@ -76,7 +76,7 @@ local function release_batch(...)
 	for _,id in pairs({...}) do
 		local q = batch_queue[id]
 		assert(q)
-		local co = table.remove(q,1)
+		local co = table.remove(q.threads,1)
 		if co then
 			skynet.wakeup(co)
 		else
