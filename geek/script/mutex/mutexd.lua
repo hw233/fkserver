@@ -1,6 +1,9 @@
 
 local skynet = require "skynet"
 local log = require "log"
+local timer = require "timer"
+require "functions"
+
 
 local table = table
 local tinsert = table.insert
@@ -50,36 +53,21 @@ local function release(id)
 end
 
 local function aquire_batch(...)
-	local ids = {...}
 	local co = coroutine.running()
-	for _,id in pairs(ids) do
-		batch_queue[id] = batch_queue[id] or {
-			threads = {},
-			current_thread = co,
-		}
+	local wait = 0
 
+	for _,id in pairs({...}) do
 		local q = batch_queue[id]
-		if co ~= q.current_thread then
-			table.insert(q.threads,co)
+		if not q then
+			q = {}
+			batch_queue[id] = q
+		else
+			table.insert(q,co)
+			wait = wait + 1
 		end
 	end
 
-	local function all_wakeup()
-		for _,id in pairs(ids) do
-			local q = batch_queue[id]
-			if q.current_thread ~= co then
-				return false
-			end
-		end
-
-		return true
-	end
-
-	while true do
-		if all_wakeup() then
-			break
-		end
-
+	for _ = 1,wait do
 		skynet.wait(co)
 	end
 end
@@ -87,9 +75,9 @@ end
 local function release_batch(...)
 	for _,id in pairs({...}) do
 		local q = batch_queue[id]
-		local co = table.remove(q.threads,1)
+		assert(q)
+		local co = table.remove(q,1)
 		if co then
-			q.current_thread = co
 			skynet.wakeup(co)
 		else
 			batch_queue[id] = nil
