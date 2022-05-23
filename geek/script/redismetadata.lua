@@ -234,7 +234,7 @@ tree.mail["%d+"] = {
 }
 
 tree.money.all = "set"
-tree.moeny.all["%d+"] = "number"
+tree.money.all["%d+"] = "number"
 tree.money.global = "number"
 tree.money.info["%d+"] = "hash"
 tree.money.info["%d+"] = {
