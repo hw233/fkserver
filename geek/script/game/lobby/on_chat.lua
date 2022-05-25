@@ -146,15 +146,15 @@ function on_cs_voice_interactive(msg,guid)
 	local time = msg.time 
 	local receiver = msg.receiver
 
-	local player = player_data[guid]
-	if not player then
+	local s = sessions.rawget(guid)
+	if not s then
 		send2client_pb(guid,"S2C_VoiceInteractive",{
 			result = enum.ERROR_OPERATION_INVALID
 		})
 		return
 	end
 
-	local tb = g_room:find_table_by_player(player)
+	local tb = g_room:find_table(s.table_id)
 	if not tb then
 		send2client_pb(guid,"S2C_VoiceInteractive",{
 			result = enum.ERROR_TABLE_NOT_EXISTS
