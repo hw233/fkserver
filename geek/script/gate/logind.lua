@@ -51,8 +51,8 @@ function MSG.CL_RegAccount(msg,session)
         msg.pb_regaccount.platform_id = "0"
     end
 
-    msg.pb_regaccount.ip_area = util.geo_lookup(session.ip)
-    msg.pb_regaccount.ip =  session.ip
+    -- msg.pb_regaccount.ip_area = util.geo_lookup(session.ip)
+    -- msg.pb_regaccount.ip =  session.ip
     log.info("set_ip = %s", msg.pb_regaccount.ip)
     log.info("set_ip_area = %s", msg.pb_regaccount.ip_area)
     local info,gameid = channel.call("login.?","msg","CL_RegAccount",msg)
@@ -75,7 +75,7 @@ local function login_by_sms(msg,session)
         }
     end
 
-    msg.ip = session.ip
+    -- msg.ip = session.ip
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
@@ -91,7 +91,7 @@ local function login_by_openid(msg,session)
         }
     end
 
-    msg.ip = session.ip
+    -- msg.ip = session.ip
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
@@ -130,7 +130,7 @@ local function login_by_account(msg,session)
 
     msg.password = password
     msg.platform_id = (type(msg.platform_id) ~= "string" or msg.platform_id == "") and "0" or msg.platform_id
-    msg.ip =  ip
+    -- msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
@@ -192,7 +192,7 @@ function MSG.CL_Auth(msg,session)
         return
     end
 
-    msg.ip = session.ip
+    -- msg.ip = session.ip
     local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
     log.dump(result)
     log.dump(userinfo)
