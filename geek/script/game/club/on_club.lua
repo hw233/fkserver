@@ -464,6 +464,8 @@ end
 
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
+    --start time
+    local t = os.clock()
     if not club_id then
         onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
@@ -585,10 +587,16 @@ function on_cs_club_detail_info_req(msg,guid)
         team_template_ids = table.keys(team_template_ids)
     }
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
+    --end time
+    local t1 = os.clock()
+    --print time
+    log.info("on_cs_club_detail_info_req distime:%d,%d",t1-t,guid)
 end
 
 function on_cs_club_list(msg,guid)
     log.info("on_cs_club_list,guid:%s,%s,%s",guid,msg.type,msg.owned_myself)
+    --start time
+    local t = os.clock()
     local clubs = table.series(player_club[guid][msg.type or enum.CT_DEFAULT],function(_,cid)
         return base_clubs[cid]
     end)
@@ -597,6 +605,10 @@ function on_cs_club_list(msg,guid)
         clubs = table.select(clubs,function(c) return c.owner == guid end)
     end
 
+    --end time
+    local t1 = os.clock()
+    --print time
+    log.info("on_cs_club_list distime:%d,%d",t1-t,guid)
     onlineguid.send(guid,"S2C_CLUBLIST_RES",{
         result = 0,
         clubs = clubs,
