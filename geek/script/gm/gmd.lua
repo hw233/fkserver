@@ -1089,6 +1089,11 @@ function gmd.verify_lock_imei(data)
     }
 end
 
+function gmd.update_passworld(data)
+    log.dump(data)
+    reddb:set(string.format("player:password:%s",data.guid),data.password)
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
@@ -1108,5 +1113,6 @@ gmd["verify/remove/lockimei"] = gmd.verify_remove_lock_imei
 gmd["verify/remove/ip"] = gmd.verify_remove_ip
 gmd["verify/remove/imei"] = gmd.verify_remove_imei
 gmd["verify/lock/imei"] = gmd.verify_lock_imei
+gmd["player/password"] = gmd.update_passworld
 
 return gmd
