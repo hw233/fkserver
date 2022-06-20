@@ -153,19 +153,6 @@ function CMD.GoServer(guid,to)
 	reddb:hset(strfmt("player:online:guid:%d",guid),"server",to)
 end
 
-function CMD.ForceExitRoom(guid,reason)
-	local l = queues[guid]
-	return l(function()
-		local s = rawget(sessions,guid)
-		if s and s.server then
-			return channel.call("game."..s.server,"msg","QS_ForceExitRoom",guid,reason)
-		else
-			log.error("sessions %s got nil session",guid)
-			return enum.ERROR_PLAYER_NOT_EXIS
-		end
-	end)
-end
-
 local function checkloginconf(conf)
     assert(conf)
     assert(conf.id)

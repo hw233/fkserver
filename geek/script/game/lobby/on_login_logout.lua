@@ -1721,27 +1721,3 @@ function on_bs_bind_phone(msg)
 
 	return enum.ERROR_NONE
 end
-
-
-function on_qs_force_exit_room(guid,reason)
-	local player = player_context[guid]
-	if not player then
-		return enum.ERROR_PLAYER_NOT_EXIST
-	end
-
-	reason = reason or enum.STANDUP_REASON_FORCE
-	local chair_id = player.chair_id
-	local table_id = player.table_id
-	log.info("on_hs_force_exit_room,guid:%s,table_id:%s,chair_id:%s,reason:%s",guid,table_id,chair_id,reason)
-
-	local result = g_room:kickout_room(player,reason)
-	if result ~= enum.ERROR_NONE then
-		log.warning("on_hs_force_exit_room,guid:%s,table_id:%s,chair_id:%s,reason:%s,result %s,failed",
-			guid,table_id,chair_id,reason,result)
-		return result
-	end
-	
-	player:on_stand_up_and_exit_room(def_game_id, table_id, chair_id, enum.ERROR_NONE,reason)
-	log.warning("on_hs_force_exit_room,guid:%s,table_id:%s,chair_id:%s,reason:%s,success",guid,table_id,chair_id,reason)
-	return enum.ERROR_NONE
-end

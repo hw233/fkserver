@@ -86,7 +86,6 @@ local h = {
 	CS_FastJoinRoom = on_cs_fast_join_room,
 	SS_FastJoinRoom = on_ss_fast_join_room,
 	SS_FastCreateRoom = on_ss_fast_create_room,
-	QS_ForceExitRoom = on_qs_force_exit_room,
 }
 
 msgopt:reg(h)

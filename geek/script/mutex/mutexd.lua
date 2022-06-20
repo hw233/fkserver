@@ -19,15 +19,20 @@ local batch_queue = {}
 local CMD = {}
 
 local function aquire(id)
+	local co = coroutine.running()
+	thread_queue[id] = thread_queue[id] or {
+		threads = {},
+		current_thread = co,
+	}
+
 	local queue = thread_queue[id]
-	if queue then
-		local co = coroutine.running()
-		tinsert(queue.threads,co)
+	local threads = queue.threads
+	if co ~= queue.current_thread then
+		tinsert(threads,co)
 		skynet.wait(co)
-	else
-		queue = { threads = {},}
-		thread_queue[id] = queue
 	end
+
+	queue.current_thread = co
 end
 
 local function release(id)
