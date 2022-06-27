@@ -191,8 +191,8 @@ function MSG.CL_Auth(msg,session)
         })
         return
     end
-
-    -- msg.ip = session.ip
+    -- 微信授权登录，必须要有注册的IP，不然会没入库
+    msg.ip = session.ip 
     local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
     log.dump(result)
     log.dump(userinfo)
