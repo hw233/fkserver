@@ -292,4 +292,12 @@ tree.verify.password_error_counts["%d+"] = "hash"
 tree.verify.password_error_counts["%d+"]["%s+"] = "number"
 
 tree.verify.account_lock_imei["%d+"] = "set"
+
+tree.verify.ip_auth_accounts["%d+"] = "hash"
+tree.verify.ip_auth_accounts["%d+"] = {
+    limit = "number",
+    curcount = "number",
+    limitstart = "number",
+}
+
 return tree

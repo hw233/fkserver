@@ -269,6 +269,15 @@ function on_cl_auth(msg)
     if not do_auth then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
     end
+    
+    local ip = msg.ip 
+    if ip then
+        if not verify.check_have_same_ip(ip) then
+            if not verify.check_ip_auth(ip) then
+                return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT
+            end
+        end
+    end
 
     local errcode,auth = do_auth(msg)
     if errcode then
@@ -521,7 +530,7 @@ local function account_login(msg)
         local remain_error_counts =  verify.check_password_error(imei,guid)
         return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR ,{ ps_error_counts = remain_error_counts }
     end
-
+    log.dump(msg)
     local ip = msg.ip
     if ip then
         reddb:hset(string.format("player:info:%s",guid),"login_ip",ip)

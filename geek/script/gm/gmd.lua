@@ -1094,6 +1094,29 @@ function gmd.update_passworld(data)
     reddb:set(string.format("player:password:%s",data.guid),data.password)
 end
 
+function gmd.verify_update_ip_auth(data)
+    local ip = tostring(data.ip)
+    if not ip then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "data.ip can not be nil",
+        }
+    end
+    local limit = data.limit
+    if not limit then
+        return {
+            errcode = error.DATA_ERROR,
+            errstr = "data.limit can not be nil",
+        }
+    end
+
+    verify.update_check_ip_auth(data)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
@@ -1114,5 +1137,6 @@ gmd["verify/remove/ip"] = gmd.verify_remove_ip
 gmd["verify/remove/imei"] = gmd.verify_remove_imei
 gmd["verify/lock/imei"] = gmd.verify_lock_imei
 gmd["player/password"] = gmd.update_passworld
+gmd["verify/update/ipauth"] = gmd.verify_update_ip_auth
 
 return gmd

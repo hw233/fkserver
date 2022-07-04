@@ -10,11 +10,20 @@ local ip_accounts = require "login.verify.ip_accounts"
 local password_error_counts = require "login.verify.password_error_counts"
 local account_lock_imei = require "login.verify.account_lock_imei"
 
+local ip_auth_accounts = require "login.verify.ip_auth_accounts"
+
+local not_check_ip_conf = require "data.not_check_ip_conf"
+
+
 local IP_LIMIT = 5 --同IP允许登录的账号数
 local IMEI_LIMIT = 2 --同设备允许登录的账号数
 local PSERROR_LIMIT = 5 --同IMEI一个账号允许密码错误次数
 local IP_CHECK = false 
 local IMEI_CHECK = false 
+
+local IP_AUTH_CHECK = true
+local IP_AUTH_LIMIT = 3     --同IP允许注册的账号数
+
 local function ip2rdip(ip)
     local rdip 
     if ip and type(ip)=="string" then
@@ -140,6 +149,94 @@ function verify.remove_imei_accounts(imei)
         return
     end
     reddb:del("verify:imei_accounts:"..tostring(imei))
+end
+
+function verify.check_ip_auth(ip)
+    log.info(string.format("fix_check_ip_auth ip[%s] ",ip))
+    if not IP_AUTH_CHECK then
+        return true
+    end
+    if not ip or ip =="" then
+        return  true
+    end
+    local rdip = ip2rdip(ip)
+    if not rdip then
+        return  true
+    end
+
+    local ipaccouts = ip_auth_accounts[rdip]
+    log.dump(ipaccouts)
+    if ipaccouts.curcount and ipaccouts.limit then
+        if tonumber(ipaccouts.curcount) >= tonumber(ipaccouts.limit) then
+            log.error(string.format("check_ip_auth ip[%s] IP_AUTH_LIMIT %d",ip,tonumber(ipaccouts.limit)))
+            log.dump(ipaccouts)
+            return false 
+        end
+    else         
+        reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
+            limit = IP_AUTH_LIMIT,
+            curcount = 1,
+            limitstart = os.time(),
+        })
+
+        return true
+    end
+    
+    reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
+            limit = ipaccouts.limit,
+            curcount = ipaccouts.curcount + 1,
+            limitstart = ipaccouts.limitstart,
+        })
+
+    return true
+end 
+
+function verify.remove_ip_auth_accounts(ip)
+    if not ip or ip =="" then
+        return
+    end
+    local rdip = ip2rdip(ip)
+    reddb:del("verify:ip_auth_accounts:"..rdip)
+end
+
+function verify.update_check_ip_auth(data)
+    if not data or not data.ip or data.ip =="" or not data.limit then
+        return
+    end
+    local rdip = ip2rdip(data.ip)
+
+    reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
+            limit =  tonumber(data.limit),
+            curcount = 0,
+            limitstart = os.time(),
+        })
+end
+
+function verify.check_have_same_ip(ip)
+	local function ipsec(ip)
+		local ips = {}
+		for s in ip:gmatch("%d+") do
+			table.insert(ips,tonumber(s))
+		end
+		return ips
+	end
+
+	local function same_ip_net(ip1,ip2)
+		local s1 = ipsec(ip1)
+		local s2 = ipsec(ip2)	
+		if #s1 < 4 or #s2 < 4 then
+			return false
+		end
+		return s1[1] == s2[1] and s1[2] == s2[2] and s1[3] == s2[3] and s1[4] == s2[4]
+	end
+
+	local auth_ip = ip
+	log.dump(auth_ip,"auth_ip")
+    local not_check_ip = not_check_ip_conf
+    log.dump(not_check_ip,"not_check_ip")
+	return table.logic_or(not_check_ip,function(confip)
+		return same_ip_net(auth_ip,confip)
+	end)
 end
 
 return verify
