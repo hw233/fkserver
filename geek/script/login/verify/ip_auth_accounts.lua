@@ -11,6 +11,7 @@ setmetatable(ip_auth_accounts,{
     __index = function(t,ip)
         local tb = reddb:hgetall("verify:ip_auth_accounts:"..tostring(ip))
         t[ip] = tb
+        log.dump(tb,tostring(ip))
         return tb
     end,
 })
