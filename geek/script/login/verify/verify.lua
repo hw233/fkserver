@@ -22,7 +22,7 @@ local IP_CHECK = false
 local IMEI_CHECK = false 
 
 local IP_AUTH_CHECK = true
-local IP_AUTH_LIMIT = 3     --同IP允许注册的账号数
+local IP_AUTH_LIMIT = 1     --同IP允许注册的账号数
 
 local function ip2rdip(ip)
     local rdip 
@@ -152,7 +152,7 @@ function verify.remove_imei_accounts(imei)
 end
 
 function verify.check_ip_auth(ip)
-    log.info(string.format("fix_check_ip_auth ip[%s] ",ip))
+    log.info(string.format("check_ip_auth ip[%s] ",ip))
     if not IP_AUTH_CHECK then
         return true
     end
@@ -165,7 +165,7 @@ function verify.check_ip_auth(ip)
     end
 
     local ipaccouts = ip_auth_accounts[rdip]
-    log.dump(ipaccouts)
+    log.dump(ipaccouts,rdip)
     if ipaccouts.curcount and ipaccouts.limit then
         if tonumber(ipaccouts.curcount) >= tonumber(ipaccouts.limit) then
             log.error(string.format("check_ip_auth ip[%s] IP_AUTH_LIMIT %d",ip,tonumber(ipaccouts.limit)))
@@ -178,7 +178,7 @@ function verify.check_ip_auth(ip)
             curcount = 1,
             limitstart = os.time(),
         })
-
+        log.info(string.format("check_ip_auth ip[%s] 11111",rdip))
         return true
     end
     
@@ -187,7 +187,7 @@ function verify.check_ip_auth(ip)
             curcount = ipaccouts.curcount + 1,
             limitstart = ipaccouts.limitstart,
         })
-
+    log.info(string.format("check_ip_auth ip[%s] 22222",rdip))
     return true
 end 
 
