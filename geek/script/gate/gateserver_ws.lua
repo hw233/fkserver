@@ -48,9 +48,24 @@ function gateserver.start(conf)
         end,
         handshake = function(id, header, url)
             local addr = assert(address[id])
+           
+            log.dump(header)
+
             local real_host = header['X-Real-Host'] or header["x-real-host"]
             local real_ip = header['X-Real-Ip'] or header["x-real-ip"]
-            if real_host then
+
+            local x_real_port = header['x_real_port'] 
+            
+            -- 获取真实IP
+            local x_for_ip = header['x-forwarded-for'] or header["X-Forwarded-For"]
+            local x_for_hot = (x_for_ip[1]..":".. x_real_port) or real_host
+
+            log.warning("x_for_hot %s,%s",x_for_ip,x_for_hot)
+
+            if x_for_hot then
+                addr = string.match(x_for_hot,"%d+%.%d+%.%d+%.%d+:%d+") or real_host
+                log.info("websocket x-forwarded-for redirect addr %s",addr)
+            elseif real_host then
                 addr = string.match(real_host,"%d+%.%d+%.%d+%.%d+:%d+") or addr
                 log.info("websocket real-host redirect addr %s",addr)
             elseif real_ip then
