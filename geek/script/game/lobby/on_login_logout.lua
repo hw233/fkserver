@@ -1349,7 +1349,7 @@ function on_cs_bind_account(msg,guid)
 		reddb:hset(string.format("player:info:%s",guid),"phone",phone)
 		reddb:set(string.format("player:phone_uuid:%s",phone),player.open_id)
 		player.phone = phone
-	
+		log.info("on_cs_bind_account guid:%d,phone=%s",guid,phone)
 		channel.publish("db.?","msg","SD_BindPhone",{
 			guid = guid,
 			phone = phone,
@@ -1357,6 +1357,7 @@ function on_cs_bind_account(msg,guid)
 	end
 
 	if password and password ~= "" then
+		log.info("on_cs_bind_account guid:%d,password=%s",guid,password)
 		reddb:set(string.format("player:password:%s",guid),password)
 	end
 

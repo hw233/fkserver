@@ -10,6 +10,7 @@ local h = {
 	CL_RegAccount = on_cl_reg_account,
 	CL_LoginBySms = on_cl_login_by_sms,
 	CL_Auth = on_cl_auth,
+	S_AuthCheck = on_s_auth_check,
 }
 
 msgopt:reg(h)

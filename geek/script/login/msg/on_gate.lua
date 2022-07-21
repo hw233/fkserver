@@ -197,8 +197,11 @@ local function reg_account(msg)
     end
 
     player_money[guid] = nil
-
-    return enum.LOGIN_RESULT_SUCCESS,info
+    local authMsg = {
+        limit = verify.limit,
+        curcount = verify.curcount,
+    }
+    return enum.LOGIN_RESULT_SUCCESS,info,authMsg
 end
 
 local function open_id_login(msg)
@@ -308,7 +311,25 @@ function on_cl_auth(msg)
         imei = msg.imei
     })
 end
+ 
+function on_s_auth_check(msg)
+    log.dump(msg,"on_s_auth_check")
+    if not msg or not msg.ip or msg.ip =="" or not msg.curcount then
+        return 
+    end
+    local ip = msg.ip
+    local rdip 
+    if ip and type(ip)=="string" then
+        local i1,i2,i3,i4 = ip:match("(%d+)%.(%d+)%.(%d+)%.(%d+)" )
+        rdip =  i1.."_"..i2.."_"..i3.."_"..i4
+    end
 
+    reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
+            limit =  msg.limit,
+            curcount = msg.curcount,
+            limitstart = os.time(),
+        })
+end
 
 local function sms_reg_account(msg)
     local password = util.md5(msg.account)

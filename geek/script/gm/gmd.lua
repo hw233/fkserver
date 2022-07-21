@@ -1110,7 +1110,13 @@ function gmd.verify_update_ip_auth(data)
         }
     end
 
-    verify.update_check_ip_auth(data)
+    local checkmsg = {
+        ip = data.ip,
+        limit = data.limit,
+        curcount = 0,
+    }
+    log.dump(checkmsg,data.ip)
+    channel.publish("login.*","msg","S_AuthCheck",checkmsg)
 
     return {
         errcode = error.SUCCESS,

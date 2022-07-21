@@ -465,6 +465,7 @@ end
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     --start time
+    log.dump(msg,"on_cs_club_detail_info_req")
     local t = os.clock()
     if not club_id then
         onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
@@ -590,7 +591,7 @@ function on_cs_club_detail_info_req(msg,guid)
     --end time
     local t1 = os.clock()
     --print time
-    log.info("on_cs_club_detail_info_req distime:%d,%d",t1-t,guid)
+    log.info("on_cs_club_detail_info_req guid:%d,distime:%d",guid,t1-t)
 end
 
 function on_cs_club_list(msg,guid)

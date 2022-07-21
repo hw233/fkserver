@@ -22,7 +22,7 @@ local IP_CHECK = false
 local IMEI_CHECK = false 
 
 local IP_AUTH_CHECK = true
-local IP_AUTH_LIMIT = 1     --同IP允许注册的账号数
+local IP_AUTH_LIMIT = 2     --同IP允许注册的账号数
 
 local function ip2rdip(ip)
     local rdip 
@@ -32,7 +32,11 @@ local function ip2rdip(ip)
     end
     return rdip 
 end
-local verify = {}
+
+local verify = {
+    curcount = 0,
+    limit = IP_AUTH_LIMIT,
+}
 
 function verify.check_ip(ip,account)
     --log.info(string.format("check_ip ip[%s] account[%s] ",ip,account))
@@ -164,29 +168,22 @@ function verify.check_ip_auth(ip)
         return  true
     end
 
-    local ipaccouts = ip_auth_accounts[rdip]
+    local ipaccouts = reddb:hgetall("verify:ip_auth_accounts:"..tostring(rdip)) -- ip_auth_accounts[rdip]
     log.dump(ipaccouts,rdip)
     if ipaccouts.curcount and ipaccouts.limit then
+        verify.limit = ipaccouts.limit
         if tonumber(ipaccouts.curcount) >= tonumber(ipaccouts.limit) then
             log.error(string.format("check_ip_auth ip[%s] IP_AUTH_LIMIT %d",ip,tonumber(ipaccouts.limit)))
             log.dump(ipaccouts)
             return false 
         end
     else         
-        reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
-            limit = IP_AUTH_LIMIT,
-            curcount = 1,
-            limitstart = os.time(),
-        })
+        verify.curcount = 1
+        verify.limit = IP_AUTH_LIMIT
         log.info(string.format("check_ip_auth ip[%s] 11111",rdip))
         return true
     end
-    
-    reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
-            limit = ipaccouts.limit,
-            curcount = ipaccouts.curcount + 1,
-            limitstart = ipaccouts.limitstart,
-        })
+    verify.curcount = ipaccouts.curcount + 1
     log.info(string.format("check_ip_auth ip[%s] 22222",rdip))
     return true
 end 
@@ -197,19 +194,6 @@ function verify.remove_ip_auth_accounts(ip)
     end
     local rdip = ip2rdip(ip)
     reddb:del("verify:ip_auth_accounts:"..rdip)
-end
-
-function verify.update_check_ip_auth(data)
-    if not data or not data.ip or data.ip =="" or not data.limit then
-        return
-    end
-    local rdip = ip2rdip(data.ip)
-
-    reddb:hmset(string.format("verify:ip_auth_accounts:%s",rdip),{
-            limit =  tonumber(data.limit),
-            curcount = 0,
-            limitstart = os.time(),
-        })
 end
 
 function verify.check_have_same_ip(ip)
