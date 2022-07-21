@@ -193,7 +193,7 @@ function MSG.CL_Auth(msg,session)
     end
     -- 微信授权登录，必须要有注册的IP，不然会没入库
     msg.ip = session.ip 
-    local ok,result,userinfo = channel.pcall("login.?","msg","CL_Auth",msg)
+    local ok,result,userinfo,authMsg = channel.pcall("login.?","msg","CL_Auth",msg)
     log.dump(result)
     log.dump(userinfo)
     if not ok then
@@ -211,6 +211,16 @@ function MSG.CL_Auth(msg,session)
             errmsg = userinfo,
         })
         return
+    end
+
+    if msg.ip and authMsg then
+        local checkmsg = {
+            ip = msg.ip,
+            limit = authMsg.limit,
+            curcount = authMsg.curcount,
+        }
+        log.dump(checkmsg,msg.ip)
+        channel.publish("login.*","msg","S_AuthCheck",checkmsg)
     end
 
     log.dump(userinfo)
