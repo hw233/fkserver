@@ -300,6 +300,6 @@ tree.verify.ip_auth_accounts["%d+"] = {
     limitstart = "number",
 }
 
-tree.player.imei_error_count["%s+"] = "number"
+tree.verify.imei_error_count["%s+"] = "number"
 
 return tree
