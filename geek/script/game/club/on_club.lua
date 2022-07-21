@@ -462,10 +462,13 @@ function on_cs_club_invite_join_club(msg,guid)
     player_request[club.owner] = nil
 end
 
+
+--相应进入联盟消息
 function on_cs_club_detail_info_req(msg,guid)
     local club_id = msg.club_id
     --start time
     local t = os.clock()
+   
     if not club_id then
         onlineguid.send(guid,"S2C_CLUB_INFO_RES",{
             result = enum.ERROR_CLUB_NOT_FOUND,
@@ -483,21 +486,30 @@ function on_cs_club_detail_info_req(msg,guid)
     end
 
     local role = club_role[club_id][guid] or enum.CRT_PLAYER
-    local templates = club_utils.get_visiable_club_templates(club,role)
+    local templates = club_utils.get_visiable_club_templates(club,role) --获取模板
     
-    local team_template_ids = club_utils.get_team_template_ids(club_id,guid,role)
+    local team_template_ids = club_utils.get_team_template_ids(club_id,guid,role)  --获取团队开放模板
     if table.nums(team_template_ids) == 0 then
         team_template_ids = table.map(templates,function(template) return template.template_id,true end) --未设置全部添加
     end
 
     templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
 
-    local real_games =  club_utils.get_game_list(guid,club_id)
+    local real_games =  club_utils.get_game_list(guid,club_id) --获取所有开放的游戏
     local root = club_utils.root(club)
-    local tables = club_utils.get_club_tables(root,team_template_ids)
+
+    local t1 = os.clock()
+    log.info("on_cs_club_detail_info_req,%d,1,distime:%d",guid,t1-t)
+
+    local tables = club_utils.get_club_tables(root,team_template_ids) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
+
+    local t2 = os.clock()
+    log.info("on_cs_club_detail_info_req,%d,2,distime:%d",guid,t2-t1)
 
     local online_count = reddb:get(string.format("club:member:online:count:%d",club_id)) or 0
     local total_count = reddb:get(string.format("club:member:count:%d",club_id)) or 0
+
+    log.info("on_cs_club_detail_info_req,%d,3,distime:%d",guid,os.clock()-t2)
 
     local function recusive_parent_status(c)
         local parent = c.parent
@@ -518,7 +530,7 @@ function on_cs_club_detail_info_req(msg,guid)
     local money_id = club_money_type[club_id]
     local boss = player_data[club.owner]
     local myself = player_data[guid]
-    local my_team_info = {
+    local my_team_info = {  --自己数据
         info = {
             guid = myself.guid,
             icon = myself.icon,
@@ -532,7 +544,7 @@ function on_cs_club_detail_info_req(msg,guid)
         }
     }
 
-    local team_info = {
+    local team_info = { --团队数据
         base = {
             id = club_id,
             name = club.name,
@@ -557,7 +569,7 @@ function on_cs_club_detail_info_req(msg,guid)
     }
  
     local keygames = table.map(real_games,function(g) return g,true end)
-    templates = table.select(templates,function(t) return keygames[t.game_id] end)
+    templates = table.select(templates,function(t) return keygames[t.game_id] end) --根据开放的游戏找到联盟中的可以玩的真实模板
     local closed_team_id = club:closed_team_id(guid) 
     local club_info = {
         root = root.id,
@@ -587,10 +599,9 @@ function on_cs_club_detail_info_req(msg,guid)
         team_template_ids = table.keys(team_template_ids)
     }
     onlineguid.send(guid,"S2C_CLUB_INFO_RES",club_info)
-    --end time
-    local t1 = os.clock()
+
     --print time
-    log.info("on_cs_club_detail_info_req distime:%d,%d",t1-t,guid)
+    log.info("on_cs_club_detail_info_req,%d,4,distime:%d",guid,os.clock()-t)
 end
 
 function on_cs_club_list(msg,guid)
