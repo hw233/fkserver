@@ -13,11 +13,13 @@ local account_lock_imei = require "login.verify.account_lock_imei"
 local ip_auth_accounts = require "login.verify.ip_auth_accounts"
 
 local not_check_ip_conf = require "data.not_check_ip_conf"
+local imei_error_count = require "login.verify.imei_error_count"
 
 
 local IP_LIMIT = 5 --同IP允许登录的账号数
 local IMEI_LIMIT = 2 --同设备允许登录的账号数
 local PSERROR_LIMIT = 5 --同IMEI一个账号允许密码错误次数
+local IMEIERROR_LIMIT = 5 --同IMEI登录错误次数
 local IP_CHECK = false 
 local IMEI_CHECK = false 
 
@@ -36,6 +38,7 @@ end
 local verify = {
     curcount = 0,
     limit = IP_AUTH_LIMIT,
+    imeierrorlimit = IMEIERROR_LIMIT
 }
 
 function verify.check_ip(ip,account)
@@ -221,6 +224,30 @@ function verify.check_have_same_ip(ip)
 	return table.logic_or(not_check_ip,function(confip)
 		return same_ip_net(auth_ip,confip)
 	end)
+end
+
+function verify.check_imei_error(imei)
+    if not imei or imei == "" then
+        return 0
+    end 
+    local error_counts = imei_error_count[imei]
+    local ec = (error_counts or 0) + 1
+    reddb:set(string.format("verify:imei_error_count:%s",imei),ec)   
+
+    log.info(string.format("check_imei_error imei[%s] error_counts[%d]",imei,ec))
+    if ec >= IMEIERROR_LIMIT then
+        log.error(string.format("check_password_error imei[%s] ec[%d] IMEIERROR_LIMIT[%d]",imei,ec,IMEIERROR_LIMIT))
+    end
+
+    return ec
+end
+
+function verify.remove_imei_error(imei)
+    if not imei or imei =="" then
+        return
+    end
+
+    reddb:del(string.format("verify:imei_error_count:%s",imei))
 end
 
 return verify

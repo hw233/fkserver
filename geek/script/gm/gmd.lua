@@ -1055,7 +1055,22 @@ function gmd.verify_remove_imei(data)
         errcode = error.SUCCESS,
     }
 end
+function gmd.verify_remove_imei_error(data)
+    local imei = tostring(data.imei)
+    if not imei then
+        return {
+            errcode = error.PARAMETER_ERROR,
+            errstr = "imei can not be nil",
+        }
+    end
+    log.dump(imei,"remove_imei_error:" .. imei)
 
+    verify.remove_imei_error(imei)
+
+    return {
+        errcode = error.SUCCESS,
+    }
+end
 function gmd.verify_lock_imei(data)
     local guid = tonumber(data.guid)
     if not guid then
@@ -1141,6 +1156,7 @@ gmd["notice/del"] = gmd.del_notice
 gmd["verify/remove/lockimei"] = gmd.verify_remove_lock_imei
 gmd["verify/remove/ip"] = gmd.verify_remove_ip
 gmd["verify/remove/imei"] = gmd.verify_remove_imei
+gmd["verify/remove/imeierror"] = gmd.verify_remove_imei_error
 gmd["verify/lock/imei"] = gmd.verify_lock_imei
 gmd["player/password"] = gmd.update_passworld
 gmd["verify/update/ipauth"] = gmd.verify_update_ip_auth

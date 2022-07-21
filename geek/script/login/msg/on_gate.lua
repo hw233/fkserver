@@ -15,6 +15,7 @@ local g_common = require "common"
 local game_util = require "game.util"
 local mutex = require "mutex"
 local verify = require "login.verify.verify"
+local imei_error_count = require "login.verify.imei_error_count"
 local reddb = redisopt.default
 
 local function gen_uuid(basestr)
@@ -509,6 +510,17 @@ local function h5_login(msg)
 end
 
 local function account_login(msg)
+    local imei = msg.imei
+    local error_counts = 0
+    if imei and imei ~= "" then
+        error_counts = imei_error_count[imei]
+        if error_counts and error_counts > verify.imeierrorlimit then
+            log.error("account_login imei_error_count imei:" .. tostring(imei))
+            return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT
+        end
+    end
+    
+
     local guid
     local has = reddb:exists("player:info:"..tostring(msg.account))
     if has then
@@ -530,7 +542,6 @@ local function account_login(msg)
         return enum.ERROR_PLAYER_IS_LOCKED
     end
 
-    local imei = msg.imei
     if verify.check_account_lock_imei(imei,guid) then
         return enum.LOGIN_RESULT_ACCOUNT_PASSWOLD_ERRPR_LIMIT
     end
@@ -539,6 +550,7 @@ local function account_login(msg)
     local rdpassword = reddb:get(string.format("player:password:%d",guid))
     if not rdpassword or rdpassword == "" then
         if not global_conf.use_default_password then
+            verify.check_imei_error(imei)
             return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
         end
         
@@ -548,6 +560,7 @@ local function account_login(msg)
    
 
     if password ~= rdpassword then
+        verify.check_imei_error(imei)
         local remain_error_counts =  verify.check_password_error(imei,guid)
         return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR ,{ ps_error_counts = remain_error_counts }
     end
@@ -563,8 +576,11 @@ local function account_login(msg)
     if not verify.check_imei(imei,guid) then
         return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT 
     end
-    
 
+    if error_counts and error_counts > 0 then
+        verify.remove_imei_error(imei)
+    end
+    
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
     
     local info = {
