@@ -514,9 +514,11 @@ local function account_login(msg)
     local error_counts = 0
     if imei and imei ~= "" then
         error_counts = imei_error_count[imei]
-        if error_counts and error_counts > verify.imeierrorlimit then
-            log.error("account_login imei_error_count imei:" .. tostring(imei))
-            return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT
+        if error_counts then 
+            if tonumber(error_counts) > verify.imeierrorlimit then
+                log.error("account_login imei_error_count imei:" .. tostring(imei))
+                return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT
+            end
         end
     end
     
@@ -528,10 +530,12 @@ local function account_login(msg)
     else
         local open_id = reddb:get(string.format("player:phone_uuid:%s",msg.account))
         if not open_id or open_id == "" then
+            verify.check_imei_error(imei)
             return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
         end
         local uuid = reddb:get(string.format("player:account:%s",open_id))
         if not uuid or uuid == "" then
+            verify.check_imei_error(imei)
             return enum.LOGIN_RESULT_ACCOUNT_PASSWORD_ERR
         end
         guid = tonumber(uuid)
@@ -577,8 +581,10 @@ local function account_login(msg)
         return enum.LOGIN_RESULT_ACCOUNT_IMEI_LIMIT 
     end
 
-    if error_counts and error_counts > 0 then
-        verify.remove_imei_error(imei)
+    if error_counts  then
+        if tonumber(error_counts) > 0 then
+            verify.remove_imei_error(imei)
+        end        
     end
     
     reddb:hset(string.format("player:info:%s",guid),"version",msg.version)
