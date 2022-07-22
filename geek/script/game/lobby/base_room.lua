@@ -320,13 +320,18 @@ function base_room:create_private_table(player,chair_count,round, rule,club)
 	end
 
 	local global_tid
+	local tableid_same_times=0
 	local ok = mutex("table:create",function()
 		for _ = 1,10000 do
 			global_tid = math.random(100000,999999)
 			local exists = reddb:sismember("table:all",global_tid)
-			if not exists then break end
+			if not exists then 
+				break 
+			else
+				tableid_same_times=tableid_same_times+1
+			end
 		end
-
+		log.info("has same table id count:%d",tableid_same_times )
 		reddb:sadd("table:all",global_tid)
 	end)
 
