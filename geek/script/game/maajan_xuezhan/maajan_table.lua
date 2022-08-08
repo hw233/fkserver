@@ -39,6 +39,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.HU_TYPE
+local BTEST = false
 
 local all_tiles = {
     [4] = {
@@ -221,9 +222,11 @@ end
 function maajan_table:on_started(player_count)
     self.start_count = player_count
     base_table.on_started(self,player_count)
-
-    self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang
-
+    if BTEST then
+        self.zhuang = 1
+    else
+        self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang    
+    end
     for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
@@ -922,7 +925,7 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
         return
     end
 
-    log.dump(self.waiting_actions)
+    log.dump(self.waiting_actions,tostring(player.guid))
     local player = self:chu_pai_player()
     if not player then
         log.error("do action %s,but wrong player in chair %s",do_action,player.chair_id)
@@ -960,7 +963,7 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
                 session_id = self:session(),
             }
         end)
-
+        log.dump(qiang_gang_hu)
         if table.nums(qiang_gang_hu) > 0 then
             send2client(player,"SC_Maajan_Do_Action_Commit",{
                 action = do_action,
@@ -1403,7 +1406,11 @@ function maajan_table:fake_mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            if BTEST then
+                mo_pai = tile
+            else
+                mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            end
             self.pre_gong_tiles[i] = nil
             break
         end
@@ -1478,7 +1485,11 @@ function maajan_table:mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            if BTEST then
+                mo_pai = tile
+            else
+                mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
+            end
             self.pre_gong_tiles[i] = nil
             break
         end
@@ -1500,7 +1511,7 @@ function maajan_table:mo_pai()
     self:on_mo_pai(player,mo_pai)
 
     local actions = self:get_actions(player,mo_pai)
-    log.dump(actions)
+    log.dump(actions,tostring(player.guid))
     if table.nums(actions) > 0 then
         self:action_after_mo_pai({
             [self.chu_pai_player_index] = {
@@ -1930,12 +1941,25 @@ function maajan_table:send_action_waiting(action)
 end
 
 function maajan_table:prepare_tiles()
-    self.dealer:shuffle()
-    self.pre_tiles = {
-        -- [1] = {21,21,22,22,23,23,24,24,25,25,26,26,8},
-        -- [2] = {11,12,13,14,15,16,17,18,19,19,19,19,8},
-    }
-
+    if not BTEST then
+        self.dealer:shuffle()
+        self.pre_tiles = {}
+    else   
+        self.zhuang = 1
+        self.chu_pai_player_index = self.zhuang --出牌人的索引
+        self.dealer.remain_count = 108
+        -- 测试手牌     
+        self.pre_tiles = {
+            [1] = {2,5,8,9,14,15,15,17,17,18,25,26,26},     -- 万 庄
+            [2] = {3,3,4,22,22,22,23,23,27,27,27,28,29},    -- 筒  
+            [3] = {2,3,4,5,8,12,12,13,13,13,17,18,19},      -- 万
+            [4] = {2,2,6,7,9,9,12,13,14,16,18,19,26},       -- 条
+        }
+        -- 测试摸牌,从前到后
+        self.pre_gong_tiles = {
+            29,24,6,1,17,24,22,23,21,25,25,17,1,7,22,12,17,24,25,27,29,
+        }
+    end
     self:foreach(function(p)
         local tiles = self.pre_tiles[p.chair_id]
         if tiles then
@@ -2072,7 +2096,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     local si_dui = self.rule.play and self.rule.play.si_dui
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
 
-    log.dump(actions)
+    log.dump(actions,tostring(p.guid))
 
     if p.que then
         for act,tiles in pairs(actions) do
@@ -2089,13 +2113,18 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     end
 
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-        local max_hu_fan = self:hu_fan(p,in_pai,mo_pai)
+        local max_hu_fan = self:hu_fan(p,in_pai,mo_pai,qiang_gang) -- 抢杠胡加番
+        if max_hu_fan then
+            log.dump(p.gzh,tostring(p.guid).."_in_pai_"..tostring(in_pai).."_max_hu_fan_"..tostring(max_hu_fan))
+        end
         if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
+            log.info("get_actions gzh cancel nil max_hu_fan %d < p.gzh[%d] %d ",max_hu_fan,in_pai,p.gzh[in_pai])
             actions[ACTION.HU] = nil
         end
     end
 
     if in_pai and not self:can_hu(p,in_pai,nil,qiang_gang) and actions[ACTION.HU] then
+        log.info("get_actions in_pai %d not can_hu ",in_pai)
         actions[ACTION.HU] = nil
     end
 
