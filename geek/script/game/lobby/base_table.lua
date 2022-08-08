@@ -748,6 +748,7 @@ function base_table:cost_tax(winlose)
 		for _,p in pairs(self.players) do
 			local change = taxes[p.guid] or 0
 			if change ~= 0 then
+				log.info("base_table:cost_tax do_cost_tax_money guid=%d,money=%d",p.guid,-change)
 				club:incr_member_money(p.guid,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX,self.round_id)
 				self:log_statistics_money(money_id,-change,enum.LOG_MONEY_OPT_TYPE_GAME_TAX)
 			end
@@ -1265,10 +1266,11 @@ function base_table:can_sit_down(player,chair_id,reconnect)
 	if reconnect then 
 		if self.players[chair_id] then
 			log.info("reconnect player is exist guid:   %d chairid:   d%",player.guid,chair_id)
+			return enum.ERROR_NONE 
 		else
 			log.info("-------出现重入玩家-------reconnect player is not exist chairid:   %d , tableid: %d",chair_id,self.table_id_)
+			return enum.ERROR_INTERNAL_UNKOWN
 		end
-		return enum.ERROR_NONE 
 	end
 
 	if self.players[chair_id] then
@@ -2135,6 +2137,7 @@ function base_table:cost_private_fee()
 end
 
 function base_table:on_started(player_count)
+	log.info("base_table:on_started %d",player_count)
 	if not self:is_private() then return end
 	self:cancel_ready_timer()
 	self:cancel_kickout_no_ready_timer()
@@ -2186,6 +2189,7 @@ function base_table:balance(moneies,why)
 				if money ~= 0 then
 					money = math.floor(money)
 					local p = self.players[chair_or_guid] or player_data[chair_or_guid]
+					log.info("base_table:balance lockcall guid=%d,money=%d",p.guid,money)
 					club:incr_member_money(p.guid,money,why,self.round_id)
 					player_winlose.incr_money(p.guid,money_id,money)
 					self:log_statistics_money(money_id,money,why)
