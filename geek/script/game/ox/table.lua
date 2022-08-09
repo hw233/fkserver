@@ -924,10 +924,11 @@ function ox_table:can_sit_down(player,chair_id,reconnect)
 	if reconnect then 
 		if self.players[chair_id] then
 			log.info("reconnect player is exist guid:   %d chairid:   %d",player.guid,chair_id)
+			return enum.ERROR_NONE 
 		else
 			log.info("-------牛牛出现重入玩家-------reconnect player is not exist chairid:   %d      tableid:    %d",chair_id,self.table_id_)
+			return enum.ERROR_INTERNAL_UNKOWN
 		end
-		return enum.ERROR_NONE
 	end
 
 	if self.players[chair_id] then
