@@ -75,7 +75,7 @@ local function login_by_sms(msg,session)
         }
     end
 
-    -- msg.ip = session.ip
+    msg.ip = session.ip
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
@@ -91,7 +91,7 @@ local function login_by_openid(msg,session)
         }
     end
 
-    -- msg.ip = session.ip
+    msg.ip = session.ip
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)
 
@@ -130,7 +130,7 @@ local function login_by_account(msg,session)
 
     msg.password = password
     msg.platform_id = (type(msg.platform_id) ~= "string" or msg.platform_id == "") and "0" or msg.platform_id
-    -- msg.ip =  ip
+    msg.ip =  ip
     log.info( "ip = %s", msg.ip )
 
     local ok,info = channel.pcall("login.?","msg","CL_Login",msg,gateid)

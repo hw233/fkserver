@@ -180,7 +180,7 @@ local function reg_account(msg)
         phonelen > 18 then
         info.phone = phone
     end
-
+    log.dump(info,"reg_account:"..tostring(guid))
     reddb:hmset("player:info:"..tostring(guid),info)
     reddb:set("player:account:"..tostring(msg.open_id),guid)
     
@@ -273,7 +273,7 @@ function on_cl_auth(msg)
     if not do_auth then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR
     end
-    
+    log.dump(msg,"on_cl_auth")
     local ip = msg.ip 
     if ip then
         if not verify.check_have_same_ip(ip) then
