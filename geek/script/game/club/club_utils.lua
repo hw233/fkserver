@@ -113,25 +113,27 @@ end
 
 function utils.get_club_tables(club,team_template_ids)
     if not club then return {} end
-
+    -- 俱乐部所有房间号
     local table_ids = club_table[club.id] or {}
 
     local room_table = {}
     for tid in pairs(table_ids) do
         repeat
+            -- 每个房间号信息
             local tb = base_private_table[tid]
             if not tb then break end
-            local room_id = tb.room_id
+            local room_id = tb.room_id  -- 游戏服务ID
             if not room_id then break end
             if #team_template_ids ~= 0 and not team_template_ids[tb.template] then break end
             room_table[room_id] = room_table[room_id] or {}
-            table.insert(room_table[room_id],tid)
+            table.insert(room_table[room_id],tid) -- 每个游戏服包含的所有房间号
         until true
     end
 
     local tables = {}
 
     for room_id,tids in pairs(room_table) do
+        -- 房间号的所有信息：玩家状态信息和桌子信息
         local tb_infos = channel.call("game."..room_id,"msg","GetTableStatusInfos",tids)
         for _,info in pairs(tb_infos) do
             table.insert(tables,info)
@@ -161,6 +163,7 @@ local function transfer_money(club,from_guid,to_guid,money,reason)
         log.error("transfer_money leak %s < %s",allmoney,money)
         return
     end
+    log.info("transfer_money club=%d,from_guid=%d,to_guid=%d,money=%d",club.id,from_guid,to_guid,tonumber(money))
     club:incr_member_money(from_guid,-money,reason)
     club:incr_member_money(to_guid,money,reason)
     return true

@@ -387,7 +387,7 @@ function on_sd_log_club_action_msg(msg)
     local club = msg.club
     local actionmsg = msg.msg
     local type = msg.type
-
+    log.dump(msg,"on_sd_log_club_action_msg")
     local res = dbopt.log:query([[
             INSERT INTO t_log_club_msg(club,operator,type,content,created_time)
             VALUES(%s,%s,%s,'%s',%s)

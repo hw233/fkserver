@@ -1102,6 +1102,7 @@ function base_club:check_money_limit(money,money_id)
 end
 
 function base_club:incr_member_money(guid,delta_money,why,why_ext)
+    log.info("base_club:incr_member_money club:%s,guid:%d,delta_money:%d",self.id,tonumber(guid),tonumber(delta_money))
     local player = player_data[guid]
     if not player then
         log.error("base_club:incr_member_money got nil player,club:%s,guid:%s",self.id,guid)
@@ -1121,6 +1122,7 @@ function base_club:incr_member_money(guid,delta_money,why,why_ext)
 
     local partner = club_member_partner[self.id][guid]
     while partner and partner ~= 0 do
+        log.info("base_club:incr_member_money club:team_money:club:%s,partner:%d,delta_money:%d",self.id,tonumber(partner),tonumber(delta_money))
         reddb:hincrby(string.format("club:team_money:%s",self.id),partner,delta_money)
         partner = club_member_partner[self.id][partner]
     end
@@ -1139,6 +1141,7 @@ function base_club:incr_member_redis_money(guid,delta_money)
 
     local partner = club_member_partner[self.id][guid]
     while partner and partner ~= 0 do
+        log.info("base_club:incr_member_redis_money club:team_money:club:%s,partner:%d,delta_money:%d",self.id,tonumber(partner),tonumber(delta_money))
         reddb:hincrby(string.format("club:team_money:%s",self.id),partner,delta_money)
         partner = club_member_partner[self.id][partner]
     end
@@ -1159,6 +1162,7 @@ function base_club:exchange_team_commission(partner_id,money)
 
         money = math.floor(money)
         reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-money)
+        log.info("base_club:exchange_team_commission partner_id=%d,money=%d",tonumber(partner_id),money)
         self:incr_member_money(partner_id,money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION)
         club_partners[self.id][partner_id]:notify_money()
         game_util.log_statistics_money(club_money_type[self.id],money,enum.LOG_MONEY_OPT_TYPE_CLUB_COMMISSION,self.id)
@@ -1199,7 +1203,7 @@ function base_club:incr_team_commission(partner_id,money,round_id)
 
                 local last_time = reddb:hget(string.format("club:team:exchange:time:%s",self.id),partner_id)
                 if last_time and os.time() - tonumber(last_time) < interval then break end
-                
+                log.info("base_club:incr_team_commission partner_id=%d,money=%d",tonumber(partner_id),newmoney)
                 reddb:hincrby(string.format("club:partner:commission:%s",self.id),partner_id,-newmoney)
                 self:incr_member_money(partner_id,newmoney,enum.LOG_MONEY_OPT_TYPE_AUTO_CLUB_COMMISSION)
                 game_util.log_statistics_money(club_money_type[self.id],newmoney,enum.LOG_MONEY_OPT_TYPE_AUTO_CLUB_COMMISSION,self.id)

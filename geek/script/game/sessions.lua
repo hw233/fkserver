@@ -28,6 +28,7 @@ local M_ = {
 		return s
 	end,
 	del = function(guid)
+		log.error("sessions.del [%d] ",tonumber(guid))
 		sessions[guid] = nil
 	end,
 	rawget = function(guid)

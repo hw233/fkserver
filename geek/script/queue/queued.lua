@@ -105,6 +105,7 @@ function CMD.Login(guid,gate)
 			end
 
 			local all_lobby = g_common.all_game_server(1)
+			log.dump(all_lobby,"all_lobby")
 			if s.server and not all_lobby[s.server] then
 				s.gate = gate
 				reddb:hset(strfmt("player:online:guid:%d",guid),"gate",gate)

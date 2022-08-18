@@ -2324,7 +2324,7 @@ function maajan_table:game_balance()
         local ting_tiles = self:ting(p)
         if table.nums(ting_tiles) > 0 then
             p.jiao = p.jiao or {tiles = ting_tiles}
-            log.dump(p.jiao)
+            log.dump(p.jiao,tostring(p.guid))
         end
     end)
 
@@ -3107,7 +3107,7 @@ function maajan_table:global_status_info()
             online = p.active,
         })
     end
-
+    -- table:info:123456 房间信息
     local private_conf = base_private_table[self.private_id]
 
     local info = {

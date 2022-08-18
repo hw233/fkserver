@@ -107,6 +107,7 @@ function on_bs_club_create(owner,name,type,creator)
     if type == 1 then
         id = club_utils.rand_union_club_id()
         local club = base_club:create(id,name or "","",player,enum.CT_UNION,nil,creator)
+        log.info("on_bs_club_create club=%d,guid=%d,money=%d",club.id,tonumber(guid),math.floor(global_conf.union_init_money))
         club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
         game_util.log_statistics_money(club_money_type[club.id],global_conf.union_init_money,enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     else
@@ -135,7 +136,7 @@ function on_bs_club_create_with_group(group_id,name)
 
     local id = club_utils.rand_union_club_id()
     local club = base_club:create(id,name or "","",player,enum.CT_UNION)
-
+    log.info("on_bs_club_create_with_group club=%d,guid=%d,money=%d",club.id,tonumber(player.guid),math.floor(global_conf.union_init_money))
     club:incr_member_money(player.guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
 
     local son_club_id = club_utils.rand_union_club_id()
@@ -164,7 +165,7 @@ function on_cs_club_create(msg,guid)
     local id = club_utils.rand_group_club_id()
 
     local club = base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
-
+    log.info("on_cs_club_create club=%d,guid=%d,money=%d",club.id,guid,math.floor(global_conf.union_init_money))
     -- 初始送分 金币
     club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
     game_util.log_statistics_money(club_money_type[club.id],math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
@@ -602,6 +603,8 @@ function on_cs_club_detail_info_req(msg,guid)
 
     --print time
     log.info("on_cs_club_detail_info_req,%d,4,distime:%d",guid,os.clock()-t)
+
+    -- log.dump(club_info,"club_info:"..tostring(club_id).."_guid:"..tostring(guid))
 end
 
 function on_cs_club_list(msg,guid)
@@ -811,7 +814,7 @@ function on_cs_club_query_memeber(msg,guid)
             }
         end
     end)
-
+    -- log.dump(ms,key)
     onlineguid.send(guid,"S2C_CLUB_PLAYER_LIST_RES",{
         result = enum.ERROR_NONE,
         club_id = club_id,
@@ -2216,7 +2219,7 @@ local function transfer_money_player2player(from_guid,to_guid,club_id,money,guid
             onlineguid.send(guid,"S2C_CLUB_TRANSFER_MONEY_RES",res)
             return
         end
-    
+        log.info("transfer_money_player2player incr_member_redis_money club_id:%d,from_guid:%d,to_guid:%d,money:%d",club_id,from_guid,to_guid,money)
         local old_from_money = player_money[from_guid][money_id]
         local new_from_money = club:incr_member_redis_money(from_guid,-money)
         local old_to_money = player_money[to_guid][money_id]

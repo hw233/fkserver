@@ -2486,7 +2486,7 @@ function base_table:global_status_info(op)
 			online = p.active,
 		    }
 	end)
-    
+    -- table:info:123456 房间信息
 	local private_conf = base_private_table[self.private_id]
     
 	local info = {
