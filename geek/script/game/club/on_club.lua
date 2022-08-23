@@ -466,6 +466,7 @@ end
 
 --相应进入联盟消息
 function on_cs_club_detail_info_req(msg,guid)
+    log.dump(msg,"on_cs_club_detail_info_req_"..guid)
     local club_id = msg.club_id
     --start time
     local t = os.clock()
@@ -502,8 +503,11 @@ function on_cs_club_detail_info_req(msg,guid)
     local t1 = os.clock()
     log.info("on_cs_club_detail_info_req,%d,1,distime:%d",guid,t1-t)
 
-    local tables = club_utils.get_club_tables(root,team_template_ids) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
-
+    local tables = {}
+    -- if role >= enum.CRT_PARTNER then -- 联盟角色组长及以上
+    --     tables = club_utils.get_club_tables(root,team_template_ids,role) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
+    -- end
+    
     local t2 = os.clock()
     log.info("on_cs_club_detail_info_req,%d,2,distime:%d",guid,t2-t1)
 
@@ -605,6 +609,76 @@ function on_cs_club_detail_info_req(msg,guid)
     log.info("on_cs_club_detail_info_req,%d,4,distime:%d",guid,os.clock()-t)
 
     -- log.dump(club_info,"club_info:"..tostring(club_id).."_guid:"..tostring(guid))
+
+    if role >= enum.CRT_PARTNER then -- 联盟角色组长及以上
+        t1 = os.clock()
+        log.info("on_cs_club_detail_info_req,%d,5,table_info distime:%d",guid,t1-t)
+        tables = club_utils.get_club_tables(root,team_template_ids,role) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
+        t2 = os.clock()
+        log.info("on_cs_club_detail_info_req,%d,6,table_info distime:%d",guid,t2-t1)
+        local table_info = {
+            result = enum.ERROR_NONE,
+            table_list = tables,
+        }
+        onlineguid.send(guid,"S2C_CLUB_TABLE_INFO_RES",table_info)
+        -- log.dump(table_info,"table_info:"..tostring(club_id).."_guid:"..tostring(guid))
+    end
+end
+
+--联盟房间列表消息
+function on_cs_club_table_info_req(msg,guid)
+    log.dump(msg,"on_cs_club_table_info_req_"..guid)
+    local club_id = msg.club_id
+    local cl_game_type,cl_template,cl_type = msg.game_type, msg.templateid, msg.type;
+    --start time
+    local t = os.clock()
+    if not club_id then
+        onlineguid.send(guid,"S2C_CLUB_TABLE_INFO_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+
+        return
+    end
+
+    local club = base_clubs[club_id]
+    if not club then
+        onlineguid.send(guid,"S2C_CLUB_TABLE_INFO_RES",{
+            result = enum.ERROR_CLUB_NOT_FOUND,
+        })
+        return
+    end
+
+    local role = club_role[club_id][guid] or enum.CRT_PLAYER
+    local templates = club_utils.get_visiable_club_templates(club,role) --获取模板
+    
+    local team_template_ids = club_utils.get_team_template_ids(club_id,guid,role)  --获取团队开放模板
+    if table.nums(team_template_ids) == 0 then
+        team_template_ids = table.map(templates,function(template) return template.template_id,true end) --未设置全部添加
+    end
+
+    templates = table.select(templates,function(t) return team_template_ids[t.template_id] end) --处理模板
+
+    local root = club_utils.root(club)
+
+    local t1 = os.clock()
+    log.info("on_cs_club_table_info_req,%d,1,distime:%d",guid,t1-t)
+    log.info("on_cs_club_table_info_req,role=%d,cl_game_type=%d,cl_template=%d,cl_type=%d ",role,cl_game_type,cl_template,cl_type)
+    log.dump(team_template_ids,"get_club_tables")
+    local tables = club_utils.get_club_tables(root,team_template_ids,role,cl_game_type,cl_template,cl_type) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
+
+    local t2 = os.clock()
+    log.info("on_cs_club_table_info_req,%d,2,distime:%d",guid,t2-t1)
+    
+    local table_info = {
+        result = enum.ERROR_NONE,
+        table_list = tables,
+    }
+    onlineguid.send(guid,"S2C_CLUB_TABLE_INFO_RES",table_info)
+
+    --print time
+    log.info("on_cs_club_table_info_req,%d,3,distime:%d",guid,os.clock()-t)
+
+    log.dump(table_info,"table_info:"..tostring(club_id).."_guid:"..tostring(guid))
 end
 
 function on_cs_club_list(msg,guid)

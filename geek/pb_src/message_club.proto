@@ -47,7 +47,7 @@ message S2C_JOIN_CLUB_RES {
 //请求
 message C2S_CLUB_INFO_REQ{
     enum MsgID {NIL = 0;ID = 14016;}
-    int32 club_id = 1;
+    int32 club_id       = 1;
 }
 
 
@@ -773,4 +773,18 @@ message S2C_CLUB_BLOCK_TEAM_REMOVE_TEAM_FROM_GROUP{
     int32 guid = 4;
 }
 
+//请求已创建的房间列表(联盟成员才用,组长及以上的不需要)
+message C2S_CLUB_TABLE_INFO_REQ{
+    enum MsgID {NIL = 0;ID = 14148;}
+    int32 club_id       = 1;
+    int32 game_type     = 2;    // game_id
+    int32 templateid    = 3;    // 模板ID
+    int32 type          = 4;    // 1:满人  2:等待
+}
 
+//返回对应查询的房间列表()
+message S2C_CLUB_TABLE_INFO_RES{
+    enum MsgID {NIL = 0;ID = 14149;}
+    int32 result = 1;
+    repeated TABLE_STATUS_INFO table_list = 2;    //房间列表信息
+}

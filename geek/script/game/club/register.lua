@@ -76,6 +76,8 @@ local h = {
 	C2S_CLUB_BLOCK_TEAM_DEL_GROUP = on_cs_del_block_team_group,
 	C2S_CLUB_BLOCK_TEAM_ADD_TEAM_TO_GROUP = on_cs_add_team_to_block_team_group,
 	C2S_CLUB_BLOCK_TEAM_REMOVE_TEAM_FROM_GROUP = on_cs_remove_team_from_block_team_group,
+
+	C2S_CLUB_TABLE_INFO_REQ = on_cs_club_table_info_req,
 }
 
 local msgopt = require "msgopt"

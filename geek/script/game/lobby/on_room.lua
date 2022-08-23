@@ -201,10 +201,10 @@ function on_cs_dismiss_table_commit(msg,guid)
 	end
 end
 
-function on_s_get_table_status_infos(table_ids)
+function on_s_get_table_status_infos(table_ids,type)
 	return table.series(table_ids or {},function(table_id)
 		local tb = g_room:find_table(table_id)
 		if not tb then return end
-		return tb:global_status_info()
+		return tb:global_status_info(type)
 	end)
 end

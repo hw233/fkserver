@@ -111,11 +111,11 @@ function utils.get_visiable_club_templates(club,getter_role)
     end)
 end
 
-function utils.get_club_tables(club,team_template_ids)
+function utils.get_club_tables(club,team_template_ids,role,cl_game_type,cl_template,cl_type)
     if not club then return {} end
     -- 俱乐部所有房间号
     local table_ids = club_table[club.id] or {}
-
+    -- 分类整理每个游戏服的包含的桌子号(房间号)
     local room_table = {}
     for tid in pairs(table_ids) do
         repeat
@@ -125,6 +125,12 @@ function utils.get_club_tables(club,team_template_ids)
             local room_id = tb.room_id  -- 游戏服务ID
             if not room_id then break end
             if #team_template_ids ~= 0 and not team_template_ids[tb.template] then break end
+            if role and role < enum.CRT_PARTNER then  -- 联盟角色组长以下过滤
+                -- game_type
+                if cl_game_type and cl_game_type ~= tb.game_type then break end
+                -- template_id 模板
+                if cl_template and cl_template ~= tb.template then break end
+            end
             room_table[room_id] = room_table[room_id] or {}
             table.insert(room_table[room_id],tid) -- 每个游戏服包含的所有房间号
         until true
@@ -134,7 +140,12 @@ function utils.get_club_tables(club,team_template_ids)
 
     for room_id,tids in pairs(room_table) do
         -- 房间号的所有信息：玩家状态信息和桌子信息
-        local tb_infos = channel.call("game."..room_id,"msg","GetTableStatusInfos",tids)
+        local tb_infos
+        if  role < enum.CRT_PARTNER then
+            tb_infos = channel.call("game."..room_id,"msg","GetTableStatusInfos",tids,cl_type)
+        else
+            tb_infos = channel.call("game."..room_id,"msg","GetTableStatusInfos",tids)
+        end
         for _,info in pairs(tb_infos) do
             table.insert(tables,info)
         end
