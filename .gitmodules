@@ -1,34 +1,34 @@
-[submodule "3rd/jemalloc"]
-	path = 3rd/jemalloc
-	url = https://gitee.com/thinblog/jemalloc.git
-[submodule "3rd/lua-openssl"]
-	path = 3rd/lua-openssl
-	branch = mkfile
-	url = https://gitee.com/thinblog/lua-openssl.git
-[submodule "3rd/lua-cjson"]
-	path = 3rd/lua-cjson
-	branch = master
-	url = https://gitee.com/thinblog/lua-cjson.git
-[submodule "3rd/luagbk"]
-	path = 3rd/luagbk
-	branch = master
-	url = https://gitee.com/thinblog/luagbk.git
+# [submodule "3rd/jemalloc"]
+# 	path = 3rd/jemalloc
+# 	url = https://gitee.com/thinblog/jemalloc.git
+# [submodule "3rd/lua-openssl"]
+# 	path = 3rd/lua-openssl
+# 	branch = mkfile
+# 	url = https://gitee.com/thinblog/lua-openssl.git
+# [submodule "3rd/lua-cjson"]
+# 	path = 3rd/lua-cjson
+# 	branch = master
+# 	url = https://gitee.com/thinblog/lua-cjson.git
+# [submodule "3rd/luagbk"]
+# 	path = 3rd/luagbk
+# 	branch = master
+# 	url = https://gitee.com/thinblog/luagbk.git
 # [submodule "3rd/mmdblua"]
 # 	path = 3rd/mmdblua
 # 	branch = master
 # 	url = https://gitee.com/thinblog/mmdblua.git
-[submodule "3rd/lua-maxminddb"]
-	path = 3rd/lua-maxminddb
-	branch = master
-	url = https://gitee.com/thinblog/lua-maxminddb.git
-[submodule "3rd/lua-protobuf"]
-	path = 3rd/lua-protobuf
-	branch = dev
-	url = https://gitee.com/thinblog/lua-protobuf.git
-[submodule "3rd/lrandom"]
-	path = 3rd/lrandom
-	url = https://gitee.com/thinblog/lrandom.git
-[submodule "3rd/chronos"]
-	path = 3rd/chronos
-	url = https://gitee.com/thinblog/chronos.git
-	branch = makefile
+# [submodule "3rd/lua-maxminddb"]
+# 	path = 3rd/lua-maxminddb
+# 	branch = master
+# 	url = https://gitee.com/thinblog/lua-maxminddb.git
+# [submodule "3rd/lua-protobuf"]
+# 	path = 3rd/lua-protobuf
+# 	branch = dev
+# 	url = https://gitee.com/thinblog/lua-protobuf.git
+# [submodule "3rd/lrandom"]
+# 	path = 3rd/lrandom
+# 	url = https://gitee.com/thinblog/lrandom.git
+# [submodule "3rd/chronos"]
+# 	path = 3rd/chronos
+# 	url = https://gitee.com/thinblog/chronos.git
+# 	branch = makefile
