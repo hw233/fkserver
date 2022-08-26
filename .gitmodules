@@ -1,10 +1,10 @@
 [submodule "3rd/jemalloc"]
 	path = 3rd/jemalloc
 	url = https://gitee.com/thinblog/jemalloc.git
-# [submodule "3rd/lua-openssl"]
-# 	path = 3rd/lua-openssl
-# 	branch = mkfile
-# 	url = https://gitee.com/thinblog/lua-openssl.git
+[submodule "3rd/lua-openssl"]
+	path = 3rd/lua-openssl
+	branch = mkfile
+	url = https://gitee.com/thinblog/lua-openssl.git
 [submodule "3rd/lua-cjson"]
 	path = 3rd/lua-cjson
 	branch = master
