@@ -59,7 +59,6 @@ LUA_CLIB = skynet \
 COMMON_CLIB = cjson \
   pb \
   gbk \
-  openssl \
   random \
   chronos
 
@@ -137,8 +136,8 @@ $(COMMON_CLIB_PATH)/cjson.so: | $(COMMON_CLIB_PATH) update3rd
 $(COMMON_CLIB_PATH)/gbk.so: | $(COMMON_CLIB_PATH) update3rd
 	cd 3rd/luagbk && $(MAKE) CC=$(CC) 
 
-$(COMMON_CLIB_PATH)/openssl.so: | $(COMMON_CLIB_PATH) update3rd
-	cd 3rd/lua-openssl && $(MAKE) CC=$(CC) 
+#$(COMMON_CLIB_PATH)/openssl.so: | $(COMMON_CLIB_PATH) update3rd
+#	cd 3rd/lua-openssl && $(MAKE) CC=$(CC) 
 
 $(COMMON_CLIB_PATH)/pb.so: | $(COMMON_CLIB_PATH) update3rd
 	cd 3rd/lua-protobuf && $(MAKE) CC=$(CC) 
