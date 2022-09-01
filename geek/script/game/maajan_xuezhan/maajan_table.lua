@@ -2795,16 +2795,25 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         tinsert(msg.pb_players,tplayer)
     end)
 
-    log.dump(msg)
+    log.dump(msg,tostring(player.guid))
 
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect  then
+        local total_scores,strtotal_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),{}
+        local total_money,strtotal_money = table.map(self.players,function(p,chair) return chair,p.total_money end),{}
+        for k,score in pairs(total_scores) do
+            strtotal_scores[k] = tostring(score)
+        end
+        for k,money in pairs(total_money) do
+            strtotal_money[k] = tostring(money)
+        end
         msg.pb_rec_data = {
             last_chu_pai_chair = last_chu_pai_player and last_chu_pai_player.chair_id or nil,
             last_chu_pai = last_tile,
-            total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),
-            total_money = table.map(self.players,function(p,chair) return chair,p.total_money end),
+            total_scores = strtotal_scores, -- table.keys(table.map(self.players,function(p,chair) return chair,p.total_score end)),
+            total_money = strtotal_money, -- table.map(self.players,function(p,chair) return chair,p.total_money end)),
         }
+        log.dump(msg.pb_rec_data,"is_reconnect_"..tostring(player.guid))
     end
 
     if self.cur_round and self.cur_round > 0 then

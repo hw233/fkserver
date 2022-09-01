@@ -241,8 +241,8 @@ message Maajan_Reconnect_Data {
 	int32 act_left_time = 1;						// 操作剩余时间
 	int32 last_chu_pai_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
 	int32 last_chu_pai = 3;						// 最后一次的出牌
-	map<int32, int32> total_scores = 4;		//大局总分数
-	map<int32, int32> total_money = 5;
+	map<int32, string> total_scores = 4;		//大局总分数
+	map<int32, string> total_money = 5;
 }
 
 message Maajan_Task_Data {
@@ -258,11 +258,11 @@ message SC_Maajan_Desk_Enter {
     int32 zhuang = 3;							//庄家
     int32 self_chair_id = 4;					//id
 	int32 act_time_limit = 5;					// 操作时间
-	int32 decision_time_limit = 6;				// 碰刚吃胡加倍 思考时间时间
-	bool is_reconnect = 7;						//reconnect
-	Maajan_Reconnect_Data pb_rec_data = 8;		//断线数据
-	Maajan_Task_Data pb_task_data = 9;			//任务
-	int32 round = 10;
+	int32 decision_time_limit = 6;				// 碰刚吃胡加倍 思考时间时间	
+	Maajan_Reconnect_Data pb_rec_data = 7;		//断线数据
+	Maajan_Task_Data pb_task_data = 8;			//任务
+	int32 round = 9;
+	bool is_reconnect = 10;						//reconnect
 }
 
 //剩余多少张公牌

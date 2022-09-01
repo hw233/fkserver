@@ -689,15 +689,23 @@ function land_table:send_desk_enter_data(player,reconnect)
 	end)
 
 	if reconnect then
+		local total_scores,strtotal_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),{}
+        local total_money,strtotal_money = table.map(self.players,function(p,chair) return chair,p.total_money end),{}
+        for k,score in pairs(total_scores) do
+            strtotal_scores[k] = tostring(score)
+        end
+        for k,money in pairs(total_money) do
+            strtotal_money[k] = tostring(money)
+        end
 		msg.pb_rec_data =  {
 			act_left_time = nil,
 			last_discard_chair = self.last_discard and self.last_discard.chair or nil,
 			last_discard = self.last_discard and self.last_discard.cards or nil,
-			total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),
-			total_money = table.map(self.players,function(p,chair) return chair,p.total_money end),
+			total_scores = strtotal_scores, -- table.map(self.players,function(p,chair) return chair,p.total_score end),
+			total_money = strtotal_money,-- table.map(self.players,function(p,chair) return chair,p.total_money end),
 			landlord_cards = self.status == TABLE_STATUS.PLAY and  self.landlord_cards or nil,
 		}
-
+		log.dump(msg.pb_rec_data,"is_reconnect_"..tostring(player.guid))
 		local trustee_type = self:get_trustee_conf()
 		if trustee_type then
 			self:set_trusteeship(player)

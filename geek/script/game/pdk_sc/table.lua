@@ -357,6 +357,18 @@ function pdk_table:cancel_discard_timer()
 end
 
 function pdk_table:send_desk_enter_data(player,reconnect)
+	local total_scores,strtotal_scores = {},{}
+	local total_money,strtotal_money = {},{}
+	if reconnect then
+		total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end)
+        total_money = table.map(self.players,function(p,chair) return chair,p.total_money end)
+        for k,score in pairs(total_scores) do
+            strtotal_scores[k] = tostring(score)
+        end
+        for k,money in pairs(total_money) do
+            strtotal_money[k] = tostring(money)
+        end
+	end
 	local msg = {
 		status = self.status,
 		zhuang = self.zhuang,
@@ -388,8 +400,8 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 			act_left_time = nil,
 			last_discard_chair = self.last_discard and self.last_discard.chair or nil,
 			last_discard = self.last_discard and self.last_discard.cards or nil,
-			total_scores = table.map(self.players,function(p,chair) return chair,p.total_score end),
-			total_money = table.map(self.players,function(p,chair) return chair,p.total_money end),
+			total_scores = strtotal_scores, -- table.map(self.players,function(p,chair) return chair,p.total_score end),
+			total_money = strtotal_money,-- table.map(self.players,function(p,chair) return chair,p.total_money end),
 			laizi_replace = self.last_discard and self.last_discard.laizi_replace or nil,
 		} or nil,
 		laizi = self.laizi,
@@ -401,7 +413,7 @@ function pdk_table:send_desk_enter_data(player,reconnect)
 			self:set_trusteeship(player)
 		end
 	end
-
+	log.dump(msg,"is_reconnect_"..tostring(player.guid))
 	if self:is_round_gaming() then
 		send2client(player,"SC_PdkDeskEnter",msg)
 	end

@@ -50,9 +50,9 @@ message PdkReconnectData {
 	int32 act_left_time = 1;						// 操作剩余时间
 	int32 last_discard_chair = 2;				// 最后一次出牌用户索引  或者  当前该谁出牌
 	repeated int32 last_discard = 3;						// 最后一次的出牌
-	map<int32, int32> total_scores = 4;
+	map<int32, string> total_scores = 4;
 	repeated int32 laizi_replace = 5;
-	map<int32, int32> total_money = 6;
+	map<int32, string> total_money = 6;
 }
 
 message SC_PdkDeskEnter {
