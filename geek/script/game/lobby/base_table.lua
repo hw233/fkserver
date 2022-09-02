@@ -2471,7 +2471,21 @@ function base_table:kickout_player(player,kicker)
 	return player:force_exit(enum.STANDUP_REASON_FORCE)
 end
 
-function base_table:global_status_info(op)
+function base_table:global_status_info(type)
+	if type then
+        local n = table.nums(self.players)
+	    local min_count = self.start_count or self.room_.min_gamer_count or self.chair_count
+        if type == 1 then -- 查询满人桌子
+            if n < min_count then -- 过滤等待中的桌子
+                return
+            end
+        elseif type == 2 then -- 查询等待中的桌子
+            if n >= min_count then -- 过滤满人的桌子
+                return
+            end
+        end
+    end
+
 	local seats = table.series(self.players,function(p,chair_id) 
 		return {
 			chair_id = chair_id,
