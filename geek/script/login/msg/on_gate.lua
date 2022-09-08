@@ -278,7 +278,7 @@ function on_cl_auth(msg)
     if ip then
         if not verify.check_have_same_ip(ip) then
             if not verify.check_ip_auth(ip) then
-                return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT
+                return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
             end
         end
     end
