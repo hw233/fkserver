@@ -111,6 +111,14 @@ function utils.get_visiable_club_templates(club,getter_role)
     end)
 end
 
+function utils.get_club_table_count(club)
+    if not club then return {} end
+    -- 俱乐部所有房间号
+    local table_ids = club_table[club.id] or {}
+    log.dump(table_ids,"table_ids")
+    return table.nums(table_ids)
+end
+
 function utils.get_club_tables(club,team_template_ids,role,cl_game_type,cl_template,cl_type)
     if not club then return {} end
     -- 俱乐部所有房间号

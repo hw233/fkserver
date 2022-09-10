@@ -527,8 +527,8 @@ function on_cs_club_detail_info_req(msg,guid)
 
     local club_status = {
         status = club.status,
-        player_count = total_count,
-        online_player_count = online_count,
+        player_count = total_count,         -- 加入联盟的总人数
+        online_player_count = online_count, -- 当前在线人数
         status_in_club = recusive_parent_status(club),
     }
 
@@ -609,8 +609,9 @@ function on_cs_club_detail_info_req(msg,guid)
     log.info("on_cs_club_detail_info_req,%d,4,distime:%d",guid,os.clock()-t)
 
     -- log.dump(club_info,"club_info:"..tostring(club_id).."_guid:"..tostring(guid))
-
-    if role >= enum.CRT_PARTNER then -- 联盟角色组长及以上
+    local playercount = math.floor(global_conf.club_detail_req_limit) or 5000
+    log.info("on_cs_club_detail_info_req,club_detail_req_limit playercount %d",tonumber(playercount))
+    if role >= enum.CRT_PARTNER or tonumber(total_count) <= tonumber(playercount) then -- 联盟角色组长及以上,或者加入联盟少于5000人
         t1 = os.clock()
         log.info("on_cs_club_detail_info_req,%d,5,table_info distime:%d",guid,t1-t)
         tables = club_utils.get_club_tables(root,team_template_ids,role) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
@@ -629,7 +630,16 @@ end
 function on_cs_club_table_info_req(msg,guid)
     log.dump(msg,"on_cs_club_table_info_req_"..guid)
     local club_id = msg.club_id
-    local cl_game_type,cl_template,cl_type = msg.game_type, msg.templateid, msg.type;
+    local cl_game_type,cl_template,cl_type -- = msg.game_type, msg.templateid, msg.type;
+    if msg.game_type > 0 then
+        cl_game_type = msg.game_type
+    end
+    if msg.templateid > 0 then
+        cl_template = msg.templateid
+    end
+    if msg.type > 0 then
+        cl_type = msg.type
+    end
     --start time
     local t = os.clock()
     if not club_id then
