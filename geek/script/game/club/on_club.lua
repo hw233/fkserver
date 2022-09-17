@@ -2912,7 +2912,7 @@ function on_cs_club_edit_config(msg,guid)
         return k,c
     end)
 
-    log.dump(tconf)
+    log.dump(tconf,"on_cs_club_edit_config")
 
     reddb:hmset(string.format("club:conf:%s",club_id),tconf)
     club_conf[club_id] = nil

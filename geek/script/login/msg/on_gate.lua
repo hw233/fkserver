@@ -276,9 +276,12 @@ function on_cl_auth(msg)
     log.dump(msg,"on_cl_auth")
     local ip = msg.ip 
     if ip then
-        if not verify.check_have_same_ip(ip) then
-            if not verify.check_ip_auth(ip) then
-                return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
+        local guid = reddb:get("player:account:"..tostring(msg.open_id))
+        if not guid then
+            if not verify.check_have_same_ip(ip) then
+                if not verify.check_ip_auth(ip) then
+                    return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
+                end
             end
         end
     end

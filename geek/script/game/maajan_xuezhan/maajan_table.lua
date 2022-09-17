@@ -1447,7 +1447,7 @@ function maajan_table:set_gzh_on_pass(passer,tile)
             end
         end
     end
-    log.dump(gzh)
+    log.dump(gzh,"gzh_"..passer.guid)
 end
 
 function maajan_table:is_in_gzh(player,tile)
@@ -1618,7 +1618,13 @@ function maajan_table:on_action_chu_pai(player,msg,auto)
     local waiting_actions = {}
     self:foreach(function(v)
         if v.hu then return end
-        if player.chair_id == v.chair_id then return end
+        if player.chair_id == v.chair_id then 
+            -- 自己出牌,判断自己打出的这张牌自己是否能碰胡(过庄胡、过手碰)需要
+            log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
+            local selfactions = self:get_selfactionsAndset_pass(v,chu_pai_val)
+            log.dump(selfactions,"get_selfactionsAndset_pass guid_"..player.guid)
+            return 
+        end
 
         local actions = self:get_actions(v,nil,chu_pai_val)
         if table.nums(actions) > 0 then
@@ -1877,8 +1883,8 @@ function maajan_table:do_huan_pai()
     end)
 
     local player_count = table.sum(self.players,function(p) return p and 1 or 0 end)
-    local huan_order = player_count == 4 and math.random(0,2) or math.random(0,1)
-    if huan_order == 0 then
+    local huan_order = player_count == 4 and math.random(0,2) or math.random(0,1) -- 换牌顺序
+    if huan_order == 0 then -- 顺时针
         self:foreach(function(p,i)
             local j  = i
             local p1
@@ -1889,7 +1895,7 @@ function maajan_table:do_huan_pai()
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
         end)
-    elseif huan_order == 1 then
+    elseif huan_order == 1 then -- 逆时针
         self:foreach(function(p,i)
             local j  = i
             local p1
@@ -1900,7 +1906,7 @@ function maajan_table:do_huan_pai()
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
         end)
-    elseif huan_order == 2 then
+    elseif huan_order == 2 then     -- 对角换
         local p1 = self.players[1]
         local p2 = self.players[2]
         local p3 = self.players[3]
@@ -2148,6 +2154,30 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         actions[ACTION.AN_GANG] = nil
         actions[ACTION.MING_GANG] = nil
         actions[ACTION.BA_GANG] = nil
+    end
+
+    return actions
+end
+-- 自己出牌,判断是否过庄胡、过手碰
+function maajan_table:get_selfactionsAndset_pass(p,in_pai)
+    local actions
+    if self.rule.play.guo_zhuang_hu or self.rule.play.guo_shou_peng then
+        actions = self:get_actions(p,nil,in_pai)
+        if table.nums(actions) > 0 then
+            if self.rule.play.guo_zhuang_hu then
+                local hu_action = actions[ACTION.HU]
+                if hu_action then
+                    self:set_gzh_on_pass(p,in_pai)
+                end
+            end
+
+            if self.rule.play.guo_shou_peng then
+                local peng_action = actions[ACTION.PENG]
+                if peng_action then
+                    self:set_gsp_on_pass(p,in_pai)
+                end
+            end
+        end
     end
 
     return actions
