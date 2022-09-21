@@ -628,7 +628,7 @@ end
 
 --联盟房间列表消息
 function on_cs_club_table_info_req(msg,guid)
-    log.dump(msg,"on_cs_club_table_info_req_"..guid)
+    -- log.dump(msg,"on_cs_club_table_info_req_"..guid)
     local club_id = msg.club_id
     local cl_game_type,cl_template,cl_type -- = msg.game_type, msg.templateid, msg.type;
     if msg.game_type > 0 then
@@ -673,7 +673,7 @@ function on_cs_club_table_info_req(msg,guid)
     local t1 = os.clock()
     log.info("on_cs_club_table_info_req,%d,1,distime:%d",guid,t1-t)
     log.info("on_cs_club_table_info_req,role=%d,cl_game_type=%d,cl_template=%d,cl_type=%d ",role,cl_game_type,cl_template,cl_type)
-    log.dump(team_template_ids,"get_club_tables")
+    -- log.dump(team_template_ids,"get_club_tables")
     local tables = club_utils.get_club_tables(root,team_template_ids,role,cl_game_type,cl_template,cl_type) --获取在线座子信息 这个要去各个服务器拉取 比较耗时间
 
     local t2 = os.clock()
@@ -688,7 +688,7 @@ function on_cs_club_table_info_req(msg,guid)
     --print time
     log.info("on_cs_club_table_info_req,%d,3,distime:%d",guid,os.clock()-t)
 
-    log.dump(table_info,"table_info:"..tostring(club_id).."_guid:"..tostring(guid))
+    -- log.dump(table_info,"table_info:"..tostring(club_id).."_guid:"..tostring(guid))
 end
 
 function on_cs_club_list(msg,guid)

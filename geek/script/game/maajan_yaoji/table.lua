@@ -2203,7 +2203,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
             actions[ACTION.RUAN_MING_GANG] = nil
         end 
         if self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-            local max_hu_fan = self:hu_fan(p,in_pai,mo_pai)
+            local max_hu_fan = self:hu_fan(p,in_pai,mo_pai,qiang_gang)
             if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
                 actions[ACTION.HU] = nil
             end
@@ -3056,7 +3056,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         tinsert(msg.pb_players,tplayer)
     end)
 
-    log.dump(msg)
+    -- log.dump(msg)
 
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect  then
