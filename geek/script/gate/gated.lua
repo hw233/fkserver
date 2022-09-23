@@ -17,7 +17,7 @@ collectgarbage("setstepmul", 1000)
 LOG_NAME = "gate"
 
 local sessions = {}
-local heartbeat_check_time = 12
+local heartbeat_check_time = 27 --12
 local slot
 
 local CMD = {}
