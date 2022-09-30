@@ -275,17 +275,7 @@ function on_cl_auth(msg)
     end
     log.dump(msg,"on_cl_auth")
     local ip = msg.ip 
-    if ip then
-        local guid = reddb:get("player:account:"..tostring(msg.open_id))
-        if not guid then
-            if not verify.check_have_same_ip(ip) then
-                if not verify.check_ip_auth(ip) then
-                    return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
-                end
-            end
-        end
-    end
-
+    
     local errcode,auth = do_auth(msg)
     if errcode then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
@@ -297,6 +287,17 @@ function on_cl_auth(msg)
     if not uuid or uuid == "" then
         uuid = gen_uuid(auth.unionid)
         reddb:set(string.format("player:auth_id:%s",auth.unionid),uuid)
+    end
+
+    if ip then
+        local guid = reddb:get("player:account:"..tostring(uuid))
+        if not guid then
+            if not verify.check_have_same_ip(ip) then
+                if not verify.check_ip_auth(ip) then
+                    return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
+                end
+            end
+        end
     end
 
     return reg_account({

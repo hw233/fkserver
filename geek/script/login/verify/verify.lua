@@ -24,7 +24,7 @@ local IP_CHECK = false
 local IMEI_CHECK = false 
 
 local IP_AUTH_CHECK = true
-local IP_AUTH_LIMIT = 2     --同IP允许注册的账号数
+local IP_AUTH_LIMIT = 5     --同IP允许注册的账号数
 
 local function ip2rdip(ip)
     local rdip 

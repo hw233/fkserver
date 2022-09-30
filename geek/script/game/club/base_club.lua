@@ -808,6 +808,9 @@ function base_club:is_block()
 end
 
 function base_club:is_block_gaming_with_others(tb,player)
+    if club_conf[self.id].block_partner_player then
+        log.dump(tb.room_.players,"is_block_gaming_with_others_"..player.guid)
+    end
     if self:is_block_in_block_group(tb,player) or self:is_block_in_block_team_group(tb,player) then
         return enum.ERROR_CLUB_TABLE_JOIN_BLOCK
     end
