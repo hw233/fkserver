@@ -1663,7 +1663,13 @@ function maajan_table:on_action_chu_pai(player,msg,auto)
     local waiting_actions = {}
     self:foreach(function(v)
         if v.hu then return end
-        if player.chair_id == v.chair_id then return end
+        if player.chair_id == v.chair_id then 
+            -- 自己出牌,判断自己打出的这张牌自己是否能碰胡(过庄胡、过手碰)需要
+            log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
+            local selfactions = self:get_selfactionsAndset_pass(v,chu_pai_val)
+            log.dump(selfactions,"get_selfactionsAndset_pass guid_"..player.guid)
+            return 
+        end
 
         local actions = self:get_actions(v,nil,chu_pai_val)
         if table.nums(actions) > 0 then
@@ -2173,8 +2179,8 @@ end
 function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     local si_dui = self.rule.play and self.rule.play.si_dui
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
-    log.dump(p.pai)
-    log.dump(actions)
+    log.dump(p.pai,"get_actions_"..p.guid)
+    log.dump(actions,"get_actions_"..p.guid)
     
     if p.que then
         for act,tiles in pairs(actions) do
@@ -2197,7 +2203,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
             actions[ACTION.RUAN_MING_GANG] = nil
         end 
         if self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-            local max_hu_fan = self:hu_fan(p,in_pai,mo_pai)
+            local max_hu_fan = self:hu_fan(p,in_pai,mo_pai,qiang_gang)
             if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
                 actions[ACTION.HU] = nil
             end
@@ -2266,6 +2272,37 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         actions[ACTION.RUAN_BA_GANG] = nil
     end
    
+    return actions
+end
+-- 自己出牌,判断是否过庄胡、过手碰、过手杠
+function maajan_table:get_selfactionsAndset_pass(p,in_pai)
+    local actions
+    if self.rule.play.guo_zhuang_hu or self.rule.play.guo_shou_peng or self.rule.play.guo_shou_gang then
+        actions = self:get_actions(p,nil,in_pai)
+        if table.nums(actions) > 0 then
+            if self.rule.play.guo_zhuang_hu then
+                local hu_action = actions[ACTION.HU]
+                if hu_action then
+                    self:set_gzh_on_pass(p,in_pai)
+                end
+            end
+
+            if self.rule.play.guo_shou_peng then
+                local peng_action = actions[ACTION.PENG]
+                if peng_action then
+                    self:set_gsp_on_pass(p,in_pai)
+                end
+            end
+
+            if self.rule.play.guo_shou_gang then
+                local ruan_ming_gang_action = actions[ACTION.RUAN_MING_GANG]
+                if ruan_ming_gang_action then
+                    self:set_gsg_on_pass(p,in_pai)
+                end
+            end
+        end
+    end
+
     return actions
 end
 
@@ -3019,7 +3056,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         tinsert(msg.pb_players,tplayer)
     end)
 
-    log.dump(msg)
+    -- log.dump(msg)
 
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect  then

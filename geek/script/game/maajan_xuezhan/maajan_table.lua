@@ -249,6 +249,7 @@ function maajan_table:on_started(player_count)
         v.gsp = nil
 
         v.statistics = v.statistics or {}
+        v.last_penghu = nil
     end
 
     
@@ -1237,7 +1238,7 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
         log.error("do action %s,nil player in chair %s",top_action.done.action,top_action.chair_id)
         return
     end
-
+    log.dump(all_actions,"on_action_after_chu_pai"..player.guid)
     local function check_all_pass(actions)
         for _,act in pairs(actions) do
             if act.done.action == ACTION.PASS then
@@ -1262,6 +1263,7 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
     local tile = top_action.done.tile
     if top_done_act == ACTION.PENG then
         self:clean_gzh(player)
+        self:last_action_is_can_penghu(player,tile,all_actions,top_action.chair_id)
         table.pop_back(chu_pai_player.pai.desk_tiles)
         self:adjust_shou_pai(player,top_done_act,tile,top_session_id)
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
@@ -1447,7 +1449,7 @@ function maajan_table:set_gzh_on_pass(passer,tile)
             end
         end
     end
-    log.dump(gzh)
+    log.dump(gzh,"gzh_"..passer.guid)
 end
 
 function maajan_table:is_in_gzh(player,tile)
@@ -1465,6 +1467,45 @@ end
 
 function maajan_table:is_in_gsp(player,tile)
     return player.gsp and player.gsp[tile]
+end
+
+function maajan_table:clean_last_can_penghu(player)
+    player.last_penghu  = nil
+end 
+
+function maajan_table:get_last_can_penghu(player)
+    return player.last_penghu and player.last_penghu.hufan
+end
+
+-- 手牌最后4张牌,其他玩家出牌是否能操作碰胡,碰后是单吊将
+function maajan_table:last_action_is_can_penghu(player,in_pai,allactions,chair_id)
+    log.dump(player,"last_action_is_can_penghu_"..player.guid) 
+    self:clean_last_can_penghu(player)
+    if self.rule.play.guo_zhuang_hu then
+        local sum = table.sum(player.pai.shou_pai)
+        if sum == 4 then
+            local iscanPeng = false
+            local iscanHu = false
+            for _,act in pairs(allactions) do
+                local hu_action = act.actions[ACTION.HU]
+                if hu_action then
+                    iscanHu = true
+                end
+                local peng_action = act.actions[ACTION.PENG]
+                if peng_action then
+                    iscanPeng = true
+                end
+            end
+            if iscanHu and iscanPeng then
+                local p = self.players[chair_id]
+                p.last_penghu = {
+                    can_penghu = true,
+                    hufan = self:hu_fan(p,in_pai,nil),
+                }     
+                log.dump(p.last_penghu,"last_penghu_"..p.guid)           
+            end
+        end
+    end
 end
 
 function maajan_table:mo_pai()
@@ -1618,7 +1659,14 @@ function maajan_table:on_action_chu_pai(player,msg,auto)
     local waiting_actions = {}
     self:foreach(function(v)
         if v.hu then return end
-        if player.chair_id == v.chair_id then return end
+        if player.chair_id == v.chair_id then 
+            -- 自己出牌,判断自己打出的这张牌自己是否能碰胡(过庄胡、过手碰)需要
+            log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
+            local selfactions = self:get_selfactionsAndset_pass(v,chu_pai_val)
+            log.dump(selfactions,"get_selfactionsAndset_pass guid_"..player.guid)
+            self:clean_last_can_penghu(player)
+            return 
+        end
 
         local actions = self:get_actions(v,nil,chu_pai_val)
         if table.nums(actions) > 0 then
@@ -1877,8 +1925,8 @@ function maajan_table:do_huan_pai()
     end)
 
     local player_count = table.sum(self.players,function(p) return p and 1 or 0 end)
-    local huan_order = player_count == 4 and math.random(0,2) or math.random(0,1)
-    if huan_order == 0 then
+    local huan_order = player_count == 4 and math.random(0,2) or math.random(0,1) -- 换牌顺序
+    if huan_order == 0 then -- 顺时针
         self:foreach(function(p,i)
             local j  = i
             local p1
@@ -1889,7 +1937,7 @@ function maajan_table:do_huan_pai()
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
         end)
-    elseif huan_order == 1 then
+    elseif huan_order == 1 then -- 逆时针
         self:foreach(function(p,i)
             local j  = i
             local p1
@@ -1900,7 +1948,7 @@ function maajan_table:do_huan_pai()
             push_shou_pai(p1,p.pai.huan.old)
             p1.pai.huan.new = p.pai.huan.old
         end)
-    elseif huan_order == 2 then
+    elseif huan_order == 2 then     -- 对角换
         local p1 = self.players[1]
         local p2 = self.players[2]
         local p3 = self.players[3]
@@ -2148,6 +2196,36 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         actions[ACTION.AN_GANG] = nil
         actions[ACTION.MING_GANG] = nil
         actions[ACTION.BA_GANG] = nil
+    end
+
+    return actions
+end
+-- 自己出牌,判断是否过庄胡、过手碰
+function maajan_table:get_selfactionsAndset_pass(p,in_pai)
+    local actions
+    if self.rule.play.guo_zhuang_hu or self.rule.play.guo_shou_peng then
+        actions = self:get_actions(p,nil,in_pai)
+        if table.nums(actions) > 0 then
+            if self.rule.play.guo_zhuang_hu then
+                local hu_action = actions[ACTION.HU]
+                if hu_action then
+                    self:set_gzh_on_pass(p,in_pai)
+                    local last_penghu = self:get_last_can_penghu(p)
+                    log.dump(last_penghu,"last_penghu_"..p.guid)
+                    if last_penghu then
+                        p.gzh[in_pai] = last_penghu
+                        log.dump(p.gzh,"newgzh"..tostring(p.guid))
+                    end
+                end
+            end
+
+            if self.rule.play.guo_shou_peng then
+                local peng_action = actions[ACTION.PENG]
+                if peng_action then
+                    self:set_gsp_on_pass(p,in_pai)
+                end
+            end
+        end
     end
 
     return actions
@@ -2795,7 +2873,7 @@ function maajan_table:send_data_to_enter_player(player,is_reconnect)
         tinsert(msg.pb_players,tplayer)
     end)
 
-    log.dump(msg,tostring(player.guid))
+    -- log.dump(msg,tostring(player.guid))
 
     local last_chu_pai_player,last_tile = self:get_last_chu_pai()
     if is_reconnect  then
