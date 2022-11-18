@@ -646,3 +646,40 @@ message SC_PiaoFenCommit{
 	enum MsgID { Nil = 0; ID = 23149;}
 	repeated PiaoFenInfo piao_fens = 1;
 }
+
+message MaajanHongZhongBalanceType{
+	int32 type = 1;
+	int32 score = 2;
+}
+
+message MaajanHongZhongBlanacePlayer{
+	int32 chair_id 			= 1;
+	int32 hu 				= 2;	//是否胡了
+	int32 hu_fan	 		= 3; 	//番数
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	repeated MaajanHongZhongBalanceType  items = 6;
+	int32 status = 7;
+	int32 hu_tile 			= 8;
+	int32 round_money 		= 9;
+	int32 total_money  		= 10;
+	int32 hu_index  		= 11;
+	int32 piao_score		= 12;	// 选择的飘分
+	int32 hupiao_score		= 13;	// 胡牌结算的飘分	
+	int32 gang_score		= 14;	// 杠分
+	int32 zhongniao_score	= 15;	// 码分
+	int32 hu_score			= 16;	// 输家胡分
+}
+
+message Maajan_Mapai_Info{
+	int32 pai   = 1;	// 牌值
+	bool  zhong = 2;	// 是否中码
+}
+
+//结算
+message SC_MaajanHongZhongGameFinish {
+	enum MsgID { Nil = 0; ID = 23150; }
+	repeated Maajan_Player_Info 			players = 1;
+	repeated MaajanHongZhongBlanacePlayer 	player_balance = 2;
+	repeated Maajan_Mapai_Info 				mapais = 3;
+}

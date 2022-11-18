@@ -326,16 +326,16 @@ function on_cl_auth(msg)
         reddb:set(string.format("player:auth_id:%s",auth.unionid),uuid)
     end
 
-    if ip then
-        local guid = reddb:get("player:account:"..tostring(uuid))
-        if not guid then
-            if not verify.check_have_same_ip(ip) then
-                if not verify.check_ip_auth(ip) then
-                    return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
-                end
-            end
-        end
-    end
+    -- if ip then
+    --     local guid = reddb:get("player:account:"..tostring(uuid))
+    --     if not guid then
+    --         if not verify.check_have_same_ip(ip) then
+    --             if not verify.check_ip_auth(ip) then
+    --                 return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
+    --             end
+    --         end
+    --     end
+    -- end
 
     return reg_account({
         ip = msg.ip,
