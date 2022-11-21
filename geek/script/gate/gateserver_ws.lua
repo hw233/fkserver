@@ -54,24 +54,31 @@ function gateserver.start(conf)
             local real_host = header['X-Real-Host'] or header["x-real-host"]
             local real_ip = header['X-Real-Ip'] or header["x-real-ip"]
             local x_real_port = header['x-real-port'] or header['X-Real-Port'] 
-            assert(x_real_port)
+            -- assert(x_real_port)
+
+            local x_forwarded_hot = nil
 
             -- 获取真实IP
             local x_for_ip = header['x-forwarded-for'] or header['X-Forwarded-For']
-            -- x_for_ip
-            local start_idx,end_idx = string.find(x_for_ip,',')
-            log.warning("start_idx %s,%s",start_idx,end_idx)
-            
-            if start_idx then
-                local ip_list = string.split(x_for_ip,"[^,]+")
-                log.dump(ip_list)
-                x_for_ip = string.trim(ip_list[1])
+
+            -- 空判断
+            if x_for_ip then
+                -- x_for_ip
+                local start_idx,end_idx = string.find(x_for_ip,',')
+                log.warning("start_idx %s,%s",start_idx,end_idx)
+                
+                if start_idx then
+                    local ip_list = string.split(x_for_ip,"[^,]+")
+                    log.dump(ip_list)
+                    x_for_ip = string.trim(ip_list[1])
+                end
+
+
+                x_forwarded_hot = (x_for_ip..":".. x_real_port) or real_host
+
+                log.warning("x_forwarded_hot %s",x_forwarded_hot)
+
             end
-
-
-            local x_forwarded_hot = (x_for_ip..":".. x_real_port) or real_host
-
-            log.warning("x_forwarded_hot %s",x_forwarded_hot)
 
             if x_forwarded_hot then
                 addr = string.match(x_forwarded_hot,"%d+%.%d+%.%d+%.%d+:%d+") or real_host
