@@ -2679,7 +2679,7 @@ function maajan_table:calculate_gang(p)
             -- tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
             self:foreach_except(who,function(pi)
                 if pi == p then return end
-                if pi.hu and pi.hu.time < s.time then return end
+                if pi.hu then return end
                 tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
                 tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score  -- 点杠的人全包
                 self.players[who.chair_id].gangscore = (self.players[who.chair_id].gangscore or 0) + hu_type_info.score
@@ -2688,7 +2688,7 @@ function maajan_table:calculate_gang(p)
         elseif t == HU_TYPE.AN_GANG or t == HU_TYPE.BA_GANG then
             self:foreach_except(who,function(pi)
                 if pi == p then return end
-                if pi.hu and pi.hu.time < s.time then return end
+                if pi.hu then return end
 
                 tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
                 tb[pi.chair_id] = (tb[pi.chair_id] or 0) - hu_type_info.score
