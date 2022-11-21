@@ -46,6 +46,10 @@ local function is_old_version(version)
 		return true
 	end
     local confversion = global_conf.package_version
+    if not confversion then
+        log.warning("-----数据库版本配置未添加-----")
+        return false
+    end
 	return isoldversion(version,confversion)
 end
 
