@@ -870,8 +870,8 @@ function maajan_table:on_piao_fen(player,msg)
     local piao = msg.piao
     -- 飘分数值检验
     local piao_private_conf = self:room_private_conf()
-    log.dump(piao_private_conf,"piao_private_conf")
-    log.dump(self.rule,"on_piao_fen")
+    -- log.dump(piao_private_conf,"piao_private_conf")
+    -- log.dump(self.rule,"on_piao_fen")
     local piao_fens
     if self.rule.piao.piao_option == 0 then
         piao_fens = piao_private_conf.piao.piao_option_1
@@ -2256,7 +2256,7 @@ function maajan_table:types_fan(ts)
         --     t.fan = qing_yi_se_fan + HU_TYPE_INFO[HU_TYPE.LONG_SI_DUI].fan
         -- end
     end
-    log.dump(ts,"types_fan")
+    -- log.dump(ts,"types_fan")
     return ts
 end
 
@@ -2265,7 +2265,7 @@ function maajan_table:serial_types(tsmap)
         local tinfo = HU_TYPE_INFO[t]
         return {type = t,fan = tinfo.fan,score = tinfo.score,count = c}
     end)
-    log.dump(types,"serial_types")
+    -- log.dump(types,"serial_types")
     return self:types_fan(types)
 end
 
@@ -2414,7 +2414,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         end 
         if self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
             local max_hu_fan = self:hu_fan(p,in_pai,mo_pai,qiang_gang)
-            if max_hu_fan and max_hu_fan <= p.gzh[in_pai] then
+            if max_hu_fan then -- and max_hu_fan <= p.gzh[in_pai] 
                 actions[ACTION.HU] = nil
             end
         end
@@ -2664,9 +2664,9 @@ function maajan_table:calculate_gang(p)
     local gangfans = table.map(gfan,function(gp,t)
         return t,{fan = HU_TYPE_INFO[t].fan,count = table.nums(gp)}
     end)
-    log.dump(ss,"calculate_gang ss")
-    log.dump(gfan,"calculate_gang gfan")
-    log.dump(gangfans,"calculate_gang gangfans")
+    -- log.dump(ss,"calculate_gang ss")
+    -- log.dump(gfan,"calculate_gang gfan")
+    -- log.dump(gangfans,"calculate_gang gangfans")
     local scores = table.agg(p.pai.ming_pai,{},function(tb,s)
         local t = s2hu_type[s.type]
         if not t then return tb end
@@ -2701,8 +2701,8 @@ function maajan_table:calculate_gang(p)
     end)
 
     local fans = table.series(gangfans,function(v,t) return {type = t,fan = v.fan,count = v.count} end)
-    log.dump(fans,"calculate_gang fans")
-    log.dump(scores,"calculate_gang scores")
+    -- log.dump(fans,"calculate_gang fans")
+    -- log.dump(scores,"calculate_gang scores")
     return fans,scores
 end
 
@@ -2745,28 +2745,28 @@ function maajan_table:game_balance()
         piaoscors[p.chair_id] = p.piao or 0
         -- 杠分
         local gangfans,gangscores = self:calculate_gang(p)
-        log.dump(hu,"game_balance hu")
-        log.dump(gangfans,"game_balance gangfans")
-        log.dump(gangscores,"game_balance gangscores")
+        -- log.dump(hu,"game_balance hu")
+        -- log.dump(gangfans,"game_balance gangfans")
+        -- log.dump(gangscores,"game_balance gangscores")
         typefans[p.chair_id] = hu   -- table.union(hu or {},gangfans or {}) 胡番，杠番各自单独计算
         table.mergeto(scores,gangscores or {},function(l,r) return (l or 0) + (r or 0) end)
     end)
-    log.dump(piaoscors,"game_balance piaoscors")
-    log.dump(typefans,"game_balance typefans")
-    log.dump(scores,"game_balance scores") 
+    -- log.dump(piaoscors,"game_balance piaoscors")
+    -- log.dump(typefans,"game_balance typefans")
+    -- log.dump(scores,"game_balance scores") 
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
     local baopei_count =  hu_count and (self.start_count - hu_count - 1) or 0
     local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
         return chair,fan
     end)
-    log.dump(fans,"game_balance fans")
+    -- log.dump(fans,"game_balance fans")
     self:foreach(function(p)
         local chair_id = p.chair_id
         local fan = fans[chair_id]
         local fan_score = fan   -- 2 ^ math.abs(fan)
         local type = typefans[chair_id]
-        log.dump(type,"typefans_"..chair_id)
+        -- log.dump(type,"typefans_"..chair_id)
         local zhongma_score = self.zhong_niao
         if p.hu then
             p.huscore = fan_score
@@ -2951,8 +2951,8 @@ function maajan_table:game_balance()
     local fanscores = table.map(self.players,function(_,chair)
         return chair,{fan = fans[chair] or 0,score = scores[chair] or 0,}
     end)
-    log.dump(typefans,"game_balance typefans")
-    log.dump(fanscores,"game_balance fanscores")
+    -- log.dump(typefans,"game_balance typefans")
+    -- log.dump(fanscores,"game_balance fanscores")
     return typefans,fanscores
 end
 
@@ -3635,7 +3635,7 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
     --     types[HU_TYPE.GANG_SHANG_PAO] = 1
     -- end
 
-    log.dump(types,"ext_hu types")
+    -- log.dump(types,"ext_hu types")
     return types
 end
 
@@ -3645,11 +3645,11 @@ function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
     local rule_play = self.rule.play
     local si_dui,qi_dui = rule_play.si_du,rule_play.qidui_hu
     local hu_types = mj_util.hu(pai,in_pai,mo_pai,si_dui,qi_dui)
-    log.dump(hu_types,"hu_types111")
+    -- log.dump(hu_types,"hu_types111")
     return table.series(hu_types,function(ones)
         local ts = {}
         local bHave = true
-        log.dump(ones,"ones111")
+        -- log.dump(ones,"ones111")
         for t,c in pairs(ones) do
             -- if  (t == HU_TYPE.KA_WU_XING and not rule_play.jia_xin_5) or
             --     (t == HU_TYPE.KA_ER_TIAO and not rule_play.ka_er_tiao) or
@@ -3698,14 +3698,14 @@ function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
                 ts[t] = c
             end
         end
-        log.dump(ts,"ts222")
+        -- log.dump(ts,"ts222")
         return ts
     end)
 end
 
 function maajan_table:rule_hu(pai,in_pai,mo_pai)
     local types = self:rule_hu_types(pai,in_pai,mo_pai)
-    log.dump(types,"rule_hu_types")
+    -- log.dump(types,"rule_hu_types")
     table.sort(types,function(l,r)
         local lscore,lfan = self:calc_types(l)
         local rscore,rfan = self:calc_types(r)
@@ -3713,15 +3713,15 @@ function maajan_table:rule_hu(pai,in_pai,mo_pai)
         local currscore = rscore + 2 ^ rfan
         return ( curlscore == currscore ) and (lfan > rfan) or curlscore > currscore
     end)
-    log.dump(types,"rule_hu_types[1]")
+    -- log.dump(types,"rule_hu_types[1]")
     return types[1] or {}
 end
 
 function maajan_table:hu(player,in_pai,mo_pai,qiang_gang)
     local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai)
     local ext_hu = self:ext_hu(player,mo_pai,qiang_gang)
-    log.dump(rule_hu,"rule_hu")
-    log.dump(ext_hu,"ext_hu")
+    -- log.dump(rule_hu,"rule_hu")
+    -- log.dump(ext_hu,"ext_hu")
     return table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
 end
 

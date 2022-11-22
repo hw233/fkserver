@@ -31,11 +31,11 @@ end
 
 function maajian_is_hu.is_hu(state)
 	local counts = state.counts
-	log.dump(counts,"is_hu counts")
+	-- log.dump(counts,"is_hu counts")
 	local tiles_shou_pai =  maajian_is_hu.counts_2_tiles(counts)
 	table.sort(tiles_shou_pai,function(a,b) return a < b end )
 	--local tiles_shou_pai_men = {tong_list = {},tiao_list = {},wan_list = {},laizi_list={}}
-	log.dump(tiles_shou_pai,"is_hu tiles_shou_pai")
+	-- log.dump(tiles_shou_pai,"is_hu tiles_shou_pai")
 	local tiles_shou_pai_men = {{},{},{},{}}
 	local jiang_list = {} 
 	local bj = 1 
@@ -53,7 +53,7 @@ function maajian_is_hu.is_hu(state)
 		end 
 		table.insert(tiles_shou_pai_men[cur_tile_men(v)],v)
 	end
-	log.dump(tiles_shou_pai_men,"is_hu tiles_shou_pai_men")
+	-- log.dump(tiles_shou_pai_men,"is_hu tiles_shou_pai_men")
 	local num_group_all_pai ={}
 	local pai_men_ser = {}
 	for i = 1, 3, 1 do
@@ -64,8 +64,8 @@ function maajian_is_hu.is_hu(state)
 			table.insert(pai_men_ser,false)
 		end
 	end
-	log.dump(pai_men_ser,"is_hu pai_men_ser")
-	log.dump(num_group_all_pai,"is_hu num_group_all_pai")
+	-- log.dump(pai_men_ser,"is_hu pai_men_ser")
+	-- log.dump(num_group_all_pai,"is_hu num_group_all_pai")
 	local subs_num = #tiles_shou_pai_men[4]
 	local num_jiang_pai = num_group_all_pai[1]%2+num_group_all_pai[2]%2+num_group_all_pai[3]%2 
 	local num_all_pai = num_group_all_pai[1]+num_group_all_pai[2]+num_group_all_pai[3]
