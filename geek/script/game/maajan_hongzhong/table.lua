@@ -262,7 +262,7 @@ function maajan_table:on_started(player_count)
         v.niaoscore = nil
         v.huscore = nil
     end
-    
+    self.mo_pai_player_last      = self.zhuang --摸最后一张牌的索引
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
     self.last_chu_pai              = -1 --上次的出牌
     self.mo_pai_count = nil
@@ -2643,6 +2643,7 @@ function maajan_table:on_mo_pai(player,mo_pai)
         send2client(p,"SC_Maajan_Draw",{tile = 255,chair_id = player.chair_id})
         p.mo_pai = nil
     end)
+    self.mo_pai_player_last = player.chair_id
 end
 
 function maajan_table:calculate_hu(hu)
@@ -3037,8 +3038,10 @@ function maajan_table:ding_zhuang()
     end
 
     local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-    if hu_count == 0 then
-        return
+    if hu_count == 0 then 
+        log.info("本局荒庄,mo_pai_player_last %d,self.zhuang %d ",self.mo_pai_player_last , self.zhuang)
+        self.zhuang = self.mo_pai_player_last and self.mo_pai_player_last or self.zhuang -- 荒庄，下局最后一个摸牌的玩家坐庄
+        return self.zhuang
     end
 
     for _,p in pairs(self.players) do

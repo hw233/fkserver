@@ -71,7 +71,7 @@ function maajian_is_hu.is_hu(state)
 	local num_all_pai = num_group_all_pai[1]+num_group_all_pai[2]+num_group_all_pai[3]
 	local jiang_num = 1
 	local naizi_num = subs_num
-	log.info("subs_num %d,num_jiang_pai %d, num_all_pai %d,",subs_num,num_jiang_pai,num_all_pai)
+	-- log.info("subs_num %d,num_jiang_pai %d, num_all_pai %d,",subs_num,num_jiang_pai,num_all_pai)
 	if subs_num >0 then -- 有癞子  --所有可以胡的牌值列表1代表有将 2代表无将  maajan_data[1][1]代表有将的1哥鬼 maajan_data[1][2]代表有将的2哥鬼   maajan_data[1][5]代表无鬼	
 		if subs_num == 1 then 
 			if (num_jiang_pai ==0 and  num_all_pai == 4)    then
