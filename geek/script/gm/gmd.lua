@@ -657,6 +657,7 @@ function gmd.club_game(data)
 end
 
 function gmd.channel_game(data)
+    log.dump(data,"channel_game")
     local channel = data.channel
     if not channel or channel == "" then
         return {
@@ -1160,5 +1161,6 @@ gmd["verify/remove/imeierror"] = gmd.verify_remove_imei_error
 gmd["verify/lock/imei"] = gmd.verify_lock_imei
 gmd["player/password"] = gmd.update_passworld
 gmd["verify/update/ipauth"] = gmd.verify_update_ip_auth
+gmd["channel_game"] = gmd.channel_game
 
 return gmd
