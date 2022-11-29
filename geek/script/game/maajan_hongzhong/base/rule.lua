@@ -1,6 +1,6 @@
 local def = require "game.maajan_hongzhong.base.define"
 require "functions"
-
+local log = require "log"
 
 local TY_VALUE = 35
 local maajian_is_hu = require "game.maajan_hongzhong.base.maajian_is_hu"
@@ -625,9 +625,11 @@ local function get_hu_types(cache)
 		end
 		count_tiles[4] =nil
 	end
+	-- log.dump(count_tiles,"count_tiles")
 	local two_count = count_tiles[2] and #count_tiles[2] or 0
 	local one_count = count_tiles[1] and #count_tiles[1] or 0	
 	local ke_zi_bj =false 
+	-- log.info("one_count %d,two_count %d,ty_num %d,",one_count,two_count,ty_num)
 	if one_count == 0 and two_count == 0 and ty_num == 2 then
 		ke_zi_bj = true 
 	end
@@ -644,6 +646,12 @@ local function get_hu_types(cache)
 		if curtwo_count == 1 and  curty_num >=0 and curty_num == one_count*2 and (curty_num + one_count)%3 == 0 then
 			ke_zi_bj = true 
 		end
+	end
+	if not ke_zi_bj and one_count == 0 and two_count == 1 and ty_num >= 3  then
+		ke_zi_bj = true 
+	end
+	if not ke_zi_bj and (one_count == 2 and two_count == 0 and ty_num == 3) then
+		ke_zi_bj = true 
 	end
 	if ke_zi_bj then
 		--if is_2_5_8(pai,cache) then
@@ -744,13 +752,14 @@ function rule.hu(pai,in_pai,mo_pai,si_dui,ke_qi_dui)
 
 		table.insert(alltypes,types)
 	end 
-
-	for i = 1,#alltypes do
-		alltypes[i] = unique_hu_types(alltypes[i])
-	end
-
+	-- log.dump(alltypes,"alltypes1111")
+	-- for i = 1,#alltypes do
+	-- 	alltypes[i] = unique_hu_types(alltypes[i])
+	-- end
+	
 	alltypes = merge_same_type(alltypes)
-
+	-- log.dump(alltypes,"alltypes2222")
+	
 	return alltypes
 end
 

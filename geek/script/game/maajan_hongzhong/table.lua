@@ -232,7 +232,8 @@ end
 function maajan_table:on_started(player_count)
     self.start_count = player_count
     base_table.on_started(self,player_count)
-
+    self.rule.play.guo_zhuang_hu = true
+    self.rule.play.guo_shou_peng = true
     self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang
 
     for _,v in pairs(self.players) do
@@ -1588,7 +1589,7 @@ function maajan_table:set_gzh_on_pass(passer,tile)
             end
         end
     end
-    log.dump(gzh)
+    log.dump(gzh,"set_gzh_on_pass")
 end
 
 function maajan_table:is_in_gzh(player,tile)
@@ -2673,23 +2674,25 @@ function maajan_table:calculate_gang(p)
         if not t then return tb end
         local hu_type_info = HU_TYPE_INFO[t]
 
-        local who = s.dian_pao and self.players[s.dian_pao] or p
-        
+        local who = p --s.dian_pao and self.players[s.dian_pao] or 
+         
         if t == HU_TYPE.MING_GANG then
-            -- tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
-            -- tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
-            self:foreach_except(who,function(pi)
-                if pi == p then return end
-                if pi.hu then return end
-                tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
-                tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score  -- 点杠的人全包
-                self.players[who.chair_id].gangscore = (self.players[who.chair_id].gangscore or 0) + hu_type_info.score
-                self.players[s.whoee].gangscore = (self.players[s.whoee].gangscore or 0) - hu_type_info.score
-            end)
+            tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
+            tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score
+            who.gangscore = (who.gangscore or 0) + hu_type_info.score
+            self.players[s.whoee].gangscore = (self.players[s.whoee].gangscore or 0) - hu_type_info.score
+            -- self:foreach_except(who,function(pi)
+            --     if pi == p then return end
+            --     if pi.hu then return end
+            --     tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
+            --     tb[s.whoee] = (tb[s.whoee] or 0) - hu_type_info.score  -- 点杠的人全包
+            --     self.players[who.chair_id].gangscore = (self.players[who.chair_id].gangscore or 0) + hu_type_info.score
+            --     self.players[s.whoee].gangscore = (self.players[s.whoee].gangscore or 0) - hu_type_info.score
+            -- end)
         elseif t == HU_TYPE.AN_GANG or t == HU_TYPE.BA_GANG then
             self:foreach_except(who,function(pi)
                 if pi == p then return end
-                if pi.hu then return end
+                -- if pi.hu then return end
 
                 tb[who.chair_id] = (tb[who.chair_id] or 0) + hu_type_info.score
                 tb[pi.chair_id] = (tb[pi.chair_id] or 0) - hu_type_info.score
