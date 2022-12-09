@@ -11,5 +11,5 @@ pb.loadfile("./geek/pb/message_pdk.proto")
 pb.loadfile("./geek/pb/message_ddz.proto")
 pb.loadfile("./geek/pb/message_zhajinhua.proto")
 pb.loadfile("./geek/pb/message_ox.proto")
-
+pb.loadfile("./geek/pb/message_changpai.proto")
 return pb
