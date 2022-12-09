@@ -387,6 +387,30 @@ function maajan_table:set_trusteeship(player,trustee)
     end
 end
 
+-- 检查玩家是否正在托管
+function maajan_table:check_trusteeship()
+    if not self.rule.trustee or table.nums(self.rule.trustee) == 0 then
+        return 
+    end
+    self:foreach(function(p)
+        if p.trustee and self.game_log then
+            log.info("check_trusteeship add game_log player Trustee,guid:%d",p.guid)
+            table.insert(self.game_log.action_table,{chair = p.chair_id,act = "Trustee",trustee = true,time = timer.nanotime()})
+        end
+    end) 
+end
+
+-- 检查玩家是否离线
+function maajan_table:check_offline()
+	self:foreach(function(p)
+        log.dump(p.active,"check_player_active:" .. p.guid)
+        if not p.active and self.game_log then
+            log.info("add game_log player Offline,guid:%d",p.guid)
+            table.insert(self.game_log.action_table,{chair = p.chair_id,act = "Offline",time = timer.nanotime()})
+        end
+    end)    
+end
+
 function maajan_table:on_offline(player)
 	base_table.on_offline(self,player)
     if self.game_log then
@@ -614,7 +638,7 @@ function maajan_table:on_huan_pai(player,msg)
         local c = player.pai.shou_pai[tile]
         if not c or c == 0 then
             send2client(player.guid,"SC_HuanPai",{
-                result = enum.PARAMETER_ERROR,
+                result = enum.ERROR_PARAMETER_ERROR,
             })
             log.error("maajan_table:huan_pai tiles %s",table.concat(tiles,","))
             return
@@ -625,7 +649,7 @@ function maajan_table:on_huan_pai(player,msg)
     local huan_count = self:get_huan_count()
     if tile_count ~= huan_count then
         send2client(player.guid,"SC_HuanPai",{
-            result = enum.PARAMETER_ERROR,
+            result = enum.ERROR_PARAMETER_ERROR,
         })
         log.error("maajan_table:huan_pai huan_count == %d,but tiles count = %d",huan_count,tile_count)
         return
@@ -638,7 +662,7 @@ function maajan_table:on_huan_pai(player,msg)
         local men_count = table.nums(mens)
         if men_count ~= 1 then
             send2client(player.guid,"SC_HuanPai",{
-                result = enum.PARAMETER_ERROR,
+                result = enum.ERROR_PARAMETER_ERROR,
             })
             log.error("maajan_table:huan_pai huan_type == %d,but men count = %d",huan_type,men_count)
             return
@@ -825,7 +849,7 @@ function maajan_table:on_ding_que(player,msg)
     local men = msg.men
     if not men or men < 0 or men > 3 then
         send2client(player,"SC_DingQue",{
-            result = enum.PARAMETER_ERROR
+            result = enum.ERROR_PARAMETER_ERROR
         })
         return
     end
@@ -1886,6 +1910,8 @@ function maajan_table:do_balance()
 end
 
 function maajan_table:pre_begin()
+    self:check_offline()
+    self:check_trusteeship()
     self:xi_pai()
 end
 
@@ -3125,6 +3151,7 @@ end
 function maajan_table:can_hu(player,in_pai,mo_pai,qiang_gang)
     local room_private_conf = self:room_private_conf()
     if not room_private_conf.play then
+        
         return self:is_hu(player.pai,in_pai)
     end
 

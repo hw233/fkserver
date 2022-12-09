@@ -19,7 +19,7 @@ function maajan_tile_dealer:load_tiles(tiles)
 end
 
 function maajan_tile_dealer:shuffle()
-    math.randomseed(math.floor(chronos.nanotime() * 10000))
+    math.randomseed(math.floor(chronos.nanotime() * 10000 * 33333))
 	for _ = 1,10 do math.random() end
 
     local tiles = self.tiles

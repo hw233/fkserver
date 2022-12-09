@@ -18,6 +18,41 @@ local verify = require "login.verify.verify"
 local imei_error_count = require "login.verify.imei_error_count"
 local reddb = redisopt.default
 
+local function is_old_version(version)
+    local function ipsec(v)
+		local vs = {}
+		for s in v:gmatch("%d+") do
+			table.insert(vs,tonumber(s))
+		end
+		return vs
+	end
+
+	local function isoldversion(v1,v2)
+		local s1 = ipsec(v1)
+		local s2 = ipsec(v2)
+		if #s1 ~= #s2 or #s1 ~= 3 or #s2 ~= 3 then
+			return true
+		end
+        if s1[1] > s2[1] then
+            return false
+        elseif s1[1] == s2[1] then
+            if s1[2] > s2[2] then
+                return false
+            elseif s1[2] == s2[2] and s1[3] >= s2[3] then
+                return false
+            end
+        end
+        
+		return true
+	end
+    local confversion = global_conf.package_version
+    if not confversion then
+        log.warning("-----数据库版本配置未添加-----")
+        return false
+    end
+	return isoldversion(version,confversion)
+end
+
 local function gen_uuid(basestr)
     local entirestr = basestr..tostring(skynet.time())..tostring(math.random(10000))
     return util.sha1(entirestr)
@@ -275,7 +310,13 @@ function on_cl_auth(msg)
     end
     log.dump(msg,"on_cl_auth")
     local ip = msg.ip 
-    
+
+    -- 判断前端登录的版本是否太低了，低于配置的版本，更新到高版本才能登录
+    if is_old_version(msg.version) then
+        log.info("on_cl_auth error is_old_version  = %s", msg.version)
+        return enum.LOGIN_RESULT_OLD_PACKAGE_VERSION
+    end
+
     local errcode,auth = do_auth(msg)
     if errcode then
         return enum.LOGIN_RESULT_AUTH_CHECK_ERROR,auth
@@ -289,16 +330,16 @@ function on_cl_auth(msg)
         reddb:set(string.format("player:auth_id:%s",auth.unionid),uuid)
     end
 
-    if ip then
-        local guid = reddb:get("player:account:"..tostring(uuid))
-        if not guid then
-            if not verify.check_have_same_ip(ip) then
-                if not verify.check_ip_auth(ip) then
-                    return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
-                end
-            end
-        end
-    end
+    -- if ip then
+    --     local guid = reddb:get("player:account:"..tostring(uuid))
+    --     if not guid then
+    --         if not verify.check_have_same_ip(ip) then
+    --             if not verify.check_ip_auth(ip) then
+    --                 return enum.LOGIN_RESULT_IP_CREATE_ACCOUNT_LIMIT,ip
+    --             end
+    --         end
+    --     end
+    -- end
 
     return reg_account({
         ip = msg.ip,
@@ -627,6 +668,14 @@ function on_cl_login(msg,gate)
     local account = is_valid_str(msg.account) and msg.account or msg.open_id
     log.dump(msg)
     local ret,info
+        
+    -- 判断前端登录的版本是否太低了，低于配置的版本，更新到高版本才能登录
+    if is_old_version(msg.version) then
+        log.info("on_cl_login error is_old_version  = %s", msg.version)
+        return {
+            result = enum.LOGIN_RESULT_OLD_PACKAGE_VERSION,
+        }
+    end
 
     if is_valid_str(msg.open_id)then
         if msg.phone_type == "H5" then

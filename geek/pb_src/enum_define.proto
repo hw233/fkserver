@@ -57,6 +57,7 @@ enum LOGIN_RESULT {
 	LOGIN_RESULT_ACCOUNT_IP_LIMIT = 46;					    // 同IP限制登录账号数
 	LOGIN_RESULT_ACCOUNT_IMEI_LIMIT = 47;					// 同设备限制登录账号数
 	LOGIN_RESULT_ACCOUNT_PASSWOLD_ERRPR_LIMIT = 48;			// 密码错误次数过多限制登录
+	LOGIN_RESULT_OLD_PACKAGE_VERSION = 49;					// 版本太低,请联系群主解决
 }
 
 // 银行操作结果
@@ -249,6 +250,7 @@ enum LOG_MONEY_OPT_TYPE {
 	LOG_MONEY_OPT_TYPE_PDK_SC = 63;						//四川跑得快
 	LOG_MONEY_OPT_TYPE_AUTO_CLUB_COMMISSION = 64;			//自动兑换佣金
 	LOG_MOENY_OPT_TYPE_MAAJAN_YAOJI = 65;			//幺鸡麻将
+	LOG_MOENY_OPT_TYPE_MAAJAN_HONGZHONG = 66;			//红中麻将
 }
 
 // 游戏准备模式
