@@ -2215,18 +2215,12 @@ end
 
 function maajan_table:types_fan(ts)
     -- local room_private_conf = self:room_private_conf()    
-    local tianhuFan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan
-    local qd_pph_th_qys_jiafen = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
-    local da_dui_zi_fan = HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
-    local qiduifan = HU_TYPE_INFO[HU_TYPE.QI_DUI].fan
-    if self.rule.play.qd_pph_th_qys_jia1fen and self.rule.qd_pph_th_qys_jiafen then
-        qd_pph_th_qys_jiafen = self.rule.qd_pph_th_qys_jiafen
-        da_dui_zi_fan = self.rule.qd_pph_th_qys_jiafen
-        qiduifan = self.rule.qd_pph_th_qys_jiafen
-        tianhuFan = self.rule.qd_pph_th_qys_jiafen
+    local qd_pph_th_qys_jiafen = 0 
+    if self.rule.play.qd_pph_th_qys_jia1fen and self.rule.option.qd_pph_th_qys_jiafen then
+        qd_pph_th_qys_jiafen = self.rule.option.qd_pph_th_qys_jiafen
     end
     local zimo_fan = self.rule.ziMoFen and self.rule.ziMoFen or HU_TYPE_INFO[HU_TYPE.ZI_MO].fan
-    local hufan = self.rule.huFen and self.rule.huFen or HU_TYPE_INFO[HU_TYPE.PING_HU].fan
+    local hufan = self.rule.option.huFen and self.rule.option.huFen or 1
     
     log.info("zimo_fan %d,",self.rule.ziMoFen)
     for _,t in pairs(ts) do
@@ -2234,18 +2228,18 @@ function maajan_table:types_fan(ts)
             t.fan = hufan
         end
         if t.type == HU_TYPE.TIAN_HU then
-            t.fan = tianhuFan
+            t.fan = qd_pph_th_qys_jiafen
         end
         if t.type == HU_TYPE.QING_YI_SE then
             t.fan = qd_pph_th_qys_jiafen
         end
 
         if t.type == HU_TYPE.DA_DUI_ZI then
-            t.fan = da_dui_zi_fan
+            t.fan = qd_pph_th_qys_jiafen
         end
 
         if t.type == HU_TYPE.QI_DUI then
-            t.fan = qiduifan
+            t.fan = qd_pph_th_qys_jiafen
         end
 
         if t.type == HU_TYPE.ZI_MO then
