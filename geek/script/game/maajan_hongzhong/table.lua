@@ -964,7 +964,7 @@ function maajan_table:piao_fen()
         self:begin_clock_timer(trustee_seconds,function()
             self:foreach(function(p)
                 if p.piao then return end
-                if p.piao == 0 then return end
+                if p.piao ~= nil then return end
                 self:set_trusteeship(p,true)
                 auto_piao_fen(p)
             end)

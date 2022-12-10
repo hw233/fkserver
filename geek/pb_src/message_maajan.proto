@@ -123,6 +123,7 @@ enum HU_TYPE{
 	RUAN_AN_GANG 			= 118;	//软暗杠
 	RUAN_MING_GANG 			= 119;	//软明杠
 	RUAN_BA_GANG 			= 120;	//软巴杠
+	HAI_DI_PAO				= 121;	//海底炮
 }
 
 
@@ -195,6 +196,7 @@ enum FSM_STATE {
 	FINAL_END 				= 20;
 	FS_GU_MAI				= 21;	//估卖
 	PIAO_FEN				= 22;	//飘分
+	WAIT_BAO_TING			= 23;	//报听
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 
@@ -610,7 +612,7 @@ message SC_MaajanGetTingTilesInfo{
 	int32 result = 1;
 	repeated TingTilesInfo tiles_info = 2;
 }
-
+// hongzhong_mj
 message PiaoFenInfo{
 	int32 chair_id = 1;
 	int32 piao = 2;
@@ -632,7 +634,7 @@ message CS_PiaoFen{
 
 message SC_PiaoFen{
 	enum MsgID { Nil = 0; ID = 23147;}
-	int32 result = 1;
+	int32 result = 1;	// 0 不飘  1: 飘 
 	PiaoFenStatus status = 2;
 }
 
@@ -682,4 +684,83 @@ message SC_MaajanHongZhongGameFinish {
 	repeated Maajan_Player_Info 			players = 1;
 	repeated MaajanHongZhongBlanacePlayer 	player_balance = 2;
 	repeated Maajan_Mapai_Info 				mapais = 3;
+}
+
+// zigong_mj
+message BaotingInfo{
+	int32 chair_id = 1;
+	bool  baoting = 2;
+}
+
+message BaotingStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_AllowBaoting{
+	enum MsgID { Nil = 0; ID = 23151;}
+}
+
+message CS_Baoting{
+	enum MsgID { Nil = 0; ID = 23152;}
+	int32 baoting = 1;	// 0 不报听  1 报听
+}
+
+message SC_Baoting{
+	enum MsgID { Nil = 0; ID = 23153;}
+	int32 result = 1;	// 0 不报听  1 报听
+	BaotingStatus status = 2;
+}
+
+message SC_BaotingStatus{
+	enum MsgID { Nil = 0; ID = 23154;}
+	repeated BaotingStatus baoting_status = 1;
+	repeated BaotingInfo   baoting_info = 2;
+}
+
+message SC_BaotingCommit{
+	enum MsgID { Nil = 0; ID = 23155;}
+	repeated BaotingInfo baotings = 1;
+}
+
+message MaajanZiGongBalanceType{
+	int32 type = 1;
+	int32 count = 2;
+}
+
+message MaajanZiGongBlanacePlayer{
+	int32 chair_id 			= 1;
+	int32 hu 				= 2;	//是否胡了
+	int32 hu_fan	 		= 3; 	//番数
+	int32 total_score 		= 4;
+	int32 round_score 		= 5;
+	repeated MaajanZiGongBalanceType  items = 6;
+	int32 status 			= 7;
+	int32 hu_tile 			= 8;
+	int32 round_money 		= 9;
+	int32 total_money  		= 10;
+	int32 hu_index  		= 11;
+	int32 piao				= 12;	// 是否选择了飘	
+	int32 gang_score		= 13;	// 杠分
+	int32 luobo_score		= 14;	// 中萝卜分
+	int32 hu_score			= 15;	// 胡分
+}
+
+message Maajan_Luobo_Info{
+	int32 pai   = 1;	// 牌值
+}
+
+//结算
+message SC_MaajanZiGongGameFinish {
+	enum MsgID { Nil = 0; ID = 23156; }
+	repeated Maajan_Player_Info 			players 		= 1;
+	repeated MaajanZiGongBlanacePlayer 	    player_balance 	= 2;
+	repeated Maajan_Luobo_Info 				luobos 			= 3;
+}
+
+// 能否选择报听信息
+message SC_BaoTingInfos{
+	enum MsgID { Nil = 0; ID = 23157;}	
+	int32 canbaoting = 1;		// 能否报听 0:不能  1:能
+	repeated TingTips ting = 2;	// 能报听牌提示
 }
