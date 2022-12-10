@@ -296,7 +296,7 @@ function maajan_table:on_started(player_count)
     end
     self.zhuang_xian_jiafen = 0
     if self.rule.play.zhuang_xian then
-        self.zhuang_xian_jiafen = self.rule.play.zhuang_xian_jiafen and self.rule.play.zhuang_xian_jiafen or 1
+        self.zhuang_xian_jiafen = self.rule.option.zhuang_xian_jiafen and self.rule.option.zhuang_xian_jiafen or 1
     end
 
     self:cancel_clock_timer()
