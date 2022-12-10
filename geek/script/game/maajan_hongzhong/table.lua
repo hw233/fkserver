@@ -294,6 +294,11 @@ function maajan_table:on_started(player_count)
             self.niao_tiles_count = self.rule.zhuaNiao.niao_count
         end        
     end
+    self.zhuang_xian_jiafen = 0
+    if self.rule.play.zhuang_xian then
+        self.zhuang_xian_jiafen = self.rule.play.zhuang_xian_jiafen and self.rule.play.zhuang_xian_jiafen or 1
+    end
+
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
     self:check_offline()
@@ -2209,28 +2214,38 @@ function maajan_table:prepare_tiles()
 end
 
 function maajan_table:types_fan(ts)
-    local room_private_conf = self:room_private_conf()
-
-    local play_opt = room_private_conf and room_private_conf.play and room_private_conf.play.option or "xuezhan"
-    
+    -- local room_private_conf = self:room_private_conf()    
+    local tianhuFan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan
+    local qd_pph_th_qys_jiafen = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
     local da_dui_zi_fan = HU_TYPE_INFO[HU_TYPE.DA_DUI_ZI].fan
-    local qing_yi_se_fan = HU_TYPE_INFO[HU_TYPE.QING_YI_SE].fan
-    -- if play_opt == "er_ren_yi_fang" then
-    --     qing_yi_se_fan = self.rule.play.qing_yi_se_fan or 0
-    -- end
+    local qiduifan = HU_TYPE_INFO[HU_TYPE.QI_DUI].fan
+    if self.rule.play.qd_pph_th_qys_jia1fen and self.rule.qd_pph_th_qys_jiafen then
+        qd_pph_th_qys_jiafen = self.rule.qd_pph_th_qys_jiafen
+        da_dui_zi_fan = self.rule.qd_pph_th_qys_jiafen
+        qiduifan = self.rule.qd_pph_th_qys_jiafen
+        tianhuFan = self.rule.qd_pph_th_qys_jiafen
+    end
     local zimo_fan = self.rule.ziMoFen and self.rule.ziMoFen or HU_TYPE_INFO[HU_TYPE.ZI_MO].fan
+    local hufan = self.rule.huFen and self.rule.huFen or HU_TYPE_INFO[HU_TYPE.PING_HU].fan
+    
     log.info("zimo_fan %d,",self.rule.ziMoFen)
     for _,t in pairs(ts) do
-        if t.type == HU_TYPE.QING_YI_SE then
-            t.fan = qing_yi_se_fan
+        if t.type == HU_TYPE.PING_HU then
+            t.fan = hufan
         end
-
-        -- if t.type == HU_TYPE.QING_DA_DUI then
-        --     t.fan = qing_yi_se_fan + da_dui_zi_fan
-        -- end
+        if t.type == HU_TYPE.TIAN_HU then
+            t.fan = tianhuFan
+        end
+        if t.type == HU_TYPE.QING_YI_SE then
+            t.fan = qd_pph_th_qys_jiafen
+        end
 
         if t.type == HU_TYPE.DA_DUI_ZI then
             t.fan = da_dui_zi_fan
+        end
+
+        if t.type == HU_TYPE.QI_DUI then
+            t.fan = qiduifan
         end
 
         if t.type == HU_TYPE.ZI_MO then
@@ -2783,7 +2798,7 @@ function maajan_table:game_balance()
                 pi.huscore = (pi.huscore or 0) - fan_score
                 for _, v in pairs(type) do
                     if v.type == HU_TYPE.ZHUANG then
-                        v.score = (v.score or 0) + 1
+                        v.score = (v.score or 0) + self.zhuang_xian_jiafen
                     else
                         v.score = (v.score or 0) + v.fan
                     end
@@ -2804,10 +2819,10 @@ function maajan_table:game_balance()
                 for _, v in pairs(type) do
                     if self.rule.play.zhuang_xian and v.type == HU_TYPE.ZHUANG then
                         if p.chair_id == self.zhuang or whoee == self.zhuang then
-                            scores[whoee] = (scores[whoee] or 0) - 1
-                            scores[chair_id] = (scores[chair_id] or 0) + 1
+                            scores[whoee] = (scores[whoee] or 0) - self.zhuang_xian_jiafen
+                            scores[chair_id] = (scores[chair_id] or 0) + self.zhuang_xian_jiafen
                             if not typefans[whoee] then typefans[whoee] = {} end
-                            tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -1,count = 1})
+                            tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -self.zhuang_xian_jiafen,count = 1})
                         end
                         break
                     end
@@ -2827,13 +2842,13 @@ function maajan_table:game_balance()
                     for _, v in pairs(type) do
                         if chair_id == self.zhuang then
                             if v.type == HU_TYPE.ZHUANG then
-                                v.score = (v.score or 0) + 1
+                                v.score = (v.score or 0) + self.zhuang_xian_jiafen
                             else
                                 v.score = (v.score or 0) + v.fan
                             end
                         elseif chair_i == self.zhuang then
                             if v.type == HU_TYPE.ZHUANG then 
-                                v.score = (v.score or 0) + 1
+                                v.score = (v.score or 0) + self.zhuang_xian_jiafen
                             else
                                 v.score = (v.score or 0) + v.fan
                             end
@@ -2859,15 +2874,15 @@ function maajan_table:game_balance()
                     for _, v in pairs(type) do
                         if self.rule.play.zhuang_xian and v.type == HU_TYPE.ZHUANG then
                             if self.zhuang == chair_id then
-                                scores[chair_i] = (scores[chair_i] or 0) - 1
-                                scores[chair_id] = (scores[chair_id] or 0) + 1  
+                                scores[chair_i] = (scores[chair_i] or 0) - self.zhuang_xian_jiafen
+                                scores[chair_id] = (scores[chair_id] or 0) + self.zhuang_xian_jiafen  
                                 if not typefans[chair_i] then typefans[chair_i] = {} end
-                                tinsert(typefans[chair_i],{type = HU_TYPE.ZHUANG,fan = 0,score = -1,count = 1})  
+                                tinsert(typefans[chair_i],{type = HU_TYPE.ZHUANG,fan = 0,score = -self.zhuang_xian_jiafen,count = 1})  
                             elseif chair_i == self.zhuang then   
-                                scores[chair_i] = (scores[chair_i] or 0) - 1
-                                scores[chair_id] = (scores[chair_id] or 0) + 1  
+                                scores[chair_i] = (scores[chair_i] or 0) - self.zhuang_xian_jiafen
+                                scores[chair_id] = (scores[chair_id] or 0) + self.zhuang_xian_jiafen  
                                 if not typefans[chair_i] then typefans[chair_i] = {} end
-                                tinsert(typefans[chair_i],{type = HU_TYPE.ZHUANG,fan = 0,score = -1,count = 1})                          
+                                tinsert(typefans[chair_i],{type = HU_TYPE.ZHUANG,fan = 0,score = -self.zhuang_xian_jiafen,count = 1})                          
                             end
                             break
                         end
@@ -2884,13 +2899,13 @@ function maajan_table:game_balance()
                     for _, v in pairs(type) do
                         if chair_id == self.zhuang then
                             if v.type == HU_TYPE.ZHUANG then
-                                v.score = (v.score or 0) + 1
+                                v.score = (v.score or 0) + self.zhuang_xian_jiafen
                             else
                                 v.score = (v.score or 0) + v.fan
                             end
                         elseif pi.chair_id == self.zhuang then
                             if v.type == HU_TYPE.ZHUANG then
-                                v.score = (v.score or 0) + 1
+                                v.score = (v.score or 0) + self.zhuang_xian_jiafen
                             else 
                                 v.score = (v.score or 0) + v.fan
                             end
@@ -2916,29 +2931,29 @@ function maajan_table:game_balance()
                     for _, v in pairs(type) do
                         if self.rule.play.zhuang_xian and v.type == HU_TYPE.ZHUANG then
                             if self.zhuang == chair_id then
-                                scores[whoee] = (scores[whoee] or 0) - 1
-                                scores[chair_id] = (scores[chair_id] or 0) + 1 
+                                scores[whoee] = (scores[whoee] or 0) - self.zhuang_xian_jiafen
+                                scores[chair_id] = (scores[chair_id] or 0) + self.zhuang_xian_jiafen 
                                 if not typefans[whoee] then 
                                     typefans[whoee] = {} 
-                                    tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -1,count = 1}) 
+                                    tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -self.zhuang_xian_jiafen,count = 1}) 
                                 else
                                     for _, zxv in pairs(typefans[whoee]) do
                                         if zxv.type == HU_TYPE.ZHUANG then
-                                            zxv.score = zxv.score - 1
+                                            zxv.score = zxv.score - self.zhuang_xian_jiafen
                                             break
                                         end
                                     end
                                 end
                             elseif pi.chair_id == self.zhuang then   
-                                scores[whoee] = (scores[whoee] or 0) - 1
-                                scores[chair_id] = (scores[chair_id] or 0) + 1 
+                                scores[whoee] = (scores[whoee] or 0) - self.zhuang_xian_jiafen
+                                scores[chair_id] = (scores[chair_id] or 0) + self.zhuang_xian_jiafen 
                                 if not typefans[whoee] then 
                                     typefans[whoee] = {} 
-                                    tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -1,count = 1}) 
+                                    tinsert(typefans[whoee],{type = HU_TYPE.ZHUANG,fan = 0,score = -self.zhuang_xian_jiafen,count = 1}) 
                                 else
                                     for _, zxv in pairs(typefans[whoee]) do
                                         if zxv.type == HU_TYPE.ZHUANG then
-                                            zxv.score = zxv.score - 1
+                                            zxv.score = zxv.score - self.zhuang_xian_jiafen
                                             break
                                         end
                                     end
@@ -2992,6 +3007,7 @@ function maajan_table:on_game_overed()
         v.huscore = nil
     end)
     self.niao_tiles = {}
+    self.zhuang_xian_jiafen = 0
     base_table.on_game_overed(self)
 end
 
@@ -3029,6 +3045,7 @@ function maajan_table:on_process_over(reason)
         balance = total_winlose,
     })
     self.niao_tiles = {}
+    self.zhuang_xian_jiafen = 0
     self:foreach(function(p)
         log.dump(p.statistics,"p.statistics_"..p.guid)
         p.statistics = nil
@@ -3593,7 +3610,7 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
     end
     if self.rule.play.tian_di_hu then
         -- 天胡
-        if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 and self.rule.play.qd_pph_th_qys_jia1fen then
+        if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
             if self.rule.play.qd_pph_th_qys_jia1fen then types[HU_TYPE.TIAN_HU] = 1 end
         end
         -- 地胡

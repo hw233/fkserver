@@ -706,7 +706,7 @@ function rule.hu(pai,in_pai,mo_pai,si_dui,ke_qi_dui)
 		-- 	base_types[HU_TYPE.QI_DUI] = 1
 		-- end
 		base_types[HU_TYPE.QI_DUI] = 1
-
+		base_types[HU_TYPE.PING_HU] = 1
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
 		-- if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
 		-- if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
