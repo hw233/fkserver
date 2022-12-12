@@ -730,7 +730,7 @@ function rule.hu(pai,in_pai,mo_pai,si_dui,lai_zi)
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
 		-- if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
 		-- if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
-		if lai_zi and ji_num == 0 then base_types[HU_TYPE.WU_JI] = 1 end
+		-- if lai_zi and ji_num == 0 then base_types[HU_TYPE.WU_JI] = 1 end
 		-- if ji_num ==4 then base_types[HU_TYPE.SI_JI] = 1 end
 		table.insert(alltypes,base_types)
 	end
@@ -740,7 +740,7 @@ function rule.hu(pai,in_pai,mo_pai,si_dui,lai_zi)
 		-- if duan_yao then common_types[HU_TYPE.DUAN_YAO] = 1 end
 		-- if men_qing then common_types[HU_TYPE.MEN_QING] = 1 end
 		if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
-		if lai_zi and ji_num == 0 then common_types[HU_TYPE.WU_JI] = 1 end
+		-- if lai_zi and ji_num == 0 then common_types[HU_TYPE.WU_JI] = 1 end
 		-- if ji_num ==4 then common_types[HU_TYPE.SI_JI] = 1 end
 		local types = get_hu_types(pai,cache,in_pai or mo_pai)
 		gou = gou_count(pai,cache,(types[HU_TYPE.JIANG_DUI] or types[HU_TYPE.DA_DUI_ZI]) and 3 or -1,ji_num )

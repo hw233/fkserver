@@ -1652,27 +1652,6 @@ function maajan_table:get_max_fan()
 end
 
 function maajan_table:waluobo()
-    -- if self.rule.luobo and self.luobo_tiles_count > 0 then
-    --     local luobo_pai
-    --     if self.bTest then self.luobo_tiles = {} end
-    --     for i = 1, self.luobo_tiles_count, 1 do
-    --         if self.bTest then
-    --             if table.nums(self.pre_gong_tiles or {}) > 0 then
-    --                 for j,tile in pairs(self.pre_gong_tiles) do
-    --                     luobo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
-    --                     self.pre_gong_tiles[j] = nil
-    --                     break
-    --                 end
-    --             else
-    --                 luobo_pai = self.dealer:deal_one()
-    --             end
-    --             local luobopai = {
-    --                 pai = luobo_pai,
-    --             }
-    --             tinsert(self.luobo_tiles,luobopai)
-    --         end
-    --     end
-    -- end
     log.dump(self.luobo_tiles,"luobo_tiles_count_"..self.luobo_tiles_count)
     self:foreach(function(v)
         local zhongluobo = nil
@@ -3329,14 +3308,20 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
             types[HU_TYPE.DI_HU] = 1
         end
     end
-    -- 海底捞
-    if self.dealer.remain_count == 0 then
-        types[HU_TYPE.HAI_DI_LAO_YUE] = 1
-    end
 
     local dgh_dian_pao = self.rule.play.dgh_dian_pao
     local discarder_last_action = chu_pai_player.last_action
     local is_zi_mo = mo_pai and true or false
+
+    -- 海底捞
+    if self.dealer.remain_count == 0 then
+        if is_zi_mo then
+            types[HU_TYPE.HAI_DI_LAO_YUE] = 1
+        else
+            types[HU_TYPE.HAI_DI_PAO] = 1
+        end
+    end
+
     local gang_hua = chu_pai_player == player and discarder_last_action and def.is_action_gang(discarder_last_action.action or 0)
     if gang_hua then
         if dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
@@ -3348,9 +3333,7 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
     end
 
     if is_zi_mo and self.rule.play.zi_mo_jia_fan then
-        types[HU_TYPE.ZI_MO] = 1
-    elseif self.dealer.remain_count == 0 then
-        types[HU_TYPE.HAI_DI_PAO] = 1
+        types[HU_TYPE.ZI_MO] = 1    
     end
 
     if chu_pai_player ~= player and discarder_last_action and def.is_action_gang(discarder_last_action.action) then
@@ -3602,10 +3585,16 @@ function maajan_table:send_baoting_status(player)
                 baoting = p.baoting or nil,
             })
         end)
+        self:foreach(function(p) 
+            tinsert(baoting_status,{
+                chair_id = p.chair_id,
+                done = p.baoting ~= nil and true or false,
+            })
+        end)
     end
 
     send2client(player,"SC_BaotingStatus",{
-        baoting_status = table.nums(baoting_status) > 0 and baoting_status or nil,
+        baoting_status = baoting_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
         baoting_info = baoting_info,
     })
 
