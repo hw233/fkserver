@@ -744,6 +744,8 @@ message MaajanZiGongBlanacePlayer{
 	int32 gang_score		= 13;	// 杠分
 	int32 luobo_score		= 14;	// 中萝卜分
 	int32 hu_score			= 15;	// 胡分
+	bool  baoting			= 16;	// 是否报叫
+	int32 luobo_count		= 17;	// 中萝卜个数
 }
 
 message Maajan_Luobo_Info{
