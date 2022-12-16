@@ -18,7 +18,7 @@ end
 
 local SECTION_TYPE = def.SECTION_TYPE
 
-local function ting(state)
+local function ting(state,lai_zi)
 	for k = 11,29 do 
 		if k ~= 20  then
 			table.incr(state.counts,k)
@@ -29,11 +29,13 @@ local function ting(state)
 		end 
 	end
 	-- 白板
-	table.incr(state.counts,37)
-	if is_hu(state) then 
-		state.feed_tiles[37] =true
-	end
-	table.decr(state.counts,37)
+	if lai_zi then
+		table.incr(state.counts,37)
+		if is_hu(state) then 
+			state.feed_tiles[37] =true
+		end
+		table.decr(state.counts,37)
+	end	
 end
 
 local function ting_qi_dui(counts)
@@ -697,7 +699,8 @@ function rule.get_ty()
 end 
 function rule.hu(pai,in_pai,mo_pai,si_dui,lai_zi)
 	local cache = {}
-	for i = 1,37 do cache[i] = pai.shou_pai[i] or 0 end
+	local count = lai_zi and 37 or 29
+	for i = 1,count do cache[i] = pai.shou_pai[i] or 0 end
 	if in_pai then table.incr(cache,in_pai) end
 	
 	-- 一万到九万，一筒到九筒，一条到九条， 东-南-西-北  -中-发-白-   春-夏-秋-冬-梅-兰-竹-菊--
@@ -768,9 +771,10 @@ end
 
 function rule.ting_tiles(pai,si_dui,lai_zi)
 	local cache = {}
-	for i = 1,37 do cache[i] = pai.shou_pai[i] or 0 end
+	local count = lai_zi and 37 or 29
+	for i = 1,count do cache[i] = pai.shou_pai[i] or 0 end
 	local state = { feed_tiles = {}, counts = cache }
-	ting(state)
+	ting(state,lai_zi)
 	local qi_dui_tiles = ting_qi_dui(cache)
 	local tiles = state.feed_tiles
 	if table.sum(qi_dui_tiles) >0 then

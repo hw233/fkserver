@@ -263,6 +263,7 @@ function maajan_table:on_started(player_count)
         v.huscore = nil
         v.baoting = nil
         v.baotingInfo = nil  -- 听牌数据
+        v.luoboscore = nil
     end
     self.zhuang_first_chu_pai      = true
     self.mo_pai_player_last        = self.zhuang --摸最后一张牌的索引
@@ -2736,6 +2737,7 @@ function maajan_table:on_game_overed()
         v.huscore = nil
         v.baoting = nil
         v.baotingInfo = nil  -- 听牌数据
+        v.luoboscore = nil
     end)
     self.luobo_tiles = {}
     self.zhong_luobos = {}
