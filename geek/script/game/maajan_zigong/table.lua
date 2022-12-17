@@ -281,7 +281,7 @@ function maajan_table:on_started(player_count)
         club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
         table_id = self.private_id or nil,
         luobo_tiles = {}, -- { pai = nil}
-        zhong_luobos = {},
+        luobo_counts = {},        
     }
     local cardtype = self.rule.play.lai_zi and 2 or 1
     self.tiles = self.tiles or all_tiles[cardtype]
@@ -294,6 +294,7 @@ function maajan_table:on_started(player_count)
     -- 萝卜
     self.luobo_tiles = {}       -- { pai = nil}
     self.zhong_luobos = {}
+    self.zhong_luobo_counts = {}
     self.luobo_tiles_count = 0
     if self.rule.luobo then
         if self.rule.luobo.luobo_option == 0 then  -- 1个萝卜
@@ -1689,10 +1690,15 @@ function maajan_table:waluobo()
                                 tinsert(self.zhong_luobos[v.chair_id],luobo_tile.pai)
                             end
                         end
+                    elseif luobo_tile.pai == TY_VALUE and s.substitute_num then
+                        for i = 1, s.substitute_num, 1 do
+                            tinsert(self.zhong_luobos[v.chair_id],luobo_tile.pai)
+                        end
                     end
-                end
-                if v.hu and v.hu.tile then
-                    if v.hu.tile == luobo_tile then
+                end                               
+                if v.hu and v.hu.tile and not v.hu.zi_mo then   
+                    log.info("hu:guid:%d,tale:%d,luobo_tile.pai %d",v.guid,v.hu.tile,luobo_tile.pai)                 
+                    if v.hu.tile == luobo_tile.pai then
                         tinsert(self.zhong_luobos[v.chair_id],luobo_tile.pai)
                     end
                 end 
@@ -1730,6 +1736,7 @@ function maajan_table:do_balance()
     local hufan = 0
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
+        tinsert(self.zhong_luobo_counts,self:get_luobo(chair_id))
         local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
         local shou_pai = self:tile_count_2_tiles(p.pai.shou_pai)
         local ming_pai = table.values(p.pai.ming_pai)
@@ -1781,9 +1788,9 @@ function maajan_table:do_balance()
             luobo_score	    = p.luoboscore,	-- 萝卜分
             hu_score        = p.huscore,    -- 胡分
             baoting    		= p.baoting,	-- 是否选择报叫
-            luobo_count     = self:get_luobo(chair_id),
+            luobo_count     = self.zhong_luobo_counts[chair_id],
         })
-
+        
         local win_money = self:calc_score_money(p_score)
         chair_money[chair_id] = win_money
         log.info("player hu %s,%s,%s,hufan %d",chair_id,p_score,win_money,hufan)
@@ -1815,7 +1822,7 @@ function maajan_table:do_balance()
     self.game_log.end_game_time = os.time()
     self.game_log.cur_round = self.cur_round
     self.game_log.luobo_tiles = self.luobo_tiles
-    self.game_log.zhong_luobos = self.zhong_luobos
+    self.game_log.luobo_counts = self.zhong_luobo_counts
 
     self:save_game_log(self.game_log)
 
@@ -2742,6 +2749,7 @@ function maajan_table:on_game_overed()
     end)
     self.luobo_tiles = {}
     self.zhong_luobos = {}
+    self.zhong_luobo_counts = {}
     self.liuju = false
     base_table.on_game_overed(self)
 end
@@ -2781,6 +2789,7 @@ function maajan_table:on_process_over(reason)
     })
     self.luobo_tiles = {}
     self.zhong_luobos = {}
+    self.zhong_luobo_counts = {}
     self:foreach(function(p)
         log.dump(p.statistics,"p.statistics_"..p.guid)
         p.statistics = nil
