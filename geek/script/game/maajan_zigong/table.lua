@@ -659,7 +659,8 @@ function maajan_table:qiang_gang_hu(actions)
 end
 
 function maajan_table:on_reconnect_when_piao_fen(player)
-    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    -- local leftcount = self.dealer.remain_count and self.dealer.remain_count or (self.rule.play.lai_zi and 76 or 72)
+    -- send2client(player,"SC_Maajan_Tile_Left",{tile_left = leftcount,})
     self:send_piao_fen_status(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
