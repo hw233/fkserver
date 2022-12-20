@@ -2600,14 +2600,14 @@ function maajan_table:game_balance()
                 if self.rule.play.jin_gou_gou then
                     typefans[chair_i],pi_fan_score = self:is_jin_gou_diao(chair_i,typefans[chair_i],fan,max_fan)
                 end
+                if self.rule.play.zi_mo_jia_di then
+                    pi_fan_score = pi_fan_score + 1
+                end
                 -- 飘番
                 piaofan = self:get_piaofan(chair_id,chair_i)
                 pi_fan_score = pi_fan_score * piaofan   
                 -- 萝卜分
                 pi_fan_score = pi_fan_score + zhong_luobo_score
-                if self.rule.play.zi_mo_jia_di then
-                    pi_fan_score = pi_fan_score + 1
-                end
                 scores[chair_i] = (scores[chair_i] or 0) - pi_fan_score
                 scores[chair_id] = (scores[chair_id] or 0) + pi_fan_score
                 self.players[chair_id].huscore = (self.players[chair_id].huscore or 0) + pi_fan_score
@@ -3625,6 +3625,9 @@ function maajan_table:send_baoting_tips(p)
 end
 
 function maajan_table:send_baoting_status(player)
+    if not self.rule.play.bao_jiao then
+        return
+    end
     local baoting_status = {}
     local baoting_info = {}
     if self.cur_state_FSM == FSM_S.WAIT_BAO_TING then
