@@ -112,4 +112,13 @@ function maajan_tile_dealer:remain_tiles()
     return table.slice(self.tiles,1,self.remain_count)
 end
 
+function maajan_tile_dealer:get_luobo_tiles(count)
+    local tiles = {}
+    for i = 1,count do
+        local c = self.tiles[i]
+        if c ~= 0 then table.push_back(tiles,c)  end
+    end
+    return tiles
+end
+
 return maajan_tile_dealer

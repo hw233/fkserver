@@ -76,10 +76,10 @@ function mj_util.get_actions(pai,mo_pai,in_pai,si_dui,qi_dui)
 				-- 	actions[ACTION.RUAN_BA_GANG][s.tile] = true
 				-- end
 			
-				if s.substitute_num and s.substitute_num >0 and counts[s.tile] and counts[s.tile] >0 and s.type ~= SECTION_TYPE.RUAN_PENG then
-					actions[ACTION.GANG_HUAN_PAI] = actions[ACTION.GANG_HUAN_PAI] or {}
-					actions[ACTION.GANG_HUAN_PAI][s.tile] = true
-				end
+				-- if s.substitute_num and s.substitute_num >0 and counts[s.tile] and counts[s.tile] >0 and s.type ~= SECTION_TYPE.RUAN_PENG then
+				-- 	actions[ACTION.GANG_HUAN_PAI] = actions[ACTION.GANG_HUAN_PAI] or {}
+				-- 	actions[ACTION.GANG_HUAN_PAI][s.tile] = true
+				-- end
 			end
 			for t,c in pairs(counts) do
 				if t ~= TY_VALUE then 

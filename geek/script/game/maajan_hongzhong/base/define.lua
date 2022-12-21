@@ -236,11 +236,11 @@ define.HU_TYPE = HU_TYPE
 
 local HU_TYPE_INFO = {
 	[HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0,fan = 0},				--未胡
-	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 1},				--天胡
+	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 3},				--天胡
 	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 0},				--地胡
 	[HU_TYPE.REN_HU]				= {name = "REN_HU",score = 0,fan = 0},				--人胡
 	[HU_TYPE.TIAN_TING]				= {name = "TIAN_TING",score = 0,fan = 0},			--天听
-	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 1},			--清一色
+	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 3},			--清一色
 	[HU_TYPE.QUAN_HUA]				= {name = "QUAN_HUA",score = 0,fan = 0},				--全花
 	[HU_TYPE.ZI_YI_SE]				= {name = "ZI_YI_SE",score = 0,fan = 0},				--字一色
 	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {name = "MIAO_SHOU_HUI_CHUN",score = 0,fan = 0},	--妙手回春
@@ -255,7 +255,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.HU_JUE_ZHANG]			= {name = "HU_JUE_ZHANG",score = 0,fan = 0},			--胡绝张
 	[HU_TYPE.JIAN_KE]				= {name = "JIAN_KE",score = 0,fan = 0},				--箭刻
 	[HU_TYPE.MEN_QING]				= {name = "MEN_QING",score = 0,fan = 0},				--门前清
-	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 2,fan = 1},				--暗杠
+	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 2,fan = 0},				--暗杠
 	[HU_TYPE.DUAN_YAO]				= {name = "DUAN_YAO",score = 0,fan = 0},				--断幺
 	[HU_TYPE.SI_GUI_YI]				= {name = "SI_GUI_YI",score = 0,fan = 0},				--四归一
 	[HU_TYPE.PING_HU]				= {name = "PING_HU",score = 0,fan = 2},				--平胡
@@ -271,7 +271,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.LAO_SHAO_FU]	 		= {name = "LAO_SHAO_FU",score = 0,fan = 0},			--老少副
 	[HU_TYPE.LIAN_LIU]	 			= {name = "LIAN_LIU",score = 0,fan = 0},				--连六
 	[HU_TYPE.YAO_JIU_KE]	 		= {name = "YAO_JIU_KE",score = 0,fan = 0},			--幺九刻
-	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 1,fan = 1},				--明杠
+	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 3,fan = 0},				--明杠
 	[HU_TYPE.DA_SAN_FENG]			= {name = "DA_SAN_FENG",score = 0,fan = 0},			--大三风
 	[HU_TYPE.XIAO_SAN_FENG]			= {name = "XIAO_SAN_FENG",score = 0,fan = 0},		--小三风
 	[HU_TYPE.PENG_PENG_HU]			= {name = "PENG_PENG_HU",score = 0,fan = 1},			--碰碰胡
@@ -283,7 +283,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.LIAN_QI_DUI] 			= {name = "LIAN_QI_DUI",score = 0,fan = 0},			--连七对
 	[HU_TYPE.SAN_YUAN_QI_DUI]		= {name = "SAN_YUAN_QI_DUI",score = 0,fan = 0},		--三元七对子
 	[HU_TYPE.SI_XI_QI_DUI]			= {name = "SI_XI_QI_DUI",score = 0,fan = 0},			--四喜七对子
-	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 0,fan = 1},				--普通七对
+	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 0,fan = 3},				--普通七对
 	[HU_TYPE.DA_YU_WU] 				= {name = "DA_YU_WU",score = 0,fan = 0},				--大于五
 	[HU_TYPE.XIAO_YU_WU] 			= {name = "XIAO_YU_WU",score = 0,fan = 0},			--小于五
 	[HU_TYPE.DA_SI_XI]				= {name = "DA_SI_XI",score = 0,fan = 0},				--大四喜
@@ -302,7 +302,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.SI_ZI_KE]				= {name = "SI_ZI_KE",score = 0,fan = 0},				--四字刻
 	[HU_TYPE.QING_LONG]				= {name = "QING_LONG",score = 0,fan = 0},			--清龙
 	[HU_TYPE.YI_SE_SAN_BU_GAO]		= {name = "YI_SE_SAN_BU_GAO",score = 0,fan = 0},		--一色三步高
-	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 0,fan = 1},				--大对子
+	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 0,fan = 3},				--大对子
 	[HU_TYPE.LONG_QI_DUI] 			= {name = "LONG_QI_DUI",score = 0,fan = 0},			--龙七对
 	[HU_TYPE.QING_QI_DUI] 			= {name = "QING_QI_DUI",score = 0,fan = 0},			--清七对
 	[HU_TYPE.QING_LONG_BEI] 		= {name = "QING_LONG_BEI",score = 0,fan = 0},		--清龙背
@@ -424,9 +424,9 @@ local UNIQUE_HU_TYPE = {
 	-- --双箭刻 	不计双暗刻，暗杠
 	-- [HU_TYPE.SHUANG_JIAN_KE]		= {[HU_TYPE.SHUANG_AN_KE] = true},
 
-	[HU_TYPE.QING_QI_DUI]			= {[HU_TYPE.QI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
-	[HU_TYPE.QING_LONG_BEI] 		= {[HU_TYPE.LONG_QI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
-	[HU_TYPE.QING_DA_DUI]			= {[HU_TYPE.DA_DUI_ZI] = true,[HU_TYPE.QING_YI_SE]=true},
+	-- [HU_TYPE.QING_QI_DUI]			= {[HU_TYPE.QI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
+	-- [HU_TYPE.QING_LONG_BEI] 		= {[HU_TYPE.LONG_QI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
+	-- [HU_TYPE.QING_DA_DUI]			= {[HU_TYPE.DA_DUI_ZI] = true,[HU_TYPE.QING_YI_SE]=true},
 	[HU_TYPE.QING_SI_DUI]			= {[HU_TYPE.SI_DUI] = true,[HU_TYPE.QING_YI_SE]=true},
 	[HU_TYPE.QING_LONG_SI_DUI] 		= {[HU_TYPE.LONG_SI_DUI] = true,[HU_TYPE.QING_YI_SE] = true},
 }
