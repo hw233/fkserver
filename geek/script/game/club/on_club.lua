@@ -15,6 +15,7 @@ local base_request = require "game.club.base_request"
 local club_game_type = require "game.club.club_game_type"
 local base_private_table = require "game.lobby.base_private_table"
 local club_role = require "game.club.club_role"
+local club_agentlevel = require "game.club.club_agentlevel"
 local table_template = require "game.lobby.table_template"
 local base_mails = require "game.mail.base_mails"
 local club_request = require "game.club.club_request"
@@ -89,7 +90,7 @@ local CLUB_OP = {
     UNBLOCK_TEAM = pb.enum("C2S_CLUB_OP_REQ.C2S_CLUB_OP_TYPE","UNBLOCK_TEAM"),
 }
 
-function on_bs_club_create(owner,name,type,creator)
+function on_bs_club_create(owner,name,type,creator,agentlevel)
     local guid = owner
 
     log.dump(creator)
@@ -106,7 +107,7 @@ function on_bs_club_create(owner,name,type,creator)
     local id
     if type == 1 then
         id = club_utils.rand_union_club_id()
-        local club = base_club:create(id,name or "","",player,enum.CT_UNION,nil,creator)
+        local club = base_club:create(id,name or "","",player,enum.CT_UNION,nil,creator,agentlevel)
         log.info("on_bs_club_create club=%d,guid=%d,money=%d",club.id,tonumber(guid),math.floor(global_conf.union_init_money))
         club:incr_member_money(guid,math.floor(global_conf.union_init_money),enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
         game_util.log_statistics_money(club_money_type[club.id],global_conf.union_init_money,enum.LOG_MONEY_OPT_TYPE_INIT_GIFT)
@@ -161,7 +162,7 @@ function on_cs_club_create(msg,guid)
     end
 
     log.dump(player)
-
+    -- 创建联盟的ID
     local id = club_utils.rand_group_club_id()
 
     local club = base_club:create(id,club_info.name,club_info.icon,player,club_info.type,club_info.parent)
@@ -858,6 +859,13 @@ function on_cs_club_query_memeber(msg,guid)
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
         local parent_guid = club_member_partner[club_id][p.guid]
         local parent = player_data[parent_guid]
+        -- 判断几级代理成员，还能否设置成为组长
+        local canSetPartner = false 
+        log.dump(role,"role_"..p.guid)
+        if role == enum.CRT_PLAYER then -- 普通成员
+            canSetPartner = club_utils.check_can_set_partner(club,p.guid)
+        end
+
         if not req_role or req_role == 0 or req_role == role then
             return {
                 info = {
@@ -895,6 +903,7 @@ function on_cs_club_query_memeber(msg,guid)
                     sex = parent.sex,
                     icon = parent.icon,
                 } or nil,
+                cansetpartner = canSetPartner,
             }
         end
     end)
@@ -1044,6 +1053,7 @@ local function on_cs_club_administrator(msg,guid)
 
         reddb:hset(string.format("club:role:%d",club_id),target_guid,enum.CRT_ADMIN)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_ADMIN - enum.CRT_PLAYER,target_guid)
+        reddb:hdel(string.format("club:agentlevel:%d",club_id),target_guid)
         club_role[club_id] = nil 
         channel.publish("db.?","msg","SD_SetClubRole",{
             guid = target_guid,
@@ -1071,6 +1081,7 @@ local function on_cs_club_administrator(msg,guid)
 
         reddb:hdel(string.format("club:role:%d",club_id),target_guid)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PLAYER - enum.CRT_ADMIN,target_guid)
+        reddb:hdel(string.format("club:agentlevel:%d",club_id),target_guid)
         club_role[club_id] = nil 
         channel.publish("db.?","msg","SD_SetClubRole",{
             guid = target_guid,
@@ -1318,6 +1329,13 @@ local function on_cs_club_partner(msg,guid)
         local parent = guid
         if role == enum.CRT_BOSS or role == enum.CRT_ADMIN then
             parent = club.owner
+        end
+        -- 判断联盟层级代理限制
+        if not club_utils.check_can_set_partner(club,target_guid) then
+            log.info("check_can_set_partner false club_id:%d,target_guid:%d",club.id,target_guid)
+            res.result = enum.ERROR_PLAYER_NO_RIGHT
+            onlineguid.send(guid,"S2C_CLUB_OP_RES",res)
+            return
         end
 
         local result = club_partner:create(club_id,target_guid,parent)

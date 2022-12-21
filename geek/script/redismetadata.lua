@@ -86,6 +86,7 @@ tree.club.info["%d+"] = {
     owner = "number",
     type = "number",
     parent = "number",
+    agentlevel = "number",
 }
 
 tree.club.game["%d+"] = "set"
@@ -161,7 +162,8 @@ tree.club.partner.conf["%d+"]["%d+"] = {
     commission = "json",
 }
 
-
+tree.club.agentlevel["%d+"] = "number_hash"
+tree.club.agentlevel["%d+"]["%d+"] = "number"
 
 tree.club.notice["%d+"] = "set"
 tree.club.notice["%d+"]["%d+"] = "number"

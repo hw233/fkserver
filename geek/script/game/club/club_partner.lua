@@ -5,6 +5,7 @@ local onlineguid = require "netguidopt"
 local enum = require "pb_enums"
 local channel = require "channel"
 local club_role = require "game.club.club_role"
+local club_agentlevel = require "game.club.club_agentlevel"
 local club_partner_member = require "game.club.club_partner_member"
 local club_money_type = require "game.club.club_money_type"
 local club_partner_commission = require "game.club.club_partner_commission"
@@ -73,7 +74,7 @@ function club_partner:create(club_id,guid,parent)
         reddb:hset(string.format("club:role:%s",club_id),guid,enum.CRT_PARTNER)
         reddb:zincrby(string.format("club:zmember:%s",club_id),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
         reddb:zincrby(string.format("club:partner:zmember:%s:%s",club_id,parent),enum.CRT_PARTNER - enum.CRT_PLAYER,guid)
-
+        reddb:hdel(string.format("club:agentlevel:%s",club_id),guid)  -- 设置玩家成为组长后，清除层级限制
         club_member_partner[club_id] = nil 
         club_role[club_id] = nil 
 
@@ -154,7 +155,7 @@ function club_partner:dismiss()
         reddb:hdel(string.format("club:role:%s",self.club_id),self.guid)
         reddb:hdel(string.format("club:team_player_count:%s",self.club_id),self.guid)
         reddb:hdel(string.format("club:team_money:%s",self.club_id),self.guid)
-
+        reddb:hdel(string.format("club:agentlevel:%d",self.club_id),self.guid)
         club_member_partner[self.club_id] = nil
         club_partner_member[self.club_id] = nil
         club_role[self.club_id] = nil 

@@ -12,6 +12,7 @@ local json = require "json"
 local channel = require "channel"
 local base_mail = require "game.mail.base_mail"
 local club_role = require "game.club.club_role"
+local club_agentlevel = require "game.club.club_agentlevel"
 local club_template_conf = require "game.club.club_template_conf"
 local base_money = require "game.lobby.base_money"
 local club_money_type = require "game.club.club_money_type"
@@ -69,7 +70,7 @@ function base_club:lockcall(fn)
     return self.lock(fn)
 end
 
-function base_club:create(id,name,icon,owner,tp,parent,creator)
+function base_club:create(id,name,icon,owner,tp,parent,creator,agentlevel)
     id = tonumber(id)
     local owner_guid = type(owner) == "number" and owner or owner.guid
     local c = {
@@ -80,6 +81,7 @@ function base_club:create(id,name,icon,owner,tp,parent,creator)
         type = tp,
         parent = parent or 0,
         status = 0,
+        agentlevel = agentlevel or 0, -- 设置盟主几级代理，0：默认三级，n > 0: n级代理
     }
 
     log.dump(creator)
@@ -437,7 +439,7 @@ function base_club:exit(guid)
         reddb:hdel(string.format("player:money:%d",guid),money_id)
         reddb:hdel(string.format("club:role:%d",self.id),guid)
         reddb:decr(string.format("club:member:count:%d",self.id))
-        
+        reddb:hdel(string.format("club:agentlevel:%d",self.id),guid)
         if onlineguid[guid] then
             reddb:srem(string.format("club:member:online:guid:%d",self.id),guid)
             reddb:decr(string.format("club:member:online:count:%d",self.id))

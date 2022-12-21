@@ -133,6 +133,7 @@ message CLUB_MEMBER{
     MONEY_INFO team_money = 7;
     int32 commission = 8;
     PLAYER_BASE_INFO parent_info = 9;
+    bool  cansetpartner = 10;   // 能否设置下级成员作为组长
 }
 
 message REQUEST_INFO{
