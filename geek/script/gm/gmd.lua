@@ -235,7 +235,7 @@ function gmd.edit_club(data)
     local club = base_clubs[club_id]
     if not club then
         return {
-            errcode = enum.PARAMETER_ERROR,
+            errcode = error.PARAMETER_ERROR,
         }
     end
 
@@ -1145,7 +1145,7 @@ function gmd.club_agentlevel(data)
     local club = base_clubs[club_id]
     if not club then
         return {
-            errcode = enum.PARAMETER_ERROR,
+            errcode = error.PARAMETER_ERROR,
         }
     end
 
