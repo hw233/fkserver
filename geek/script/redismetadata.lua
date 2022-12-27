@@ -142,6 +142,9 @@ tree.club.conf["%d+"] = {
     block_partner_player_2_layer = "bool",
     admin_analysis = "bool",
     auto_cash_commission = "json",
+    allow_search_record_no_limit = "bool",
+    limit_online_player_num = "bool",
+    limit_table_num = "bool",
 }
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"

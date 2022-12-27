@@ -3091,6 +3091,12 @@ function on_cs_search_club_player(msg,guid)
         if not p then return end
 
         local role = club_role[club_id][p.guid] or enum.CRT_PLAYER
+        -- 判断几级代理成员，还能否设置成为组长
+        local canSetPartner = false 
+        log.dump(role,"on_cs_search_club_player role_"..p.guid)
+        if role == enum.CRT_PLAYER then -- 普通成员
+            canSetPartner = club_utils.check_can_set_partner(club,p.guid)
+        end
         local parent_guid = club_member_partner[club_id][p.guid]
         local parent = player_data[parent_guid]
         return {
@@ -3125,6 +3131,7 @@ function on_cs_search_club_player(msg,guid)
                 sex = parent.sex,
                 icon = parent.icon,
             } or nil,
+            cansetpartner = canSetPartner,
         }
     end)
 
