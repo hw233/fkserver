@@ -2,11 +2,17 @@
 
 enum CP_HU_TYPE{
 	WEI_HU					= 0;	//未胡
-	TIAN_HU					= 1;	//天胡
-	DI_HU					= 2;	//地胡
-	TUOTUO_HONG				= 3;	//妥妥红
-	BABA_HEI				= 4;  //把把黑
-	HEI_LONG				= 5;	//黑龙
+	PING_HU					= 1;	//未胡
+	TIAN_HU					= 2;	//天胡
+	DI_HU					= 3;	//地胡
+	TUOTUO_HONG				= 4;	//妥妥红
+	BABA_HEI				= 5;    //把把黑
+	HEI_LONG				= 6;	//黑龙
+	SI_ZHANG				= 7;	//四张
+	CHONGFAN_PENG			= 8;	//冲番碰
+	CHONGFAN_TOU			= 9;	//冲番偷
+	CHONGFAN_CHI_3			= 10;	//冲番吃三张
+	TUO_24					= 11;	//超过24坨
 }
 
 
@@ -15,11 +21,10 @@ enum CP_ACTION{
 	ACTION_TRUSTEE = 0x1;
 	ACTION_PENG = 0x2;
 	ACTION_TOU = 0x4;
-	ACTION_BA = 0x10;
+	ACTION_BA_GANG = 0x10;
 	ACTION_HU = 0x20;
 	ACTION_PASS = 0x40;
-	ACTION_LEFT_CHI = 0x80;
-	ACTION_RIGHT_CHI = 0x200;
+	ACTION_CHI = 0x80;
 	ACTION_TING = 0x400;
 	ACTION_JIA_BEI = 0x800;
 	ACTION_CHU_PAI = 0x1000;
@@ -29,14 +34,13 @@ enum CP_ACTION{
 }
 
 enum CP_SECTION_TYPE {
-	Four = 0;
-	Ba = 1;
-	DuiZi = 2;
-	Three = 3;
-	Peng = 4;
-	Chi = 5;
-	LeftChi = 6;
-	RightChi = 7;
+	Gang = 0;
+	Peng = 1;
+	Tou = 2;
+	Chi = 3;
+	Chi3 = 4;
+	Sizhang = 5;
+	Tuo24 = 6;
 }
 
 enum CP_FSM_STATE {
@@ -45,15 +49,20 @@ enum CP_FSM_STATE {
 	WAIT_MO_PAI  			= 2;	//等待 摸牌
 	WAIT_CHU_PAI  			= 3;	//等待 出牌
 	WAIT_ACTION_AFTER_CHU_PAI	= 4;	//等待 碰 杠 胡 用户出牌的时候
-	WAIT_ACTION_AFTER_FAN_PAI 	= 5;	//等待 胡 用户巴杠的时候，抢胡
-	WAIT_QIANG_GANG_HU			= 6;
-	TOU_PAI					= 7;
-	WAIT_ACTION_AFTER_TIAN_HU = 8;
-	GAME_BALANCE			= 9;	//结算
-	GAME_CLOSE				= 10;	//关闭游戏
-	FAST_START_VOTE			= 11;
-	FINAL_END 				= 12;
-	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
+	WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI = 5;//等待 偷牌
+	WAIT_ACTION_AFTER_TIAN_HU   = 7;
+	WAIT_ACTION_AFTER_JIN_PAI   = 8;
+	WAIT_ACTION_AFTER_FAN_PAI 	= 9;	//等待 胡 用户巴杠的时候，抢胡
+	WAIT_QIANG_GANG_HU			= 10;
+	GAME_BALANCE			= 11;	//结算
+	GAME_CLOSE				= 12;	//关闭游戏
+	HUAN_PAI				= 13;	//关闭游戏
+	TOU_PAI					= 14;
+	FAN_PAI					= 15;
+	DING_QUE				= 16;
+	GAME_IDLE_HEAD			= 17;
+	FAST_START_VOTE			= 18;
+	FINAL_END				= 0x1000; //用于客户端播放动画延迟
 }
 
 enum CP_HUAN_PAI_ORDER{
@@ -68,8 +77,9 @@ message Changpai_Tiles {
 
 message Changpai_MingPai{
 	int32 tile = 1;
-	int32 type = 2;
-	int32 substitute_num = 3; 
+	int32 othertile=2;
+	int32 type = 3;
+	int32 substitute_num = 4; 
 }
 
 
@@ -77,13 +87,12 @@ message Changpai_MingPai{
 message Changpai_Player_Info {
 	repeated Changpai_MingPai pb_ming_pai 	= 1; 	// 明牌
 	repeated int32 shou_pai 	= 2; 			// 手牌
-	repeated int32 hua_pai 		= 3; 			// 花牌
-	repeated int32 desk_pai 	= 4; 			// 桌牌，打出去的牌
-	int32 chair_id		= 5; 			// id
+	repeated int32 desk_pai 	= 3; 			// 桌牌，打出去的牌
+	int32 chair_id		= 4; 			// id
 	
-	// game end
-	bool is_hu 			= 6;			//是否胡了
-	int32 hu_fan	 	= 7; 			//番数
+	bool is_hu 			= 5;			//是否胡了
+	int32 hu_fan	 	= 6; 			//番数
+	int32 tuos	 		= 7; 			//坨数
 	int32 jiabei	 	= 8; 			//加倍次数
 	string describe		= 9;			//牌型描述
 	int32 win_money 	= 10; 			//赢钱
@@ -92,9 +101,7 @@ message Changpai_Player_Info {
 	bool is_ting 		= 13;			//是否听
 	int32 total_score 	= 14;
 	int32 round_score 	= 15;
-	repeated int32 men_pai = 16;
-	int32 mo_pai = 17;
-	int32 gu_mai_score = 18;
+	int32 mo_pai = 16;
 }
 
 message Changpai_Reconnect_Data {
@@ -112,7 +119,7 @@ message Changpai_Task_Data {
 }
 
 message SC_Changpai_Desk_Enter {
-	enum MsgID { Nil = 0; ID = 23100; }
+	enum MsgID { Nil = 0; ID = 33100; }
 	repeated Changpai_Player_Info pb_players 	= 1; 		// 玩家
 	int32 state = 2;							//状态
     int32 zhuang = 3;							//庄家
@@ -123,140 +130,100 @@ message SC_Changpai_Desk_Enter {
 	Changpai_Task_Data pb_task_data = 8;			//任务
 	int32 round = 9;
 	bool is_reconnect = 10;						//reconnect
+	int32 zhuang_pai = 11;						//定庄的牌
+	repeated int32  qie_pai = 12;					//切牌
 }
 
 //剩余多少张公牌
 message SC_Changpai_Tile_Left {
-	enum MsgID { Nil = 0; ID = 23108; }
+	enum MsgID { Nil = 0; ID = 33108; }
 	int32 tile_left = 1;				
 }
 
 //该谁出牌
 message SC_Changpai_Discard_Round{
-	enum MsgID { Nil = 0; ID = 23109; }
+	enum MsgID { Nil = 0; ID = 33109; }
 	int32 chair_id	 = 1;				
 }
 
 //服务器的游戏状态
 message SC_Changpai_Desk_State{
-	enum MsgID { Nil = 0; ID = 23110; }
+	enum MsgID { Nil = 0; ID = 33110; }
 	int32 state = 1;				
 }
 
 //摸牌
 message SC_Changpai_Draw{
-	enum MsgID { Nil = 0; ID = 23111; }
+	enum MsgID { Nil = 0; ID = 33111; }
 	int32 chair_id = 1;
 	int32 tile = 2;					// 摸到的牌值，含补花	
 }
-
+//翻牌
+message SC_Changpai_Fan{
+	enum MsgID { Nil = 0; ID = 33112; }
+	int32 chair_id = 1;
+	int32 tile = 2;					// 
+}
 
 //托管
 message SC_Changpai_Act_Trustee {
-	enum MsgID { Nil = 0; ID = 23113; }
+	enum MsgID { Nil = 0; ID = 33113; }
 	int32 chair_id	 = 1;	
 	bool is_trustee = 2;				//最終托管狀態 true托管 false 非托管
 }
 
-message Changpai_Balance_Score{
-	int32 score = 1;
-	int32 type = 2;
-	int32 tile = 3;
-	int32 count = 4;
-	int32 fan = 5;
-}
-
-message Changpai_Balance_Item{
-	enum ItemType{
-		Nil  = 0;
-		Hu = 1;
-		ZiMo = 2;
-		Men = 3;
-		MenZiMo = 4;
-	}
-
-	ItemType 			 type = 1;
-	repeated Changpai_Balance_Score typescore = 2;
-}
-
-message Changpai_Blanace_Player{
-	enum BalanceStatus{
-		Nil = 0;
-		Hu = 1;
-		JiaoPai = 2;
-		WeiJiao = 3;
-	}
-	int32 chair_id 			= 1;
-	bool  hu 				= 2;	//是否胡了
-	int32 hu_fan	 		= 3; 	//番数
-	int32 total_score 		= 4;
-	int32 round_score 		= 5;
-	repeated Changpai_Balance_Item  items = 6;
-	repeated Changpai_Balance_Score gang = 7;
-	repeated Changpai_Balance_Score ji = 8;
-	BalanceStatus 			status = 9;
-	int32 hu_tile 			= 10;
-	int32 round_money 		= 11;
-	int32 total_money  		= 12;
-}
-
-//结算
-message SC_Changpai_Game_Finish {
-	enum MsgID { Nil = 0; ID = 23115; }
-	repeated Changpai_Player_Info 	players = 1;
-	repeated Changpai_Blanace_Player 	player_balance = 2;
-	int32 	ben_ji = 3;
-}
-
-
 message CP_Action{
 	int32 action = 1;
 	int32 tile = 2;
-	int32 substitute_num = 3; 
+	int32 other_tile = 3;
+	int32 substitute_num = 4; 
 }
 
 message SC_CP_WaitingDoActions { 
-	enum MsgID { Nil = 0; ID = 23116;}
+	enum MsgID { Nil = 0; ID = 33116;}
 	int32 chair_id = 1;
 	repeated CP_Action actions = 3;
 	int32 session_id = 4;
 }
 
 message CS_Changpai_Do_Action{
-	enum MsgID { Nil = 0; ID = 23002;}
+	enum MsgID { Nil = 0; ID = 33002;}
 	int32 action = 1;
 	int32 value_tile = 2;
-	int32 session_id = 3;
-	int32 substitute_num = 4; 
+	int32 other_tile = 3;
+	int32 session_id = 4;
+	int32 substitute_num = 5; 
 }
 
 message SC_Changpai_Do_Action_Commit{
-	enum MsgID { Nil = 0; ID = 23004;}
+	enum MsgID { Nil = 0; ID = 33004;}
 	int32 chair_id = 1;
 	int32 action = 2;
 	int32 value_tile = 3;
-	int32 target_chair_id = 4; //抢杠等
-	int32 session_id = 5;
-	int32 substitute_num = 6; 
+	int32 other_tile = 4;
+	int32 target_chair_id = 5; //抢杠等
+	int32 session_id = 6;
+	int32 substitute_num = 7; 
 }
 
 message SC_Changpai_Do_Action{
-	enum MsgID { Nil = 0; ID = 23118;}
+	enum MsgID { Nil = 0; ID = 33118;}
 	int32 chair_id = 1;
 	int32 action = 2;
 	int32 value_tile = 3;
-	int32 target_chair_id = 4; //抢杠等
-	int32 session_id = 5;
-	int32 substitute_num = 6; 
+	int32 other_tile = 4;
+	int32 target_chair_id = 5; //抢杠等
+	int32 session_id = 6;
+	int32 substitute_num = 7; 
 }
 
 message CS_Changpai_Action_Discard{
-	enum MsgID { Nil = 0; ID = 23003;}
+	enum MsgID { Nil = 0; ID = 33003;}
 	int32 tile = 1;
 }
 
 message SC_Changpai_Action_Discard{
-	enum MsgID { Nil = 0; ID = 23119;}
+	enum MsgID { Nil = 0; ID = 33119;}
 	int32 chair_id = 1;
 	int32 tile = 2;
 }
@@ -269,12 +236,12 @@ message Changpai_Player_Score {
 }
 
 message SC_Changpai_Final_Game_Over{
-	enum MsgID { Nil = 0; ID = 23120;}
+	enum MsgID { Nil = 0; ID = 33120;}
 	repeated Changpai_Player_Score player_scores = 1;
 }
 
 message SC_Changpai_StopAction{
-	enum MsgID { Nil = 0; ID = 23121;}
+	enum MsgID { Nil = 0; ID = 33121;}
 	int32 chair_id = 1;
 }
 
@@ -284,42 +251,36 @@ message CP_TingTiles{
 }
 
 message SC_CP_WaitingTing{
-	enum MsgID { Nil = 0; ID = 23122;}
+	enum MsgID { Nil = 0; ID = 33122;}
 	repeated CP_TingTiles ting = 1;
 }
 
 
 
-
-
-
-message ChangpaiXueZhanBalanceType{
+message ChangpaiBalanceType{
 	int32 type = 1;
 	int32 count = 2;
 }
 
-message ChangpaiXueZhanBlanacePlayer{
+message ChangpaiBlanacePlayer{
 	int32 chair_id 			= 1;
 	int32 hu 				= 2;	//是否胡了
 	int32 hu_fan	 		= 3; 	//番数
 	int32 total_score 		= 4;
 	int32 round_score 		= 5;
-	repeated ChangpaiXueZhanBalanceType  items = 6;
+	repeated ChangpaiBalanceType  items = 6;
 	int32 status = 7;
 	int32 hu_tile 			= 8;
-	int32 round_money 		= 9;
-	int32 total_money  		= 10;
-	int32 hu_index  		= 11;	
+	int32 hu_index  		= 9;	
 }
 
 //结算
-message SC_ChangpaiXueZhanGameFinish {
-	enum MsgID { Nil = 0; ID = 23133; }
+message SC_ChangpaiGameFinish {
+	enum MsgID { Nil = 0; ID = 33133; }
 	repeated Changpai_Player_Info 			players = 1;
-	repeated ChangpaiXueZhanBlanacePlayer 	player_balance = 2;
+	repeated ChangpaiBlanacePlayer 	player_balance = 2;
+	repeated int32 leftpai				= 3; //剩余的牌
 }
-
-
 
 message CP_TingTilesInfo{ 
 	int32 tile = 1;
@@ -333,12 +294,12 @@ message CP_TingTips{
 
 // 听牌提示
 message SC_CP_TingTips{
-	enum MsgID { Nil = 0; ID = 23134;}
+	enum MsgID { Nil = 0; ID = 33134;}
 	repeated CP_TingTips ting = 1;
 }
 
 message SC_CP_PlayerHuStatus{
-	enum MsgID { Nil = 0; ID = 23135;}
+	enum MsgID { Nil = 0; ID = 33135;}
 	int32 chair_id = 1;
 	int32 hu = 2;
 	int32 hu_tile = 3;
@@ -346,7 +307,7 @@ message SC_CP_PlayerHuStatus{
 }
 
 message SC_CP_HuStatus{
-	enum MsgID { Nil = 0; ID = 23136;}
+	enum MsgID { Nil = 0; ID = 33136;}
 	repeated SC_CP_PlayerHuStatus status = 1;
 }
 
@@ -354,11 +315,27 @@ message SC_CP_HuStatus{
 
 
 message CS_ChangpaiGetTingTilesInfo{
-	enum MsgID { Nil = 0; ID = 23143;}
+	enum MsgID { Nil = 0; ID = 33143;}
 }
 
 message SC_ChangpaiGetTingTilesInfo{
-	enum MsgID { Nil = 0; ID = 23144;}
+	enum MsgID { Nil = 0; ID = 33144;}
 	int32 result = 1;
 	repeated CP_TingTilesInfo tiles_info = 2;
+}
+
+message Changpai_Toupaistate
+{
+	enum MsgID { Nil = 0; ID = 33145; }
+	int32 status = 1;
+}
+message SC_CP_Canbe_Baopai
+{
+	enum MsgID { Nil = 0; ID = 33146; }
+	int32 tile = 1;
+}
+message SC_CP_Tuo_Num
+{
+	enum MsgID { Nil = 0; ID = 33147; }
+	repeated int32 tuos = 1;
 }

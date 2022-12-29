@@ -526,7 +526,7 @@ end
 function table.group(t,fn)
     local g = {}
     for k,v in pairs(t or {}) do
-        local x = fn(v,k)
+        local x = fn(v,k)      
         g[x] = g[x]  or {}
         g[x][k] = v
     end

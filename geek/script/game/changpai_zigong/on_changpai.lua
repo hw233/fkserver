@@ -22,7 +22,20 @@ function on_cs_do_action(msg,guid)
 		tb:on_cs_do_action(player, msg)
 	end
 end
+function on_cs_act_discard(msg,guid)
+	log.info ("test .................. on_cs_act_discard %s",guid)
+	log.dump(msg,string.format("on_cs_act_discard_%s",guid))
+	local player = player_context[guid]
+	if not player then
+		log.error("on_cs_act_win no player,guid:%s",guid)
+		return
+	end
 
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:on_cs_act_discard(player, msg)
+	end
+end
 
 function on_cs_vote_table_req(msg,guid)
 	log.info ("test .................. on_cs_vote_table_req,guid:%s",guid)

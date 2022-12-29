@@ -61,7 +61,7 @@ function mj_util.check_tile(tile)
 	local value = all_tiles[tile].value
 	local index = all_tiles[tile].index
 
-	return value >= 2 and value <= 12 and index > 1 and index < 21
+	return value >= 2 and value <= 12 and index >= 1 and index <= 21
 end
 
 function mj_util.tile_value(tile)
@@ -69,53 +69,87 @@ function mj_util.tile_value(tile)
 end
 
 function mj_util.tile_hong(tile)
+	log.info("hong index %d------hong value %d",tile,all_tiles[tile].hong)
 	return all_tiles[tile].hong
 end
 
 function mj_util.tile_hei(tile)
 	return all_tiles[tile].hei
 end
+local function counts_2_tiles(counts)
+	local tiles = {}
+	for tile,c in pairs(counts) do
+		if c > 0 then
+			for _ = 1,c do
+				table.insert(tiles,tile)
+			end
+		end
+	end
 
-function mj_util.get_actions(pai,mo_pai,in_pai)
+	return tiles
+end
+function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index)
 	local actions = {}
 	local counts = pai.shou_pai
 
 	if mo_pai then
 		--这里是摸牌之后，摆拍区有和莫进来的牌相同，并且摆拍区属于碰牌或者偷牌类型的话，就可以巴牌
 		for _,s in pairs(pai.ming_pai) do
-			if s.tile == mo_pai and s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
+			if s.tile == mo_pai and (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) then
 				actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
-				actions[ACTION.BA_GANG][s.tile] = true
+				actions[ACTION.BA_GANG][s.tile] = {tile = s.tile}
 			end
 		end
 		--这里是摸牌之后，判断手牌中有和摆拍区相同得牌，而且摆拍区属于碰牌类型的或者偷牌类型的 可以巴牌
 		for tile,c in pairs(counts) do
 			for _,s in pairs(pai.ming_pai) do
-				if s.tile == tile and c > 0 and s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
+				if s.tile == tile and c > 0 and (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU )then
 					actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
-					actions[ACTION.BA_GANG][s.tile] = true
+					actions[ACTION.BA_GANG][s.tile] = {tile = s.tile}
 				end
 			end
 		end
 		--这里是摸牌之后， 手牌中本身就有四张一样的牌，这个时候可以偷牌，偷拍之后还可以巴牌
 		for t,c in pairs(counts) do
-			if c == 4 then
+			if c == 4 or c == 3 then
 				actions[ACTION.TOU] = actions[ACTION.TOU] or {}
-				actions[ACTION.TOU][t] = true
+				actions[ACTION.TOU][t] = {tile = t}
 			end
 		end
 	end
 
 	if in_pai then
-		--别人打出的牌，或者是别人翻出来的牌自己手里有两张以上一样的牌的时候，可以碰牌，当然碰完之后还可以偷
+		--别人打出的牌，或者是翻出来的牌自己手里有两张以上一样的牌的时候，可以碰牌，当然碰完之后还可以偷
 		if counts[in_pai] and counts[in_pai] >= 2 then
 			actions[ACTION.PENG] = actions[ACTION.PENG] or {}
-			actions[ACTION.PENG] = {[in_pai] = true,}
+			actions[ACTION.PENG][in_pai] = {tile = in_pai,}
+		end
+	end
+	--吃牌只能上家翻出的或者出的牌并且有牌可以出
+	local tiles =  counts_2_tiles(counts)
+	if in_pai and can_eat and #tiles>1 then
+		for t,c in pairs(counts) do
+			if c>0 and (mj_util.tile_value(t) + mj_util.tile_value(in_pai) ==14)  then
+				actions[ACTION.CHI] = actions[ACTION.CHI] or {}
+				actions[ACTION.CHI][t]={ tile=in_pai,othertile = t }
+			end
 		end
 	end
 
-	if in_pai and rule.is_hu(pai,in_pai)  then
-		actions[ACTION.HU] = {[in_pai] = true,}
+
+	if in_pai and rule.is_hu(pai,in_pai)  and chupai_index then
+		actions[ACTION.HU] = actions[ACTION.HU] or {}
+		actions[ACTION.HU][in_pai] = { tile= in_pai,}
+	end
+
+	if in_pai and rule.is_hu(pai,in_pai)  and not chupai_index then
+		actions[ACTION.HU] = actions[ACTION.HU] or {}
+		actions[ACTION.HU][in_pai] = { tile= in_pai,}
+	end
+
+	if not in_pai and rule.is_hu(pai,in_pai)  and not chupai_index then
+		actions[ACTION.HU] = actions[ACTION.HU] or {}
+		actions[ACTION.HU][mo_pai] = { tile= mo_pai,}
 	end
 	--长牌只需要胡牌，没有胡牌和自摸的区别
 	--if mo_pai and rule.is_hu(pai,nil) then
@@ -133,26 +167,28 @@ function mj_util.get_actions_first_turn(pai,mo_pai)
 	for t,c in pairs(counts) do
 		if c >= 3 then
 			actions[ACTION.TOU] = actions[ACTION.TOU] or {}
-			actions[ACTION.TOU][t] = true
+			actions[ACTION.TOU][t] = {tile = t}
 		end
 	end
 	for tile,c in pairs(counts) do
 		for _,s in pairs(pai.ming_pai) do
 			if s.tile == tile and c > 0 and s.type == SECTION_TYPE.PENG then
-				actions[ACTION.BA] = actions[ACTION.BA] or {}
-				actions[ACTION.BA][s.tile] = true
+				actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
+				actions[ACTION.BA_GANG][s.tile] =  {tile =s.tile}
 			end
 		end
 	end
 	return actions
 end
-
-function mj_util.is_hu(pai,in_pai)
-	return rule.is_hu(pai,in_pai)
+function mj_util.tuos(pai,in_pai,mo_pai,is_zhuang)
+	return rule.tuos(pai,in_pai,mo_pai,is_zhuang)
+end
+function mj_util.is_hu(pai,in_pai,is_zhuang)
+	return rule.is_hu(pai,in_pai,is_zhuang)
 end
 
-function mj_util.hu(pai,in_pai,mo_pai)
-	return rule.hu(pai,in_pai,mo_pai)
+function mj_util.hu(pai,in_pai,mo_pai,is_zhuang)
+	return rule.hu(pai,in_pai,mo_pai,is_zhuang)
 end
 
 function mj_util.panGangWithOutInPai(pai)
@@ -163,7 +199,7 @@ function mj_util.panGangWithOutInPai(pai)
 	local counts = pai.shou_pai
 	for k,c in ipairs(counts) do
 		if c == 4 then
-			table.get(actions,ACTION.AN_GANG,{})[k] = true
+			table.get(actions,ACTION.TOU,{})[k] = true
 		end
 	end
 
@@ -180,8 +216,8 @@ function mj_util.is_ting(pai,si_dui)
 	return rule.ting(pai,si_dui)
 end
 
-function mj_util.is_ting_full(pai,si_dui)
-	return rule.ting_full(pai,si_dui)
+function mj_util.is_ting_full(pai)
+	return rule.ting_full(pai)
 end
 
 function mj_util.get_fan_table_res(base_fan_table)
