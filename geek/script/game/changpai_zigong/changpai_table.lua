@@ -2950,6 +2950,11 @@ function changpai_table:calculate_gang(p)
         else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1} end
         end
     end
+    local tuo_num = mj_util.tuos(p.pai,nil,nil,nil)
+
+    if tuo_num>=24 then
+        gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1} 
+    end
 
     local fans = table.series(gangfans,function(v,t) return {type = t,fan = v.fan,count = v.count} end)
     return fans,scores
