@@ -12,6 +12,7 @@ local club_table = require "game.club.club_table"
 local base_private_table = require "game.lobby.base_private_table"
 local club_member = require "game.club.club_member"
 local club_role = require "game.club.club_role"
+local club_agentlevel = require "game.club.club_agentlevel"
 local club_template_conf = require "game.club.club_template_conf"
 local club_partner_template_commission = require "game.club.club_partner_template_commission"
 local club_member_partner = require "game.club.club_member_partner"
@@ -740,4 +741,26 @@ function utils.lock_action(club_id,guids,fn,...)
 
     return mutex_batch(action_ids,fn,...)
 end
+
+function utils.check_can_set_partner(club,target_guid)
+    local club_id = club.id
+    local levelpartner = target_guid
+    local canSetPartner = false 
+    local levelPlayer = club_agentlevel[club_id][target_guid]
+    if not levelPlayer then -- 还未设置层级成员就设置
+        levelPlayer = 0                 
+        repeat
+            levelpartner = club_member_partner[club_id][levelpartner]                        
+            levelPlayer = levelPlayer + 1
+        until levelpartner == club.owner or levelPlayer >= 20
+        reddb:hset(string.format("club:agentlevel:%s",club_id),target_guid,levelPlayer)
+    end
+    if levelPlayer <= (club.agentlevel and club.agentlevel or 3) then -- 未设置或者为0，默认允许三级代理
+        canSetPartner = true
+    end
+    log.info("check_can_set_partner club_id:%d,agentlevel:%d,guid:%d,levelPlayer:%d ",club_id,club.agentlevel,target_guid,levelPlayer)
+
+    return canSetPartner
+end
+
 return utils
