@@ -86,6 +86,7 @@ tree.club.info["%d+"] = {
     owner = "number",
     type = "number",
     parent = "number",
+    agentlevel = "number",
 }
 
 tree.club.game["%d+"] = "set"
@@ -141,6 +142,9 @@ tree.club.conf["%d+"] = {
     block_partner_player_2_layer = "bool",
     admin_analysis = "bool",
     auto_cash_commission = "json",
+    allow_search_record_no_limit = "bool",
+    limit_online_player_num = "bool",
+    limit_table_num = "bool",
 }
 tree.club.table["%d+"] = "set"
 tree.club.table["%d+"]["%d+"] = "number"
@@ -161,7 +165,8 @@ tree.club.partner.conf["%d+"]["%d+"] = {
     commission = "json",
 }
 
-
+tree.club.agentlevel["%d+"] = "number_hash"
+tree.club.agentlevel["%d+"]["%d+"] = "number"
 
 tree.club.notice["%d+"] = "set"
 tree.club.notice["%d+"]["%d+"] = "number"

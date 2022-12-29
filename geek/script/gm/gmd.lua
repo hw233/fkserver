@@ -185,9 +185,9 @@ function gmd.create_club(data)
             errstr = string.format("owner [%d] not exists.",owner_id)
         }
     end
-
+    local agentlevel = data.agentlevel or 3
     local name = data.club_name
-    local code,club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name,type,creator)
+    local code,club_id = channel.call("game.?","msg","B2S_CLUB_CREATE",owner_id,name,type,creator,agentlevel)
     return {
         errcode = code ~= enum.ERROR_PLAYER_NO_RIGHT and error.SUCCESS or error.PARAMETER_ERROR,
         club_id = club_id,
@@ -235,7 +235,7 @@ function gmd.edit_club(data)
     local club = base_clubs[club_id]
     if not club then
         return {
-            errcode = enum.PARAMETER_ERROR,
+            errcode = error.PARAMETER_ERROR,
         }
     end
 
@@ -1139,6 +1139,28 @@ function gmd.verify_update_ip_auth(data)
     }
 end
 
+function gmd.club_agentlevel(data)
+    log.dump(data,"club_agentlevel")
+    local club_id = tonumber(data.club_id) or nil
+    local club = base_clubs[club_id]
+    if not club then
+        return {
+            errcode = error.PARAMETER_ERROR,
+        }
+    end
+
+    if data.agentlevel then
+        reddb:hmset(string.format("club:info:%s",club_id),{
+            agentlevel = data.agentlevel
+        })
+    end    
+    
+    return {
+        errcode = error.SUCCESS,
+        club_id = club_id,
+    }
+end
+
 gmd["club/create"] = gmd.create_club
 gmd["club/create/group"] = gmd.create_club_with_gourp
 gmd["club/edit"] = gmd.edit_club
@@ -1162,5 +1184,6 @@ gmd["verify/lock/imei"] = gmd.verify_lock_imei
 gmd["player/password"] = gmd.update_passworld
 gmd["verify/update/ipauth"] = gmd.verify_update_ip_auth
 gmd["channel_game"] = gmd.channel_game
+gmd["club/agentlevel"] = gmd.club_agentlevel
 
 return gmd

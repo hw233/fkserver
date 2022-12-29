@@ -1,0 +1,56 @@
+local pb = require "pb_files"
+
+local STATUS = {
+	NIL = pb.enum("OX_TABLE_STATUS","TS_NIL"),
+	FREE = pb.enum("OX_TABLE_STATUS","TS_FREE"),
+	CALLBANKER = pb.enum("OX_TABLE_STATUS","TS_BANKER"),
+	BET = pb.enum("OX_TABLE_STATUS","TS_BET"),
+	SPLIT = pb.enum("OX_TABLE_STATUS","TS_SPLIT"),
+	END = pb.enum("OX_TABLE_STATUS","TS_END"),
+}
+
+local OX_CARDS_TYPE = {
+	OX_NONE = pb.enum("OX_CARD_TYPE","OX_CARD_TYPE_OX_NONE"),
+	OX_1 = pb.enum("OX_CARD_TYPE","OX_CARD_TYPE_OX_1"),
+	OX_2 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_2"),
+	OX_3 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_3"),
+	OX_4 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_4"),
+	OX_5 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_5"),
+	OX_6 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_6"),
+	OX_7 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_7"),
+	OX_8 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_8"),
+	OX_9 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_9"),
+	OX_10 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_10"),
+	OX_SHUNZI = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_SHUNZI"),
+	OX_TONGHUA = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_TONGHUA"),
+	OX_YINHUA = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_YINHUA"),
+	OX_JINHUA = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_JINHUA"),
+	OX_HULU = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_HULU"),
+	OX_BOMB = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_BOMB"),
+	OX_SMALL_5 = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_SMALL_5"),
+	OX_TONGHUASHUN = pb.enum("OX_CARD_TYPE", "OX_CARD_TYPE_OX_TONGHUASHUN"),
+}
+
+local OX_AREA = {
+	-- enum OX_SCORE_AREA
+	TIAN = pb.enum("OX_SCORE_AREA","OX_AREA_TIAN"),
+	DI = pb.enum("OX_SCORE_AREA","OX_AREA_DI"),
+	XUAN = pb.enum("OX_SCORE_AREA","OX_AREA_XUAN"),
+	HUANG = pb.enum("OX_SCORE_AREA","OX_AREA_HUANG"),
+}
+
+local PLAYER_STATUS = {
+	WATCHER = pb.enum("OX_PLAYER_STATUS","PS_WATCHER"),
+	FREE = pb.enum("OX_PLAYER_STATUS","PS_FREE"),
+	PLAY = pb.enum("OX_PLAYER_STATUS","PS_PLAY"),
+	BANKRUPTCY = pb.enum("OX_PLAYER_STATUS","PS_BANKRUPTCY"),
+}
+
+local define = {
+	STATUS = STATUS,
+	AREA = OX_AREA,
+	CARDS_TYPE = OX_CARDS_TYPE,
+	PLAYER_STATUS = PLAYER_STATUS,
+}
+
+return define
