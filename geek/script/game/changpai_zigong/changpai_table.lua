@@ -3385,7 +3385,7 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
     local ming_pai = player.pai.ming_pai
     if action == ACTION.BA_GANG then  --巴杠      
         for k,s in pairs(ming_pai) do
-            if s.tile == tile and s.type == SECTION_TYPE.PENG then
+            if s.tile == tile and (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) then
                 local num = 1
                 if mj_util.tile_hong(tile)>0 then num =2 end
                 tinsert(ming_pai,{
