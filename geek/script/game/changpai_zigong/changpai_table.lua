@@ -2554,7 +2554,7 @@ function changpai_table:do_balance()
     log.dump(msg)
 
     local logids = {
-        [350] = enum.LOG_MOENY_OPT_TYPE_CHANGPAI_SICHUAN,
+        [350] = enum.LOG_MOENY_OPT_TYPE_CHANGPAI_ZIGONG,
     }
 
     chair_money = self:balance(chair_money,logids[def_first_game_type])
