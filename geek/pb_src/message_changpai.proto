@@ -101,7 +101,10 @@ message Changpai_Player_Info {
 	bool is_ting 		= 13;			//是否听
 	int32 total_score 	= 14;
 	int32 round_score 	= 15;
-	int32 mo_pai = 16;
+	int32 mo_pai 		= 16;
+	bool is_chipiao 	= 17;			//吃飘
+	bool is_dianpao		= 18;			//是否点炮
+	bool is_xiaohu		= 19;			//是否小胡
 }
 
 message Changpai_Reconnect_Data {

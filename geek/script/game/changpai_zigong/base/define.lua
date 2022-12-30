@@ -96,7 +96,7 @@ define.FSM_state = {
 
 local CP_HU_TYPE = {
 	WEI_HU						= pb.enum("CP_HU_TYPE","WEI_HU"),	 --未胡
-	PING_HU						= pb.enum("CP_HU_TYPE","PING_HU"),	 --未胡
+	PING_HU						= pb.enum("CP_HU_TYPE","PING_HU"),	 --平胡
 	------------------------------叠加-------------------------------------------------
 	TIAN_HU						= pb.enum("CP_HU_TYPE","TIAN_HU"),	--天胡
 	DI_HU						= pb.enum("CP_HU_TYPE","DI_HU"),	--地胡
@@ -114,6 +114,7 @@ define.CP_HU_TYPE = CP_HU_TYPE
 
 local HU_TYPE_INFO = {
 	[CP_HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0,fan = 0},				--未胡
+	[CP_HU_TYPE.PING_HU]			= {name = "PING_HU",score = 0,fan = 1},			--天胡
 	[CP_HU_TYPE.TIAN_HU]			= {name = "TIAN_HU",score = 0,fan = 3},			--天胡
 	[CP_HU_TYPE.DI_HU]				= {name = "DI_HU",score = 0,fan = 1},				--地胡
 	[CP_HU_TYPE.TUOTUO_HONG]		= {name = "TUOTUO_HONG",score = 0,fan =3},				--妥妥红

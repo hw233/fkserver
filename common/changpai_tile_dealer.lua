@@ -62,6 +62,12 @@ function changpai_tile_dealer:pick_tiles(tiles)
     return tiles
 end
 
+function changpai_tile_dealer:use_one()
+    local k = self.remain_count
+    local j = math.random(k)
+    local tile = self.tiles[j]
+    return tile
+end
 
 function changpai_tile_dealer:deal_one()
     local k = self.remain_count

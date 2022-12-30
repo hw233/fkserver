@@ -286,15 +286,13 @@ local function get_hu_types(pai,cache,sections,in_pai)
 			end
 		end
 	end
-	for _,s in pairs(sections) do
-		if s.tile>=1 and s.tile<=21 and rule.tile_hongcounts(s.tile)<=0 or rule.tile_hongcounts(s.othertile)<=0 then
+	for tile,count in pairs(cache) do
+		if count>0 and tile>=1 and tile<=21 and rule.tile_hongcounts(tile)<=0  then
 			base_types[HU_TYPE.TUOTUO_HONG] = nil
-		elseif  rule.tile_hongcounts(s.tile)>0 or rule.tile_hongcounts(s.othertile)>0 then
+		elseif count>0 and rule.tile_hongcounts(tile)>0  then
 			base_types[HU_TYPE.BABA_HEI] = nil
 		end
-		if rule.tile_hongcounts(s.tile)>0 then
-			counthonghei = counthonghei+1
-		elseif  rule.tile_hongcounts(s.othertile)>0  then
+		if count>0 and rule.tile_hongcounts(tile)>0 then
 			counthonghei = counthonghei+1
 		end
 	end
@@ -333,8 +331,6 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 		end
 		log.dump(counts)
 		for i, c in pairs(counts) do
-			log.info(" c de zhi shi  %d ",i)
-			
 			if  c >0 then
 				if rule.tile_hongcounts(i) >0 then
 					tuos =tuos + c
@@ -357,23 +353,24 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	 end
 	local state = { hu = {}, sections = {}, counts = clone(cache) ,tuos = 0}
 	hu(state)
-
+	
+	log.dump(state)
 	local alltypes = {}
 	if table.nums(state.hu) == 0  then
 		return {{[HU_TYPE.WEI_HU] = 1}}
 	
 	end
-	for _,sections in pairs(state.hu) do
-		local types = get_hu_types(pai,cache,sections,in_pai or mo_pai)
-		table.insert(alltypes,types)
-	end
-	local tuonum = table.sum(pai.ming_pai,function(s) return (s.tuos) end)
+	
+	local types = get_hu_types(pai,cache,nil,in_pai or mo_pai)
+	table.insert(alltypes,types)
+
 	if alltypes[HU_TYPE.PING_HU] then
 		--坨数小于规定庄家14坨，闲家12坨的时候不能胡
 		if is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<14 or not is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<12 then 
 			return {{[HU_TYPE.WEI_HU] = 1}}
 		end
 	end
+	log.dump(alltypes)
 	return alltypes
 end
 

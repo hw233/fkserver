@@ -367,7 +367,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
     end
 
     self.waiting_actions = {}
-    if do_action == ACTION.ZI_MO then
+    if do_action == ACTION.HU then
         -- 天胡
         local is_zi_mo = true
         player.hu = {
@@ -895,7 +895,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
     end
 
 
-    if do_action == ACTION.HU or do_action == ACTION.ZI_MO then
+    if do_action == ACTION.HU  then
         local is_zi_mo = true
         player.hu = {
             time = timer.nanotime(),
@@ -1442,8 +1442,8 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 time = timer.nanotime(),
                 tile = tile,
                 types = self:hu(p,tile),
-                zi_mo = false,
-                whoee = self.chu_pai_player_index,
+                zi_mo = true,
+                whoee = nil,
             }
 
             if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
@@ -2424,7 +2424,10 @@ function changpai_table:get_max_fan()
     local fan_opt = self.rule.fan.max_option + 1
     return self.room_.conf.private_conf.fan.max_option[fan_opt]
 end
-
+function changpai_table:get_is_chi_piao()
+    local piao_opt = self.rule.play.chi_piao
+    return piao_opt
+end
 function changpai_table:do_balance()
     local typefans,fanscores = self:game_balance()
     log.dump(typefans)
@@ -2446,6 +2449,12 @@ function changpai_table:do_balance()
         if p.hu then p.hu.index = i end
     end)
 
+    local player_hu = {}
+    for index, value in pairs(self.players) do
+       if value.hu then
+            player_hu = value.hu
+       end
+    end
 
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
@@ -2468,12 +2477,36 @@ function changpai_table:do_balance()
 
         p.total_score = (p.total_score or 0) + p_score
         p_log.score = p_score
-
+        local chipiao = false
+        local xiaohu =false
+        local dianpao =false
+        if self:get_is_chi_piao() then
+            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) >=16 then
+                chipiao = true
+            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) >=14 then
+                chipiao = true
+            end
+        end
+        if p.hu  then
+            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) <16 and  mj_util.tuos(p.pai) >=14 then
+                xiaohu = true
+            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) <14 and  mj_util.tuos(p.pai) >=12 then
+                xiaohu = true
+            end
+        end 
+        if player_hu and player_hu.whoee and  player_hu.whoee == p.chair_id and not player_hu.zi_mo then
+            dianpao = true
+        end
+       
         tinsert(msg.players,{
             chair_id = chair_id,
             desk_pai = desk_pai,
             shou_pai = shou_pai,
             pb_ming_pai = ming_pai,
+            tuos = mj_util.tuos(p.pai),
+            is_chipiao = chipiao,
+            is_xiaohu =xiaohu,
+            is_dianpao = dianpao
         })
 
         tinsert(msg.player_balance,{
@@ -2564,7 +2597,7 @@ function changpai_table:prepare_tiles()
     else   
         self.zhuang = 1
         self.chu_pai_player_index = self.zhuang --出牌人的索引
-        self.dealer.remain_count = 108
+        self.dealer.remain_count = 84
         -- 测试手牌     
         self.pre_tiles = {
             [1] = {2,5,8,9,14,15,15,17,17,18,25,26,26},     -- 万 庄
@@ -2577,7 +2610,7 @@ function changpai_table:prepare_tiles()
             29,24,6,1,17,24,22,23,21,25,25,17,1,7,22,12,17,24,25,27,29,
         }
     end
-    self.zhuang_pai = self.dealer:deal_one()
+    self.zhuang_pai = self.dealer:use_one()
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
@@ -2607,11 +2640,17 @@ end
 
 
 function changpai_table:serial_types(tsmap)
-    local types = table.series(tsmap,function(c,t)
-        local tinfo = HU_TYPE_INFO[t]
-        return {type = t,fan = tinfo.fan,score = tinfo.score,count = c}
-    end)
-
+    -- local types = table.series(tsmap,function(c,t)
+    --     local tinfo = HU_TYPE_INFO[t]
+    --     return {type = t,fan = tinfo.fan,score = tinfo.score,count = c}
+    -- end)
+    local types = {}
+    local tinfo = {}
+    if tsmap then
+        tinfo = HU_TYPE_INFO[tsmap]
+        types[tsmap] = {fan = tinfo.fan,score = tinfo.score,count = 1,type = tsmap}
+    end
+    
     return types
 end
 
@@ -2762,7 +2801,7 @@ local action_name_str = {
     [ACTION.BA_GANG] = "BaGang",
     [ACTION.ZI_MO] = "ZiMo",
     [ACTION.CHI] = "Chi",
-    [ACTION.JIA_BEI] = "JiaBei",
+    [ACTION.JIA_BEI] = "Tou",
     [ACTION.TRUSTEE] = "Trustee",
     [ACTION.PASS] = "Pass",
     [ACTION.HU] = "Hu",
@@ -2914,7 +2953,7 @@ function changpai_table:calculate_gang(p)
         if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then 
             if chong_fan[s.tile]  and s.type == SECTION_TYPE.PENG then--假如是冲番牌
                 if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
-                else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1} end
+                else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
             elseif  chong_fan[s.tile]  and s.type == SECTION_TYPE.TOU then 
                 if gangfans[HU_TYPE.CHONGFAN_TOU] then gangfans[HU_TYPE.CHONGFAN_TOU].count=gangfans[HU_TYPE.CHONGFAN_TOU].count+1
                 else gangfans[HU_TYPE.CHONGFAN_TOU]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_TOU].fan,count = 1} end
@@ -3014,7 +3053,7 @@ function changpai_table:game_balance()
 
     log.dump(typefans)
 
-    local max_fan = self:get_max_fan() or 3
+    local max_fan = self:get_max_fan() or 4
     log.dump(max_fan)
     local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
@@ -3580,6 +3619,7 @@ end
 function changpai_table:rule_hu_types(pai,in_pai,mo_pai,is_zhuang)
     local private_conf = self:room_private_conf()
     local hu_types = mj_util.hu(pai,in_pai,mo_pai,is_zhuang)
+    log.dump(hu_types)
     return table.series(hu_types,function(ones)
         local ts = {}
         for t,c in pairs(ones) do
@@ -3591,16 +3631,15 @@ end
 
 function changpai_table:rule_hu(pai,in_pai,mo_pai,is_zhuang)
     local types = self:rule_hu_types(pai,in_pai,mo_pai,is_zhuang)
-
-    table.sort(types,function(l,r)
-        local lscore,lfan = self:calc_types(l)
-        local rscore,rfan = self:calc_types(r)
-        local curlscore = lscore + 2 ^ lfan
-        local currscore = rscore + 2 ^ rfan
-        return ( curlscore == currscore ) and (lfan > rfan) or curlscore > currscore
-    end)
-
-    return types[1] or {}
+    log.dump(types)
+    local type =0
+    for key, types in pairs(types) do
+        if types then
+            type = key
+        return type   
+        end
+    end
+    return {}
 end
 
 function changpai_table:hu(player,in_pai,mo_pai,qiang_gang)
