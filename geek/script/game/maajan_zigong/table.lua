@@ -1658,7 +1658,10 @@ function maajan_table:get_max_fan()
     local fan_opt = self.rule.fan.max_option + 1
     return self.room_.conf.private_conf.fan.max_option[fan_opt] or 3
 end
-
+function maajan_table:get_add_score()
+    local fan_opt = self.rule.fan.chaoFan or 0
+    return self.room_.conf.private_conf.fan.add_score[fan_opt] or 0
+end
 function maajan_table:waluobo()
     log.dump(self.luobo_tiles,"luobo_tiles_count_"..self.luobo_tiles_count)
     self:foreach(function(v)

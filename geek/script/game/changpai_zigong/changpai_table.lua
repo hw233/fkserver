@@ -2428,8 +2428,47 @@ function changpai_table:get_is_chi_piao()
     local piao_opt = self.rule.play.chi_piao
     return piao_opt
 end
+function changpai_table:get_player_piao(p)
+    local chipiao = false
+        if self:get_is_chi_piao() then
+            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) >=16 then
+                chipiao = true
+            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) >=14 then
+                chipiao = true
+            end
+        end
+        return chipiao
+end
+function changpai_table:get_player_xiaohu(p)
+    local xiaohu =false
+        if p.hu  then
+            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) <16 and  mj_util.tuos(p.pai) >=14 then
+                xiaohu = true
+            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) <14 and  mj_util.tuos(p.pai) >=12 then
+                xiaohu = true
+            end
+        end 
+    return xiaohu
+end
+function changpai_table:get_chao_add_score(p)
+    local add_score_option = self.rule.fan.chaoFan
+    return self.room_.conf.private_conf.fan.add_score[add_score_option]
+end
 function changpai_table:do_balance()
     local typefans,fanscores = self:game_balance()
+
+    local typessend={}
+    
+    for key, value in pairs(typefans) do 
+        local playersend={}
+        for inx, v in pairs(value) do
+            if v then
+                table.insert(playersend,{type =v.type or nil,count = v.count or nil })
+            end
+        end
+        typessend[key] = playersend or nil
+    end
+    log.dump(typessend)
     log.dump(typefans)
     log.dump(fanscores)
     local msg = {
@@ -2477,35 +2516,21 @@ function changpai_table:do_balance()
 
         p.total_score = (p.total_score or 0) + p_score
         p_log.score = p_score
-        local chipiao = false
-        local xiaohu =false
+        
+        
         local dianpao =false
-        if self:get_is_chi_piao() then
-            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) >=16 then
-                chipiao = true
-            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) >=14 then
-                chipiao = true
-            end
-        end
-        if p.hu  then
-            if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) <16 and  mj_util.tuos(p.pai) >=14 then
-                xiaohu = true
-            elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) <14 and  mj_util.tuos(p.pai) >=12 then
-                xiaohu = true
-            end
-        end 
+        
         if player_hu and player_hu.whoee and  player_hu.whoee == p.chair_id and not player_hu.zi_mo then
             dianpao = true
         end
-       
         tinsert(msg.players,{
             chair_id = chair_id,
             desk_pai = desk_pai,
             shou_pai = shou_pai,
             pb_ming_pai = ming_pai,
             tuos = mj_util.tuos(p.pai),
-            is_chipiao = chipiao,
-            is_xiaohu =xiaohu,
+            is_chipiao = self:get_player_piao(p),
+            is_xiaohu = self:get_player_xiaohu(p),
             is_dianpao = dianpao
         })
 
@@ -2513,7 +2538,7 @@ function changpai_table:do_balance()
             chair_id = chair_id,
             total_score = p.total_score,
             round_score = p_score,
-            items = typefans[chair_id],
+            items = typessend[chair_id],
             hu_tile = p.hu and p.hu.tile or nil,
             hu_fan = fanscores[chair_id].fan,
             hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
@@ -3053,45 +3078,63 @@ function changpai_table:game_balance()
 
     log.dump(typefans)
 
-    local max_fan = self:get_max_fan() or 4
+    local max_fan = self:get_max_fan() or 3
     log.dump(max_fan)
     local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
         return chair,(fan > max_fan and max_fan or fan)
     end)
     log.dump(fans)
+    
+    
 
     self:foreach(function(p)
         local chair_id = p.chair_id
         local fan = fans[chair_id]
-        local fan_score = 2 ^ math.abs(fan)
+        local fan_score = 2 ^ math.abs(fan) --不管谁胡都是算剩余所有玩家乘以自身数千
+        local winscore =  0
+        local chaofan_add = 0
         log.dump(fan_score)
         log.dump(p.hu)
+        local zongfan = fan
         if p.hu then
-            if not p.hu.zi_mo then
-                local whoee = p.hu.whoee
-                scores[whoee] = (scores[whoee] or 0) - fan_score
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
-                return
+
+            self:foreach(function(p)
+                if self:get_player_piao(p) then --吃飘加分
+                    fan_score = fan_score*2  
+                    zongfan= zongfan+1
+                end
+            end)
+            if self:get_max_fan()==4 and zongfan>4 then --超番加分
+                chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
+                fan_score= fan_score+chaofan_add     
             end
 
+            
+            winscore= fan_score * (self.start_count-1)
+
+            if not p.hu.zi_mo then
+                local whoee = p.hu.whoee
+                scores[whoee] = (scores[whoee] or 0) - winscore
+                scores[chair_id] = (scores[chair_id] or 0) + winscore
+                return
+            end
+            if p.bao_pai  then               
+                scores[p.bao_pai] = (scores[p.bao_pai] or 0) - winscore
+                scores[chair_id] = (scores[chair_id] or 0) + winscore
+                return
+            end       
+            
             if self.rule.play.zi_mo_jia_di then
                 fan_score = fan_score + 1
             end
-
-            self:foreach_except(p,function(pi)
-                if pi.hu and pi.hu.time <= p.hu.time then return end
-
+           
+            self:foreach_except(p,function(pi)  
                 local chair_i = pi.chair_id
                 scores[chair_i] = (scores[chair_i] or 0) - fan_score
                 scores[chair_id] = (scores[chair_id] or 0) + fan_score
             end)
-            self:foreach_except(p,function(pi)
-                if pi.hu or pi.jiao then return end
-                local chair_i = pi.chair_id
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
-                scores[chair_i] = (scores[chair_i] or 0) - fan_score
-            end)
+
         end
     end)
 
