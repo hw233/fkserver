@@ -2,7 +2,7 @@
 
 enum CP_HU_TYPE{
 	WEI_HU					= 0;	//未胡
-	PING_HU					= 1;	//未胡
+	PING_HU					= 1;	//平胡
 	TIAN_HU					= 2;	//天胡
 	DI_HU					= 3;	//地胡
 	TUOTUO_HONG				= 4;	//妥妥红

@@ -2476,17 +2476,6 @@ function changpai_table:do_balance()
         player_balance = {},
     }
 
-    local ps = table.values(self.players)
-    table.sort(ps,function(l,r)
-        if l.hu and not r.hu then return true end
-        if not l.hu and r.hu then return false end
-        if l.hu and r.hu then return l.hu.time < r.hu.time end
-        return false
-    end)
-
-    table.foreach(ps,function(p,i)
-        if p.hu then p.hu.index = i end
-    end)
 
     local player_hu = {}
     for index, value in pairs(self.players) do
@@ -2943,20 +2932,7 @@ function changpai_table:calculate_gang(p)
     }
     local scores = {}
 
-    --统计出冲番牌的碰和头
-    
-    local ss = table.select(p.pai.ming_pai,function(s) return  s2hu_type[s.type] ~= nil and chong_fan[s.tile] end)
-
-    
-
-
-    local gfan= table.group(ss,function(s) return  s2hu_type[s.type] end)
-
-    
-
-    local gangfans = table.map(gfan,function(gp,t)
-        return t,{fan = HU_TYPE_INFO[t].fan,count = table.nums(gp)}
-    end)
+    local gangfans = {}
     
     local chi_pai = {}
     for _, s in pairs(p.pai.ming_pai) do      
