@@ -44,7 +44,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.CP_HU_TYPE
-local BTEST = true 
+local BTEST = false 
 local all_tiles_data ={
 	[1]={value=2,hong=2,hei=0,index=1},
 	[2]={value=3,hong=1,hei=2,index=2},
