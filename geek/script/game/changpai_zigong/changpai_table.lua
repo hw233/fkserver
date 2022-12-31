@@ -1780,6 +1780,7 @@ function changpai_table:fake_mo_pai()
         for i,tile in pairs(self.pre_gong_tiles) do
             if BTEST then
                 mo_pai = tile
+                self.dealer.remain_count = self.dealer.remain_count -1
             else
                 mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
             end
@@ -1909,6 +1910,7 @@ function changpai_table:tou_pai()--偷牌也就是摸牌，但是是在一开始
         for i,tile in pairs(self.pre_gong_tiles) do
             if BTEST then
                 mo_pai = tile
+                self.dealer.remain_count = self.dealer.remain_count -1
             else
                 mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
             end
@@ -1953,6 +1955,7 @@ function changpai_table:mo_pai()
         for i,tile in pairs(self.pre_gong_tiles) do
             if BTEST then
                 mo_pai = tile
+                self.dealer.remain_count = self.dealer.remain_count -1
             else
                 mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
             end
@@ -2340,6 +2343,7 @@ function changpai_table:fan_pai()
         for i,tile in pairs(self.pre_gong_tiles) do
             if BTEST then
                 fan_pai = tile
+                self.dealer.remain_count = self.dealer.remain_count -1
             else
                 fan_pai = self.dealer:deal_one_on(function(t) return t == tile end)
             end
@@ -2611,18 +2615,19 @@ function changpai_table:prepare_tiles()
     else   
         self.zhuang = 1
         self.chu_pai_player_index = self.zhuang --出牌人的索引
-        self.dealer.remain_count = 84
+        
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {2,5,8,9,14,15,15,17,17,18,25,26,26},     -- 万 庄
-            [2] = {3,3,4,22,22,22,23,23,27,27,27,28,29},    -- 筒  
-            [3] = {2,3,4,5,8,12,12,13,13,13,17,18,19},      -- 万
-            [4] = {2,2,6,7,9,9,12,13,14,16,18,19,26},       -- 条
+            [1] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},     -- 万 庄
+            [2] = {3,3,4,4,5,5,6,7,8,9,10,10,10,13,13},    -- 筒  
+            [3] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},      -- 万
+            [4] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},       -- 条
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            29,24,6,1,17,24,22,23,21,25,25,17,1,7,22,12,17,24,25,27,29,
+            10,21,6,6,7,8,9,9,21,10,12,17,3,3,3,12,12,12,11,11,10,
         }
+        self.dealer.remain_count = 54
     end
     self.zhuang_pai = self.dealer:use_one()
     if self.start_count == 2 then

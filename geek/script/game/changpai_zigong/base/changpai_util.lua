@@ -172,7 +172,7 @@ function mj_util.get_actions_first_turn(pai,mo_pai)
 	end
 	for tile,c in pairs(counts) do
 		for _,s in pairs(pai.ming_pai) do
-			if s.tile == tile and c > 0 and s.type == SECTION_TYPE.PENG then
+			if s.tile == tile and c > 0 and (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) then
 				actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
 				actions[ACTION.BA_GANG][s.tile] =  {tile =s.tile}
 			end
