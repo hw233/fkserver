@@ -218,6 +218,7 @@ message SC_Changpai_Do_Action{
 	int32 target_chair_id = 5; //抢杠等
 	int32 session_id = 6;
 	int32 substitute_num = 7; 
+	repeated int32 unusablecard = 8;
 }
 
 message CS_Changpai_Action_Discard{
@@ -275,6 +276,8 @@ message ChangpaiBlanacePlayer{
 	int32 status = 7;
 	int32 hu_tile 			= 8;
 	int32 hu_index  		= 9;	
+	int32 round_money     = 10;
+	int32 total_money      = 11;  
 }
 
 //结算

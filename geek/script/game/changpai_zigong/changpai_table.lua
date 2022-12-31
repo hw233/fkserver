@@ -44,7 +44,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.CP_HU_TYPE
-local BTEST = false
+local BTEST = true 
 local all_tiles_data ={
 	[1]={value=2,hong=2,hei=0,index=1},
 	[2]={value=3,hong=1,hei=2,index=2},
@@ -373,7 +373,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
         player.hu = {
             time = timer.nanotime(),
             tile = tile,
-            types = self:hu(player,nil,player.mo_pai),
+            types = self:hu(player,nil,tile),
             zi_mo = is_zi_mo,
         }
 
@@ -408,13 +408,14 @@ function changpai_table:action_after_first_tou()--偷牌结束要么天胡，要
 
     local actions = self:get_actions(player,mo_pai,nil,nil,nil)
     log.dump(actions)
-    if table.nums(actions) > 0 and actions[ACTION.ZI_MO] then
+       
+    if table.nums(actions) > 0 then
         self:first_action_tianhu({
             [self.chu_pai_player_index] = {
-                actions = actions[ACTION.ZI_MO], --这个时候只发天胡给玩家
+                actions =actions,
                 chair_id = self.chu_pai_player_index,
                 session_id = self:session(),
-            },
+            }
         })
     else
         --这里可能要加一条信息告诉玩家出牌动作
@@ -1065,6 +1066,8 @@ function changpai_table:first_action_tianhu(waiting_actions)
     for _,action in pairs(self.waiting_actions) do
         self:send_action_waiting(action)
     end
+
+
 
     table.insert(self.game_log.action_table,{
         act = "WaitActions",
@@ -1770,7 +1773,7 @@ function changpai_table:fake_mo_pai()
 
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
-    if len == 0 then
+    if len == 5 then
         self:do_balance()
         return
     end
@@ -2375,8 +2378,6 @@ function changpai_table:fan_pai()
             if player.chair_id == v.chair_id then 
                 -- 自己出牌,判断自己打出的这张牌自己是否能碰胡(过庄胡、过手碰)需要
                 log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,fan_pai)
-                --local selfactions = self:get_selfactionsAndset_pass(v,fan_pai)
-                --log.dump(selfactions,"get_selfactionsAndset_pass guid_"..player.guid)
                 self:clean_last_can_penghu(player)
                 local actions = self:get_actions(v,nil,fan_pai,nil,true)
                 if table.nums(actions) > 0 then
@@ -2387,7 +2388,7 @@ function changpai_table:fan_pai()
                     }
                 end
             else    
-                local nestchair=(player.chair_id+1) % self.chair_count
+                local nestchair=(player.chair_id+1) % self.start_count
                     if nestchair ==v.chair_id then --下家可吃牌
                         local actions = self:get_actions(v,nil,fan_pai,nil,true)
                         if table.nums(actions) > 0 then
@@ -2521,7 +2522,7 @@ function changpai_table:do_balance()
             desk_pai = desk_pai,
             shou_pai = shou_pai,
             pb_ming_pai = ming_pai,
-            tuos = mj_util.tuos(p.pai),
+            tuos =p.hu and mj_util.tuos(p.pai,p.hu.tile) or mj_util.tuos(p.pai),
             is_chipiao = self:get_player_piao(p),
             is_xiaohu = self:get_player_xiaohu(p),
             is_dianpao = dianpao
@@ -2533,7 +2534,7 @@ function changpai_table:do_balance()
             round_score = p_score,
             items = typessend[chair_id],
             hu_tile = p.hu and p.hu.tile or nil,
-            hu_fan = fanscores[chair_id].fan,
+            hu_fan = fanscores[chair_id] and fanscores[chair_id].fan or 0 ,
             hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
             status = p.hu and 2  or nil,
             hu_index = p.hu and p.hu.index or nil,
@@ -2551,10 +2552,12 @@ function changpai_table:do_balance()
     }
 
     chair_money = self:balance(chair_money,logids[def_first_game_type])
+    log.dump(chair_money)
     for _,balance in pairs(msg.player_balance) do
         local p = self.players[balance.chair_id]
         local p_log = self.game_log.players[balance.chair_id]
         local money = chair_money[balance.chair_id]
+        log.dump(money)
         balance.round_money = money
         p.total_money = (p.total_money or 0) + money
         balance.total_money = p.total_money
@@ -2618,14 +2621,14 @@ function changpai_table:prepare_tiles()
         
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},     -- 万 庄
+            [1] = {1,1,1,1,3,3,3,3,19,19,19,19,21,21,21},     -- 万 庄
             [2] = {3,3,4,4,5,5,6,7,8,11,10,10,10,13,13},    -- 筒  
             [3] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},      -- 万
             [4] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},       -- 条
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            10,21,6,6,7,8,9,9,21,10,12,17,3,3,3,12,12,12,11,11,10,
+            21,10,6,6,7,8,9,9,21,10,12,17,3,3,3,12,12,12,11,11,10,
         }
         self.dealer.remain_count = 84
     end
@@ -2727,13 +2730,13 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,chupai_in
         log.info("get_actions in_pai %d not can_hu ",in_pai)
         actions[ACTION.HU] = nil
     end
-    if in_pai and self:is_in_gsp(p,in_pai) and actions[ACTION.ZI_MO] then
-        local action = actions[ACTION.ZI_MO]
+    if in_pai and self:is_in_gsp(p,in_pai) and actions[ACTION.HU] then
+        local action = actions[ACTION.HU]
         for gsh_tile,_ in pairs(p.gsh) do
             action[gsh_tile] = nil
         end
         if table.nums(action) == 0 then
-            actions[ACTION.ZI_MO] = nil
+            actions[ACTION.HU] = nil
         end
     end
     if in_pai and self:is_in_gsp(p,in_pai) and actions[ACTION.PENG] then
