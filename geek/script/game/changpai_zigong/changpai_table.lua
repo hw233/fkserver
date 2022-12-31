@@ -2943,20 +2943,35 @@ function changpai_table:calculate_gang(p)
     local gangfans = {}
     
     local chi_pai = {}
+    local count={}
+    for key, num in pairs(p.pai.shou_pai) do
+        if num>0 then
+            count[key]=num
+        end
+    end
+    for _, s in pairs(p.pai.ming_pai) do 
+        if  s.type == SECTION_TYPE.BA_GANG then
+            count[s.tile]=4
+        end
+        if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
+            count[s.tile]=count[s.tile] and count[s.tile]+3 or 3
+        end
+        if s.type == SECTION_TYPE.CHI then
+            count[s.tile]=count[s.tile] and count[s.tile]+1 or 1
+            count[s.othertile]=count[s.othertile] and count[s.othertile]+1 or 1
+        end
+    end
+    for key, value in pairs(count) do
+        if value==4 then
+            if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
+            else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1,type = HU_TYPE.SI_ZHANG} end
+        end
+    end
     for _, s in pairs(p.pai.ming_pai) do      
-        local count={}
-
+        
         if s.type == SECTION_TYPE.CHI then
             if chi_pai[s.tile] then chi_pai[s.tile]=chi_pai[s.tile]+1 
             else chi_pai[s.tile]=1 end   
-        end
-
-
-
-        if  s.type == SECTION_TYPE.BA_GANG  then    
-              
-            if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
-            else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1} end
         end
 
         if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then 
@@ -2965,41 +2980,18 @@ function changpai_table:calculate_gang(p)
                 else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
             elseif  chong_fan[s.tile]  and s.type == SECTION_TYPE.TOU then 
                 if gangfans[HU_TYPE.CHONGFAN_TOU] then gangfans[HU_TYPE.CHONGFAN_TOU].count=gangfans[HU_TYPE.CHONGFAN_TOU].count+1
-                else gangfans[HU_TYPE.CHONGFAN_TOU]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_TOU].fan,count = 1} end
+                else gangfans[HU_TYPE.CHONGFAN_TOU]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_TOU].fan,count = 1,type = HU_TYPE.CHONGFAN_TOU} end
             end
-            count[s.tile]=3
-            for index, x in pairs(p.pai.shou_pai) do
-                if index==s.tile and x>0 then 
-                    count[s.tile]=count[s.tile]+ x
-                end
-                
-            end
-        end
-        if count[s.tile]==4 then 
-            if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
-            else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1} end
-        end
-
-        for index, x in pairs(p.pai.shou_pai) do
-            if x==4 then 
-                if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
-                else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1} end
-            end
-            
-        end
-        
-
-    
+        end 
     end
-
     for tile, value in ipairs(chi_pai) do
-        if value>=3 then
+        if value>=3 and chong_fan[tile] then
         if gangfans[HU_TYPE.CHONGFAN_CHI_3] then gangfans[HU_TYPE.CHONGFAN_CHI_3].count=gangfans[HU_TYPE.CHONGFAN_CHI_3].count+1
-        else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1} end
+        else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1,type = HU_TYPE.CHONGFAN_CHI_3} end
         end
     end
-    local tuo_num = mj_util.tuos(p.pai,nil,nil,nil)
 
+    local tuo_num = mj_util.tuos(p.pai,nil,nil,nil)
     if tuo_num>=24 then
         gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1} 
     end
@@ -3083,13 +3075,11 @@ function changpai_table:game_balance()
         local zongfan = fan
         if p.hu then
 
-            self:foreach(function(p)
-                if self:get_player_piao(p) then --吃飘加分
-                    fan_score = fan_score  
-                    zongfan= zongfan+1
-                    
-                end
-            end)
+            if self:get_player_piao(p) then --吃飘加分
+                fan_score = fan_score  
+                zongfan= zongfan+1
+                
+            end
             if self:get_max_fan()==4 then --超番加分
                 if  zongfan>4  then
                     chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
