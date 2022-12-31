@@ -1244,7 +1244,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                     return
                 end
             end
-            user.pai.bao_pai[fan_tile] = false
+            user.pai.bao_pai[fan_tile] = nil
     end
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
@@ -2163,7 +2163,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     end
     log.dump(self.start_count)
     log.dump(nest_user)
-    user.pai.bao_pai[chu_pai_val] = false
+    user.pai.bao_pai[chu_pai_val] = nil
     --------------------------------------------------------------------------------
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
@@ -2455,7 +2455,7 @@ function changpai_table:get_player_xiaohu(p)
     return xiaohu
 end
 function changpai_table:get_chao_add_score(p)
-    local add_score_option = self.rule.fan.chaoFan
+    local add_score_option = self.rule.fan.chaoFan+1
     return self.room_.conf.private_conf.fan.add_score[add_score_option]
 end
 function changpai_table:do_balance()
@@ -2619,7 +2619,7 @@ function changpai_table:prepare_tiles()
         -- 测试手牌     
         self.pre_tiles = {
             [1] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},     -- 万 庄
-            [2] = {3,3,4,4,5,5,6,7,8,9,10,10,10,13,13},    -- 筒  
+            [2] = {3,3,4,4,5,5,6,7,8,11,10,10,10,13,13},    -- 筒  
             [3] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},      -- 万
             [4] = {1,1,1,1,2,2,2,11,11,12,13,14,15,16,16},       -- 条
         }
@@ -2627,7 +2627,7 @@ function changpai_table:prepare_tiles()
         self.pre_gong_tiles = {
             10,21,6,6,7,8,9,9,21,10,12,17,3,3,3,12,12,12,11,11,10,
         }
-        self.dealer.remain_count = 54
+        self.dealer.remain_count = 84
     end
     self.zhuang_pai = self.dealer:use_one()
     if self.start_count == 2 then
@@ -3072,7 +3072,7 @@ function changpai_table:game_balance()
     self:foreach(function(p)
         local chair_id = p.chair_id
         local fan = fans[chair_id]
-        local fan_score = 2 ^ math.abs(fan) --不管谁胡都是算剩余所有玩家乘以自身数千
+        local fan_score = 0 --不管谁胡都是算剩余所有玩家乘以自身数千
         local winscore =  0
         local chaofan_add = 0
         log.dump(fan_score)
@@ -3082,13 +3082,30 @@ function changpai_table:game_balance()
 
             self:foreach(function(p)
                 if self:get_player_piao(p) then --吃飘加分
-                    fan_score = fan_score*2  
+                    fan_score = fan_score  
                     zongfan= zongfan+1
+                    
                 end
             end)
-            if self:get_max_fan()==4 and zongfan>4 then --超番加分
-                chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
-                fan_score= fan_score+chaofan_add     
+            if self:get_max_fan()==4 then --超番加分
+                if  zongfan>4  then
+                    chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
+                    fan_score = 2 ^ math.abs(4)
+                    fan_score= fan_score+chaofan_add   
+                else
+                    
+                    fan_score = 2 ^ math.abs(zongfan)
+                    fan_score= fan_score   
+                end
+                 
+            elseif self:get_max_fan()==3 then
+                fan = zongfan>3 and 3 or zongfan
+                fan_score = 2 ^ math.abs(fan)
+                fan_score= fan_score 
+            else
+                
+                fan_score = 2 ^ math.abs(zongfan)
+                fan_score= fan_score   
             end
 
             
