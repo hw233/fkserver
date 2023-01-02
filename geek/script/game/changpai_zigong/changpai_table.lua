@@ -2329,8 +2329,6 @@ end
 function changpai_table:fan_pai()
     
     local player = self:chu_pai_player()
-    local shou_pai = player.pai.shou_pai
-
     self:clean_gzh(player)
     self:clean_gsp(player)
 
@@ -2398,7 +2396,7 @@ function changpai_table:fan_pai()
                             session_id = self:session(),
                         }
                     else
-                        local actions = self:get_actions(v,nil,fan_pai)
+                        local actions = self:get_actions(v,nil,fan_pai,nil,true)
                         if table.nums(actions) > 0 then                           
                             waiting_actions[v.chair_id] = {
                             chair_id = v.chair_id,
@@ -2720,7 +2718,7 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,chupai_in
 
     log.dump(p)
 
-    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,chupai_index)
+    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,chupai_index,self.zhuang==p.chair_id)
 
     log.dump(actions,tostring(p.guid))
 
@@ -2922,13 +2920,7 @@ end
 
 
 function changpai_table:calculate_gang(p)
-    local s2hu_type = {
-        [SECTION_TYPE.PENG] = HU_TYPE.CHONGFAN_PENG,
-        [SECTION_TYPE.TOU] = HU_TYPE.CHONGFAN_TOU,
-        [SECTION_TYPE.CHI_3] = HU_TYPE.CHONGFAN_CHI_3,  
-        [SECTION_TYPE.SI_ZHANG] = HU_TYPE.SI_ZHANG,  
-        [SECTION_TYPE.TUO24] = HU_TYPE.Tuo24,  
-    }
+    
     local chong_fan ={--冲番牌
         [1] = true,
         [3] = true,
@@ -2993,8 +2985,19 @@ function changpai_table:calculate_gang(p)
 
     local tuo_num = mj_util.tuos(p.pai,nil,nil,nil)
     if tuo_num>=24 then
-        gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1} 
+        gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1,type = HU_TYPE.TUO_24} 
     end
+    
+    if self.rule.play.tian_di_hu then
+        if p.chair_id == self.zhuang and p.mo_pai and self.mo_pai_count == 1 then
+            gangfans[HU_TYPE.TIAN_HU] = {fan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan,count = 1,type = HU_TYPE.TIAN_HU}
+        end
+
+        if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
+            gangfans[HU_TYPE.DI_HU] = {fan = HU_TYPE_INFO[HU_TYPE.DI_HU].fan,count = 1,type = HU_TYPE.DI_HU}
+        end
+    end
+
 
     local fans = table.series(gangfans,function(v,t) return {type = t,fan = v.fan,count = v.count} end)
     return fans,scores

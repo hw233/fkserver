@@ -1018,7 +1018,8 @@ function base_table:on_game_overed()
 		self:force_dismiss(enum.STANDUP_REASON_BANKRUPCY)
 		return
 	end
-
+	log.dump(self:total_round() )
+	log.dump(self:gaming_round())
 	if self:gaming_round() >= self:total_round() then
 		self:on_final_game_overed()
 		self:kickout_players_when_round_over()

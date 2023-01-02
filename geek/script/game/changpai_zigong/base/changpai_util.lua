@@ -88,7 +88,7 @@ local function counts_2_tiles(counts)
 
 	return tiles
 end
-function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index)
+function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index,is_zhuang)
 	local actions = {}
 	local counts = pai.shou_pai
 
@@ -116,6 +116,10 @@ function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index)
 				actions[ACTION.TOU][t] = {tile = t}
 			end
 		end
+		if  rule.is_hu(pai,in_pai,is_zhuang)  then
+			actions[ACTION.HU] = actions[ACTION.HU] or {}
+			actions[ACTION.HU][mo_pai] = { tile= mo_pai,}
+		end
 	end
 
 	if in_pai then
@@ -137,20 +141,11 @@ function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index)
 	end
 
 
-	if in_pai and rule.is_hu(pai,in_pai)  and chupai_index then
+	if in_pai and rule.is_hu(pai,in_pai,is_zhuang)   then
 		actions[ACTION.HU] = actions[ACTION.HU] or {}
 		actions[ACTION.HU][in_pai] = { tile= in_pai,}
 	end
 
-	if in_pai and rule.is_hu(pai,in_pai)  and not chupai_index then
-		actions[ACTION.HU] = actions[ACTION.HU] or {}
-		actions[ACTION.HU][in_pai] = { tile= in_pai,}
-	end
-
-	if not in_pai and rule.is_hu(pai,in_pai)  and not chupai_index then
-		actions[ACTION.HU] = actions[ACTION.HU] or {}
-		actions[ACTION.HU][mo_pai] = { tile= mo_pai,}
-	end
 	--长牌只需要胡牌，没有胡牌和自摸的区别
 	--if mo_pai and rule.is_hu(pai,nil) then
 	--	actions[ACTION.ZI_MO] = {[mo_pai] = true,}
