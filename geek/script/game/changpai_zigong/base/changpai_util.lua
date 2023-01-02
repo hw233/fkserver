@@ -88,7 +88,7 @@ local function counts_2_tiles(counts)
 
 	return tiles
 end
-function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,chupai_index,is_zhuang)
+function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang)
 	local actions = {}
 	local counts = pai.shou_pai
 

@@ -225,7 +225,7 @@ local function get_hu_types(pai,cache)
 			end
 			if s.type == SECTION_TYPE.BA_GANG  then
 				if  rule.tile_hongcounts(s.tile)>0 then
-					counthonghei = counthonghei+1
+					counthonghei = counthonghei+4
 				end
 			end
 		end
@@ -289,10 +289,10 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 				tuos =tuos + 3
 			end
 			if (s.type == SECTION_TYPE.BA_GANG) and rule.tile_hongcounts(s.tile) > 0 then
-				tuos =tuos + 2
+				tuos =tuos + 8
 			end
 			if (s.type == SECTION_TYPE.BA_GANG) and rule.tile_hongcounts(s.tile) == 0 then
-				tuos =tuos + 1
+				tuos =tuos + 4
 			end
 			if  s.type == SECTION_TYPE.CHI then
 				if rule.tile_hongcounts(s.tile) > 0 then
