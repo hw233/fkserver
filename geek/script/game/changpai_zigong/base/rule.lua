@@ -42,13 +42,13 @@ end
 local rule 			= {}
 
 function rule.tile_heicounts(v)
-	return all_tiles[v].hei
+	return v and all_tiles[v].hei or 0
 end
 function rule.tile_hongcounts(v)
-	return all_tiles[v].hong
+	return v and all_tiles[v].hong or 0 
 end
 function rule.tile_value(v)
-	return all_tiles[v].value
+	return v and all_tiles[v].value or 0
 end
 
 function rule.tile_men(v)
@@ -306,7 +306,7 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 		log.dump(counts)
 		for i, c in pairs(counts) do
 			if  c >0 then
-				if rule.tile_hongcounts(i) >0 then
+				if i and rule.tile_hongcounts(i) >0 then
 					tuos =tuos + c
 				end
 			end
