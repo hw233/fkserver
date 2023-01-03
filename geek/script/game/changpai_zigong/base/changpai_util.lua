@@ -88,7 +88,7 @@ local function counts_2_tiles(counts)
 
 	return tiles
 end
-function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang)
+function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang,can_ba)
 	local actions = {}
 	local counts = pai.shou_pai
 
@@ -128,28 +128,31 @@ function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang)
 			actions[ACTION.PENG] = actions[ACTION.PENG] or {}
 			actions[ACTION.PENG][in_pai] = {tile = in_pai,}
 		end
-	end
-	--吃牌只能上家翻出的或者出的牌并且有牌可以出
-	local tiles =  counts_2_tiles(counts)
-	if in_pai and can_eat and #tiles>1 then
-		for t,c in pairs(counts) do
-			if c>0 and (mj_util.tile_value(t) + mj_util.tile_value(in_pai) ==14)  then
-				actions[ACTION.CHI] = actions[ACTION.CHI] or {}
-				actions[ACTION.CHI][t]={ tile=in_pai,othertile = t }
+
+		--吃牌只能上家翻出的或者出的牌并且有牌可以出
+		local tiles =  counts_2_tiles(counts)
+		if can_eat and #tiles>1 then
+			for t,c in pairs(counts) do
+				if c>0 and (mj_util.tile_value(t) + mj_util.tile_value(in_pai) ==14)  then
+					actions[ACTION.CHI] = actions[ACTION.CHI] or {}
+					actions[ACTION.CHI][t]={ tile=in_pai,othertile = t }
+				end
+			end
+		end
+		if rule.is_hu(pai,in_pai,is_zhuang)   then
+			actions[ACTION.HU] = actions[ACTION.HU] or {}
+			actions[ACTION.HU][in_pai] = { tile= in_pai,}
+		end
+		if can_ba  then
+			for _,s in pairs(pai.ming_pai) do
+				if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) then
+					actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
+					actions[ACTION.BA_GANG][s.tile] = {tile = s.tile}
+				end
 			end
 		end
 	end
-
-
-	if in_pai and rule.is_hu(pai,in_pai,is_zhuang)   then
-		actions[ACTION.HU] = actions[ACTION.HU] or {}
-		actions[ACTION.HU][in_pai] = { tile= in_pai,}
-	end
-
-	--长牌只需要胡牌，没有胡牌和自摸的区别
-	--if mo_pai and rule.is_hu(pai,nil) then
-	--	actions[ACTION.ZI_MO] = {[mo_pai] = true,}
-	--end
+	
 	
 	return actions
 end

@@ -2201,8 +2201,11 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
 
     local waiting_actions = {}
+    local nestid = player.chair_id+1
+    nestid = nestid > self.start_count and nestid%self.start_count or nestid
     self:foreach_except(player,function(v)
-        local actions = self:get_actions(v,nil,chu_pai_val,nil,true)
+        if v.chair_id == nestid then
+            local actions = self:get_actions(v,nil,chu_pai_val,nil,true)
             if table.nums(actions) > 0 then
                 waiting_actions[v.chair_id] = {
                     chair_id = v.chair_id,
@@ -2210,7 +2213,16 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
                     session_id = self:session(),
                 }
             end
-        
+        else
+            local actions = self:get_actions(v,nil,chu_pai_val,nil,false)
+            if table.nums(actions) > 0 then
+                waiting_actions[v.chair_id] = {
+                    chair_id = v.chair_id,
+                    actions = actions,
+                    session_id = self:session(),
+                }
+            end
+        end
     end)
 
     log.dump(waiting_actions)
@@ -2378,14 +2390,39 @@ function changpai_table:fan_pai()
             
         log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,fan_pai)
                 self:clean_last_can_penghu(player)
-                local actions = self:get_actions(v,nil,fan_pai,nil,true)
-                if table.nums(actions) > 0 then
-                    waiting_actions[v.chair_id] = {
-                        chair_id = v.chair_id,
-                        actions = actions,
-                        session_id = self:session(),
-                    }
+                local nestid = player.chair_id+1
+                nestid = player.chair_id+1>self.start_count and (player.chair_id+1)%self.start_count or nestid
+
+                if player.chair_id == v.chair_id  then
+                    local actions = self:get_actions(v,nil,fan_pai,nil,true,true)
+                    if table.nums(actions) > 0 then
+                        waiting_actions[v.chair_id] = {
+                            chair_id = v.chair_id,
+                            actions = actions,
+                            session_id = self:session(),
+                        }
+                    end 
+                elseif nestid == v.chair_id  then
+                    local actions = self:get_actions(v,nil,fan_pai,nil,true,false)
+                    if table.nums(actions) > 0 then
+                        waiting_actions[v.chair_id] = {
+                            chair_id = v.chair_id,
+                            actions = actions,
+                            session_id = self:session(),
+                        }
+                    end 
+                else
+                    local actions = self:get_actions(v,nil,fan_pai,nil,false,false)
+                    if table.nums(actions) > 0 then
+                        waiting_actions[v.chair_id] = {
+                            chair_id = v.chair_id,
+                            actions = actions,
+                            session_id = self:session(),
+                        }
+                    end 
                 end
+                
+                
         
     end)
 
@@ -2692,11 +2729,11 @@ function changpai_table:get_actions_first_turn(p,mo_pai)
     return actions
 end
 
-function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat)  
+function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)  
 
     log.dump(p)
 
-    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,self.zhuang==p.chair_id)
+    local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,self.zhuang==p.chair_id,can_ba)
 
     log.dump(actions,tostring(p.guid))
 
@@ -2704,6 +2741,9 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat)
     --坨数不够的时候也不能胡
     if in_pai and not self:can_hu(p,in_pai,nil,qiang_gang) and actions[ACTION.HU] then
         log.info("get_actions in_pai %d not can_hu ",in_pai)
+        actions[ACTION.HU] = nil
+    end
+    if  not self:can_hu(p,nil,nil,qiang_gang) and actions[ACTION.HU] then
         actions[ACTION.HU] = nil
     end
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then

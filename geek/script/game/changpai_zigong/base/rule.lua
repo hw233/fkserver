@@ -188,7 +188,7 @@ end
 local HU_TYPE = def.CP_HU_TYPE
 local UNIQUE_HU_TYPE = def.UNIQUE_HU_TYPE
 
-local function get_hu_types(pai,cache)
+local function get_hu_types(pai,cache,in_pai)
 	local base_types = {}
 	base_types[HU_TYPE.TUOTUO_HONG] = 1
 	base_types[HU_TYPE.BABA_HEI] = 1
@@ -240,6 +240,16 @@ local function get_hu_types(pai,cache)
 			counthonghei = counthonghei+1
 		end
 	end
+	if in_pai then
+		if(rule.tile_hongcounts(in_pai)<=0) then
+			base_types[HU_TYPE.TUOTUO_HONG] = nil
+		end
+		if(rule.tile_hongcounts(in_pai)>0) then
+			base_types[HU_TYPE.BABA_HEI] = nil
+			counthonghei= counthonghei+1
+		end
+	end
+
 
 	if counthonghei>4 then base_types[HU_TYPE.HEI_LONG] = nil end
 	
@@ -264,11 +274,11 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	
 	local en_tuo = false 
 
-	local hutype =  get_hu_types(pai,cache)
+	local hutype =  get_hu_types(pai,cache,in_pai)
 	if is_zhuang then 
 		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
 	else
-		if rule.tuos(pai,in_pai,nil,is_zhuang)>=12 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
+		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
 	end
 	log.dump(can_hu)
 	log.dump(en_tuo)
@@ -335,7 +345,7 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	
 	end
 	
-	local types = get_hu_types(pai,cache)
+	local types = get_hu_types(pai,cache,in_pai)
 	table.insert(alltypes,types)
 
 	if alltypes[HU_TYPE.PING_HU] then
