@@ -1351,7 +1351,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end)
     table.sort(all_actions,function(l,r)
         if  ACTION_PRIORITY[l.done.action] == ACTION_PRIORITY[r.done.action] then
-            return userpri[l.chairid] < userpri[r.chairid]
+            return userpri[l.chair_id] < userpri[r.chair_id]
         end
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
