@@ -2190,11 +2190,11 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
         log.error("tile isn't exist when chu guid:%s,tile:%s",player.guid,chu_pai_val)
         return
     end
-    local cards = self:get_unusecard_list(player)
-    if cards[chu_pai_val] then
-        log.error("tile cannot play guid:%s,tile:%s",player.guid,chu_pai_val)
-        return
-    end
+    -- local cards = self:get_unusecard_list(player)
+    -- if cards[chu_pai_val] then
+    --     log.error("tile cannot play guid:%s,tile:%s",player.guid,chu_pai_val)
+    --     return
+    -- end
     --包牌判断，假如对下家形成包牌，就返回存在包牌风险提醒，假如下家已经是包牌，那不管
     local nest_user = 1
     if self.chu_pai_player_index+1 > self.start_count then
