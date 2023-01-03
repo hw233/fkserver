@@ -120,7 +120,10 @@ message Changpai_Task_Data {
 	int32 task_tile = 2;						// 牌值
 	int32 task_scale = 3;						// 加倍就是 2
 }
-
+message User_card{
+	int32 chair_id = 1;             //出牌或者翻牌 id
+	int32 card  = 2;				//翻出的或者打出的牌
+}
 message SC_Changpai_Desk_Enter {
 	enum MsgID { Nil = 0; ID = 33100; }
 	repeated Changpai_Player_Info pb_players 	= 1; 		// 玩家
@@ -135,6 +138,8 @@ message SC_Changpai_Desk_Enter {
 	bool is_reconnect = 10;						//reconnect
 	int32 zhuang_pai = 11;						//定庄的牌
 	repeated int32  qie_pai = 12;					//切牌
+	User_card	last_fan_pai = 13;				//上次翻出的牌
+	User_card   last_chu_pai = 14;				//上次打出的牌
 }
 
 //剩余多少张公牌

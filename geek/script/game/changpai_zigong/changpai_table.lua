@@ -259,7 +259,7 @@ function changpai_table:on_started(player_count)
             ming_pai = {},
             desk_tiles = {},
             bao_pai = {},
-            
+            un_usecard = {},
         }
         v.zhuan_shou_pai = nil
         v.jiao                  = nil
@@ -306,6 +306,9 @@ function changpai_table:on_started(player_count)
         self:broadcast2client("Changpai_Toupaistate",{status = FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI,})
         self:action_after_fapai()
     end,"action_after_fapai")--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
+end
+function changpai_table:set_unuse_card(player,tile)
+    
 end
 function changpai_table:action_after_fapai()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
@@ -2203,27 +2206,30 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     local waiting_actions = {}
     local nestid = player.chair_id+1
     nestid = nestid > self.start_count and nestid%self.start_count or nestid
-    self:foreach_except(player,function(v)
-        if v.chair_id == nestid then
-            local actions = self:get_actions(v,nil,chu_pai_val,nil,true)
-            if table.nums(actions) > 0 then
-                waiting_actions[v.chair_id] = {
-                    chair_id = v.chair_id,
-                    actions = actions,
-                    session_id = self:session(),
-                }
-            end
-        else
-            local actions = self:get_actions(v,nil,chu_pai_val,nil,false)
-            if table.nums(actions) > 0 then
-                waiting_actions[v.chair_id] = {
-                    chair_id = v.chair_id,
-                    actions = actions,
-                    session_id = self:session(),
-                }
+
+    for key, v in pairs(self.players) do
+          if  player.chair_id ~= v.chair_id then
+            if v.chair_id == nestid then
+                local actions = self:get_actions(v,nil,chu_pai_val,nil,true)
+                if table.nums(actions) > 0 then
+                    waiting_actions[v.chair_id] = {
+                        chair_id = v.chair_id,
+                        actions = actions,
+                        session_id = self:session(),
+                    }
+                end
+            else
+                local actions = self:get_actions(v,nil,chu_pai_val,nil,false)
+                if table.nums(actions) > 0 then
+                    waiting_actions[v.chair_id] = {
+                        chair_id = v.chair_id,
+                        actions = actions,
+                        session_id = self:session(),
+                    }
+                end
             end
         end
-    end)
+    end
 
     log.dump(waiting_actions)
     if table.nums(waiting_actions) == 0 then
@@ -2385,24 +2391,15 @@ function changpai_table:fan_pai()
     self:on_user_fan_pai(fan_pai)
     --翻牌的时候所有玩家都可以相应action
     local waiting_actions = {}
- 
-    self:foreach(function(v)   
-            
+    local nestid = player.chair_id+1
+    nestid = nestid>self.start_count and nestid%self.start_count or nestid
+    
+    
+     for key, v in pairs(self.players) do        
         log.info("--- get_selfactionsAndset_pass  guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,fan_pai)
                 self:clean_last_can_penghu(player)
-                local nestid = player.chair_id+1
-                nestid = player.chair_id+1>self.start_count and (player.chair_id+1)%self.start_count or nestid
-
-                if player.chair_id == v.chair_id  then
-                    local actions = self:get_actions(v,nil,fan_pai,nil,true,true)
-                    if table.nums(actions) > 0 then
-                        waiting_actions[v.chair_id] = {
-                            chair_id = v.chair_id,
-                            actions = actions,
-                            session_id = self:session(),
-                        }
-                    end 
-                elseif nestid == v.chair_id  then
+                
+                if nestid == v.chair_id  then
                     local actions = self:get_actions(v,nil,fan_pai,nil,true,false)
                     if table.nums(actions) > 0 then
                         waiting_actions[v.chair_id] = {
@@ -2412,19 +2409,29 @@ function changpai_table:fan_pai()
                         }
                     end 
                 else
-                    local actions = self:get_actions(v,nil,fan_pai,nil,false,false)
-                    if table.nums(actions) > 0 then
-                        waiting_actions[v.chair_id] = {
-                            chair_id = v.chair_id,
-                            actions = actions,
-                            session_id = self:session(),
-                        }
-                    end 
+                    if player.chair_id == v.chair_id  then
+                        local actions = self:get_actions(v,nil,fan_pai,nil,true,true)
+                        if table.nums(actions) > 0 then
+                            waiting_actions[v.chair_id] = {
+                                chair_id = v.chair_id,
+                                actions = actions,
+                                session_id = self:session(),
+                            }
+                        end 
+                        
+                    else
+                        local actions = self:get_actions(v,nil,fan_pai,nil,false,false)
+                        if table.nums(actions) > 0 then
+                            waiting_actions[v.chair_id] = {
+                                chair_id = v.chair_id,
+                                actions = actions,
+                                session_id = self:session(),
+                            }
+                        end 
+                    end
                 end
-                
-                
-        
-    end)
+                   
+    end
 
     log.dump(waiting_actions)
     if table.nums(waiting_actions) == 0 then
@@ -2736,16 +2743,12 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,self.zhuang==p.chair_id,can_ba)
 
     log.dump(actions,tostring(p.guid))
+ 
+    if  not self:can_hu(p,in_pai,mo_pai,qiang_gang) and actions[ACTION.HU] then
+        actions[ACTION.HU] = nil
+    end
 
-    
-    --坨数不够的时候也不能胡
-    if in_pai and not self:can_hu(p,in_pai,nil,qiang_gang) and actions[ACTION.HU] then
-        log.info("get_actions in_pai %d not can_hu ",in_pai)
-        actions[ACTION.HU] = nil
-    end
-    if  not self:can_hu(p,nil,nil,qiang_gang) and actions[ACTION.HU] then
-        actions[ACTION.HU] = nil
-    end
+    log.dump(actions,tostring(p.guid))
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
         local action = actions[ACTION.HU]
         for gsh_tile,_ in pairs(p.gsh) do

@@ -145,7 +145,7 @@ function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang,can_ba)
 		end
 		if can_ba  then
 			for _,s in pairs(pai.ming_pai) do
-				if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) then
+				if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU)  and in_pai==s.tile then
 					actions[ACTION.BA_GANG] = actions[ACTION.BA_GANG] or {}
 					actions[ACTION.BA_GANG][s.tile] = {tile = s.tile}
 				end

@@ -196,13 +196,15 @@ local function get_hu_types(pai,cache,in_pai)
 	
 	--在这里判断玩家的特殊牌型是妥妥红，还是把把黑，还是黑龙，还是平胡
 	log.dump(pai.ming_pai)
+	log.dump(cache)
 	local counthonghei = 0
 	for _,s in pairs(pai.ming_pai) do
 		if  s.type == SECTION_TYPE.CHI then	
 			log.dump(s)
 			if ( rule.tile_hongcounts(s.tile)<=0) or ( rule.tile_hongcounts(s.othertile)<=0) then
 				base_types[HU_TYPE.TUOTUO_HONG] = nil
-			elseif  rule.tile_hongcounts(s.tile)>0 or rule.tile_hongcounts(s.othertile)>0 then
+			end
+			if  rule.tile_hongcounts(s.tile)>0 or rule.tile_hongcounts(s.othertile)>0 then
 				base_types[HU_TYPE.BABA_HEI] = nil
 				if rule.tile_hongcounts(s.tile)>0 then
 					counthonghei = counthonghei+1
@@ -215,7 +217,8 @@ local function get_hu_types(pai,cache,in_pai)
 		else
 			if   rule.tile_hongcounts(s.tile)<=0 then
 				base_types[HU_TYPE.TUOTUO_HONG] = nil
-			elseif  rule.tile_hongcounts(s.tile)>0 then
+			end
+			if  rule.tile_hongcounts(s.tile)>0 then
 				base_types[HU_TYPE.BABA_HEI] = nil
 			end
 			if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
@@ -231,39 +234,46 @@ local function get_hu_types(pai,cache,in_pai)
 		end
 	end
 	for tile,count in pairs(cache) do
-		if count>0 and tile>=1 and tile<=21 and rule.tile_hongcounts(tile)<=0  then
+		if count>0  and rule.tile_hongcounts(tile)<=0  then
 			base_types[HU_TYPE.TUOTUO_HONG] = nil
-		elseif count>0 and rule.tile_hongcounts(tile)>0  then
+		end
+		if count>0 and rule.tile_hongcounts(tile)>0  then
 			base_types[HU_TYPE.BABA_HEI] = nil
 		end
 		if count>0 and rule.tile_hongcounts(tile)>0 then
 			counthonghei = counthonghei+1
 		end
 	end
-	if in_pai then
-		if(rule.tile_hongcounts(in_pai)<=0) then
-			base_types[HU_TYPE.TUOTUO_HONG] = nil
-		end
-		if(rule.tile_hongcounts(in_pai)>0) then
-			base_types[HU_TYPE.BABA_HEI] = nil
-			counthonghei= counthonghei+1
-		end
-	end
+	-- if in_pai then
+	-- 	if(rule.tile_hongcounts(in_pai)<=0) then
+	-- 		base_types[HU_TYPE.TUOTUO_HONG] = nil
+	-- 	end
+	-- 	if(rule.tile_hongcounts(in_pai)>0) then
+	-- 		base_types[HU_TYPE.BABA_HEI] = nil
+	-- 		counthonghei= counthonghei+1
+	-- 	end
+	-- end
 
 
 	if counthonghei>4 then base_types[HU_TYPE.HEI_LONG] = nil end
 	
 	if not base_types[HU_TYPE.TUOTUO_HONG] and not base_types[HU_TYPE.BABA_HEI] and not base_types[HU_TYPE.HEI_LONG] then 
-		base_types[HU_TYPE.PING_HU] = nil
+		base_types[HU_TYPE.PING_HU] = 1
 	end
+	log.dump(base_types)
 	return base_types
 end
 function rule.is_hu(pai,in_pai,is_zhuang)
 	local cache = {}
+	local shoupai = {}
 	for i=1,50 do
 		cache[i] = pai.shou_pai[i] or 0
+		shoupai[i] = pai.shou_pai[i] or 0
 	end
-	if in_pai then table.incr(cache,in_pai) end
+	if in_pai then
+		 table.incr(cache,in_pai) 
+		 table.incr(shoupai,in_pai) 
+	end
 	local state = {
 		hu = {},
 		sections = {},
@@ -274,15 +284,18 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	
 	local en_tuo = false 
 
-	local hutype =  get_hu_types(pai,cache,in_pai)
+	local hutype =  get_hu_types(pai,shoupai,in_pai)
+	log.dump(hutype) 
+	log.dump(can_hu) 
+	log.dump(is_zhuang) 
+	log.dump(rule.tuos(pai,in_pai,nil,is_zhuang)) 
+
 	if is_zhuang then 
 		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
 	else
 		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
 	end
-	log.dump(can_hu)
-	log.dump(en_tuo)
-	log.dump(state.tuos)
+
 	return can_hu and en_tuo 
 end
 
