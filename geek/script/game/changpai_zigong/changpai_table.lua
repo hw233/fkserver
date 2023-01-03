@@ -277,7 +277,8 @@ function changpai_table:on_started(player_count)
         
     end
 
-    
+    self.rec_chu_pai = {}
+    self.rec_fan_pai = {}
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
     self.last_chu_pai              = -1 --上次的出牌
     self.mo_pai_count = nil
@@ -307,8 +308,28 @@ function changpai_table:on_started(player_count)
         self:action_after_fapai()
     end,"action_after_fapai")--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
 end
+function changpai_table:get_unusecard_list(player)
+    local cards = {}
+    local count = player.pai and player.pai.un_usecard and player.pai.un_usecard or {}
+    log.dump(count)
+    for k, v in pairs(count) do
+        if v then
+            table.insert(cards,k)
+        end
+    end
+    return cards
+end
 function changpai_table:set_unuse_card(player,tile)
-    
+    log.dump(player)
+    log.dump(tile)
+    log.dump(player.pai)
+    if player and tile and player.pai then
+        player.pai.un_usecard[tile] = player.pai.un_usecard[tile] or 1
+        log.dump(player.pai.un_usecard)
+    end
+end
+function changpai_table:clear_unuse_card(player)
+    player.pai.un_usecard = nil
 end
 function changpai_table:action_after_fapai()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
@@ -389,11 +410,12 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
     end
     
     if do_action == ACTION.PASS then
+        
         send2client(player,"SC_Changpai_Do_Action",{
             action = do_action,
             chair_id = player.chair_id,
             session_id = msg.session_id,
-            
+            --substitute_num = self:get_unusecard_list(player)
         })
         self:broadcast_discard_turn()
         self:chu_pai()
@@ -926,7 +948,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             action = do_action,
             chair_id = player.chair_id,
             session_id = msg.session_id,
-           
+            ---substitute_num = self:get_unusecard_list(player)
         })
         self:broadcast_discard_turn()
         self:chu_pai()
@@ -1274,7 +1296,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 action = done_action,
                 chair_id = player.chair_id,
                 session_id = msg.session_id,
-                
+                --substitute_num = self:get_unusecard_list(player)
             })
         end
     end
@@ -1325,12 +1347,15 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     local chu_pai_player = self:chu_pai_player()
 
     table.sort(all_actions,function(l,r)
-        if  ACTION_PRIORITY[l.done.action] == ACTION_PRIORITY[r.done.action] then
-            return chu_pai_player == l.chair_id
-        else
-            return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
-        end
+        return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
+    table.sort(all_actions,function(l,r)
+        if  ACTION_PRIORITY[l.done.action] == ACTION_PRIORITY[r.done.action] then
+            return userpri[l.chairid] < userpri[r.chairid]
+        end
+        return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
+    end)
+    
     log.dump(all_actions)
     local top_action = all_actions[1]
     local top_session_id = top_action.session_id
@@ -1378,6 +1403,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     if top_done_act == ACTION.CHI then      
         table.pop_back(chu_pai_player.pai.desk_tiles)
         self:adjust_shou_pai(player,top_done_act,tile,othertile,top_session_id)
+        log.error("---------adjust_shou_pai--------")
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         check_all_pass(all_actions)
         --这里是翻牌以后吃的牌，假如是上家翻牌并且上家可以吃不吃那么这个时候是下加吃牌，形成加番那么在这里设置上家包牌
@@ -1524,7 +1550,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 action = done_action,
                 chair_id = player.chair_id,
                 session_id = msg.session_id,
-                
+                --substitute_num = self:get_unusecard_list(player)
             })
         end
     end
@@ -1995,7 +2021,9 @@ function changpai_table:mo_pai()
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
     self:on_mo_pai(player,mo_pai)
-    
+
+    self:clear_unuse_card(player)    
+
     local actions = self:get_actions(player,mo_pai)
     log.dump(actions,tostring(player.guid))
     if table.nums(actions) > 0 then
@@ -2113,12 +2141,13 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
     end
 
     if do_action == ACTION.PASS then
-        
+
+
         send2client(player,"SC_Changpai_Do_Action",{
             action = do_action,
             chair_id = player.chair_id,
             session_id = msg.session_id,
-           
+            
         })
 
          self:next_player_index() --没有actions 跳到下家
@@ -2161,7 +2190,11 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
         log.error("tile isn't exist when chu guid:%s,tile:%s",player.guid,chu_pai_val)
         return
     end
-
+    local cards = self:get_unusecard_list(player)
+    if cards[chu_pai_val] then
+        log.error("tile cannot play guid:%s,tile:%s",player.guid,chu_pai_val)
+        return
+    end
     --包牌判断，假如对下家形成包牌，就返回存在包牌风险提醒，假如下家已经是包牌，那不管
     local nest_user = 1
     if self.chu_pai_player_index+1 > self.start_count then
@@ -2170,15 +2203,12 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
         nest_user = (self.chu_pai_player_index+1 )
     end
     local user = self.players[nest_user]
-    if  user and not user.is_bao_pai and not user.pai.bao_pai[chu_pai_val] then
-        user.pai.bao_pai[chu_pai_val] = true
-        if self:is_bao_pai(user,chu_pai_val) then
+    if self:is_bao_pai(user,chu_pai_val) and not msg.is_sure then
                 
-            send2client(player,"SC_CP_Canbe_Baopai",{
-                tile = chu_pai_val,
-            })
-            return
-        end
+        send2client(player,"SC_CP_Canbe_Baopai",{
+            tile = chu_pai_val,
+        })
+        return
     end
     log.dump(self.start_count)
     log.dump(nest_user)
@@ -2190,6 +2220,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     log.info("---------chu pai guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
     shou_pai[chu_pai_val] = shou_pai[chu_pai_val] - 1
     self:on_chu_pai(chu_pai_val)
+
     tinsert(player.pai.desk_tiles,chu_pai_val)
     self:broadcast2client("SC_Changpai_Action_Discard",{chair_id = player.chair_id, tile = chu_pai_val})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Discard",msg = {tile = chu_pai_val},auto = auto,time = timer.nanotime()})
@@ -3352,6 +3383,7 @@ function changpai_table:broadcast_player_hu(player,action,target,session_id)
         action = action,
         target_chair_id = target,
         session_id = session_id,
+        
     }
 
     self:broadcast2client("SC_Changpai_Do_Action",msg)
@@ -3405,6 +3437,7 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
                 break
             end
         end
+        
     end
 
     if action == ACTION.PENG then
@@ -3418,7 +3451,7 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
             tuos = num,
             whoee = self.chu_pai_player_index,
         })
-       
+        self:set_unuse_card(player,tile)
     end
     if action == ACTION.TOU then
         table.decr(shou_pai,tile,3)
@@ -3431,7 +3464,7 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
             tuos = num,
             whoee = self.chu_pai_player_index,
         })
-        
+        self:set_unuse_card(player,tile)
     end
     if action == ACTION.CHI then
         table.decr(shou_pai,othertile,1)
@@ -3445,11 +3478,19 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
             tuos = num,
             area = TILE_AREA.MING_TILE,
         })
-        
+        self:set_unuse_card(player,tile)
+        log.error("-----set_unuse_card------")
     end
 
-            
-    self:broadcast2client("SC_Changpai_Do_Action",{chair_id = player.chair_id,value_tile = tile,other_tile = othertile,action = action,session_id = session_id})
+    local cards = self:get_unusecard_list(player)  or {}           
+    self:broadcast2client("SC_Changpai_Do_Action",
+    {chair_id = player.chair_id,
+    value_tile = tile,
+    other_tile = othertile,
+    action = action,
+    session_id = session_id,
+    unusablecard = table.values(cards)
+    })
 end
 
 --掉线，离开，自动胡牌
@@ -3466,6 +3507,8 @@ function changpai_table:on_chu_pai(tile)
             p.chu_pai = nil
         end
     end
+    self.rec_chu_pai = {chair_id = self.chu_pai_player_index , pai = tile}
+    self.rec_fan_pai = {}
 end
 function changpai_table:on_user_fan_pai(tile)
     for _, p in pairs(self.players) do
@@ -3476,6 +3519,8 @@ function changpai_table:on_user_fan_pai(tile)
             p.fan_pai = nil
         end
     end
+    self.rec_chu_pai = {}
+    self.rec_fan_pai = {chair_id = self.chu_pai_player_index , pai = tile}
 end
 function changpai_table:get_last_chu_pai()
     for _,p in pairs(self.players) do
@@ -3486,6 +3531,16 @@ function changpai_table:get_last_chu_pai()
 end
 
 function changpai_table:send_data_to_enter_player(player,is_reconnect)
+    local fan_pai={}
+    local chu_pai={}
+    if self.rec_fan_pai then
+        fan_pai.chair_id =self.rec_fan_pai and self.rec_fan_pai.chair_id or nil
+        fan_pai.card =self.rec_fan_pai and self.rec_fan_pai.pai or nil
+    end
+    if self.chu_pai then
+        chu_pai.chair_id = self.rec_chu_pai and self.rec_chu_pai.chair_id or nil
+        chu_pai.card = self.rec_chu_pai and self.rec_chu_pai.pai or nil
+    end
     local msg = {
         state = self.cur_state_FSM,
         round = self.cur_round,
@@ -3496,7 +3551,9 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
         decision_time_limit = def.ACTION_TIME_OUT,
         is_reconnect = is_reconnect,
         pb_players = {},
-        qie_pai = self.qie_pai
+        qie_pai = self.qie_pai,
+        last_fan_pai = fan_pai,
+        last_chu_pai = chu_pai,
     }
 
     self:foreach(function(v)

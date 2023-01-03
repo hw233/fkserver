@@ -303,7 +303,7 @@ end
 
 function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 	local tuos = 0
-	local counts =pai.shou_pai
+	local counts =pai and pai.shou_pai or {}
 		for index, s in pairs(pai.ming_pai) do
 			if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) and rule.tile_hongcounts(s.tile)>0 then
 				tuos =tuos + 6

@@ -229,6 +229,7 @@ message SC_Changpai_Do_Action{
 message CS_Changpai_Action_Discard{
 	enum MsgID { Nil = 0; ID = 33003;}
 	int32 tile = 1;
+	bool  is_sure = 2;
 }
 
 message SC_Changpai_Action_Discard{

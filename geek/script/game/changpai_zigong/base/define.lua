@@ -4,7 +4,7 @@ local pb = require "pb_files"
 
 local TIME_TYPE = {
 	MAIN_FAN_PAI = 2,
-	MAIN_XI_PAI = 2,
+	MAIN_XI_PAI = 4,
 }
 define.TIME_TYPE= TIME_TYPE
 local ACTION = {
