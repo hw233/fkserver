@@ -44,7 +44,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.CP_HU_TYPE
-local BTEST = true 
+local BTEST = false 
 local all_tiles_data ={
 	[1]={value=2,hong=2,hei=0,index=1},
 	[2]={value=3,hong=1,hei=2,index=2},
@@ -310,13 +310,13 @@ function changpai_table:on_started(player_count)
 end
 function changpai_table:get_unusecard_list(player)
     local cards = {}
-    local count = player.pai and player.pai.un_usecard and player.pai.un_usecard or {}
-    log.dump(count)
-    for k, v in pairs(count) do
-        if v then
-            table.insert(cards,k)
-        end
-    end
+    -- local count = player.pai and player.pai.un_usecard and player.pai.un_usecard or {}
+    -- log.dump(count)
+    -- for k, v in pairs(count) do
+    --     if v then
+    --         table.insert(cards,k)
+    --     end
+    -- end
     return cards
 end
 function changpai_table:set_unuse_card(player,tile)
@@ -1241,7 +1241,7 @@ end
 
 function changpai_table:on_reconnect_when_action_after_chu_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-    local action = self.waiting_actions[p.chair_id]
+    local action = self.waiting_actions and self.waiting_actions[p.chair_id] or {}
     if action and not action.done then
         self:send_action_waiting(action)
     end
