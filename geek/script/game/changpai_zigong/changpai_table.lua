@@ -44,7 +44,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.CP_HU_TYPE
-local BTEST = false 
+local BTEST = true 
 local all_tiles_data ={
 	[1]={value=2,hong=2,hei=0,index=1},
 	[2]={value=3,hong=1,hei=2,index=2},
@@ -2640,11 +2640,11 @@ function changpai_table:prepare_tiles()
         self.zhuang = 2
         self.chu_pai_player_index = self.zhuang --出牌人的索引
         
-         -- 测试手牌     
-         self.pre_tiles = {
+        -- 测试手牌     
+        self.pre_tiles = {
             [1] = {10,10,16,6,20,2,18,18,3,7,12,13,16,7,14},     -- 万 庄
             [2] = {16,16,5,12,9,21,21,17,9,7,2,11,12,11,14},    -- 筒  
-            [3] = {21,20,6,19,18,16,21,15,15,3,12,15,11,17,8},      -- 万
+            [3] = {21,20,6,19,18,19,21,15,15,3,12,15,11,17,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {

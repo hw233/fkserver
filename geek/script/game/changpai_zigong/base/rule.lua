@@ -241,7 +241,7 @@ local function get_hu_types(pai,cache,in_pai)
 			base_types[HU_TYPE.BABA_HEI] = nil
 		end
 		if count>0 and rule.tile_hongcounts(tile)>0 then
-			counthonghei = counthonghei+1
+			counthonghei = counthonghei+count
 		end
 	end
 	-- if in_pai then
