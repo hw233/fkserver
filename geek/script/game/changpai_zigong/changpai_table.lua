@@ -320,13 +320,13 @@ function changpai_table:get_unusecard_list(player)
     return cards
 end
 function changpai_table:set_unuse_card(player,tile)
-    log.dump(player)
-    log.dump(tile)
-    log.dump(player.pai)
-    if player and tile and player.pai then
-        player.pai.un_usecard[tile] = player.pai.un_usecard[tile] or 1
-        log.dump(player.pai.un_usecard)
-    end
+    -- log.dump(player)
+    -- log.dump(tile)
+    -- log.dump(player.pai)
+    -- if player and tile and player.pai then
+    --     player.pai.un_usecard[tile] = player.pai.un_usecard[tile] or 1
+    --     log.dump(player.pai.un_usecard)
+    -- end
 end
 function changpai_table:clear_unuse_card(player)
     player.pai.un_usecard = nil
@@ -1594,6 +1594,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
 
     self.waiting_actions = nil
 
+    log.dump(all_actions,"allactions")
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
