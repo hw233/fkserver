@@ -274,6 +274,7 @@ function changpai_table:on_started(player_count)
         v.gsc = nil
         v.statistics = v.statistics or {}
         v.last_penghu = nil
+        v.tuos = nil
         
     end
 
@@ -310,23 +311,24 @@ function changpai_table:on_started(player_count)
 end
 function changpai_table:get_unusecard_list(player)
     local cards = {}
-    -- local count = player.pai and player.pai.un_usecard and player.pai.un_usecard or {}
-    -- log.dump(count)
-    -- for k, v in pairs(count) do
-    --     if v then
-    --         table.insert(cards,k)
-    --     end
-    -- end
+    local count = player.pai and player.pai.un_usecard and player.pai.un_usecard or {}
+    log.dump(count)
+    for k, v in pairs(count) do
+        if v then
+            table.insert(cards,k)
+        end
+    end
     return cards
 end
 function changpai_table:set_unuse_card(player,tile)
-    -- log.dump(player)
-    -- log.dump(tile)
-    -- log.dump(player.pai)
-    -- if player and tile and player.pai then
-    --     player.pai.un_usecard[tile] = player.pai.un_usecard[tile] or 1
-    --     log.dump(player.pai.un_usecard)
-    -- end
+    log.dump(player)
+    log.dump(tile)
+    log.dump(player.pai)
+    if player and tile and player.pai then
+        player.pai.un_usecard = player.pai.un_usecard or {}
+        player.pai.un_usecard[tile] = 1
+        log.dump(player.pai.un_usecard)
+    end
 end
 function changpai_table:clear_unuse_card(player)
     player.pai.un_usecard = nil
@@ -415,7 +417,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
             action = do_action,
             chair_id = player.chair_id,
             session_id = msg.session_id,
-            --substitute_num = self:get_unusecard_list(player)
+           
         })
         self:broadcast_discard_turn()
         self:chu_pai()
@@ -634,12 +636,12 @@ function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
         for _,act in pairs(actions) do
             if act.done.action == ACTION.PASS then
                 local p = self.players[act.chair_id]
-                if self.rule.play.guo_zhuang_hu then
+                
                     local hu_action = act.actions[ACTION.QIANG_GANG_HU]
                     if hu_action then
                         self:set_gzh_on_pass(p,act.tile)
                     end
-                end
+                
             end
         end
     end
@@ -901,6 +903,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            p.tuos = tuonum[p.chair_id]
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:jump_to_player_index(player)
@@ -915,7 +918,8 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         self:log_game_action(player,do_action,tile,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
+            p.tuos = tuonum[p.chair_id]  
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:mo_pai()
@@ -931,6 +935,13 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             types = self:hu(player,nil,player.mo_pai),
             zi_mo = is_zi_mo,  
         }
+
+        local tuonum = {}
+        for chair, p in pairs(self.players) do
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,player.mo_pai,nil,nil)    
+            p.tuos = tuonum[p.chair_id]  
+        end
+        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
 
         player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
 
@@ -948,7 +959,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             action = do_action,
             chair_id = player.chair_id,
             session_id = msg.session_id,
-            ---substitute_num = self:get_unusecard_list(player)
+            
         })
         self:broadcast_discard_turn()
         self:chu_pai()
@@ -1296,7 +1307,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 action = done_action,
                 chair_id = player.chair_id,
                 session_id = msg.session_id,
-                --substitute_num = self:get_unusecard_list(player)
+               
             })
         end
     end
@@ -1419,9 +1430,10 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            p.tuos = tuonum[p.chair_id]
         end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:jump_to_player_index(player)
+        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:broadcast_discard_turn()
         
 
@@ -1441,6 +1453,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            p.tuos = tuonum[p.chair_id]
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:jump_to_player_index(player)
@@ -1455,6 +1468,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            p.tuos = tuonum[p.chair_id]
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:mo_pai()
@@ -1486,6 +1500,15 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 zi_mo = true,
                 whoee = nil,
             }
+
+            -----------------------------
+            local tuonum = {}
+            for chair, v in pairs(self.players) do
+                tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)    
+                v.tuos = tuonum[v.chair_id]  
+            end
+            self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
+            -------------------------------
 
             if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
                 local pai = chu_pai_player.pai
@@ -1550,7 +1573,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 action = done_action,
                 chair_id = player.chair_id,
                 session_id = msg.session_id,
-                --substitute_num = self:get_unusecard_list(player)
+                
             })
         end
     end
@@ -1615,19 +1638,28 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         for _,act in pairs(actions) do
             if act.done.action == ACTION.PASS then
                 local p = self.players[act.chair_id]
-                if self.rule.play.guo_zhuang_hu then
+                
                     local hu_action = act.actions[ACTION.HU]
                     if hu_action then
                         self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
+                        log.error("set_gzh_on_pass")
                     end
-                end
+ 
     
-                if self.rule.play.guo_shou_peng then
+                
                     local peng_action = act.actions[ACTION.PENG]
                     if peng_action then
                         self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
+                        log.error("set_gsp_on_pass")
                     end
-                end
+               
+                
+                    local chi_action = act.actions[ACTION.CHI]
+                    if chi_action then
+                        self:set_gsc_on_pass(p,chu_pai_player.chu_pai)
+                        log.error("set_gsc_on_pass")
+                    end
+               
             end
         end
     end
@@ -1645,7 +1677,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
          end
          local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)   
+            p.tuos = tuonum[p.chair_id]   
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
 
@@ -1662,7 +1695,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         check_all_pass(all_actions)
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
+            p.tuos = tuonum[p.chair_id]  
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:jump_to_player_index(player)
@@ -1676,7 +1710,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         check_all_pass(all_actions)
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)   
+            p.tuos = tuonum[p.chair_id]   
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:mo_pai()
@@ -1689,7 +1724,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         check_all_pass(all_actions)
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)     
+            p.tuos = tuonum[p.chair_id] 
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:jump_to_player_index(player)
@@ -1713,6 +1749,15 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 zi_mo = false,
                 whoee = self.chu_pai_player_index,
             }
+
+
+            local tuonum = {}
+            for chair, v in pairs(self.players) do
+                tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
+                v.tuos = tuonum[v.chair_id]   
+            end
+            self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
+
 
             if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
                 local pai = chu_pai_player.pai
@@ -1849,12 +1894,11 @@ function changpai_table:clean_gzh(player)
 end
 
 function changpai_table:set_gzh_on_pass(passer,tile)
-    passer.gzh = passer.gzh or {}
-    passer.gzh[tile] = true
+    passer.gzh = passer.gzh or true
 end
 
 function changpai_table:is_in_gzh(player,tile)
-    return player.gzh and player.gzh[tile]
+    return player.gzh
 end
 -----------------过手吃
 function changpai_table:clean_gsc(player)
@@ -1864,6 +1908,7 @@ end
 function changpai_table:set_gsc_on_pass(passer,tile)
     passer.gsc = passer.gsc or {}
     passer.gsc[tile] = true
+    log.dump(passer.gsc)
 end
 
 function changpai_table:is_in_gsc(player,tile)
@@ -1881,7 +1926,7 @@ function changpai_table:set_gst_on_pass(passer,tile)
 end
 
 function changpai_table:is_in_gst(player,tile)
-    return player.gst and player.gst[tile]
+    return false
 end
 -----------------过手碰
 function changpai_table:clean_gsp(player)
@@ -2022,8 +2067,15 @@ function changpai_table:mo_pai()
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
     self:on_mo_pai(player,mo_pai)
+    local tuonum = {}
+        for chair, p in pairs(self.players) do
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
+            p.tuos = tuonum[p.chair_id]  
+        end
+        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
 
     self:clear_unuse_card(player)    
+    
 
     local actions = self:get_actions(player,mo_pai)
     log.dump(actions,tostring(player.guid))
@@ -2121,7 +2173,8 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:tou_pai() --从桌子上的牌拿一张
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)     
+            p.tuos = tuonum[p.chair_id] 
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         player.statistics.an_gang = (player.statistics.an_gang or 0) + 1    
@@ -2134,7 +2187,8 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:log_game_action(player,do_action,tile,auto)
         local tuonum = {}
         for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
+            p.tuos = tuonum[p.chair_id]  
         end
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         self:tou_pai()--从桌子上的牌拿一张   
@@ -2164,6 +2218,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
     for chair, p in pairs(self.players) do
         log.dump(p.pai)
         tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+        p.tuos = tuonum[p.chair_id]
     end
     log.dump(tuonum)
     self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
@@ -2191,11 +2246,15 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
         log.error("tile isn't exist when chu guid:%s,tile:%s",player.guid,chu_pai_val)
         return
     end
-    -- local cards = self:get_unusecard_list(player)
-    -- if cards[chu_pai_val] then
-    --     log.error("tile cannot play guid:%s,tile:%s",player.guid,chu_pai_val)
-    --     return
-    -- end
+    local cards = self:get_unusecard_list(player)
+    for index, value in pairs(cards) do
+        log.dump(cards,"cannot chupai")
+        if value == chu_pai_val then
+            log.error("tile cannot play guid:%s,tile:%s",player.guid,chu_pai_val)
+            return
+        end
+    end
+    
     --包牌判断，假如对下家形成包牌，就返回存在包牌风险提醒，假如下家已经是包牌，那不管
     local nest_user = 1
     if self.chu_pai_player_index+1 > self.start_count then
@@ -2230,7 +2289,8 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     local user={chair=0,tuos=0}
     for chair, p in pairs(self.players) do
         log.dump(p.pai)
-        tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
+        tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)   
+        p.tuos = tuonum[p.chair_id]   
     end
     log.dump(tuonum)
     self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
@@ -2500,8 +2560,8 @@ end
 function changpai_table:get_player_xiaohu(p)
     local xiaohu =false
         if p.hu  then
+            xiaohu = true
             if self.zhuang == p.chair_id and  mj_util.tuos(p.pai) <16 and  mj_util.tuos(p.pai) >=14 then
-                xiaohu = true
             elseif self.zhuang ~= p.chair_id and  mj_util.tuos(p.pai) <14 and  mj_util.tuos(p.pai) >=12 then
                 xiaohu = true
             end
@@ -2674,13 +2734,13 @@ function changpai_table:prepare_tiles()
         
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {10,10,16,6,20,2,18,18,3,7,12,13,16,7,14},     -- 万 庄
-            [2] = {16,16,5,12,9,21,21,17,9,7,2,11,12,11,14},    -- 筒  
-            [3] = {21,20,6,19,18,19,21,15,15,3,12,15,11,17,8},      -- 万
+            [1] = {18,18,4,4,13,13,13,20,20,5,5,10,10,10,14},     -- 万 庄
+            [2] = {16,16,5,6,19,21,21,17,9,2,2,11,12,11,14},    -- 筒  
+            [3] = {21,20,19,19,18,17,12,15,15,3,12,15,11,7,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            8,6,18,3,4,20,6,
+            8,14,18,4,20,5,7,7,7,8
         }
         self.dealer.remain_count = 84
     end
@@ -2780,17 +2840,53 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         actions[ACTION.HU] = nil
     end
 
+    if actions[ACTION.CHI] then
+        for i = 1, 21, 1 do
+            if actions[ACTION.CHI][i] then
+                local Notcards =p.un_usecard or {}
+                local count={}
+                 for key, num in pairs(p.pai.shou_pai) do
+                     if num>0 then
+                        if key==i then  count[key]=num-1
+                        else count[key]=num  end
+                     end
+                 end
+                 if Notcards then
+                     for key, num in pairs(count) do
+                         if num > 0 and Notcards[key] then
+                            count[key] = 0   
+                         end
+                     end
+                     log.dump(p.pai.shou_pai)
+                     log.dump(count)
+                     local elph=table.select(count,function (s)  return s>0 end)
+                     if table.nums(elph) == 0 then
+                        actions[ACTION.CHI][i] = nil
+                     end      
+                 end 
+                
+            end
+        end
+        local action = actions[ACTION.CHI]
+        if table.nums(action) == 0 then
+            actions[ACTION.CHI] = nil
+        end    
+    end
+
+
     log.dump(actions,tostring(p.guid))
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-        local action = actions[ACTION.HU]
-        for gsh_tile,_ in pairs(p.gsh) do
-            action[gsh_tile] = nil
-        end
-        if table.nums(action) == 0 then
-            actions[ACTION.HU] = nil
-        end
+        actions[ACTION.HU] = nil
     end
+
+    log.dump(p.gsp)
+    log.dump(p.gsc)
+    log.dump(in_pai)
+    log.dump(self:is_in_gsc(p,in_pai))
     if in_pai and self:is_in_gsp(p,in_pai) and actions[ACTION.PENG] then
+
+        log.dump(p.gsp)
+        log.dump(in_pai)
         local action = actions[ACTION.PENG]
         for gsp_tile,_ in pairs(p.gsp) do
             action[gsp_tile] = nil
@@ -2802,14 +2898,22 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     if in_pai and self:is_in_gsc(p,in_pai) and actions[ACTION.CHI] then
         local action = actions[ACTION.CHI]
         for gsc_tile,_ in pairs(p.gsc) do
-            action[gsc_tile] = nil
+            
+            for key, value in pairs(action) do
+                
+                if value.tile == gsc_tile then
+                    action[key] = nil
+                end
+            end
         end
         if table.nums(action) == 0 then
             actions[ACTION.CHI] = nil
         end
+        log.dump(actions)
+ 
     end
-    if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-        local action = actions[ACTION.HU]
+    if in_pai and self:is_in_gst(p,in_pai) and actions[ACTION.TOU] then
+        local action = actions[ACTION.TOU]
         for gsh_tile,_ in pairs(p.gsh) do
             action[gsh_tile] = nil
         end
@@ -3557,7 +3661,11 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
         last_chu_pai = chu_pai,
     }
 
+
+      
     self:foreach(function(v)
+
+        local cards = self:get_unusecard_list(v)  or {} 
         local tplayer = {}
         tplayer.chair_id = v.chair_id
         if v.pai then
@@ -3572,6 +3680,7 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
             tplayer.mo_pai =  v.mo_pai
         end
         tplayer.tuos = mj_util.tuos(v.pai,nil,nil,nil)
+        tplayer.unusablecard = table.values(cards)
         tinsert(msg.pb_players,tplayer)
     end)
 
@@ -3717,9 +3826,13 @@ function changpai_table:rule_hu(pai,in_pai,mo_pai,is_zhuang)
     local types = self:rule_hu_types(pai,in_pai,mo_pai,is_zhuang)
     log.dump(types)
     local type =0
-    for key, types in pairs(types) do
+    for key, types in pairs(types) do 
         if types then
-            type = key
+            for key, value in pairs(types) do
+                if value then
+                    type =  key 
+                end
+            end
         return type   
         end
     end

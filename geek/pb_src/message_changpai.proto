@@ -105,6 +105,7 @@ message Changpai_Player_Info {
 	bool is_chipiao 	= 17;			//吃飘
 	bool is_dianpao		= 18;			//是否点炮
 	bool is_xiaohu		= 19;			//是否小胡
+	repeated int32  unusablecard = 20;  //不可以出的牌
 }
 
 message Changpai_Reconnect_Data {
