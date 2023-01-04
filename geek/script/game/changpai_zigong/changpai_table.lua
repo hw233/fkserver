@@ -2742,13 +2742,13 @@ function changpai_table:prepare_tiles()
         
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {18,18,4,4,13,13,13,20,20,5,5,10,10,10,14},     -- 万 庄
-            [2] = {16,16,6,6,19,21,21,17,9,2,2,11,12,14,14},    -- 筒  
-            [3] = {16,16,6,6,18,17,12,15,15,3,12,15,14,11,8},      -- 万
+            [1] = {10,10,16,6,20,2,18,18,3,7,12,13,16,7,14},     -- 万 庄
+            [2] = {16,16,5,12,9,21,21,17,9,7,2,11,12,11,14},    -- 筒  
+            [3] = {21,20,6,19,18,19,21,15,15,3,12,15,11,17,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            8,14,18,4,20,5,7,7,7,8
+            8,6,18,3,4,20,6,
         }
         self.dealer.remain_count = 84
     end
@@ -3077,6 +3077,10 @@ function changpai_table:calculate_gang(p)
     for _, s in pairs(p.pai.ming_pai) do 
         if  s.type == SECTION_TYPE.BA_GANG then
             count[s.tile]=4
+            if chong_fan[s.tile]  then--假如是冲番牌
+                if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
+                else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
+            end
         end
         if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
             count[s.tile]=count[s.tile] and count[s.tile]+3 or 3

@@ -341,12 +341,18 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 end
 function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	local cache = {}
-	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	local cards = {}
+	for i = 1,50 do 
+		cache[i] = pai.shou_pai[i] or 0 
+		cards[i] = pai.shou_pai[i] or 0 
+	end
 	if in_pai then
 		 if  rule.tile_value(in_pai)==7 then --翻牌或者别人出的牌是 7 时不可以胡牌
 			return {{[HU_TYPE.WEI_HU] = 1}}
 		 end
 		 table.incr(cache,in_pai)
+		 table.incr(cards,in_pai)
+		 
 	 end
 	local state = { hu = {}, sections = {}, counts = clone(cache) ,tuos = 0}
 	hu(state)
@@ -358,15 +364,17 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	
 	end
 	
-	local types = get_hu_types(pai,cache,in_pai)
-	table.insert(alltypes,types)
+	local types = get_hu_types(pai,cards,in_pai)
 
-	if alltypes[HU_TYPE.PING_HU] then
+	if types and types[HU_TYPE.PING_HU] then
 		--坨数小于规定庄家14坨，闲家12坨的时候不能胡
 		if is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<14 or not is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<12 then 
 			return {{[HU_TYPE.WEI_HU] = 1}}
 		end
 	end
+	table.insert(alltypes,types)
+
+	
 	log.dump(alltypes)
 	return alltypes
 end
