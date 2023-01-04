@@ -178,11 +178,11 @@ function changpai_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
     self.cur_state_FSM = nil
     self.start_count = self.chair_count
-    self.BTEST =false
+    
 end
 
 function changpai_table:on_private_inited()
-    self.BTEST =false
+    
     self.cur_round = nil
     self.zhuang = nil
     self.zhuang_pai = nil
@@ -243,7 +243,7 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.BTEST =false
+    self.BTEST = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
     if self.BTEST then
@@ -1884,11 +1884,16 @@ function changpai_table:fake_mo_pai()
 
     table.incr(shou_pai,mo_pai)
 
+
     player.gzh = false
     player.gsp = nil
     player.gsc = nil
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
     player.mo_pai_count = (player.mo_pai_count or 0) + 1
+
+    for chair, p in pairs(self.players) do
+        p.tuos = mj_util.tuos(p.pai,nil,nil,nil)    
+    end
 end
 -----------------过手胡
 function changpai_table:clean_gzh(player)
@@ -2552,15 +2557,17 @@ end
 function changpai_table:get_player_piao(p)
     local chipiao = false
     log.dump(self:get_is_chi_piao())
-        if self:get_is_chi_piao() then
-            if self.zhuang == p.chair_id and p.tuos and p.tuos >=16 then
-                chipiao = true
-            end
-            if self.zhuang ~= p.chair_id and p.tuos and  p.tuos >=14 then
-                chipiao = true
-            end
+    log.dump(p.tuos)
+    if self:get_is_chi_piao() then
+        if self.zhuang == p.chair_id and p.tuos and p.tuos >=16 then
+            chipiao = true
         end
-        return chipiao
+        if self.zhuang ~= p.chair_id and p.tuos and  p.tuos >=14 then
+            chipiao = true
+        end
+    end
+    log.dump(chipiao)
+    return chipiao
 end
 function changpai_table:get_player_xiaohu(p)
     local xiaohu =false
@@ -2578,6 +2585,8 @@ function changpai_table:get_player_xiaohu(p)
 end
 function changpai_table:get_chao_add_score(p)
     local add_score_option = self.rule.fan.chaoFan+1
+    log.dump(self.rule.fan.chaoFan)
+    log.dump(self.room_.conf.private_conf.fan.add_score[add_score_option])
     return self.room_.conf.private_conf.fan.add_score[add_score_option]
 end
 function changpai_table:do_balance()
@@ -2737,28 +2746,29 @@ function changpai_table:prepare_tiles()
         self.dealer:shuffle()
         self.pre_tiles = {}
     else   
-        self.zhuang = 2
-        self.chu_pai_player_index = self.zhuang --出牌人的索引
+        
         
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {10,10,16,6,20,2,18,18,3,7,12,13,16,7,14},     -- 万 庄
-            [2] = {16,16,5,12,9,21,21,17,9,7,2,11,12,11,14},    -- 筒  
-            [3] = {21,20,6,19,18,19,21,15,15,3,12,15,11,17,8},      -- 万
+            [1] = {5,5,5,5,17,17,17,17,1,1,1,1,21,21,21},     -- 万 庄
+            [2] = {16,16,3,12,9,15,15,16,9,7,2,11,12,11,14},    -- 筒  
+            [3] = {20,20,6,19,18,19,13,15,15,3,12,18,11,12,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            8,6,18,3,4,20,6,
+            21,6,18,3,4,20,6,
         }
         self.dealer.remain_count = 84
     end
-    self.zhuang_pai =3-- self.dealer:use_one()
+    self.zhuang_pai = self.dealer:use_one()
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
     log.info("zhuang_pai %d  ",self.zhuang_pai)
     self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
 
+   
+    self.chu_pai_player_index = self.zhuang --出牌人的索引
     self:foreach(function(p)--给每个玩家发牌
         local tiles = self.pre_tiles[p.chair_id]
         if tiles then
@@ -2774,8 +2784,6 @@ function changpai_table:prepare_tiles()
             table.incr(p.pai.shou_pai,t)
         end
     end)
-
-    self.chu_pai_player_index = self.zhuang
     log.info("user   %d",self.chu_pai_player_index)
     self:fake_mo_pai()--庄家多摸一张牌 也就是16张牌
 end
@@ -3125,14 +3133,13 @@ function changpai_table:calculate_gang(p)
         gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1,type = HU_TYPE.TUO_24} 
     end
     
-    if self.rule.play.tian_di_hu then
-        if p.chair_id == self.zhuang and p.mo_pai and self.mo_pai_count == 1 then
-            gangfans[HU_TYPE.TIAN_HU] = {fan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan,count = 1,type = HU_TYPE.TIAN_HU}
-        end
+    
+    if p.chair_id == self.zhuang and p.mo_pai and self.mo_pai_count == 1 then
+        gangfans[HU_TYPE.TIAN_HU] = {fan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan,count = 1,type = HU_TYPE.TIAN_HU}
+    end
 
-        if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
-            gangfans[HU_TYPE.DI_HU] = {fan = HU_TYPE_INFO[HU_TYPE.DI_HU].fan,count = 1,type = HU_TYPE.DI_HU}
-        end
+    if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
+        gangfans[HU_TYPE.DI_HU] = {fan = HU_TYPE_INFO[HU_TYPE.DI_HU].fan,count = 1,type = HU_TYPE.DI_HU}
     end
 
 
@@ -3198,7 +3205,7 @@ function changpai_table:game_balance()
     log.dump(max_fan)
     local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
-        return chair,(fan > max_fan and max_fan or fan)
+        return chair,fan
     end)
     log.dump(fans)
     
@@ -3213,12 +3220,15 @@ function changpai_table:game_balance()
         log.dump(fan_score)
         log.dump(p.hu)
         local zongfan = fan
+
+        log.dump(self:get_chao_add_score())
         if p.hu then
 
             
             if self:get_max_fan()==4 then --超番加分
                 if  zongfan>4  then
                     chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
+                    log.dump(chaofan_add)
                     fan_score = 2 ^ math.abs(4)
                     fan_score= fan_score 
                 else
@@ -3244,7 +3254,7 @@ function changpai_table:game_balance()
             end
             
             winscore= fan_score * (self.start_count-1)
-
+            log.dump(fan_score)
             if not p.hu.zi_mo then
                 local whoee = p.hu.whoee
                 scores[whoee] = (scores[whoee] or 0) - winscore
@@ -3603,6 +3613,10 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
         self:set_unuse_card(player,tile)
         log.error("-----set_unuse_card------")
     end
+
+    if self.rec_fan_pai then self.rec_fan_pai=nil end
+    if self.rec_chu_pai then self.rec_chu_pai=nil end   
+    
 
     local cards = self:get_unusecard_list(player)  or {}           
     self:broadcast2client("SC_Changpai_Do_Action",
