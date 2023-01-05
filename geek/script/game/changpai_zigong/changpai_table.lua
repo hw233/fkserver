@@ -1030,7 +1030,7 @@ function changpai_table:action_after_tou_pai(waiting_actions)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
-                self:on_action_after_tou_pai(p,{
+                self:on_action_after_first_tou_pai(p,{
                     action = act,
                     value_tile = tile,
                     chair_id = p.chair_id,
@@ -1088,7 +1088,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
-                self:on_action_after_mo_pai(p,{
+                self:on_action_after_fan_pai(p,{
                     action = act,
                     value_tile = tile,
                     chair_id = p.chair_id,
@@ -2866,7 +2866,7 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     if actions[ACTION.CHI] then
         for i = 1, 21, 1 do
             if actions[ACTION.CHI][i] then
-                local Notcards =p.un_usecard or {}
+                local Notcards =p.un_usecard or nil
                 local count={}
                  for key, num in pairs(p.pai.shou_pai) do
                      if num>0 then
