@@ -178,6 +178,7 @@ function changpai_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
     self.cur_state_FSM = nil
     self.start_count = self.chair_count
+    self.huang_zhuang = false
     
 end
 
@@ -1010,7 +1011,7 @@ function changpai_table:action_after_tou_pai(waiting_actions)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_action(p,action)
-            local act = action.actions[ACTION.ZI_MO] and ACTION.ZI_MO or ACTION.PASS
+            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
                 self:on_action_after_tou_pai(p,{
@@ -1068,7 +1069,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_action(p,action)
-            local act = action.actions[ACTION.ZI_MO] and ACTION.ZI_MO or ACTION.PASS
+            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
                 self:on_action_after_mo_pai(p,{
@@ -1623,6 +1624,12 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
+    table.sort(all_actions,function(l,r)
+        if  ACTION_PRIORITY[l.done.action] == ACTION_PRIORITY[r.done.action] then
+            return userpri[l.chair_id] < userpri[r.chair_id]
+        end
+        return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
+    end)
 
     local top_action = all_actions[1]
     local top_session_id = top_action.session_id
@@ -1893,6 +1900,7 @@ function changpai_table:fake_mo_pai()
 
     for chair, p in pairs(self.players) do
         p.tuos = mj_util.tuos(p.pai,nil,nil,nil)    
+        log.dump(p.tuos)
     end
 end
 -----------------过手胡
@@ -2559,12 +2567,17 @@ function changpai_table:get_player_piao(p)
     log.dump(self:get_is_chi_piao())
     log.dump(p.tuos)
     if self:get_is_chi_piao() then
-        if self.zhuang == p.chair_id and p.tuos and p.tuos >=16 then
-            chipiao = true
+        if p.hu and p.hu.type~=HU_TYPE.BABA_HEI and p.hu.type~=HU_TYPE.HEI_LONG then
+            if self.zhuang == p.chair_id and p.tuos and p.tuos >=16 then
+                chipiao = true
+            end
+            if self.zhuang ~= p.chair_id and p.tuos and  p.tuos >=14 then
+                chipiao = true
+            end 
         end
-        if self.zhuang ~= p.chair_id and p.tuos and  p.tuos >=14 then
+        if p.hu and (p.hu.type~=HU_TYPE.BABA_HEI or p.hu.type~=HU_TYPE.HEI_LONG)  then
             chipiao = true
-        end
+        end     
     end
     log.dump(chipiao)
     return chipiao
@@ -2637,22 +2650,24 @@ function changpai_table:do_balance()
             ming_pai = ming_pai,
             huan = p.pai.huan,
         }
-
-        p.total_score = (p.total_score or 0) + p_score
-        p_log.score = p_score
-        
-        
         local dianpao =false
-        
         if player_hu and player_hu.whoee and  player_hu.whoee == p.chair_id and not player_hu.zi_mo then
             dianpao = true
         end
+        p.total_score = (p.total_score or 0) + p_score
+        p_log.score = p_score
+        p_log.is_chipiao = self:get_player_piao(p)
+        p_log.is_xiaohu = self:get_player_xiaohu(p)
+        p_log.is_dianpao = dianpao
+        p_log.tuos = p.tuos
+        
+        
         tinsert(msg.players,{
             chair_id = chair_id,
             desk_pai = desk_pai,
             shou_pai = shou_pai,
             pb_ming_pai = ming_pai,
-            tuos =p.hu and mj_util.tuos(p.pai,p.hu.tile) or mj_util.tuos(p.pai),
+            tuos =p.tuos ,
             is_chipiao = self:get_player_piao(p),
             is_xiaohu = self:get_player_xiaohu(p),
             is_dianpao = dianpao
@@ -2702,8 +2717,10 @@ function changpai_table:do_balance()
 
     self.game_log.balance = msg.player_balance
     self.game_log.end_game_time = os.time()
-    self.game_log.cur_round = self.cur_round
-
+    self.game_log.cur_round = self.cur_round 
+    if self.start_count == 2 and self.qie_pai then
+        self.game_log.qie_pai =table.values(self.qie_pai)
+    end
     self:save_game_log(self.game_log)
 
     self.game_log = nil
@@ -2962,7 +2979,7 @@ local action_name_str = {
     [ACTION.BA_GANG] = "BaGang",
     [ACTION.ZI_MO] = "ZiMo",
     [ACTION.CHI] = "Chi",
-    [ACTION.JIA_BEI] = "Tou",
+    [ACTION.TOU] = "Tou",
     [ACTION.TRUSTEE] = "Trustee",
     [ACTION.PASS] = "Pass",
     [ACTION.HU] = "Hu",
@@ -3085,10 +3102,10 @@ function changpai_table:calculate_gang(p)
     for _, s in pairs(p.pai.ming_pai) do 
         if  s.type == SECTION_TYPE.BA_GANG then
             count[s.tile]=4
-            if chong_fan[s.tile]  then--假如是冲番牌
-                if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
-                else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
-            end
+            -- if chong_fan[s.tile]  then--假如是冲番牌
+            --     if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
+            --     else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
+            -- end
         end
         if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
             count[s.tile]=count[s.tile] and count[s.tile]+3 or 3
@@ -3100,33 +3117,46 @@ function changpai_table:calculate_gang(p)
     end
     for key, value in pairs(count) do
         if value==4 then
-            if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
-            else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1,type = HU_TYPE.SI_ZHANG} end
+            if chong_fan[key] then
+                if gangfans[HU_TYPE.CHONGFAN_CHI_3] then gangfans[HU_TYPE.CHONGFAN_CHI_3].count=gangfans[HU_TYPE.CHONGFAN_CHI_3].count+1
+                else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1,type = HU_TYPE.CHONGFAN_CHI_3} end
+                if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
+                else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1,type = HU_TYPE.SI_ZHANG} end
+            else
+                if gangfans[HU_TYPE.SI_ZHANG] then gangfans[HU_TYPE.SI_ZHANG].count=gangfans[HU_TYPE.SI_ZHANG].count+1
+                else gangfans[HU_TYPE.SI_ZHANG]={fan = HU_TYPE_INFO[HU_TYPE.SI_ZHANG].fan,count = 1,type = HU_TYPE.SI_ZHANG} end
+            end     
+        end
+        if value==3 then
+            if chong_fan[key] then
+                if gangfans[HU_TYPE.CHONGFAN_CHI_3] then gangfans[HU_TYPE.CHONGFAN_CHI_3].count=gangfans[HU_TYPE.CHONGFAN_CHI_3].count+1
+                else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1,type = HU_TYPE.CHONGFAN_CHI_3} end
+            end 
         end
     end
-    for _, s in pairs(p.pai.ming_pai) do      
+    -- for _, s in pairs(p.pai.ming_pai) do      
         
-        if s.type == SECTION_TYPE.CHI then
-            if chi_pai[s.tile] then chi_pai[s.tile]=chi_pai[s.tile]+1 
-            else chi_pai[s.tile]=1 end   
-        end
+    --     if s.type == SECTION_TYPE.CHI then
+    --         if chi_pai[s.tile] then chi_pai[s.tile]=chi_pai[s.tile]+1 
+    --         else chi_pai[s.tile]=1 end   
+    --     end
 
-        if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then 
-            if chong_fan[s.tile]  and s.type == SECTION_TYPE.PENG then--假如是冲番牌
-                if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
-                else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
-            elseif  chong_fan[s.tile]  and s.type == SECTION_TYPE.TOU then 
-                if gangfans[HU_TYPE.CHONGFAN_TOU] then gangfans[HU_TYPE.CHONGFAN_TOU].count=gangfans[HU_TYPE.CHONGFAN_TOU].count+1
-                else gangfans[HU_TYPE.CHONGFAN_TOU]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_TOU].fan,count = 1,type = HU_TYPE.CHONGFAN_TOU} end
-            end
-        end 
-    end
-    for tile, value in ipairs(chi_pai) do
-        if value>=3 and chong_fan[tile] then
-        if gangfans[HU_TYPE.CHONGFAN_CHI_3] then gangfans[HU_TYPE.CHONGFAN_CHI_3].count=gangfans[HU_TYPE.CHONGFAN_CHI_3].count+1
-        else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1,type = HU_TYPE.CHONGFAN_CHI_3} end
-        end
-    end
+    --     if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then 
+    --         if chong_fan[s.tile]  and s.type == SECTION_TYPE.PENG then--假如是冲番牌
+    --             if gangfans[HU_TYPE.CHONGFAN_PENG] then gangfans[HU_TYPE.CHONGFAN_PENG].count=gangfans[HU_TYPE.CHONGFAN_PENG].count+1
+    --             else gangfans[HU_TYPE.CHONGFAN_PENG]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_PENG].fan,count = 1,type = HU_TYPE.CHONGFAN_PENG} end
+    --         elseif  chong_fan[s.tile]  and s.type == SECTION_TYPE.TOU then 
+    --             if gangfans[HU_TYPE.CHONGFAN_TOU] then gangfans[HU_TYPE.CHONGFAN_TOU].count=gangfans[HU_TYPE.CHONGFAN_TOU].count+1
+    --             else gangfans[HU_TYPE.CHONGFAN_TOU]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_TOU].fan,count = 1,type = HU_TYPE.CHONGFAN_TOU} end
+    --         end
+    --     end 
+    -- end
+    -- for tile, value in ipairs(chi_pai) do
+    --     if value>=3 and chong_fan[tile] then
+    --     if gangfans[HU_TYPE.CHONGFAN_CHI_3] then gangfans[HU_TYPE.CHONGFAN_CHI_3].count=gangfans[HU_TYPE.CHONGFAN_CHI_3].count+1
+    --     else gangfans[HU_TYPE.CHONGFAN_CHI_3]={fan = HU_TYPE_INFO[HU_TYPE.CHONGFAN_CHI_3].fan,count = 1,type = HU_TYPE.CHONGFAN_CHI_3} end
+    --     end
+    -- end
 
     local tuo_num = mj_util.tuos(p.pai,nil,nil,nil)
     if tuo_num>=24 then
