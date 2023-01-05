@@ -244,10 +244,10 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.BTEST = false
+    self.bTest = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
-    if self.BTEST then
+    if self.bTest then
         self.zhuang = 1
     else
         self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang    
@@ -1841,7 +1841,7 @@ function changpai_table:fake_mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if self.BTEST then
+            if self.bTest then
                 mo_pai = tile
                 self.dealer.remain_count = self.dealer.remain_count -1
             else
@@ -1983,7 +1983,7 @@ function changpai_table:tou_pai()--偷牌也就是摸牌，但是是在一开始
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if self.BTEST then
+            if self.bTest then
                 mo_pai = tile
                 self.dealer.remain_count = self.dealer.remain_count -1
             else
@@ -2028,7 +2028,7 @@ function changpai_table:mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if self.BTEST then
+            if self.bTest then
                 mo_pai = tile
                 self.dealer.remain_count = self.dealer.remain_count -1
             else
@@ -2439,7 +2439,7 @@ function changpai_table:fan_pai()
     local fan_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if self.BTEST then
+            if self.bTest then
                 fan_pai = tile
                 self.dealer.remain_count = self.dealer.remain_count -1
             else
@@ -2662,7 +2662,7 @@ function changpai_table:do_balance()
     log.dump(msg)
 
     local logids = {
-        [350] = enum.LOG_MOENY_OPT_TYPE_CHANGPAI_ZIGONG,
+        [350] = enum.LOG_MONEY_OPT_TYPE_CHANGPAI_ZIGONG,
     }
 
     chair_money = self:balance(chair_money,logids[def_first_game_type])
@@ -2728,7 +2728,7 @@ function changpai_table:send_action_waiting(action)
 end
 
 function changpai_table:prepare_tiles()
-    if not self.BTEST then
+    if not self.bTest then
         self.dealer:shuffle()
         self.pre_tiles = {}
     else   
