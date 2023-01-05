@@ -328,8 +328,8 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 		end
 		log.dump(counts)
 		for i, c in pairs(counts) do
-			if  c >0 then
-				if i and rule.tile_hongcounts(i) >0 then
+			if i>0 and c >0 then
+				if  rule.tile_hongcounts(i) >0 then
 					tuos =tuos + c
 				end
 			end
