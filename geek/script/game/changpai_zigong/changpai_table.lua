@@ -1488,45 +1488,30 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end
 
     if top_done_act == ACTION.HU then
-        local hu_actions = table.series(all_actions,function(act) return act.done.action == ACTION.HU and act or nil end)
-        local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-        if table.nums(hu_actions) > 1 and hu_count_before == 0 then
-            chu_pai_player.first_multi_pao = true
+
+        local p = player
+        p.hu = {
+            time = timer.nanotime(),
+            tile = tile,
+            types = self:hu(p,tile),
+            zi_mo = true,
+            whoee = nil,
+        }
+
+        -----------------------------
+        local tuonum = {}
+        for chair, v in pairs(self.players) do
+            tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)    
+            v.tuos = tuonum[v.chair_id]  
         end
+        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
+        -------------------------------
 
-        for _,act in pairs(hu_actions) do
-            local p = self.players[act.chair_id]
-            p.hu = {
-                time = timer.nanotime(),
-                tile = tile,
-                types = self:hu(p,tile),
-                zi_mo = true,
-                whoee = nil,
-            }
-
-            -----------------------------
-            local tuonum = {}
-            for chair, v in pairs(self.players) do
-                tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)    
-                v.tuos = tuonum[v.chair_id]  
-            end
-            self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-            -------------------------------
-
-            if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
-                local pai = chu_pai_player.pai
-                for _,s in pairs(pai.ming_pai) do
-                    if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
-                        s.dian_pao = act.chair_id
-                    end
-                end
-            end
-
-            self:log_game_action(p,act.done.action,tile,act.done.auto)
-            self:broadcast_player_hu(p,act.done.action,act.session_id)
-            p.statistics.hu = (p.statistics.hu or 0) + 1
-            chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-        end
+        self:log_game_action(p,top_done_act,tile,top_action.done.auto)
+        self:broadcast_player_hu(p,top_done_act,top_session_id)
+        p.statistics.hu = (p.statistics.hu or 0) + 1
+        chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
+        
 
         table.pop_back(chu_pai_player.pai.desk_tiles)
 
@@ -1743,50 +1728,30 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
     end
 
     if top_done_act == ACTION.HU then
-        local hu_actions = table.series(all_actions,function(act) return act.done.action == ACTION.HU and act or nil end)
-        local hu_count_before = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-        if table.nums(hu_actions) > 1 and hu_count_before == 0 then
-            chu_pai_player.first_multi_pao = true
+
+        local p = player
+        p.hu = {
+            time = timer.nanotime(),
+            tile = tile,
+            types = self:hu(p,tile),
+            zi_mo = false,
+            whoee = self.chu_pai_player_index,
+        }
+
+        local tuonum = {}
+        for chair, v in pairs(self.players) do
+            tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
+            v.tuos = tuonum[v.chair_id]   
         end
+        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
 
-        for _,act in pairs(hu_actions) do
-            local p = self.players[act.chair_id]
-            p.hu = {
-                time = timer.nanotime(),
-                tile = tile,
-                types = self:hu(p,tile),
-                zi_mo = false,
-                whoee = self.chu_pai_player_index,
-            }
-
-
-            local tuonum = {}
-            for chair, v in pairs(self.players) do
-                tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
-                v.tuos = tuonum[v.chair_id]   
-            end
-            self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-
-
-            if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
-                local pai = chu_pai_player.pai
-                for _,s in pairs(pai.ming_pai) do
-                    if s.tile == chu_pai_player.last_action.tile and def.is_section_gang(s.type) then
-                        s.dian_pao = act.chair_id
-                    end
-                end
-            end
-
-            self:log_game_action(p,act.done.action,tile,act.done.auto)
-            self:broadcast_player_hu(p,act.done.action,act.session_id)
-            p.statistics.hu = (p.statistics.hu or 0) + 1
-            chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-        end
+        self:log_game_action(p,top_done_act,tile,top_action.done.auto)
+        self:broadcast_player_hu(p,top_done_act,top_session_id)
+        
 
         table.pop_back(chu_pai_player.pai.desk_tiles)
 
         check_all_pass(all_actions)
-
         local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
         if hu_count > 0 then
             self:do_balance()
@@ -2767,13 +2732,13 @@ function changpai_table:prepare_tiles()
         
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {5,5,5,5,17,17,17,17,1,1,1,1,21,21,21},     -- 万 庄
-            [2] = {16,16,3,12,9,15,15,16,9,7,2,11,12,11,14},    -- 筒  
-            [3] = {20,20,6,19,18,19,13,15,15,3,12,18,11,12,8},      -- 万
+            [1] = {18,3,4,4,1,1,1,20,20,14,14,10,10,10,7},     -- 万 庄
+            [2] = {16,11,8,6,19,5,5,13,9,2,2,15,17,11,12},    -- 筒  
+            [3] = {15,12,19,19,18,16,17,11,4,12,17,17,16,7,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            21,6,18,3,4,20,6,
+            8,16,19,12,11,4,20,14,13,7,15,14
         }
         self.dealer.remain_count = 84
     end
