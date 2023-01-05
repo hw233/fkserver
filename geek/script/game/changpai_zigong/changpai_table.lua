@@ -21,6 +21,22 @@ local strfmt = string.format
 local FSM_S  = def.FSM_state
 
 local ACTION = def.ACTION
+local action_name_str = {  
+    [ACTION.PENG] = "Peng", 
+    [ACTION.BA_GANG] = "BaGang",
+    [ACTION.ZI_MO] = "ZiMo",
+    [ACTION.FAN_PAI] = "FanPai",
+    [ACTION.CHI] = "Chi",
+    [ACTION.TOU] = "Tou",
+    [ACTION.TRUSTEE] = "Trustee",
+    [ACTION.PASS] = "Pass",
+    [ACTION.HU] = "Hu",
+    [ACTION.TING] = "Ting",
+    [ACTION.CHU_PAI] = "Discard",
+    [ACTION.MO_PAI] = "Draw",
+    [ACTION.QIANG_GANG_HU] = "QiangGangHu",
+    [ACTION.ROUND] = "Round",
+}
 local TIME_TYPE = def.TIME_TYPE
 local ACTION_PRIORITY = {
     [ACTION.PASS] = 6,
@@ -1130,7 +1146,7 @@ function changpai_table:first_action_tianhu(waiting_actions)
             local act = action.actions[ACTION.ZI_MO] and ACTION.ZI_MO or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
-                self:on_action_after_mo_pai(p,{
+                self:on_action_after_tianhu(p,{
                     action = act,
                     value_tile = tile,
                     chair_id = p.chair_id,
@@ -2104,6 +2120,10 @@ end
 
 function changpai_table:broadcast_discard_turn()
     self:broadcast2client("SC_Changpai_Discard_Round",{chair_id = self.chu_pai_player_index})
+    for index, p in pairs(self.players) do
+        tinsert(self.game_log.action_table,{chair =p.chair_id,act = action_name_str[ACTION.ROUND],msg = {chair_id = self.chu_pai_player_index},auto = nil,time = timer.nanotime()})
+        break
+    end
 end
 
 function changpai_table:broadcast_wait_discard(player)
@@ -2371,7 +2391,7 @@ function changpai_table:call_chu_pai(p)
 end
 function changpai_table:chu_pai()
     local player = self:chu_pai_player()
-    self:call_chu_pai(player)
+    self:broadcast_discard_turn()
     self:update_state(FSM_S.WAIT_CHU_PAI)
 
     
@@ -2379,19 +2399,7 @@ function changpai_table:chu_pai()
     if trustee_type then
         local function auto_chu_pai(p)
             local chu_tile = p.mo_pai
-            if p.que then
-                local men_tiles = table.group(p.pai.shou_pai,function(_,tile) return mj_util.tile_men(tile) end)
-
-                log.dump(men_tiles)
-                if men_tiles[p.que] and table.sum(men_tiles[p.que]) > 0 then
-                    local c
-                    repeat
-                        chu_tile,c = table.choice(men_tiles[p.que])
-                        log.info("%d,%d",chu_tile,c)
-                    until c and c > 0
-                end
-            end
-
+            
             if not chu_tile or not p.pai.shou_pai[chu_tile] or p.pai.shou_pai[chu_tile] <= 0 then
                 local c
                 repeat
@@ -2705,13 +2713,16 @@ function changpai_table:series_action_map(actions)
     log.dump(actions)
     local acts = {}
     for act,tiles in pairs(actions) do
-        for tile,v in pairs(tiles) do   
+        if  tiles then
+            for tile,v in pairs(tiles) do   
                 tinsert(acts,{
                     action = act,
                     tile = v.tile,   
                     other_tile = v.othertile or nil,  
                 })
         end
+        end
+        
     end
     log.dump(acts)
     return acts
@@ -2960,21 +2971,7 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     return actions
 end
 
-local action_name_str = {  
-    [ACTION.PENG] = "Peng", 
-    [ACTION.BA_GANG] = "BaGang",
-    [ACTION.ZI_MO] = "ZiMo",
-    [ACTION.FAN_PAI] = "FanPai",
-    [ACTION.CHI] = "Chi",
-    [ACTION.TOU] = "Tou",
-    [ACTION.TRUSTEE] = "Trustee",
-    [ACTION.PASS] = "Pass",
-    [ACTION.HU] = "Hu",
-    [ACTION.TING] = "Ting",
-    [ACTION.CHU_PAI] = "Discard",
-    [ACTION.MO_PAI] = "Draw",
-    [ACTION.QIANG_GANG_HU] = "QiangGangHu",
-}
+
 
 function changpai_table:log_game_action(player,action,tile,auto)
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[action],msg = {tile = tile},auto = auto,time = timer.nanotime()})
