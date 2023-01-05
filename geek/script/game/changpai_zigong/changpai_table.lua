@@ -273,7 +273,7 @@ function changpai_table:on_started(player_count)
         v.chu_pai = nil
         v.que = nil
         v.first_multi_pao = nil
-        v.gzh = false
+        v.gzh = nil
         v.gsp = nil
         v.gsc = nil
         v.statistics = v.statistics or {}
@@ -643,7 +643,7 @@ function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
                 
                     local hu_action = act.actions[ACTION.QIANG_GANG_HU]
                     if hu_action then
-                        self:set_gzh_on_pass(p,act.tile)
+                        self:set_gzh_on_pass(p,self:hu_fan(p,qiang_tile))
                     end
                 
             end
@@ -1390,7 +1390,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                
                     local hu_action = act.actions[ACTION.HU]
                     if hu_action then
-                        self:set_gzh_on_pass(p,chu_pai_player.fan_pai)
+                        self:set_gzh_on_pass(p,self:hu_fan(p,chu_pai_player.fan_pai))
                     end                
                
                     local peng_action = act.actions[ACTION.PENG]
@@ -1635,8 +1635,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 
                     local hu_action = act.actions[ACTION.HU]
                     if hu_action then
-                        self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
-                        log.error("set_gzh_on_pass")
+                        self:set_gzh_on_pass(p,self:hu_fan(p,chu_pai_player.chu_pai))
+                        
                     end
  
     
@@ -1644,14 +1644,14 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                     local peng_action = act.actions[ACTION.PENG]
                     if peng_action then
                         self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
-                        log.error("set_gsp_on_pass")
+                        
                     end
                
                 
                     local chi_action = act.actions[ACTION.CHI]
                     if chi_action then
                         self:set_gsc_on_pass(p,chu_pai_player.chu_pai)
-                        log.error("set_gsc_on_pass")
+                        
                     end
                
             end
@@ -1857,7 +1857,7 @@ function changpai_table:fake_mo_pai()
     table.incr(shou_pai,mo_pai)
 
 
-    player.gzh = false
+    player.gzh = nil
     player.gsp = nil
     player.gsc = nil
     self.mo_pai_count = (self.mo_pai_count or 0) + 1
@@ -1870,16 +1870,20 @@ function changpai_table:fake_mo_pai()
 end
 -----------------过手胡
 function changpai_table:clean_gzh(player)
-    player.gzh = false
+    player.gzh = nil
 end
 
-function changpai_table:set_gzh_on_pass(passer,tile)
-    passer.gzh = true
+function changpai_table:set_gzh_on_pass(passer,fans)
+    passer.gzh = {hufans = fans, istrue = true}
     log.dump(passer.gzh)
+    log.dump(fans)
 end
 
 function changpai_table:is_in_gzh(player,tile)
-    return player.gzh
+    return player.gzh and player.gzh.istrue
+end
+function changpai_table:get_gzh_fans(player)
+    return player.gzh and player.gzh.hufans
 end
 -----------------过手吃
 function changpai_table:clean_gsc(player)
@@ -2458,7 +2462,7 @@ function changpai_table:fan_pai()
     --table.incr(shou_pai,mo_pai)
     log.info("---------mo pai,guid:%s,pai:  %s ------",player.guid,fan_pai)
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = fan_pai}})
+    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "FanPai",msg = {tile = fan_pai}})
     self:on_fan_pai(player,fan_pai)
 
     self:on_user_fan_pai(fan_pai)
@@ -2809,14 +2813,24 @@ function changpai_table:calc_types(ts)
     return table.sum(ts,function(t) return (t.score or 1) * (t.count or 0) end),
         table.sum(ts,function(t) return (t.count or 1) * (t.fan or 0) end)
 end
-
+--求出最大番数
 function changpai_table:hu_fan(player,in_pai,mo_pai,qiang_gang)
-    local rule_hu = self:rule_hu(player.pai,in_pai,mo_pai,player.chair_id==self.zhuang)
-    local ext_hu = self:ext_hu(player,mo_pai,qiang_gang)
-    local hu = table.merge(rule_hu,ext_hu,function(l,r) return l or r end)
-    local types = table.merge(hu,self:gang_types(player),function(l,r) return l or r end)
-    local score,fan = self:calc_types(types)
-    return fan or 0,score or 0
+    local typefans = {}
+    local gangfans
+    local hutypes = self:hu(player,in_pai,mo_pai,qiang_gang)
+    local types = self:serial_types(hutypes)
+    gangfans = self:calculate_gang(player) --只要有人胡杠什么的就要算钱
+    typefans[player.chair_id] = table.union(types or {},gangfans or {})
+    
+    log.dump(typefans)
+
+    local fans = table.map(typefans,function(v,chair)
+        local fan = table.sum(v,function(t) return t.fan * t.count end)
+        return chair,fan
+    end)
+    log.dump(fans)
+
+    return fans[player.chair_id]
 end
 
 function changpai_table:get_actions_first_turn(p,mo_pai)
@@ -2875,11 +2889,18 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     log.dump(p.gzh)
     log.dump(in_pai)
     log.dump(self:is_in_gzh(p,in_pai))
+    
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
-        actions[ACTION.HU] = nil
+        local hufans = self:hu_fan(p,in_pai)
+        if self:get_gzh_fans(p) >=hufans then
+            actions[ACTION.HU] = nil
+        end   
     end
-    if mo_pai and self:is_in_gzh(p,mo_pai) and actions[ACTION.HU] then
-        actions[ACTION.HU] = nil
+    if mo_pai and self:is_in_gzh(p) and actions[ACTION.HU] then
+        local hufans = self:hu_fan(p,nil,mo_pai)
+        if self:get_gzh_fans(p) >=hufans then
+            actions[ACTION.HU] = nil
+        end  
     end
     
     log.dump(self:is_in_gsc(p,in_pai))
@@ -2943,6 +2964,7 @@ local action_name_str = {
     [ACTION.PENG] = "Peng", 
     [ACTION.BA_GANG] = "BaGang",
     [ACTION.ZI_MO] = "ZiMo",
+    [ACTION.FAN_PAI] = "FanPai",
     [ACTION.CHI] = "Chi",
     [ACTION.TOU] = "Tou",
     [ACTION.TRUSTEE] = "Trustee",

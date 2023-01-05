@@ -21,6 +21,7 @@ local ACTION = {
 	ZI_MO = pb.enum("CP_ACTION","ACTION_ZI_MO"),
 	MO_PAI = pb.enum("CP_ACTION","ACTION_MO_PAI"),
 	QIANG_GANG_HU = pb.enum("CP_ACTION","ACTION_QIANG_GANG_HU"),
+	FAN_PAI = pb.enum("CP_ACTION","ACTION_FAN_PAI"),
 	CLOSE = -1,
 	RECONNECT = -2,
 	VOTE = -4,
