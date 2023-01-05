@@ -1271,7 +1271,7 @@ end
 
 function changpai_table:on_reconnect_when_action_after_chu_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-    local action = self.waiting_actions and self.waiting_actions[p.chair_id] or {}
+    local action = self.waiting_actions and self.waiting_actions[p.chair_id] or nil 
     if action and not action.done then
         self:send_action_waiting(action)
     end
