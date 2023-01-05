@@ -1805,7 +1805,7 @@ function maajan_table:do_balance()
     end
     log.dump(msg,"SC_MaajanZiGongGameFinish")
 
-    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_ZIGONG)
+    chair_money = self:balance(chair_money,enum.LOG_MONEY_OPT_TYPE_MAAJAN_ZIGONG)
     for _,balance in pairs(msg.player_balance) do
         local p = self.players[balance.chair_id]
         local p_log = self.game_log.players[balance.chair_id]

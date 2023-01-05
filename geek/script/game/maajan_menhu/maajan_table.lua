@@ -2044,7 +2044,7 @@ function maajan_table:on_game_balance()
         log.info("player hu %s,%s,%s,%s",chair_id,p_score,win_money,p.describe)
     end
 
-    chair_money = self:balance(chair_money,enum.LOG_MOENY_OPT_TYPE_MAAJAN_MENHU)
+    chair_money = self:balance(chair_money,enum.LOG_MONEY_OPT_TYPE_MAAJAN_MENHU)
     for _,balance in pairs(msg.player_balance) do
         local p = self.players[balance.chair_id]
         local p_log = self.game_log.players[balance.chair_id]
