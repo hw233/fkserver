@@ -71,7 +71,7 @@ end
 
 function changpai_tile_dealer:deal_one()
     local k = self.remain_count
-    local j = math.random(k)
+    local j = k
     local tile = self.tiles[j]
     if j ~= k then self.tiles[j], self.tiles[k] = self.tiles[k], self.tiles[j] end
     self.remain_count = self.remain_count - 1
@@ -109,7 +109,13 @@ function changpai_tile_dealer:deal_tiles_on(count,func)
     end
     return tiles
 end
-
+function changpai_tile_dealer:get_all_left_tiles()
+    local ts ={}
+    for i=1 , self.remain_count  do
+        ts[i] = self.tiles[i]
+    end 
+    return ts
+end
 function changpai_tile_dealer:reserve_count(count)
     self.remain_count = self.remain_count + count
 end

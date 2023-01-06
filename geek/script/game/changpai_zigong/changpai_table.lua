@@ -276,13 +276,13 @@ function changpai_table:on_started(player_count)
             shou_pai = {},
             ming_pai = {},
             desk_tiles = {},
-            bao_pai = {},
             un_usecard = {},
         }
         v.zhuan_shou_pai = nil
         v.jiao                  = nil
         v.is_bao_pai = false  --玩家的上家是否对他形成包牌
 
+        v.bao_pai = false
         v.mo_pai = nil
         v.chu_pai = nil
         v.que = nil
@@ -311,6 +311,7 @@ function changpai_table:on_started(player_count)
         rule = self.private_id and self.rule or nil,
         club = (self.private_id and self.conf.club) and club_utils.root(self.conf.club).id,
         table_id = self.private_id or nil,
+        all_pai = {},
     }
 
     self.tiles = self.tiles or all_tiles[1]
@@ -322,10 +323,16 @@ function changpai_table:on_started(player_count)
     self:pre_begin()--这里是包括定庄，洗牌，发牌，庄家摸第16张牌，给在位置的所有玩家发送牌数据
     ---self:action_after_fapai()
     log.dump("开始游戏了")
+
+        local function auto_fapai()
+            self:lockcall(function()
+                self:broadcast2client("Changpai_Toupaistate",{status = FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI,})
+                self:action_after_fapai()
+            end)
+        end
+
     self:begin_main_timer(TIME_TYPE.MAIN_XI_PAI,TIME_TYPE.MAIN_XI_PAI,function ()
-  
-        self:broadcast2client("Changpai_Toupaistate",{status = FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI,})
-        self:action_after_fapai()
+        auto_fapai()
     end,"action_after_fapai")--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
 end
 function changpai_table:get_unusecard_list(player)
@@ -355,7 +362,7 @@ end
 function changpai_table:action_after_fapai()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
     local player = self:chu_pai_player()
-
+    self:cancel_main_timer()
     local actions = self:get_actions_first_turn(player)
     log.dump(actions)
     if table.nums(actions) > 0 then
@@ -607,7 +614,11 @@ function changpai_table:xi_pai()
     self:foreach(function(v)
         self:send_data_to_enter_player(v)
         self.game_log.players[v.chair_id].start_pai = self:tile_count_2_tiles(v.pai.shou_pai)
+        
     end)
+    local allcards =self.dealer:get_all_left_tiles() or {}
+    self.game_log.all_pai = table.values(allcards)
+    
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
 end
 
@@ -1443,6 +1454,30 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
             p.tuos = tuonum[p.chair_id]
         end
+
+        local nest_user = 1
+        if self.chu_pai_player_index+1 > self.start_count then
+            nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+        else
+            nest_user = (self.chu_pai_player_index+1 )
+        end
+        local user = self.players[nest_user]
+        if nest_user == player.chair_id and self:is_bao_pai(player,othertile) then
+            local chu_player =  self:chu_pai_player()
+
+            for _,act in pairs(all_actions) do
+                if act.done.action == ACTION.PASS and act.chair_id ==self.chu_pai_player_index then     
+                    local chi_action = act.actions[ACTION.CHI]
+                    if chi_action then
+                        chu_player.bao_pai = true  
+                    end 
+                               
+                end
+            end
+            
+        end
+
+
         self:jump_to_player_index(player)
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
@@ -1540,8 +1575,13 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         self:next_player_index()
         --self:fan_pai()
         
+        local function auto_fanpai()
+            self:lockcall(function()
+                self:fan_pai()
+            end)
+        end
         self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
-            self:fan_pai()
+            auto_fanpai()
         end,"fan_pai")
         return
     end
@@ -1680,6 +1720,20 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[top_done_act],msg = {tile = tile,other_tile = othertile },auto = auto,time = timer.nanotime()})
         check_all_pass(all_actions)
         
+
+        local nest_user = 1
+        if self.chu_pai_player_index+1 > self.start_count then
+            nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+        else
+            nest_user = (self.chu_pai_player_index+1 )
+        end
+        if nest_user == player.chair_id and self:is_bao_pai(player,othertile) then
+            local chu_player =  self:chu_pai_player()
+            chu_player.bao_pai = true   
+        end
+
+
+
         local tuonum = {}
         for chair, p in pairs(self.players) do
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
@@ -1778,8 +1832,13 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         check_all_pass(all_actions)
         self:next_player_index()
         
+        local function auto_fanpai()
+            self:lockcall(function()
+                self:fan_pai()
+            end)
+        end
         self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
-            self:fan_pai()
+            auto_fanpai()
         end,"fan_pai")
         --self:fan_pai()
         return
@@ -2347,8 +2406,13 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     if table.nums(waiting_actions) == 0 then
         self:next_player_index()
         
+        local function auto_fanpai()
+            self:lockcall(function()
+                self:fan_pai()
+            end)
+        end
         self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
-            self:fan_pai()
+            auto_fanpai()
         end,"fan_pai")
         
     else
@@ -2447,7 +2511,6 @@ function changpai_table:chu_pai()
     self:send_ting_tips(player)
 end
 function changpai_table:fan_pai()
-    
 
     self:cancel_main_timer()
     local player = self:chu_pai_player()
@@ -2538,9 +2601,14 @@ function changpai_table:fan_pai()
     log.dump(waiting_actions)
     if table.nums(waiting_actions) == 0 then
         self:next_player_index()
-        
+
+        local function auto_fanpai()
+            self:lockcall(function()
+                self:fan_pai()
+            end)
+        end
         self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
-            self:fan_pai()
+            auto_fanpai()
         end,"fan_pai")
         --self:fan_pai()
     else
