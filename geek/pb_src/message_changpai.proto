@@ -30,9 +30,11 @@ enum CP_ACTION{
 	ACTION_CHU_PAI = 0x1000;
 	ACTION_ZI_MO = 0x2000;
 	ACTION_MO_PAI = 0x8000;
+	ACTION_TUO   = 0x20000;
 	ACTION_QIANG_GANG_HU = 0x200000;
 	ACTION_FAN_PAI = 0x600000;
 	ACTION_ROUND = 0x800000;
+	
 }
 
 enum CP_SECTION_TYPE {
@@ -82,6 +84,7 @@ message Changpai_MingPai{
 	int32 othertile=2;
 	int32 type = 3;
 	int32 substitute_num = 4; 
+	int32 baopai = 5;
 }
 
 
@@ -204,6 +207,7 @@ message CS_Changpai_Do_Action{
 	int32 other_tile = 3;
 	int32 session_id = 4;
 	int32 substitute_num = 5; 
+	bool is_sure = 6;
 }
 
 message SC_Changpai_Do_Action_Commit{
@@ -350,6 +354,7 @@ message SC_CP_Canbe_Baopai
 {
 	enum MsgID { Nil = 0; ID = 33146; }
 	int32 tile = 1;
+	int32 number = 2; 
 }
 message SC_CP_Tuo_Num
 {
