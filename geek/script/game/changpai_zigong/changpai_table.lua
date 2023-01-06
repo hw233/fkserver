@@ -329,7 +329,7 @@ function changpai_table:on_started(player_count)
             end)
         end
 
-    self:begin_clock_time(TIME_TYPE.MAIN_XI_PAI,function ()
+    self:begin_clock_timer(TIME_TYPE.MAIN_XI_PAI,function ()
         auto_fapai()
     end)--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
 end
@@ -1575,7 +1575,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         return
@@ -1831,7 +1831,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         --self:fan_pai()
@@ -2404,7 +2404,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         
@@ -2600,7 +2600,7 @@ function changpai_table:fan_pai()
                 self:fan_pai()
             end)
         end
-        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         --self:fan_pai()
