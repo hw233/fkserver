@@ -246,7 +246,6 @@ function changpai_table:on_private_dismissed()
     end
     self:cancel_all_auto_action_timer()
     self:cancel_clock_timer()
-    self:cancel_main_timer()
     base_table.on_private_dismissed(self)
 end
 
@@ -318,7 +317,6 @@ function changpai_table:on_started(player_count)
     self.dealer = nil
     self.dealer = changpai_tile_dealer:new(self.tiles)
     self:cancel_clock_timer()
-    self:cancel_main_timer()
     self:cancel_all_auto_action_timer()
     self:pre_begin()--这里是包括定庄，洗牌，发牌，庄家摸第16张牌，给在位置的所有玩家发送牌数据
     ---self:action_after_fapai()
@@ -331,9 +329,9 @@ function changpai_table:on_started(player_count)
             end)
         end
 
-    self:begin_main_timer(TIME_TYPE.MAIN_XI_PAI,TIME_TYPE.MAIN_XI_PAI,function ()
+    self:begin_clock_time(TIME_TYPE.MAIN_XI_PAI,function ()
         auto_fapai()
-    end,"action_after_fapai")--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
+    end)--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
 end
 function changpai_table:get_unusecard_list(player)
     local cards = {}
@@ -362,7 +360,6 @@ end
 function changpai_table:action_after_fapai()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
     local player = self:chu_pai_player()
-    self:cancel_main_timer()
     local actions = self:get_actions_first_turn(player)
     log.dump(actions)
     if table.nums(actions) > 0 then
@@ -388,7 +385,6 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
         log.warning("on_action_after_mo_pai invalid action guid:%s,action:%s",player.guid,msg.action)
         return 
     end
-    self:cancel_main_timer()
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
 
@@ -866,7 +862,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
 
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
-    self:cancel_main_timer()
+
     local do_action = msg.action
     local chair_id = player.chair_id
     local tile = msg.value_tile
@@ -1376,7 +1372,6 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         end
     end
 
-    self:cancel_main_timer()
     self:cancel_clock_timer()
     log.dump(self.waiting_actions)
     local all_actions = table.series(self.waiting_actions,function(action)
@@ -1580,9 +1575,9 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
-        end,"fan_pai")
+        end)
         return
     end
 
@@ -1649,7 +1644,6 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
             return
         end
     end
-    self:cancel_main_timer()
     self:cancel_clock_timer()
     --所有已经操作的 acitons
     local all_actions = table.series(self.waiting_actions,function(action)
@@ -1837,9 +1831,9 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
-        end,"fan_pai")
+        end)
         --self:fan_pai()
         return
     end
@@ -2205,7 +2199,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
 
     self:cancel_clock_timer()
     self:cancel_all_auto_action_timer()
-    self:cancel_main_timer()
+
     local do_action = msg.action
     local chair_id = player.chair_id
     local tile = msg.value_tile
@@ -2351,7 +2345,6 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
 
     --------------------------------------------------------------------------------
     self:cancel_clock_timer()
-    self:cancel_main_timer()
     self:cancel_all_auto_action_timer()
 
     log.info("---------chu pai guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
@@ -2411,9 +2404,9 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
-        end,"fan_pai")
+        end)
         
     else
         self:action_after_chu_pai(waiting_actions)
@@ -2512,7 +2505,7 @@ function changpai_table:chu_pai()
 end
 function changpai_table:fan_pai()
 
-    self:cancel_main_timer()
+    self:cancel_clock_timer()
     local player = self:chu_pai_player()
     
     local len = self.dealer.remain_count
@@ -2607,9 +2600,9 @@ function changpai_table:fan_pai()
                 self:fan_pai()
             end)
         end
-        self:begin_main_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_time(TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
-        end,"fan_pai")
+        end)
         --self:fan_pai()
     else
     end
@@ -3406,7 +3399,7 @@ end
 function changpai_table:on_game_overed()
     self:cancel_all_auto_action_timer()
     self:cancel_clock_timer()
-    self:cancel_main_timer()
+    
     self.game_log = nil
 
     self.zhuang = self:ding_zhuang() or self.zhuang
@@ -3465,6 +3458,7 @@ function changpai_table:on_process_over(reason)
 
     self.zhuang = nil
     self.zhuang_pai = nil
+
     self.cur_state_FSM = nil
     self.qie_pai = nil
 	base_table.on_process_over(self,reason,{
