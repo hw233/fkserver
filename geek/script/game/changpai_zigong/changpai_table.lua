@@ -279,7 +279,7 @@ function changpai_table:on_started(player_count)
         }
         v.zhuan_shou_pai = nil
         v.jiao                  = nil
-        v.is_bao_pai = false  --玩家的上家是否对他形成包牌
+        v.is_bao_pai = false  --下家是不是已经真实胡牌了，自摸
 
         v.bao_pai = false
         v.mo_pai = nil
@@ -2630,7 +2630,7 @@ function changpai_table:get_player_piao(p)
                 chipiao = true
             end 
         end
-        if p.hu and (p.hu.type~=HU_TYPE.BABA_HEI or p.hu.type~=HU_TYPE.HEI_LONG)  then
+        if p.hu and (p.hu.type==HU_TYPE.BABA_HEI or p.hu.type==HU_TYPE.HEI_LONG)  then
             chipiao = true
         end     
     end
@@ -2649,6 +2649,9 @@ function changpai_table:get_player_xiaohu(p)
         end 
         log.dump(p.tuos)
         log.dump(xiaohu)
+        if self:get_player_piao(p) then
+            xiaohu =false
+        end
     return xiaohu
 end
 function changpai_table:get_chao_add_score(p)
@@ -2714,6 +2717,7 @@ function changpai_table:do_balance(in_pai)
         p_log.is_chipiao = self:get_player_piao(p)
         p_log.is_xiaohu = self:get_player_xiaohu(p)
         p_log.is_dianpao = dianpao
+        p_log.bao_pai = p.is_bao_pai
         p_log.tuos = p.tuos
         
         
@@ -2725,7 +2729,8 @@ function changpai_table:do_balance(in_pai)
             tuos =p.tuos ,
             is_chipiao = self:get_player_piao(p),
             is_xiaohu = self:get_player_xiaohu(p),
-            is_dianpao = dianpao
+            is_dianpao = dianpao,
+            is_baopai = p.is_bao_pai
         })
 
         tinsert(msg.player_balance,{
@@ -3369,8 +3374,14 @@ function changpai_table:game_balance(in_pai)
                 scores[chair_id] = (scores[chair_id] or 0) + winscore
                 return
             end
-            if p.bao_pai  then               
-                scores[p.bao_pai] = (scores[p.bao_pai] or 0) - winscore
+            local chairid = chair_id -1 
+            if chairid < 1 then
+                chairid = chair_id -1+self.start_count
+            end
+            local lastplayer = self.players[chairid]
+            if lastplayer.bao_pai  then     
+                lastplayer.is_bao_pai =true          
+                scores[chairid] = (scores[chairid] or 0) - winscore
                 scores[chair_id] = (scores[chair_id] or 0) + winscore
                 return
             end       
