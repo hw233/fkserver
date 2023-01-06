@@ -260,7 +260,7 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.bTest = true
+    self.bTest = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
     if self.bTest then
@@ -2760,7 +2760,7 @@ function changpai_table:prepare_tiles()
         }
         self.dealer.remain_count = 84
     end
-    self.zhuang_pai =  2--self.dealer:use_one()
+    self.zhuang_pai =  self.dealer:use_one()--2的话1号是庄
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
