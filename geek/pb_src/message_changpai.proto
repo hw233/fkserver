@@ -246,6 +246,8 @@ message Changpai_Player_Score {
 	int32 guid = 2;
 	int32 score = 3;
 	int32 money = 4;
+	int32 hucount = 5;
+	int32 dianpaonum = 6;
 }
 
 message SC_Changpai_Final_Game_Over{
