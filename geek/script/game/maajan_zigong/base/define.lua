@@ -239,7 +239,7 @@ define.HU_TYPE = HU_TYPE
 local HU_TYPE_INFO = {
 	[HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0,fan = 0},				--未胡
 	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 3},			--天胡
-	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 3},				--地胡
+	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 1},				--地胡
 	[HU_TYPE.REN_HU]				= {name = "REN_HU",score = 0,fan = 0},				--人胡
 	[HU_TYPE.TIAN_TING]				= {name = "TIAN_TING",score = 0,fan = 0},			--天听
 	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 2},			--清一色
