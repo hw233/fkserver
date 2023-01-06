@@ -196,7 +196,7 @@ function changpai_table:init(room, table_id, chair_count)
 	base_table.init(self, room, table_id, chair_count)
     self.cur_state_FSM = nil
     self.start_count = self.chair_count
-    self.huang_zhuang = false
+    self.hashu = 0
     
 end
 
@@ -236,7 +236,7 @@ function changpai_table:on_private_dismissed()
     log.info("changpai_table:on_private_dismissed")
     self.cur_round = nil
     self.zhuang = nil
-    
+    self.hashu = 0
     self.zhuang_pai = nil
     self.qie_pai = nil
     self.tiles = nil
@@ -265,11 +265,7 @@ function changpai_table:on_started(player_count)
     self.bTest = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
-    if self.bTest then
-        self.zhuang = 1
-    else
-        self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang    
-    end
+
     for _,v in pairs(self.players) do
         v.hu                    = nil
         v.deposit               = false
@@ -428,7 +424,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
         }
 
         player.statistics.hu = (player.statistics.hu or 0) + 1
-
+        
         self:log_game_action(player,do_action,tile,auto)
         self:broadcast_player_hu(player,do_action)
         self:do_balance()
@@ -705,6 +701,7 @@ function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
         self:log_game_action(p,act,done_action_tile,action.done.auto)
         self:broadcast_player_hu(p,act,action.target)
         p.statistics.hu = (p.statistics.hu or 0) + 1
+        
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
         if  qianggangdecr then 
             table.decr(chu_pai_player.pai.shou_pai,done_action_tile)
@@ -968,7 +965,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
         tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
         player.statistics.hu = (player.statistics.hu or 0) + 1
-
+        
         self:log_game_action(player,do_action,tile,auto)
         self:broadcast_player_hu(player,do_action)
         local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
@@ -1437,7 +1434,8 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         table.pop_back(chu_pai_player.pai.desk_tiles)
         self:adjust_shou_pai(player,top_done_act,tile,othertile,top_session_id)
         log.error("---------adjust_shou_pai--------")
-        self:log_game_action(player,top_done_act,tile,top_action.done.auto)
+        --self:log_game_action(player,top_done_act,tile,top_action.done.auto)
+        tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[top_done_act],msg = {tile = tile,other_tile = othertile },auto = auto,time = timer.nanotime()})
         check_all_pass(all_actions)
         
         local tuonum = {}
@@ -1523,7 +1521,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         self:log_game_action(p,top_done_act,tile,top_action.done.auto)
         self:broadcast_player_hu(p,top_done_act,top_session_id)
         p.statistics.hu = (p.statistics.hu or 0) + 1
-        
+       
         
 
         table.pop_back(chu_pai_player.pai.desk_tiles)
@@ -1678,7 +1676,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
     if top_done_act == ACTION.CHI then
         table.pop_back(chu_pai_player.pai.desk_tiles)
         self:adjust_shou_pai(player,top_done_act,tile,othertile,top_session_id)
-        self:log_game_action(player,top_done_act,tile,top_action.done.auto)
+        --self:log_game_action(player,top_done_act,tile,top_action.done.auto)
+        tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[top_done_act],msg = {tile = tile,other_tile = othertile },auto = auto,time = timer.nanotime()})
         check_all_pass(all_actions)
         
         local tuonum = {}
@@ -1754,6 +1753,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         }
         player.statistics.hu = (player.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
+        self.hashu = self.zhuang
         local tuonum = {}
         for chair, v in pairs(self.players) do
             tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
@@ -1850,6 +1850,7 @@ function changpai_table:fake_mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 5 then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -1992,6 +1993,7 @@ function changpai_table:tou_pai()--偷牌也就是摸牌，但是是在一开始
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 5 then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2013,6 +2015,7 @@ function changpai_table:tou_pai()--偷牌也就是摸牌，但是是在一开始
     end
 
     if not mo_pai then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2037,6 +2040,7 @@ function changpai_table:mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 5 then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2058,6 +2062,7 @@ function changpai_table:mo_pai()
     end
 
     if not mo_pai then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2443,11 +2448,14 @@ function changpai_table:chu_pai()
 end
 function changpai_table:fan_pai()
     
+
+    self:cancel_main_timer()
     local player = self:chu_pai_player()
     
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 5 then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2469,6 +2477,7 @@ function changpai_table:fan_pai()
     end
 
     if not fan_pai then
+        self.hashu = self.zhuang
         self:do_balance()
         return
     end
@@ -2765,12 +2774,20 @@ function changpai_table:prepare_tiles()
         }
         self.dealer.remain_count = 84
     end
-    self.zhuang_pai =  self.dealer:use_one()--2的话1号是庄
+    log.error("-------------------------------%d",self.hashu)
+    if self.hashu and self.hashu > 0 then
+        self.zhuang_pai = nil
+        self.zhuang = self.hashu
+    else
+        self.zhuang_pai =  self.dealer:use_one()--2的话1号是庄
+        log.info("zhuang_pai %d  ",self.zhuang_pai)
+        self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+    end
+    
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
-    log.info("zhuang_pai %d  ",self.zhuang_pai)
-    self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+    
 
    
     self.chu_pai_player_index = self.zhuang --出牌人的索引
@@ -3385,7 +3402,7 @@ function changpai_table:on_process_over(reason)
 	base_table.on_process_over(self,reason,{
         balance = total_winlose,
     })
-
+    self.hashu = 0
     self:foreach(function(p)
         p.statistics = nil
     end)
@@ -3712,7 +3729,7 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
         state = self.cur_state_FSM,
         round = self.cur_round,
         zhuang = self.zhuang, 
-        zhuang_pai = self.zhuang_pai,   
+        zhuang_pai = self.zhuang_pai or nil,   
         self_chair_id = player.chair_id,
         act_time_limit = def.ACTION_TIME_OUT,
         decision_time_limit = def.ACTION_TIME_OUT,
