@@ -1753,9 +1753,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         else
             nest_user = (self.chu_pai_player_index+1 )
         end
-        if nest_user == player.chair_id and self:is_bao_pai(player,othertile) then
-            local chu_player =  self:chu_pai_player()
-            chu_player.bao_pai = true   
+        if nest_user == player.chair_id and self:is_bao_pai(player,chu_pai_player.chu_pai) then
+            chu_pai_player.bao_pai = true   
         end
 
 
@@ -3825,7 +3824,12 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
         if player.chair_id == v.chair_id then
             tplayer.mo_pai =  v.mo_pai
         end
-        tplayer.tuos = v.pai and mj_util.tuos(v.pai,nil,nil,nil) or 0
+        if player.chair_id == v.chair_id then
+            tplayer.tuos = v.pai and mj_util.tuos(v.pai,nil,nil,nil) or 0
+        else
+            tplayer.tuos = v.pai and mj_util.ming_tuos(v.pai) or 0
+        end
+        
         tplayer.unusablecard = table.values(cards)
         tinsert(msg.pb_players,tplayer)
     end)
