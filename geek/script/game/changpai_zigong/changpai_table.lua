@@ -985,7 +985,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             zi_mo = is_zi_mo,  
         }
 
-        self:broadcast_players_tuos()
+        self:broadcast_players_tuos(player)
         
         player.statistics.hu = (player.statistics.hu or 0) + 1
         
