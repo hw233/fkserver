@@ -1286,8 +1286,28 @@ function changpai_table:on_reconnect_when_action_after_chu_pai(p)
         self:send_action_waiting(action)
     end
 end
-function changpai_table:set_palyer_bao_pai(allactions,curpalyer)
+function changpai_table:set_palyer_bao_pai(allactions,player)
     
+    log.dump(allactions,player.chair_id)
+
+    local nest_user = 1
+    if player and player.chair_id-1 < 1 then
+        nest_user =  self.start_count
+    else
+        nest_user = player and player.chair_id-1 
+    end
+    local lastuser = self.players[nest_user]
+    log.dump(nest_user,lastuser.fan_pai)
+    if lastuser and  nest_user == self.chu_pai_player_index and self:is_bao_pai(player,lastuser.fan_pai) then
+        
+        if player and  allactions[player.chair_id] then
+            self:send_action_waiting(allactions[player.chair_id])
+        end
+        return true
+    end
+    
+    return false
+
 end
 function changpai_table:on_action_after_fan_pai(player,msg,auto)
     log.dump(self.waiting_actions)
@@ -1297,23 +1317,33 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         return
     end
     local fan_tile = msg.value_tile
-    if msg.action ==ACTION.PASS and self.chu_pai_player_index ==player.chair_id then
-            --包牌判断，假如对下家形成包牌，就返回存在包牌风险提醒，假如下家已经是包牌，那不管
-            local nest_user = 1
-            if self.chu_pai_player_index+1 > self.start_count then
-                nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
-            else
-                nest_user = (self.chu_pai_player_index+1 )
-            end
-            local user = self.players[nest_user]
-            if self:is_bao_pai(user,fan_tile) and not msg.is_sure then
-                    
-                send2client(player,"SC_CP_Canbe_Baopai",{
-                    tile = fan_tile,
-                    number = 2
-                })
-                return
-            end
+    local chu_pai_player = self:chu_pai_player()
+
+    if msg.action ==ACTION.PASS and self.chu_pai_player_index ~=player.chair_id then
+       if self:set_palyer_bao_pai(self.waiting_actions,player) then return end
+    end
+
+    if msg.action ==ACTION.PASS and self.chu_pai_player_index ==player.chair_id and not msg.is_sure then
+        log.dump(msg)
+        log.dump(chu_pai_player.fan_pai)
+        
+        --包牌判断，假如对下家形成包牌，就返回存在包牌风险提醒，假如下家已经是包牌，那不管
+        local nest_user = 1
+        if self.chu_pai_player_index+1 > self.start_count then
+            nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+        else
+            nest_user = (self.chu_pai_player_index+1 )
+        end
+        local user = self.players[nest_user]
+        log.dump(self:is_bao_pai(user,chu_pai_player.fan_pai))
+        if self:is_bao_pai(user,chu_pai_player.fan_pai) and not msg.is_sure then
+                
+            send2client(player,"SC_CP_Canbe_Baopai",{
+                tile = chu_pai_player.fan_pai,
+                number = 2
+            })
+            return
+        end
     end
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if action then
@@ -1380,7 +1410,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
 
     self.waiting_actions = {}
-    local chu_pai_player = self:chu_pai_player()
+   
 
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
@@ -1456,13 +1486,16 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         else
             nest_user = (self.chu_pai_player_index+1 )
         end
-        local user = self.players[nest_user]
-        if nest_user == player.chair_id and self:is_bao_pai(player,othertile) then
-            local chu_player =  self:chu_pai_player()
-
+        local chu_player =  self:chu_pai_player()
+        log.dump(self:is_bao_pai(player,chu_player.fan_pai))
+        log.dump(othertile)
+        if nest_user == player.chair_id and chu_player and chu_player.fan_pai and self:is_bao_pai(player,chu_player.fan_pai) then
+            
+            log.dump(all_actions)
             for _,act in pairs(all_actions) do
                 if act.done.action == ACTION.PASS and act.chair_id ==self.chu_pai_player_index then     
                     local chi_action = act.actions[ACTION.CHI]
+                    log.dump(chi_action)
                     if chi_action then
                         chu_player.bao_pai = true  
                     end 
@@ -1801,7 +1834,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         }
         player.statistics.hu = (player.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
-        self.hashu = self.zhuang
+        
         local tuonum = {}
         for chair, v in pairs(self.players) do
             tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
@@ -2414,17 +2447,18 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
 end
 function changpai_table:is_bao_pai(player,in_pai)
     local tileNum = 0
-        for index, s in ipairs(player.pai.ming_pai) do
-           if s.tile == in_pai and (s.type == SECTION_TYPE.PENG or  s.type == SECTION_TYPE.TOU)  then
-                return true
-           end 
-           if s.type == SECTION_TYPE.CHI and s.othertile == in_pai then
-                tileNum= tileNum+1
-           end
-        end
-        if  tileNum >=2 then
+    local ming_pai = player.pai.ming_pai or {}
+    for _, s in pairs(ming_pai) do
+        if s and s.tile == in_pai and (s.type == SECTION_TYPE.PENG or  s.type == SECTION_TYPE.TOU)  then
             return true
+        end 
+        if s.type == SECTION_TYPE.CHI and s.othertile == in_pai and  mj_util.tile_is_chongfan(in_pai)then
+            tileNum= tileNum+1
         end
+    end
+    if  tileNum >=2 then
+        return true
+    end
     return  false
 end
 function changpai_table:send_ting_tips(p)
@@ -2621,8 +2655,9 @@ function changpai_table:get_player_piao(p)
     local chipiao = false
     log.dump(self:get_is_chi_piao())
     log.dump(p.tuos)
+    
     if self:get_is_chi_piao() then
-        if p.hu and p.hu.type~=HU_TYPE.BABA_HEI and p.hu.type~=HU_TYPE.HEI_LONG then
+        if p.hu and p.hu.types~=HU_TYPE.BABA_HEI and p.hu.types~=HU_TYPE.HEI_LONG then
             if self.zhuang == p.chair_id and p.tuos and p.tuos >=16 then
                 chipiao = true
             end
@@ -2630,7 +2665,7 @@ function changpai_table:get_player_piao(p)
                 chipiao = true
             end 
         end
-        if p.hu and (p.hu.type==HU_TYPE.BABA_HEI or p.hu.type==HU_TYPE.HEI_LONG)  then
+        if p.hu and (p.hu.types==HU_TYPE.BABA_HEI or p.hu.types==HU_TYPE.HEI_LONG)  then
             chipiao = true
         end     
     end
@@ -2828,28 +2863,49 @@ function changpai_table:prepare_tiles()
     else   
         
         
-        -- 测试手牌     
+        -- -- 这个是没有可以出的牌     
+        -- self.pre_tiles = {
+        --     [1] = {1,1,1,2,2,3,3,4,4,7,7,13,9,6},     -- 万 庄
+        --     [2] = {16,11,8,9,19,5,5,13,9,2,8,15,17,11,12},    -- 筒  
+        --     [3] = {15,12,6,9,18,16,17,6,4,12,17,17,16,7,8},      -- 万
+        -- }
+        -- -- 测试摸牌,从前到后
+        -- self.pre_gong_tiles = {
+        --     16,2,3,4,7,6,8,20,14,13,10,15,14
+        -- }
+        -- 黑龙     
+        -- self.pre_tiles = {
+        --     [1] = {10,10,16,6,20,2,18,18,3,7,12,13,16,7,14},     -- 万 庄
+        --     [2] = {16,16,5,12,9,21,21,17,9,7,2,11,12,11,14},    -- 筒  
+        --     [3] = {21,20,6,19,18,19,21,15,15,3,12,15,11,17,8},      -- 万
+        -- }
+        -- -- 测试摸牌,从前到后
+        -- self.pre_gong_tiles = {
+        --     8,6,18,3,4,20,6,
+        -- }
+        -- 包牌     
         self.pre_tiles = {
-            [1] = {1,1,1,2,2,3,3,4,4,7,7,13,9,6},     -- 万 庄
-            [2] = {16,11,8,9,19,5,5,13,9,2,8,15,17,11,12},    -- 筒  
-            [3] = {15,12,6,9,18,16,17,6,4,12,17,17,16,7,8},      -- 万
+            [1] = {18,18,4,4,13,13,13,20,20,17,17,10,10,10,6},     -- 万 庄
+            [2] = {16,7,8,6,19,5,5,13,9,2,2,11,12,11,14},    -- 筒  
+            --[3] = {5,16,19,19,18,16,12,1,1,12,12,14,11,7,1},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            16,2,3,4,7,6,8,20,14,13,10,15,14
+            8,16,18,4,20,17,5,17,6,8,14
         }
         self.dealer.remain_count = 84
     end
-    log.error("-------------------------------%d",self.hashu)
+    
     if self.hashu and self.hashu > 0 then
         self.zhuang_pai = nil
         self.zhuang = self.hashu
+        self.hashu = 0
     else
         self.zhuang_pai =  self.dealer:use_one()--2的话1号是庄
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
     end
-    
+    log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
@@ -3098,7 +3154,7 @@ function changpai_table:check_action_before_do(waiting_actions,player,msg)
         return
     end
 
-    if player_actions.session_id ~= msg.session_id then
+    if player_actions.session_id ~= msg.session_id and  not msg.is_sure then
         log.error("action session id %s,%s when check_action_before_do,chair_id %s,action:%s,tile:%s",
             player_actions.session_id,msg.session_id,chair_id,action,tile)
         return
@@ -3337,7 +3393,7 @@ function changpai_table:game_balance(in_pai)
         log.dump(self:get_chao_add_score())
         if p.hu then
 
-            
+            log.dump(p.bao_pai)
             if self:get_max_fan()==4 then --超番加分
                 if  zongfan>4  then
                     chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
@@ -3365,7 +3421,9 @@ function changpai_table:game_balance(in_pai)
                 fan_score = fan_score + chaofan_add
                 
             end
-            
+            if self:get_player_xiaohu(p) then --只要小胡都是一分
+                fan_score = 1
+            end
             winscore= fan_score * (self.start_count-1)
             log.dump(fan_score)
             if not p.hu.zi_mo then
@@ -3376,13 +3434,15 @@ function changpai_table:game_balance(in_pai)
             end
             local chairid = chair_id -1 
             if chairid < 1 then
-                chairid = chair_id -1+self.start_count
+                chairid = self.start_count
             end
             local lastplayer = self.players[chairid]
-            if lastplayer.bao_pai  then     
+            log.dump(lastplayer.bao_pai)
+            if lastplayer and lastplayer.bao_pai  then     
                 lastplayer.is_bao_pai =true          
                 scores[chairid] = (scores[chairid] or 0) - winscore
                 scores[chair_id] = (scores[chair_id] or 0) + winscore
+                log.info(" baopairen quanbaole ")
                 return
             end       
             
@@ -3456,9 +3516,9 @@ function changpai_table:on_process_over(reason)
             }
         end),
     })
-
+    
     local total_winlose = table.map(self.players,function(p) return p.guid,p.total_money or 0 end)
-
+    log.dump(total_winlose)
     self:cost_tax(total_winlose)
 
     for _,p in pairs(self.players) do

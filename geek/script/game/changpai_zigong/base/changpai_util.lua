@@ -5,27 +5,27 @@ require "functions"
 
 local mj_util 	= {}
 local all_tiles ={
-	[1]={value=2,hong=2,hei=0,index=1},
-	[2]={value=3,hong=1,hei=2,index=2},
-	[3]={value=4,hong=1,hei=3,index=3},
-	[4]={value=4,hong=0,hei=4,index=4},
-	[5]={value=5,hong=5,hei=0,index=5},
-	[6]={value=5,hong=0,hei=5,index=6},
-	[7]={value=6,hong=0,hei=6,index=7},
-	[8]={value=6,hong=1,hei=5,index=8},
-	[9]={value=6,hong=4,hei=2,index=9},
-	[10]={value=7,hong=0,hei=7,index=10},
-	[11]={value=7,hong=1,hei=6,index=11},
-	[12]={value=7,hong=4,hei=3,index=12},
-	[13]={value=8,hong=0,hei=8,index=13},
-	[14]={value=8,hong=0,hei=8,index=14},
-	[15]={value=8,hong=8,hei=0,index=15},
-	[16]={value=9,hong=0,hei=9,index=16},
-	[17]={value=9,hong=4,hei=5,index=17},
-	[18]={value=10,hong=0,hei=10,index=18},
-	[19]={value=10,hong=4,hei=6,index=19},
-	[20]={value=11,hong=0,hei=11,index=20},
-	[21]={value=12,hong=6,hei=6,index=21}
+	[1]={value=2,hong=2,hei=0,chongfan = true,index=1},
+	[2]={value=3,hong=1,hei=2,chongfan = false,index=2},
+	[3]={value=4,hong=1,hei=3,chongfan = true,index=3},
+	[4]={value=4,hong=0,hei=4,chongfan = false,index=4},
+	[5]={value=5,hong=5,hei=0,chongfan = true,index=5},
+	[6]={value=5,hong=0,hei=5,chongfan = false,index=6},
+	[7]={value=6,hong=0,hei=6,chongfan = false,index=7},
+	[8]={value=6,hong=1,hei=5,chongfan = false,index=8},
+	[9]={value=6,hong=4,hei=2,chongfan = false,index=9},
+	[10]={value=7,hong=0,hei=7,chongfan = false,index=10},
+	[11]={value=7,hong=1,hei=6,chongfan = false,index=11},
+	[12]={value=7,hong=4,hei=3,chongfan = true,index=12},
+	[13]={value=8,hong=0,hei=8,chongfan = false,index=13},
+	[14]={value=8,hong=0,hei=8,chongfan = false,index=14},
+	[15]={value=8,hong=8,hei=0,chongfan = true,index=15},
+	[16]={value=9,hong=0,hei=9,chongfan = false,index=16},
+	[17]={value=9,hong=4,hei=5,chongfan = true,index=17},
+	[18]={value=10,hong=0,hei=10,chongfan = false,index=18},
+	[19]={value=10,hong=4,hei=6,chongfan = false,index=19},
+	[20]={value=11,hong=0,hei=11,chongfan = false,index=20},
+	[21]={value=12,hong=6,hei=6,chongfan = true,index=21}
 }
 local tile_names = {
 	"地牌","丁丁","河牌","长二","幺四","拐子","长三","咕咕儿","二红"
@@ -63,7 +63,9 @@ function mj_util.check_tile(tile)
 
 	return value >= 2 and value <= 12 and index >= 1 and index <= 21
 end
-
+function mj_util.tile_is_chongfan(v)
+	return v and all_tiles[v].chongfan or false
+end
 function mj_util.tile_value(tile)
 	return all_tiles[tile].value
 end

@@ -4,27 +4,27 @@ require "functions"
 
 local ACTION = def.ACTION
 local all_tiles ={
-	[1]={value=2,hong=2,hei=0,index=1},
-	[2]={value=3,hong=1,hei=2,index=2},
-	[3]={value=4,hong=1,hei=3,index=3},
-	[4]={value=4,hong=0,hei=4,index=4},
-	[5]={value=5,hong=5,hei=0,index=5},
-	[6]={value=5,hong=0,hei=5,index=6},
-	[7]={value=6,hong=0,hei=6,index=7},
-	[8]={value=6,hong=1,hei=5,index=8},
-	[9]={value=6,hong=4,hei=2,index=9},
-	[10]={value=7,hong=0,hei=7,index=10},
-	[11]={value=7,hong=1,hei=6,index=11},
-	[12]={value=7,hong=4,hei=3,index=12},
-	[13]={value=8,hong=0,hei=8,index=13},
-	[14]={value=8,hong=0,hei=8,index=14},
-	[15]={value=8,hong=8,hei=0,index=15},
-	[16]={value=9,hong=0,hei=9,index=16},
-	[17]={value=9,hong=4,hei=5,index=17},
-	[18]={value=10,hong=0,hei=10,index=18},
-	[19]={value=10,hong=4,hei=6,index=19},
-	[20]={value=11,hong=0,hei=11,index=20},
-	[21]={value=12,hong=6,hei=6,index=21}
+	[1]={value=2,hong=2,hei=0,chongfan = true,index=1},
+	[2]={value=3,hong=1,hei=2,chongfan = false,index=2},
+	[3]={value=4,hong=1,hei=3,chongfan = true,index=3},
+	[4]={value=4,hong=0,hei=4,chongfan = false,index=4},
+	[5]={value=5,hong=5,hei=0,chongfan = true,index=5},
+	[6]={value=5,hong=0,hei=5,chongfan = false,index=6},
+	[7]={value=6,hong=0,hei=6,chongfan = false,index=7},
+	[8]={value=6,hong=1,hei=5,chongfan = false,index=8},
+	[9]={value=6,hong=4,hei=2,chongfan = false,index=9},
+	[10]={value=7,hong=0,hei=7,chongfan = false,index=10},
+	[11]={value=7,hong=1,hei=6,chongfan = false,index=11},
+	[12]={value=7,hong=4,hei=3,chongfan = true,index=12},
+	[13]={value=8,hong=0,hei=8,chongfan = false,index=13},
+	[14]={value=8,hong=0,hei=8,chongfan = false,index=14},
+	[15]={value=8,hong=8,hei=0,chongfan = true,index=15},
+	[16]={value=9,hong=0,hei=9,chongfan = false,index=16},
+	[17]={value=9,hong=4,hei=5,chongfan = true,index=17},
+	[18]={value=10,hong=0,hei=10,chongfan = false,index=18},
+	[19]={value=10,hong=4,hei=6,chongfan = false,index=19},
+	[20]={value=11,hong=0,hei=11,chongfan = false,index=20},
+	[21]={value=12,hong=6,hei=6,chongfan = true,index=21}
 }
 local function counts_2_tiles(counts)
 	local tiles = {}
@@ -41,6 +41,9 @@ end
 
 local rule 			= {}
 
+function rule.tile_is_chongfan(v)
+	return v and all_tiles[v].chongfan or false
+end
 function rule.tile_heicounts(v)
 	return v and all_tiles[v].hei or 0
 end
@@ -59,35 +62,7 @@ end
 local TILE_AREA = def.TILE_AREA
 local SECTION_TYPE = def.SECTION_TYPE
 
-local function section_tiles_gang(s)
-	return table.fill(nil,s.tile,1,4)
-end
 
-local function section_tiles_peng(s)
-	return table.fill(nil,s.tile,1,3)
-end
-
-local function section_tiles_dui(s)
-	return table.fill(nil,s.tile,1,2)
-end
-
-local function section_tiles_left_chi(s)
-	return {s.tile - 2,s.tile - 1,s.tile}
-end
-
-local function section_tiles_mid_chi(s)
-	return {s.tile - 1,s.tile,s.tile + 1}
-end
-
-local function section_tiles_right_chi(s)
-	return {s.tile,s.tile + 1,s.tile + 2}
-end
-
-local SECTION_TILES = {
-	[SECTION_TYPE.BA_GANG] = section_tiles_gang,
-	[SECTION_TYPE.PENG] = section_tiles_peng,
-	[SECTION_TYPE.CHI] = section_tiles_left_chi,	
-}
 
 local function hu(state)
 	local counts = state.counts
