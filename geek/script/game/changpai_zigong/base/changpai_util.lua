@@ -180,6 +180,9 @@ function mj_util.get_actions_first_turn(pai,mo_pai)
 	end
 	return actions
 end
+function mj_util.ming_tuos(pai)
+	return rule.ming_tuos(pai)
+end
 function mj_util.tuos(pai,in_pai,mo_pai,is_zhuang)
 	return rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 end

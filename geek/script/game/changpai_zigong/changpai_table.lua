@@ -852,7 +852,37 @@ function changpai_table:cancel_clock_timer()
         self.clock_timer = nil
     end
 end
+function changpai_table:broadcast_players_tuos(player)
+    local tuonum = {}
+        for chair, p in pairs(self.players) do
+            if chair==player.chair_id  then
+                p.tuos = tuonum[p.chair_id]
+                tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)
+            else
+                tuonum[p.chair_id] = mj_util.ming_tuos(p.pai)
+            end
+        
+        end
+    send2client(player,"SC_CP_Tuo_Num",{
+        tuos = tuonum
+    })
+    self:foreach_except(player,function(ps)
 
+        for chair, p in pairs(self.players) do
+            if chair==ps.chair_id  then
+                p.tuos = tuonum[p.chair_id]
+                tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)
+            else
+                tuonum[p.chair_id] = mj_util.ming_tuos(p.pai)
+            end
+        
+        end
+        send2client(ps,"SC_CP_Tuo_Num",{
+            tuos = tuonum
+        })
+    end)
+    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+end
 function changpai_table:on_action_after_mo_pai(player,msg,auto)
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if not action then 
@@ -926,13 +956,8 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         self:log_game_action(player,do_action,tile,auto)
         self:adjust_shou_pai(player,do_action,tile,session_id)
         self:clean_gzh(player)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
-            p.tuos = tuonum[p.chair_id]
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
+        
         self:jump_to_player_index(player)
         player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
         
@@ -943,13 +968,8 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         self:clean_gzh(player)
         self:adjust_shou_pai(player,do_action,tile,session_id)
         self:log_game_action(player,do_action,tile,auto)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
-            p.tuos = tuonum[p.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
+        
         self:mo_pai()
         
     end
@@ -964,13 +984,8 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             zi_mo = is_zi_mo,  
         }
 
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,player.mo_pai,nil,nil)    
-            p.tuos = tuonum[p.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos()
+        
         player.statistics.hu = (player.statistics.hu or 0) + 1
         
         self:log_game_action(player,do_action,tile,auto)
@@ -1474,11 +1489,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[top_done_act],msg = {tile = tile,other_tile = othertile },auto = auto,time = timer.nanotime()})
         check_all_pass(all_actions)
         
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
-            p.tuos = tuonum[p.chair_id]
-        end
+
 
         local nest_user = 1
         if self.chu_pai_player_index+1 > self.start_count then
@@ -1507,8 +1518,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
 
         self:jump_to_player_index(player)
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:broadcast_discard_turn()
         
 
@@ -1525,13 +1535,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         self:adjust_shou_pai(player,top_done_act,tile,top_session_id)
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         check_all_pass(all_actions)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
-            p.tuos = tuonum[p.chair_id]
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:jump_to_player_index(player)
         self:mo_pai()
     end
@@ -1546,7 +1550,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
             tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
             p.tuos = tuonum[p.chair_id]
         end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
+        self:broadcast_players_tuos(player)
         self:mo_pai()
     end
     if def.is_action_gang(top_done_act) then
@@ -1572,13 +1576,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         }
 
         -----------------------------
-        local tuonum = {}
-        for chair, v in pairs(self.players) do
-            tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)    
-            v.tuos = tuonum[v.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         -------------------------------
 
         self:log_game_action(p,top_done_act,tile,top_action.done.auto)
@@ -1761,13 +1759,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
 
 
 
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
-            p.tuos = tuonum[p.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:jump_to_player_index(player)
         self:broadcast_discard_turn()
         self:chu_pai()
@@ -1779,13 +1771,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         self:adjust_shou_pai(player,top_done_act,tile,top_session_id)
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         check_all_pass(all_actions)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
-            p.tuos = tuonum[p.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:jump_to_player_index(player)
         self:mo_pai()
     end
@@ -1795,13 +1781,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         self:adjust_shou_pai(player,top_done_act,tile,top_session_id)
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         check_all_pass(all_actions)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)   
-            p.tuos = tuonum[p.chair_id]   
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:mo_pai()
     end
     if def.is_action_gang(top_done_act) then
@@ -1810,13 +1790,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         self:adjust_shou_pai(player,top_done_act,tile,top_session_id)
         self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         check_all_pass(all_actions)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)     
-            p.tuos = tuonum[p.chair_id] 
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:jump_to_player_index(player)
         self:mo_pai()
         player.statistics.ming_gang = (player.statistics.ming_gang or 0) + 1
@@ -1835,13 +1809,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         player.statistics.hu = (player.statistics.hu or 0) + 1
         chu_pai_player.statistics.dian_pao = (chu_pai_player.statistics.dian_pao or 0) + 1
         
-        local tuonum = {}
-        for chair, v in pairs(self.players) do
-            tuonum[v.chair_id] = mj_util.tuos(v.pai,tile,nil,nil)   
-            v.tuos = tuonum[v.chair_id]   
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:log_game_action(p,top_done_act,tile,top_action.done.auto)
         self:broadcast_player_hu(p,top_done_act,top_session_id)
         
@@ -2160,13 +2128,7 @@ function changpai_table:mo_pai()
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Draw",msg = {tile = mo_pai}})
     self:on_mo_pai(player,mo_pai)
-    local tuonum = {}
-    for chair, p in pairs(self.players) do
-        tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
-        p.tuos = tuonum[p.chair_id]  
-    end
-    self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+    self:broadcast_players_tuos(player)
     self:clear_unuse_card(player)    
     
 
@@ -2268,13 +2230,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:log_game_action(player,do_action,tile,auto)
         self:jump_to_player_index(player)
         self:tou_pai() --从桌子上的牌拿一张
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)     
-            p.tuos = tuonum[p.chair_id] 
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         player.statistics.an_gang = (player.statistics.an_gang or 0) + 1    
         self:action_after_fapai()--假如可以巴牌也要摸一张
     end
@@ -2283,13 +2239,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:clean_gzh(player)
         self:adjust_shou_pai(player,do_action,tile,session_id)
         self:log_game_action(player,do_action,tile,auto)
-        local tuonum = {}
-        for chair, p in pairs(self.players) do
-            tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)    
-            p.tuos = tuonum[p.chair_id]  
-        end
-        self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-        tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+        self:broadcast_players_tuos(player)
         self:tou_pai()--从桌子上的牌拿一张   
         self:action_after_fapai()--假如还可以偷牌也要摸一张
     end
@@ -2313,15 +2263,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         return
     end
     self:done_last_action(player,{action = do_action,tile = tile,})
-    local tuonum = {}
-    for chair, p in pairs(self.players) do
-        log.dump(p.pai)
-        tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)      
-        p.tuos = tuonum[p.chair_id]
-    end
-    log.dump(tuonum)
-    self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+    self:broadcast_players_tuos(player)
 end
 function changpai_table:on_action_chu_pai(player,msg,auto)
     if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
@@ -2388,16 +2330,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     self:broadcast2client("SC_Changpai_Action_Discard",{chair_id = player.chair_id, tile = chu_pai_val})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Discard",msg = {tile = chu_pai_val},auto = auto,time = timer.nanotime()})
 
-    local tuonum = {}
-    local user={chair=0,tuos=0}
-    for chair, p in pairs(self.players) do
-        log.dump(p.pai)
-        tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)   
-        p.tuos = tuonum[p.chair_id]   
-    end
-    log.dump(tuonum)
-    self:broadcast2client("SC_CP_Tuo_Num",{ tuos = tuonum})
-    tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
+    self:broadcast_players_tuos(player)
     self:set_gsc_on_pass(player,chu_pai_val)
     
     local waiting_actions = {}

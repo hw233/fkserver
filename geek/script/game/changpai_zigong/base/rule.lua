@@ -274,7 +274,33 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	return can_hu and en_tuo 
 end
 
-
+function rule.ming_tuos(pai)
+	local tuos = 0
+	local mingpai = pai.ming_pai and  pai.ming_pai or {}
+		for index, s in pairs(mingpai ) do
+			if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) and rule.tile_hongcounts(s.tile)>0 then
+				tuos =tuos + 6
+			end
+			if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) and rule.tile_hongcounts(s.tile) == 0 then
+				tuos =tuos + 3
+			end
+			if (s.type == SECTION_TYPE.BA_GANG) and rule.tile_hongcounts(s.tile) > 0 then
+				tuos =tuos + 8
+			end
+			if (s.type == SECTION_TYPE.BA_GANG) and rule.tile_hongcounts(s.tile) == 0 then
+				tuos =tuos + 4
+			end
+			if  s.type == SECTION_TYPE.CHI then
+				if rule.tile_hongcounts(s.tile) > 0 then
+					tuos =tuos + 1
+				end
+				if rule.tile_hongcounts(s.othertile) > 0 then
+					tuos =tuos + 1
+				end
+			end
+		end
+	return tuos
+end
 
 function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 	local tuos = 0
