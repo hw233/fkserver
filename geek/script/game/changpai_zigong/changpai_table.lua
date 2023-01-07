@@ -856,8 +856,9 @@ function changpai_table:broadcast_players_tuos(player)
     local tuonum = {}
         for chair, p in pairs(self.players) do
             if chair==player.chair_id  then
-                p.tuos = tuonum[p.chair_id]
+                
                 tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)
+                p.tuos = tuonum[p.chair_id]
             else
                 tuonum[p.chair_id] = mj_util.ming_tuos(p.pai)
             end
@@ -870,8 +871,8 @@ function changpai_table:broadcast_players_tuos(player)
 
         for chair, p in pairs(self.players) do
             if chair==ps.chair_id  then
-                p.tuos = tuonum[p.chair_id]
                 tuonum[p.chair_id] = mj_util.tuos(p.pai,nil,nil,nil)
+                p.tuos = tuonum[p.chair_id]
             else
                 tuonum[p.chair_id] = mj_util.ming_tuos(p.pai)
             end
@@ -3230,7 +3231,7 @@ function changpai_table:calculate_gang(p,in_pai)
     --     end
     -- end
 
-    local tuo_num = p.tuos
+    local tuo_num = p.tuos or 0
     if tuo_num>=24 then
         gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1,type = HU_TYPE.TUO_24} 
     end
