@@ -69,8 +69,6 @@ local function hu(state)
 	local sections = state.sections
 	local tuo = state.tuos
 	local tiles = counts_2_tiles(counts)
-	log.dump(counts)
-	log.dump(sections)
 	if #tiles == 0  then     
 		table.insert(state.hu,clone(sections))
 		return
@@ -170,12 +168,10 @@ local function get_hu_types(pai,cache,in_pai)
 	base_types[HU_TYPE.HEI_LONG] = 1
 	
 	--在这里判断玩家的特殊牌型是妥妥红，还是把把黑，还是黑龙，还是平胡
-	log.dump(pai.ming_pai)
-	log.dump(cache)
 	local counthonghei = 0
 	for _,s in pairs(pai.ming_pai) do
 		if  s.type == SECTION_TYPE.CHI then	
-			log.dump(s)
+			
 			if ( rule.tile_hongcounts(s.tile)<=0) or ( rule.tile_hongcounts(s.othertile)<=0) then
 				base_types[HU_TYPE.TUOTUO_HONG] = nil
 			end
@@ -235,7 +231,6 @@ local function get_hu_types(pai,cache,in_pai)
 	if not base_types[HU_TYPE.TUOTUO_HONG] and not base_types[HU_TYPE.BABA_HEI] and not base_types[HU_TYPE.HEI_LONG] then 
 		base_types[HU_TYPE.PING_HU] = 1
 	end
-	log.dump(base_types)
 	return base_types
 end
 function rule.is_hu(pai,in_pai,is_zhuang)
@@ -260,10 +255,6 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	local en_tuo = false 
 
 	local hutype =  get_hu_types(pai,shoupai,in_pai)
-	log.dump(hutype) 
-	log.dump(can_hu) 
-	log.dump(is_zhuang) 
-	log.dump(rule.tuos(pai,in_pai,nil,is_zhuang)) 
 
 	if is_zhuang then 
 		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
@@ -328,7 +319,7 @@ function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 				end
 			end
 		end
-		log.dump(counts)
+		
 		for i, c in pairs(counts) do
 			if i>0 and c >0 then
 				if  rule.tile_hongcounts(i) >0 then
@@ -359,7 +350,7 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	local state = { hu = {}, sections = {}, counts = clone(cache) ,tuos = 0}
 	hu(state)
 	
-	log.dump(state)
+	
 	local alltypes = {}
 	if table.nums(state.hu) == 0  then
 		return {{[HU_TYPE.WEI_HU] = 1}}
@@ -377,7 +368,7 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	table.insert(alltypes,types)
 
 	
-	log.dump(alltypes)
+	
 	return alltypes
 end
 
