@@ -328,7 +328,7 @@ function changpai_table:on_started(player_count)
             end)
         end
 
-    self:begin_clock_timer(TIME_TYPE.MAIN_XI_PAI,function ()
+    self:begin_clock_timer(TIME_TYPE.MAIN_XI_PAI,TIME_TYPE.MAIN_XI_PAI,function ()
         auto_fapai()
     end)--偷牌阶段第一个先偷，假如有时间等待时间，不然下家偷
 end
@@ -559,7 +559,7 @@ function changpai_table:fast_start_vote(player)
         agree = true,
     })
 
-    self:begin_clock_timer(timeout,function()
+    self:begin_clock_timer(timeout,timeout,function()
         self:foreach(function(p)
             if self.vote_result[p.chair_id] == nil then
                 self:fast_start_vote_commit(p,{agree = false})
@@ -622,7 +622,7 @@ function changpai_table:on_reconnect_when_action_qiang_gang_hu(p)
     self:send_ting_tips(p)
 
     if self.main_timer then
-        self:begin_clock(self.main_timer.remainder,p)
+        self:begin_clock(self.main_timer.remainder,self.main_timer.,p)
     end
     
     for chair,actions in pairs(self.qiang_gang_actions or {}) do
@@ -770,7 +770,7 @@ function changpai_table:qiang_gang_hu(player,actions,tile)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             table.foreach(self.qiang_gang_actions,function(action,_)
                 if action.done then return end
 
@@ -816,14 +816,14 @@ function changpai_table:cancel_all_auto_action_timer()
     self.action_timers = {}
 end
 
-function changpai_table:begin_main_timer(timeout,fn)
+function changpai_table:begin_main_timer(timeout,totaltime,fn)
     if self.main_timer then 
         log.warning("changpai_table:begin_main_timer timer not nil")
         self.main_timer:kill()
     end
 
     self.main_timer = self:new_timer(timeout,fn)
-    self:begin_clock(timeout)
+    self:begin_clock(timeout,nil,totaltime)
 
     log.info("changpai_table:begin_main_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.main_timer.id,timeout)
 end
@@ -834,14 +834,14 @@ function changpai_table:cancel_main_timer()
         self.main_timer = nil
     end
 end
-function changpai_table:begin_clock_timer(timeout,fn)
+function changpai_table:begin_clock_timer(timeout,totaltime,fn)
     if self.clock_timer then 
         log.warning("changpai_table:begin_clock_timer timer not nil")
         self.clock_timer:kill()
     end
 
     self.clock_timer = self:new_timer(timeout,fn)
-    self:begin_clock(timeout)
+    self:begin_clock(timeout,nil,totaltime)
 
     log.info("changpai_table:begin_clock_timer table_id:%s,timer:%s,timout:%s",self.table_id_,self.clock_timer.id,timeout)
 end
@@ -1066,7 +1066,7 @@ function changpai_table:action_after_tou_pai(waiting_actions)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             log.dump(self.waiting_actions)
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
@@ -1125,7 +1125,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             log.dump(self.waiting_actions)
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
@@ -1183,7 +1183,7 @@ function changpai_table:first_action_tianhu(waiting_actions)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             log.dump(self.waiting_actions)
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
@@ -1240,7 +1240,7 @@ function changpai_table:action_after_mo_pai(waiting_actions)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             log.dump(self.waiting_actions)
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
@@ -1602,7 +1602,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         return
@@ -1828,7 +1828,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         --self:fan_pai()
@@ -1874,7 +1874,7 @@ function changpai_table:action_after_chu_pai(waiting_actions)
             end)
         end
 
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             table.foreach(self.waiting_actions,function(action,_)
                 local p = self.players[action.chair_id]
                 self:set_trusteeship(p,true)
@@ -2366,7 +2366,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
                 self:fan_pai()
             end)
         end
-        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         
@@ -2449,7 +2449,7 @@ function changpai_table:chu_pai()
         end
 
         log.info("begin chu_pai clock %s",player.chair_id)
-        self:begin_main_timer(trustee_seconds,function()
+        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
             log.info("chu_pai clock timeout %s",player.chair_id)
             self:set_trusteeship(player,true)
             auto_chu_pai(player)
@@ -2564,7 +2564,7 @@ function changpai_table:fan_pai()
                 self:fan_pai()
             end)
         end
-        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,function ()
+        self:begin_clock_timer(TIME_TYPE.MAIN_FAN_PAI,TIME_TYPE.MAIN_FAN_PAI,function ()
             auto_fanpai()
         end)
         --self:fan_pai()
