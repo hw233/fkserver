@@ -1115,12 +1115,43 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             self:cancel_clock_timer()
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
+            local nest_user = 1
+            local all_actions = table.series(self.waiting_actions,function(action)
+                return action.done ~= nil and action or nil
+            end)
+            if self.chu_pai_player_index+1 > self.start_count then
+                nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+            else
+                nest_user = (self.chu_pai_player_index+1 )
+            end
+            local chu_player =  self:chu_pai_player()
+    
+            if nest_user == p.chair_id and chu_player and chu_player.fan_pai and self:is_bao_pai(p,chu_player.fan_pai) then
+                
+                
+                for _,acx in pairs(all_actions) do
+                    if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index then     
+                        local chi_action = acx.actions[ACTION.CHI]
+                    
+                        if chi_action then
+                           if act == ACTION.PASS then
+                                act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
+                           end
+                            
+                        end 
+                                
+                    end
+                end
+                
+            end
+
             self:lockcall(function()
                 self:on_action_after_fan_pai(p,{
                     action = act,
                     value_tile = tile,
                     chair_id = p.chair_id,
                     session_id = action.session_id,
+                    is_sure = true
                 },true)
             end)
         end
@@ -1388,6 +1419,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end
 
     local all_notdone = {}
+    log.dump(self.waiting_actions)
     local userpri = USER_PRIORITY[self.chu_pai_player_index]
     for k, v in pairs(self.waiting_actions) do
         for i, act in pairs(v.actions) do
@@ -1406,7 +1438,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         end
         return ACTION_PRIORITY[l.ac] < ACTION_PRIORITY[r.ac]
     end)
-
+    log.dump(all_notdone)
     if all_notdone and  all_notdone[1].ac == msg.action and all_notdone[1].chairid==player.chair_id then
         
     else
@@ -1866,6 +1898,22 @@ function changpai_table:action_after_chu_pai(waiting_actions)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             --形成包牌就必须吃了
             local tile = self:chu_pai_player().chu_pai
+            local nest_user = 1
+            if self.chu_pai_player_index+1 > self.start_count then
+                nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+            else
+                nest_user = (self.chu_pai_player_index+1 )
+            end
+            local chu_player =  self:chu_pai_player()
+    
+            if nest_user == p.chair_id and chu_player and chu_player.chu_pai and self:is_bao_pai(p,chu_player.chu_pai) then
+                if act==ACTION.PASS then
+                    act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS 
+                end                            
+            end
+
+
+
             self:lockcall(function()
                 self:on_action_after_chu_pai(p,{
                     action = act,
@@ -2438,6 +2486,12 @@ function changpai_table:chu_pai()
                 local c
                 repeat
                     chu_tile,c = table.choice(p.pai.shou_pai)
+                    local cards = self:get_unusecard_list(player)
+                    for _, value in pairs(cards) do
+                        if value == c then
+                            c=0
+                        end
+                    end
                 until c > 0
             end
 
@@ -2445,6 +2499,7 @@ function changpai_table:chu_pai()
             self:lockcall(function()
                 self:on_action_chu_pai(p,{
                     tile = chu_tile,
+                    is_sure = true
                 },true)
             end)
         end
