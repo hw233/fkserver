@@ -622,7 +622,7 @@ function changpai_table:on_reconnect_when_action_qiang_gang_hu(p)
     self:send_ting_tips(p)
 
     if self.main_timer then
-        self:begin_clock(self.main_timer.remainder,self.main_timer.,p)
+        self:begin_clock(self.main_timer.remainder,self.main_timer.remainder,p)
     end
     
     for chair,actions in pairs(self.qiang_gang_actions or {}) do
@@ -1864,6 +1864,7 @@ function changpai_table:action_after_chu_pai(waiting_actions)
             log.warning("auto action %s",p.guid)
             log.dump(action)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
+            --形成包牌就必须吃了
             local tile = self:chu_pai_player().chu_pai
             self:lockcall(function()
                 self:on_action_after_chu_pai(p,{
