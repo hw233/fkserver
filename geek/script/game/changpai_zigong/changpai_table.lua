@@ -1123,9 +1123,8 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
             local tile = p.mo_pai
             local nest_user = 1
-            local all_actions = table.series(self.waiting_actions,function(action)
-                return action.done ~= nil and action or nil
-            end)
+            local all_actions = self.waiting_actions
+            
             if self.chu_pai_player_index+1 > self.start_count then
                 nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
             else
@@ -1135,13 +1134,17 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             
             local other = nil
             local is_bao = false
+            log.dump(self:is_bao_pai(p,chu_player.fan_pai))
+            log.dump(chu_player.fan_pai)
             if nest_user == p.chair_id and chu_player and chu_player.fan_pai and self:is_bao_pai(p,chu_player.fan_pai) then
-                             
+                
+                log.dump(all_actions)
                 for _,acx in pairs(all_actions) do
                     
+                    log.dump(acx.done.action)
                     if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index   then     
                         local chi_action = acx.actions[ACTION.CHI]
-                        
+                        log.dump(chi_action)
                             if chi_action then
                                 
                                  is_bao =true 
@@ -1151,10 +1154,14 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                                 
                     end
                 end
+                log.dump(is_bao)
                 if is_bao then
                     for _,acx in pairs(all_actions) do
+                        log.dump(acx.actions[ACTION.CHI] )
                         if acx.chair_id == nest_user and  acx.actions[ACTION.CHI] then
                             for i, ac in pairs(acx.actions[ACTION.CHI]) do
+                                log.dump(i )
+                                log.dump(act )
                                 if act == ACTION.PASS then
                                     other = i
                                     act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
