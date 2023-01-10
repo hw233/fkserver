@@ -296,6 +296,7 @@ end
 function rule.tuos(pai,in_pai,mo_pai,is_zhuang)
 	local tuos = 0
 	local counts =pai and pai.shou_pai or {}
+	log.dump(counts)
 	local mingpai = pai.ming_pai and  pai.ming_pai or {}
 		for index, s in pairs(mingpai ) do
 			if (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) and rule.tile_hongcounts(s.tile)>0 then
@@ -361,14 +362,14 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 
 	if types and types[HU_TYPE.PING_HU] then
 		--坨数小于规定庄家14坨，闲家12坨的时候不能胡
-		if is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<14 or not is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<12 then 
+		if (is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<14) or (not is_zhuang and rule.tuos(pai,in_pai,mo_pai,is_zhuang)<12) then 
 			return {{[HU_TYPE.WEI_HU] = 1}}
 		end
 	end
 	table.insert(alltypes,types)
 
 	
-	
+	log.dump(alltypes)
 	return alltypes
 end
 
