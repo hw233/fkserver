@@ -1132,20 +1132,25 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                 nest_user = (self.chu_pai_player_index+1 )
             end
             local chu_player =  self:chu_pai_player()
-    
+            
+            local other = nil
             if nest_user == p.chair_id and chu_player and chu_player.fan_pai and self:is_bao_pai(p,chu_player.fan_pai) then
                 
                 
                 for _,acx in pairs(all_actions) do
                     if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index then     
                         local chi_action = acx.actions[ACTION.CHI]
-                    
-                        if chi_action then
-                           if act == ACTION.PASS then
-                                act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
-                           end
-                            
-                        end 
+                        
+                            if chi_action then
+                                for i, p in pairs(chi_action) do
+                                    if act == ACTION.PASS then
+                                        other = i
+                                        act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
+                                    end
+                                 
+                                 end 
+                            end
+                        
                                 
                     end
                 end
@@ -1156,6 +1161,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                 self:on_action_after_fan_pai(p,{
                     action = act,
                     value_tile = tile,
+                    other_tile = other ,
                     chair_id = p.chair_id,
                     session_id = action.session_id,
                     is_sure = true
@@ -1375,7 +1381,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     self:cancel_main_timer()
     self:cancel_clock_timer()
     if player then self:cancel_auto_action_timer(player) end
-    if not self.waiting_actions then
+    if not self.waiting_actions  or table.nums(self.waiting_actions) == 0 then
         log.error("changpai_table:on_action_after_chu_pai not waiting actions,%s",player.guid)
         return
     end
@@ -1469,8 +1475,9 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end)
 
 
-    self.waiting_actions = {}
-   
+    self.waiting_actions = nil
+    -------- 提前结束的时候其它定时器要消掉
+    self:cancel_all_auto_action_timer()
 
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
@@ -1494,8 +1501,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end
     log.dump(all_actions,"on_action_after_chu_pai"..player.guid)
 
-    -------- 提前结束的时候其它定时器要消掉
-    self:cancel_all_auto_action_timer()
+   
 
     local function check_all_pass(actions)
         for _,act in pairs(actions) do
