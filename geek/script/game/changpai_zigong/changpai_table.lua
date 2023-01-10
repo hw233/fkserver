@@ -376,7 +376,7 @@ function changpai_table:action_after_fapai()
     end
 end
 function changpai_table:on_action_after_tianhu(player,msg,auto)
-    self:cancel_main_timer()
+    
     self:cancel_clock_timer()
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if not action then 
@@ -411,7 +411,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
         log.error("do action %s,but action is illigle,%s",do_action)
         return
     end
-    
+    self:cancel_main_timer()
     self:cancel_auto_action_timer(player)
     self.waiting_actions = {}
     if do_action == ACTION.HU then
@@ -887,7 +887,7 @@ function changpai_table:broadcast_players_tuos(player,in_pai)
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Tuo",msg = {tuos = tuonum}})
 end
 function changpai_table:on_action_after_mo_pai(player,msg,auto)
-    self:cancel_main_timer()
+    
     self:cancel_clock_timer()
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if not action then 
@@ -913,7 +913,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
         return
     end
     self:cancel_auto_action_timer(self.players[self.chu_pai_player_index])
-
+    self:cancel_main_timer()
     local waiting = self.waiting_actions[player.chair_id]
 
     local session_id = waiting.session_id
@@ -1378,7 +1378,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
     log.dump(player)
     log.dump(msg)
-    self:cancel_main_timer()
+    
     self:cancel_clock_timer()
     if player then self:cancel_auto_action_timer(player) end
     if not self.waiting_actions  or table.nums(self.waiting_actions) == 0 then
@@ -1478,6 +1478,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     self.waiting_actions = nil
     -------- 提前结束的时候其它定时器要消掉
     self:cancel_all_auto_action_timer()
+    self:cancel_main_timer()
 
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
@@ -1658,7 +1659,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     self:done_last_action(player,{action = top_done_act,tile = tile})
 end
 function changpai_table:on_action_after_chu_pai(player,msg,auto)
-    self:cancel_main_timer()
+    
     self:cancel_clock_timer()
     if not self.waiting_actions then
         log.error("changpai_table:on_action_after_chu_pai not waiting actions,%s",player.guid)
@@ -1722,6 +1723,7 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
     
     -------- 提前结束的时候其它定时器要消掉
     self:cancel_all_auto_action_timer()
+    self:cancel_main_timer()
     --所有已经操作的 acitons
     local all_actions = table.series(self.waiting_actions,function(action)
         return action.done ~= nil and action or nil
@@ -2330,7 +2332,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
     self:broadcast_players_tuos(player)
 end
 function changpai_table:on_action_chu_pai(player,msg,auto)
-    self:cancel_main_timer()
+    
     self:cancel_clock_timer()
     if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
         log.error("changpai_table:on_action_chu_pai state error %s",self.cur_state_FSM)
@@ -2383,7 +2385,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
  
 
     --------------------------------------------------------------------------------
-    
+    self:cancel_main_timer()
     self:cancel_auto_action_timer(player)
 
     log.info("---------chu pai guid:%s,chair: %s,tile:%s ------",player.guid,self.chu_pai_player_index,chu_pai_val)
