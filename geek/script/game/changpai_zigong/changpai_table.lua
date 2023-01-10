@@ -1021,7 +1021,7 @@ end
 function changpai_table:on_reconnect_when_action_after_fan_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    local action = self.waiting_actions[p.chair_id]
+    local action =self.waiting_actions and self.waiting_actions[p.chair_id] or nil
     if action and not action.done then
         self:send_action_waiting(action)
     end
@@ -1029,7 +1029,7 @@ function changpai_table:on_reconnect_when_action_after_fan_pai(p)
 end
 function changpai_table:on_reconnect_when_action_after_mo_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-    local action = self.waiting_actions[p.chair_id]
+    local action =self.waiting_actions and self.waiting_actions[p.chair_id] or nil
     if action and not action.done then
         self:send_action_waiting(action)
     end
@@ -1134,24 +1134,35 @@ function changpai_table:action_after_fan_pai(waiting_actions)
             local chu_player =  self:chu_pai_player()
             
             local other = nil
+            local is_bao = false
             if nest_user == p.chair_id and chu_player and chu_player.fan_pai and self:is_bao_pai(p,chu_player.fan_pai) then
-                
-                
+                             
                 for _,acx in pairs(all_actions) do
-                    if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index then     
+                    
+                    if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index   then     
                         local chi_action = acx.actions[ACTION.CHI]
                         
                             if chi_action then
-                                for i, p in pairs(chi_action) do
-                                    if act == ACTION.PASS then
-                                        other = i
-                                        act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
-                                    end
-                                 
-                                 end 
+                                
+                                 is_bao =true 
+                                 break
                             end
                         
                                 
+                    end
+                end
+                if is_bao then
+                    for _,acx in pairs(all_actions) do
+                        if acx.chair_id == nest_user and  acx.actions[ACTION.CHI] then
+                            for i, ac in pairs(acx.actions) do
+                                if act == ACTION.PASS then
+                                    other = i
+                                    act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
+                                end
+                                
+                            end 
+                        end
+                       
                     end
                 end
                 
