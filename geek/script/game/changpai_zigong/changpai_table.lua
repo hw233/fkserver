@@ -2687,6 +2687,10 @@ function changpai_table:get_chao_add_score(p)
     return self.room_.conf.private_conf.fan.add_score[add_score_option]
 end
 function changpai_table:do_balance(in_pai)
+
+    for _, p in pairs(self.players) do
+        p.tuos = mj_util.tuos(p.pai,in_pai,nil,nil)
+    end
     local typefans,fanscores = self:game_balance(in_pai)
 
     local typessend={}
@@ -2716,7 +2720,7 @@ function changpai_table:do_balance(in_pai)
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
         local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
-        if p and p.hu and in_pai then
+        if p and p.hu and not in_pai then
             
             table.decr(p.pai.shou_pai,p.hu.tile)
         end
@@ -3100,7 +3104,7 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         actions[ACTION.HU] = nil
     end
     local remain = self.dealer.remain_count
-    if remain <= 5 then
+    if remain < 5 then
         actions[ACTION.BA_GANG] = nil
         actions[ACTION.HU] = nil
         actions[ACTION.PENG] = nil
