@@ -1074,8 +1074,10 @@ function changpai_table:action_after_tou_pai(waiting_actions)
             log.dump(self.waiting_actions)
             table.foreach(self.waiting_actions,function(action,_)
                 if action.done then return end
-
+                log.dump(action)
                 local p = self.players[action.chair_id]
+                log.dump(p)
+                log.dump(self.players)
                 self:set_trusteeship(p,true)
                 auto_action(p,action)
             end)
@@ -2877,18 +2879,17 @@ function changpai_table:prepare_tiles()
         -- self.pre_gong_tiles = {
         --     8,6,18,3,4,20,6,
         -- }
-        -- 测试手牌        
-         self.pre_tiles = {
+        -- 测试手牌     
+        self.pre_tiles = {
             [1] = {18,18,3,3,13,13,13,20,20,17,17,10,10,10,14},     -- 万 庄
             [2] = {12,12,11,11,16,5,8,15,2,20,15,9,17,5,19},    -- 筒  
             [3] = {5,16,19,19,2,16,1,1,1,9,12,14,11,11,1},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            8,14,18,3,20,17,14,3,15,8,
+            8,13,18,14,20,17,14,15,6,15,3,8,
         }
-        
-        self.dealer.remain_count = 84
+        self.dealer.remain_count = 52
     end
     
     if self.hashu and self.hashu > 0 then
