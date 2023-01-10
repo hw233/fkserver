@@ -954,8 +954,10 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             })
             
             self:qiang_gang_hu(player,qiang_gang_hu,tile)
+            
             return
         end
+        
 
         self:log_game_action(player,do_action,tile,auto)
         self:adjust_shou_pai(player,do_action,tile,session_id)
@@ -1171,7 +1173,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
         end)
 
         table.foreach(self.waiting_actions,function(action,_) 
-            
+
             local p = self.players[action.chair_id]
             log.dump(self.waiting_actions,p.chair_id)
             if not p.trustee then return end
@@ -1490,6 +1492,8 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end
     log.dump(all_actions,"on_action_after_chu_pai"..player.guid)
 
+    -------- 提前结束的时候其它定时器要消掉
+    self:cancel_all_auto_action_timer()
 
     local function check_all_pass(actions)
         for _,act in pairs(actions) do
@@ -1519,7 +1523,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
             end
         end
     end
-
+    
     local tile = top_action.done.tile
     local othertile = top_action.done.other_tile
     if top_done_act == ACTION.CHI then      
@@ -1708,6 +1712,8 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         end
     end
     
+    -------- 提前结束的时候其它定时器要消掉
+    self:cancel_all_auto_action_timer()
     --所有已经操作的 acitons
     local all_actions = table.series(self.waiting_actions,function(action)
         return action.done ~= nil and action or nil
