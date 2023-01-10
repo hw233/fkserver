@@ -2519,10 +2519,13 @@ function changpai_table:chu_pai()
 
         log.info("begin chu_pai clock %s",player.chair_id)
         self:begin_main_timer(trustee_seconds,trustee_seconds,function()
-            local player = self.players[self.chu_pai_player_index]
-            log.info("chu_pai clock timeout %s",player.chair_id)
-            self:set_trusteeship(player,true)
-            auto_chu_pai(player)
+            log.dump(self.chu_pai_player_index)
+            
+            local p = self.players[self.chu_pai_player_index]
+            log.dump(p)
+            log.info("chu_pai clock timeout %s",p.chair_id)
+            self:set_trusteeship(p,true)
+            auto_chu_pai(p)
         end)
 
         if player.trustee then
@@ -3964,7 +3967,7 @@ function changpai_table:reconnect(player)
         self:on_reconnect_when_action_qiang_gang_hu(player)    
     end
 
-    self:send_hu_status(player)
+    --self:send_hu_status(player)
 
     base_table.reconnect(self,player)
 end
