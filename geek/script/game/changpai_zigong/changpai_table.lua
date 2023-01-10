@@ -1154,7 +1154,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                 if is_bao then
                     for _,acx in pairs(all_actions) do
                         if acx.chair_id == nest_user and  acx.actions[ACTION.CHI] then
-                            for i, ac in pairs(acx.actions) do
+                            for i, ac in pairs(acx.actions[ACTION.CHI]) do
                                 if act == ACTION.PASS then
                                     other = i
                                     act = action.actions[ACTION.CHI] and ACTION.CHI or ACTION.PASS
@@ -2919,8 +2919,9 @@ function changpai_table:prepare_tiles()
         self.zhuang = self.hashu
         self.hashu = 0
     else
-        self.zhuang_pai =  self.dealer:use_one()--2的话1号是庄
         log.info("zhuang_pai %d  ",self.zhuang_pai)
+        local index  = math.random(21)
+        self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
         self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
     end
     log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
