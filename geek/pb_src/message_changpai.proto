@@ -83,8 +83,8 @@ message Changpai_MingPai{
 	int32 tile = 1;
 	int32 othertile=2;
 	int32 type = 3;
-	int32 substitute_num = 4; 
-	int32 baopai = 5;
+	int32 substitute_num = 4; 		//包牌用
+	int32 baopai = 5;				//暂时没用
 }
 
 
@@ -191,7 +191,7 @@ message CP_Action{
 	int32 action = 1;
 	int32 tile = 2;
 	int32 other_tile = 3;
-	int32 substitute_num = 4; 
+	int32 substitute_num = 4;  //包牌用
 }
 
 message SC_CP_WaitingDoActions { 
@@ -207,7 +207,7 @@ message CS_Changpai_Do_Action{
 	int32 value_tile = 2;
 	int32 other_tile = 3;
 	int32 session_id = 4;
-	int32 substitute_num = 5; 
+	int32 substitute_num = 5;  //包牌用
 	bool is_sure = 6;
 }
 
@@ -219,7 +219,7 @@ message SC_Changpai_Do_Action_Commit{
 	int32 other_tile = 4;
 	int32 target_chair_id = 5; //抢杠等
 	int32 session_id = 6;
-	int32 substitute_num = 7; 
+	int32 substitute_num = 7;  //包牌用
 }
 
 message SC_Changpai_Do_Action{
@@ -230,7 +230,7 @@ message SC_Changpai_Do_Action{
 	int32 other_tile = 4;
 	int32 target_chair_id = 5; //抢杠等
 	int32 session_id = 6;
-	int32 substitute_num = 7; 
+	int32 substitute_num = 7;  //包牌用
 	repeated int32 unusablecard = 8;
 }
 

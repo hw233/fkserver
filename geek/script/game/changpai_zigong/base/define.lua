@@ -3,8 +3,8 @@ local define = {}
 local pb = require "pb_files"
 
 local TIME_TYPE = {
-	MAIN_FAN_PAI = 1,
-	MAIN_XI_PAI = 4,
+	MAIN_FAN_PAI = 0.5,
+	MAIN_XI_PAI = 3,
 }
 define.TIME_TYPE= TIME_TYPE
 local ACTION = {
