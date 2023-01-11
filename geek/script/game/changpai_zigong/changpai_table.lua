@@ -1385,7 +1385,10 @@ function changpai_table:set_palyer_bao_pai(allactions,player)
     if not allactions[lastuser.chair_id]  then
         return false
     end
-    if  allactions[lastuser.chair_id].actions and not allactions[lastuser.chair_id].actions[ACTION.CHI]  then
+    if not allactions[lastuser.chair_id].actions   then
+        return false
+    end
+    if  not allactions[lastuser.chair_id].actions[ACTION.CHI] then
         return false
     end
     if lastuser and  nest_user == self.chu_pai_player_index and self:is_bao_pai(player,lastuser.fan_pai) then
