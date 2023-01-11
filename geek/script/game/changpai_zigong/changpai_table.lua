@@ -261,7 +261,7 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.bTest = true
+    self.bTest = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
 
@@ -2941,7 +2941,7 @@ function changpai_table:prepare_tiles()
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         local index  = math.random(21)
         self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
-        self.zhuang =1 --mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+        self.zhuang =mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
     end
     log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
     if self.start_count == 2 then
