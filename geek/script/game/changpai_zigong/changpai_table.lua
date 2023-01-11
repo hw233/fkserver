@@ -706,7 +706,7 @@ function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
             qiang_gang = true,
         }
 
-        log.dump(p.pai.shou_pai)
+        log.dump(p)
         self:broadcast_players_tuos(player,done_action_tile)
         self:log_game_action(p,act,done_action_tile,action.done.auto)
         self:broadcast_player_hu(p,act,action.target)
@@ -990,7 +990,7 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             zi_mo = is_zi_mo,  
         }
 
-        log.dump(player.pai.shou_pai)
+        log.dump(player)
         self:broadcast_players_tuos(player)
         
         player.statistics.hu = (player.statistics.hu or 0) + 1
@@ -1121,7 +1121,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
         local function auto_action(p,action)
            
             local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
-            local tile = p.mo_pai
+            
             local nest_user = 1
             local all_actions = self.waiting_actions
             
@@ -1131,7 +1131,7 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                 nest_user = (self.chu_pai_player_index+1 )
             end
             local chu_player =  self:chu_pai_player()
-            
+            local tile = chu_player.fan_pai
             local other = nil
             local is_bao = false
             log.dump(self:is_bao_pai(p,chu_player.fan_pai))
@@ -1140,19 +1140,20 @@ function changpai_table:action_after_fan_pai(waiting_actions)
                 
                 log.dump(all_actions)
                 for _,acx in pairs(all_actions) do
-                    
-                    log.dump(acx.done.action)
-                    if acx.done.action == ACTION.PASS and acx.chair_id ==self.chu_pai_player_index   then     
-                        local chi_action = acx.actions[ACTION.CHI]
-                        log.dump(chi_action)
-                            if chi_action then
-                                
-                                 is_bao =true 
-                                 break
-                            end
-                        
-                                
+                    if acx then 
+                        if  acx.chair_id ==self.chu_pai_player_index   then     
+                            local chi_action = acx.actions[ACTION.CHI]
+                            log.dump(chi_action)
+                                if chi_action then
+                                    
+                                    is_bao =true 
+                                    break
+                                end
+                            
+                                    
+                        end
                     end
+                    
                 end
                 log.dump(is_bao)
                 if is_bao then
@@ -1377,8 +1378,14 @@ function changpai_table:set_palyer_bao_pai(allactions,player)
         nest_user = player and player.chair_id-1 
     end
     local lastuser = self.players[nest_user]
-    
-    if allactions[lastuser.chair_id] and allactions[lastuser.chair_id].actions and not allactions[lastuser.chair_id].actions[ACTION.CHI] then
+    log.dump(lastuser)
+    log.dump(self.chu_pai_player_index)
+    log.dump(allactions)
+    log.dump(lastuser.chair_id)
+    if not allactions[lastuser.chair_id]  then
+        return false
+    end
+    if  allactions[lastuser.chair_id].actions and not allactions[lastuser.chair_id].actions[ACTION.CHI]  then
         return false
     end
     if lastuser and  nest_user == self.chu_pai_player_index and self:is_bao_pai(player,lastuser.fan_pai) then
@@ -2751,8 +2758,7 @@ function changpai_table:do_balance(in_pai)
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
         local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
-        if p and p.hu and not in_pai then
-            
+        if p and p.hu and p.hu.tile and  not in_pai then   
             table.decr(p.pai.shou_pai,p.hu.tile)
         end
         log.dump(p.pai.shou_pai)
