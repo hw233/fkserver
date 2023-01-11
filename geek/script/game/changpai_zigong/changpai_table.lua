@@ -2941,7 +2941,7 @@ function changpai_table:prepare_tiles()
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         local index  = math.random(21)
         self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
-        self.zhuang =mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+        self.zhuang =  mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
     end
     log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
     if self.start_count == 2 then
@@ -3337,9 +3337,11 @@ function changpai_table:calculate_gang(p,in_pai)
         gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1,type = HU_TYPE.TUO_24} 
     end
     
-    
-    if p.chair_id == self.zhuang and p.mo_pai and self.chu_pai_count == 0 then
+    log.dump(p.chair_id,"tianhu")
+    log.dump(p.chu_pai_count ,"chu_pai_count")
+    if p.chair_id == self.zhuang  and p.chu_pai_count == 0 then
         gangfans[HU_TYPE.TIAN_HU] = {fan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan,count = 1,type = HU_TYPE.TIAN_HU}
+        log.dump(gangfans,"tianhu")
     end
 
     -- if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
@@ -3484,7 +3486,7 @@ function changpai_table:game_balance(in_pai)
     local fanscores = table.map(self.players,function(_,chair)
         return chair,{fan = fans[chair] or 0,score = scores[chair] or 0,}
     end)
-
+    log.dump(typefans,"typefans")
     return typefans,fanscores
 end
 
@@ -3512,7 +3514,7 @@ function changpai_table:on_game_overed()
         v.mo_pai_count = nil
         v.chu_pai = nil
         v.fan_pai = nil
-        v.chu_pai_count = nil
+        v.chu_pai_count = 0
 
         v.que = nil
     end)
