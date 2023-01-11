@@ -245,6 +245,7 @@ function changpai_table:on_private_dismissed()
     end
     self:cancel_all_auto_action_timer()
     self:cancel_clock_timer()
+    self:cancel_main_timer()
     base_table.on_private_dismissed(self)
 end
 
@@ -260,7 +261,7 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.bTest = false
+    self.bTest = true
     self.start_count = player_count
     base_table.on_started(self,player_count)
 
@@ -316,6 +317,7 @@ function changpai_table:on_started(player_count)
     self.dealer = nil
     self.dealer = changpai_tile_dealer:new(self.tiles)
     self:cancel_clock_timer()
+    self:cancel_main_timer()
     self:cancel_all_auto_action_timer()
     self:pre_begin()--这里是包括定庄，洗牌，发牌，庄家摸第16张牌，给在位置的所有玩家发送牌数据
     ---self:action_after_fapai()
@@ -455,10 +457,11 @@ function changpai_table:action_after_first_tou()--偷牌结束要么天胡，要
     log.info("---------fake mo pai,guid:%s,pai:  %s ------",player.guid,mo_pai)
     self:broadcast2client("SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
 
-    local actions = self:get_actions(player)
+    local actions = self:get_actions(player,mo_pai,nil,nil,nil)
+    log.dump(actions)
 
-       
     if table.nums(actions) > 0 then
+        log.info("---------you tian  hu------")
         self:first_action_tianhu({
             [self.chu_pai_player_index] = {
                 actions =actions,
@@ -2919,13 +2922,13 @@ function changpai_table:prepare_tiles()
         -- }
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {18,18,3,3,13,13,13,20,20,17,17,10,10,10,14},     -- 万 庄
-            [2] = {12,12,11,11,16,5,8,15,2,20,15,9,17,5,19},    -- 筒  
-            [3] = {5,16,19,19,2,16,1,1,1,9,12,14,11,11,1},      -- 万
+            [1] = {18,18,18,1,21,2,20,3,19,5,17,5,17,8,15},     -- 万 庄
+            [2] = {12,12,11,11,16,5,8,15,2,20,15,9,17,7,19},    -- 筒  
+            [3] = {5,16,19,19,2,16,1,1,1,9,12,14,11,11,9},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            8,13,18,14,20,17,14,15,6,15,3,8,
+            8,15,18,14,20,17,14,20,6,9,3,8,
         }
         self.dealer.remain_count = 52
     end
@@ -2938,7 +2941,7 @@ function changpai_table:prepare_tiles()
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         local index  = math.random(21)
         self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
-        self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+        self.zhuang =1 --mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
     end
     log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
     if self.start_count == 2 then
@@ -3038,7 +3041,7 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
  
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,can_eat,self.zhuang==p.chair_id,can_ba)
 
-   
+   log.dump(actions)
  
     if  not self:can_hu(p,in_pai,mo_pai,qiang_gang) and actions[ACTION.HU] then
         actions[ACTION.HU] = nil
@@ -3335,13 +3338,13 @@ function changpai_table:calculate_gang(p,in_pai)
     end
     
     
-    if p.chair_id == self.zhuang and p.mo_pai and self.mo_pai_count == 1 then
+    if p.chair_id == self.zhuang and p.mo_pai and self.chu_pai_count == 0 then
         gangfans[HU_TYPE.TIAN_HU] = {fan = HU_TYPE_INFO[HU_TYPE.TIAN_HU].fan,count = 1,type = HU_TYPE.TIAN_HU}
     end
 
-    if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
-        gangfans[HU_TYPE.DI_HU] = {fan = HU_TYPE_INFO[HU_TYPE.DI_HU].fan,count = 1,type = HU_TYPE.DI_HU}
-    end
+    -- if p.chair_id ~= self.zhuang and p.mo_pai_count <= 1 and p.chu_pai_count == 0 and table.nums(p.pai.ming_pai) == 0 then
+    --     gangfans[HU_TYPE.DI_HU] = {fan = HU_TYPE_INFO[HU_TYPE.DI_HU].fan,count = 1,type = HU_TYPE.DI_HU}
+    -- end
 
 
     local fans = table.series(gangfans,function(v,t) return {type = t,fan = v.fan,count = v.count} end)
@@ -3488,7 +3491,7 @@ end
 function changpai_table:on_game_overed()
     self:cancel_all_auto_action_timer()
     self:cancel_clock_timer()
-    
+    self:cancel_main_timer()
     self.game_log = nil
 
     self.zhuang = self:ding_zhuang() or self.zhuang
