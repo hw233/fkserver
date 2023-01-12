@@ -37,6 +37,7 @@ local action_name_str = {
     [ACTION.QIANG_GANG_HU] = "QiangGangHu",
     [ACTION.ROUND] = "Round",
     [ACTION.TUO] = "Tuo",
+    [ACTION.TIAN_HU] = "TianHu",
     
 }
 local TIME_TYPE = def.TIME_TYPE
@@ -295,16 +296,16 @@ function changpai_table:on_started(player_count)
         v.tuos = nil
         
     end
-
+    self.zhuang = nil
     self.rec_chu_pai = {}
     self.rec_fan_pai = {}
-	self.chu_pai_player_index      = self.zhuang --出牌人的索引
+	self.chu_pai_player_index      =  nil --出牌人的索引
     self.last_chu_pai              = -1 --上次的出牌
     self.mo_pai_count = nil
     self:update_state(FSM_S.PER_BEGIN)
     self.game_log = {
+        zhuang = 1,
         start_game_time = os.time(),
-        zhuang = self.zhuang,
         mj_min_scale = self.mj_min_scale,
         players = table.map(self.players,function(_,chair) return chair,{} end),
         action_table = {},
@@ -417,8 +418,9 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
     self:cancel_main_timer()
     self:cancel_auto_action_timer(player)
     self.waiting_actions = {}
-    if do_action == ACTION.HU then
+    if do_action == ACTION.TIAN_HU then
         -- 天胡
+        --local hu = self:hu(player,nil,tile)
         local is_zi_mo = true
         player.hu = {
             time = timer.nanotime(),
@@ -460,12 +462,14 @@ function changpai_table:action_after_first_tou()--偷牌结束要么天胡，要
 
     local actions = self:get_actions(player,mo_pai,nil,nil,nil)
     log.dump(actions)
-
-    if table.nums(actions) > 0 then
+    
+    if table.nums(actions) > 0 and actions[ACTION.TIAN_HU] then
         log.info("---------you tian  hu------")
+        local hu_actions = {[ACTION.TIAN_HU] = actions[ACTION.TIAN_HU]}
+        log.dump(hu_actions)
         self:first_action_tianhu({
             [self.chu_pai_player_index] = {
-                actions =actions,
+                actions =hu_actions,
                 chair_id = self.chu_pai_player_index,
                 session_id = self:session(),
             }
@@ -1239,7 +1243,7 @@ function changpai_table:first_action_tianhu(waiting_actions)
     local trustee_type,trustee_seconds = self:get_trustee_conf()
     if trustee_type then
         local function auto_action(p,action)
-            local act = action.actions[ACTION.HU] and ACTION.HU or ACTION.PASS
+            local act = action.actions[ACTION.TIAN_HU] and ACTION.TIAN_HU or ACTION.PASS
             local tile = p.mo_pai
             self:lockcall(function()
                 self:on_action_after_tianhu(p,{
@@ -1595,7 +1599,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
         end
         table.pop_back(chu_pai_player.pai.desk_tiles)
         self:adjust_shou_pai(player,top_done_act,tile,othertile,top_session_id)
-        log.error("---------adjust_shou_pai--------")
+        --log.error("---------adjust_shou_pai--------")
         --self:log_game_action(player,top_done_act,tile,top_action.done.auto)
         tinsert(self.game_log.action_table,{chair = player.chair_id,act = action_name_str[top_done_act],msg = {tile = tile,other_tile = othertile },auto = auto,time = timer.nanotime()})
         check_all_pass(all_actions)
@@ -2926,14 +2930,15 @@ function changpai_table:prepare_tiles()
         --     8,6,18,3,4,20,6,
         -- }
         -- 测试手牌     
+        -- 测试手牌     
         self.pre_tiles = {
-            [1] = {12,12,12,4,18,2,20,4,19,5,17,5,17,8,15},     -- 万 庄
-            [2] = {6,7,11,11,16,5,8,15,2,20,15,9,17,7,6},    -- 筒  
-            [3] = {5,16,19,19,2,16,1,1,1,9,6,14,11,11,9},      -- 万
+            [1] = {1,1,1,2,2,3,3,4,4,7,7,13,9,6},     -- 万 庄
+            [2] = {16,11,8,9,19,5,5,13,9,2,8,15,17,11,12},    -- 筒  
+            [3] = {15,12,6,9,18,16,17,6,4,12,17,17,16,7,8},      -- 万
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            11,16,14,12,20,17,14,20,6,9,3,8,
+            16,2,3,4,7,6,8,20,14,13,10,15,14
         }
         self.dealer.remain_count = 52
     end
@@ -2942,20 +2947,22 @@ function changpai_table:prepare_tiles()
         self.zhuang_pai = nil
         self.zhuang = self.hashu
         self.hashu = 0
+             
     else
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         local index  = math.random(21)
         self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
         self.zhuang = mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+        self.game_log.zhuang = self.zhuang
     end
-    log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
+    --log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
     if self.start_count == 2 then
         self.qie_pai = self.dealer:deal_tiles(15) 
     end
     
-
-   
     self.chu_pai_player_index = self.zhuang --出牌人的索引
+    self.game_log.zhuang = self.zhuang
+    
     self:foreach(function(p)--给每个玩家发牌
         local tiles = self.pre_tiles[p.chair_id]
         if tiles then
@@ -3161,6 +3168,10 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         actions[ACTION.ZI_MO] = nil
     end
 
+    if self.zhuang==p.chair_id and actions[ACTION.HU] and  p.chu_pai_count and p.chu_pai_count == 0 then      
+        actions[ACTION.TIAN_HU] = actions[ACTION.HU]
+        actions[ACTION.HU] = nil
+    end
     return actions
 end
 
@@ -3501,7 +3512,7 @@ function changpai_table:on_game_overed()
     self:cancel_main_timer()
     self.game_log = nil
 
-    self.zhuang = self:ding_zhuang() or self.zhuang
+    self.zhuang =  nil
 
     self:clear_ready()
     self.cur_state_FSM = nil
@@ -3652,7 +3663,7 @@ function changpai_table:on_cs_do_action(player,msg)
 
         },
         [FSM_S.WAIT_ACTION_AFTER_TIAN_HU] = {
-            [ACTION.HU] = self.on_action_after_tianhu,
+            [ACTION.TIAN_HU] = self.on_action_after_tianhu,
             [ACTION.PASS] = self.on_action_after_tianhu
         },
         [FSM_S.WAIT_CHU_PAI] = {
@@ -3823,7 +3834,7 @@ function changpai_table:adjust_shou_pai(player, action, tile,othertile,session_i
             area = TILE_AREA.MING_TILE,
         })
         self:set_unuse_card(player,tile)
-        log.error("-----set_unuse_card------")
+        --log.error("-----set_unuse_card------")
     end
 
     if self.rec_fan_pai then self.rec_fan_pai=nil end
@@ -3894,7 +3905,7 @@ function changpai_table:send_data_to_enter_player(player,is_reconnect)
     local msg = {
         state = self.cur_state_FSM,
         round = self.cur_round,
-        zhuang = self.zhuang, 
+        zhuang = self.zhuang or nil , 
         zhuang_pai = self.zhuang_pai or nil,   
         self_chair_id = player.chair_id,
         act_time_limit = def.ACTION_TIME_OUT,
