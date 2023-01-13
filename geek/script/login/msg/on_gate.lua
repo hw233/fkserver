@@ -690,14 +690,14 @@ function on_cl_login(msg,gate)
     end
 
     log.dump(info)
-
+    log.info("xxxxxxxxx  1 ret %d , gate %d ", ret,gate)
     if ret ~= enum.LOGIN_RESULT_SUCCESS then
         return {
             result = ret,
             ps_error_counts = info and  info.ps_error_counts
         }
     end
-
+    
     info = clone(info)
 
     local guid = info.guid
@@ -705,8 +705,9 @@ function on_cl_login(msg,gate)
     -- 重连判断
     --清空online信息，重接最新数据
     onlineguid[guid] = nil
-
+    log.info("xxxxxxxxx 2 ret %d , gate %d ", ret,gate)
     local ok,result,reconnect,game_id = channel.pcall("queue.?","lua","Login",guid,gate)
+    log.info("xxxxxxxxx 3 ret %d , gate %d ok d%,result=%d", ret,gate,ok,result)
     if not ok then
         return {
             result = enum.ERROR_INTERNAL_UNKOWN
@@ -718,7 +719,7 @@ function on_cl_login(msg,gate)
             result = enum.LOGIN_RESULT_MAINTAIN
         }
     end
-
+    log.info("xxxxxxxxx 4 ret %d , gate %d ok d%,result=%d", ret,gate,ok,result)
     if reconnect then
         info.result = enum.LOGIN_RESULT_SUCCESS
         info.reconnect = 1
@@ -728,7 +729,7 @@ function on_cl_login(msg,gate)
             guid,account, game_id, gate)
         return info
     end
-
+    log.info("xxxxxxxxx 5 ret %d , gate %d ok d%,result=%d", ret,gate,ok,result)
     channel.publish("db.?","msg","LD_LogLogin",{
         guid = guid,
         phone = msg.phone,
@@ -746,7 +747,7 @@ function on_cl_login(msg,gate)
         sensiorpromoter = info.sensiorpromoter,
         package_name = msg.package_name,
     })
-    
+    log.info("xxxxxxxxx 6 ret %d , gate %d ok d%,result=%d", ret,gate,ok,result)
     log.dump(gate)
     reddb:sadd("player:online:all",guid)
 
