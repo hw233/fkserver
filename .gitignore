@@ -10,3 +10,5 @@
 *.dSYM
 .DS_Store
 /.vscode
+
+#3rd/lua-openssl
