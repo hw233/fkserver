@@ -9,4 +9,5 @@ msgopt:reg({
 	CS_VoteTableReq = on_cs_vote_table_req,
 	CS_VoteTableCommit = on_cs_vote_table_commit,
 	CS_ChangpaiGetTingTilesInfo = on_cs_get_ting_tiles_info,
+	CS_Baoting = on_cs_bao_ting,
 })
