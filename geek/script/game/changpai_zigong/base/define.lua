@@ -94,6 +94,7 @@ define.FSM_state = {
 	DING_QUE 					= pb.enum("CP_FSM_STATE","DING_QUE"),	--定缺
 	GAME_IDLE_HEAD				= pb.enum("CP_FSM_STATE","GAME_IDLE_HEAD"), --用于客户端播放动画延迟				
 	FAST_START_VOTE 			= pb.enum("CP_FSM_STATE","FAST_START_VOTE"), --快速开始投票
+	WAIT_BAO_TING 				= pb.enum("CP_FSM_STATE","WAIT_BAO_TING"), 	--报听
 	FINAL_END					= pb.enum("CP_FSM_STATE","FINAL_END")
 }
 

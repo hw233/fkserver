@@ -215,8 +215,8 @@ function mj_util.panGangWithOutInPai(pai)
 	return anGangList,baGangList
 end
 
-function mj_util.is_ting(pai,si_dui)
-	return rule.ting(pai,si_dui)
+function mj_util.is_ting(pai)
+	return rule.ting(pai)
 end
 
 function mj_util.is_ting_full(pai)

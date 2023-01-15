@@ -384,7 +384,7 @@ function rule.ting_tiles(pai)
 end
 
 --未摸牌判听
-function rule.ting(pai,si_dui)
+function rule.ting(pai)
 	return rule.ting_tiles(pai)
 end
 
