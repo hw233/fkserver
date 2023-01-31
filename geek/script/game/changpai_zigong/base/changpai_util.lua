@@ -215,12 +215,12 @@ function mj_util.panGangWithOutInPai(pai)
 	return anGangList,baGangList
 end
 
-function mj_util.is_ting(pai)
-	return rule.ting(pai)
+function mj_util.is_ting(pai,is_zhuang)
+	return rule.ting(pai,is_zhuang)
 end
 
-function mj_util.is_ting_full(pai)
-	return rule.ting_full(pai)
+function mj_util.is_ting_full(pai,is_zhuang)
+	return rule.ting_full(pai,is_zhuang)
 end
 
 function mj_util.get_fan_table_res(base_fan_table)

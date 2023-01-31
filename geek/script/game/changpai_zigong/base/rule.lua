@@ -373,28 +373,63 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	return alltypes
 end
 
-function rule.ting_tiles(pai)
+function rule.ting_tiles(pai,is_zhuang)
 	local cache = {}
+	local ming = {}
 	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	ming = pai.ming_pai or {} 
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
 	local tiles = state.feed_tiles
-	
+	table.select(tiles,function (t)
+		local hongnum = 0
+		local tuos = 0
+		for i, v in pairs(cache) do
+			if v>0 and rule.tile_hongcounts(i)>0 then
+				hongnum = hongnum + v
+			end
+		end
+		for i, v in pairs(ming) do
+			if v and v.type == SECTION_TYPE.BA_GANG and rule.tile_hongcounts(v.tile)>0 then
+				hongnum = hongnum + 4
+			end
+			if v and (v.type == SECTION_TYPE.PENG or v.type == SECTION_TYPE.TOU)  and rule.tile_hongcounts(v.tile)>0  then
+				hongnum = hongnum + 3
+			end
+			if v and v.type == SECTION_TYPE.CHI then
+				if  rule.tile_hongcounts(v.tile)>0  then  hongnum = hongnum + 1 end
+				if  rule.tile_hongcounts(v.othertile)>0  then  hongnum = hongnum + 1 end
+			end
+		end
+		if rule.tile_hongcounts(t)>0 then hongnum = hongnum + 1  end 
+		tuos = rule.tuos(pai,t)
+		if hongnum<=4 then
+			return true
+		end
+		if hongnum>4 and (tuos >= 14 and is_zhuang) then
+			return true
+		end
+		if hongnum>4 and (tuos >= 12 and not is_zhuang) then
+			return true
+		end
+		return false
+
+	end)
 	return tiles
 end
 
 --未摸牌判听
-function rule.ting(pai)
-	return rule.ting_tiles(pai)
+function rule.ting(pai,is_zhuang)
+	return rule.ting_tiles(pai,is_zhuang)
 end
 
 --打牌的时候打那张听的牌是啥
-function rule.ting_full(pai)
+function rule.ting_full(pai,is_zhuang)
 	local all_pai = clone(pai)
 	local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
 		if c <= 0 then return end
 		table.decr(all_pai.shou_pai,tile)
-		local tiles = rule.ting_tiles(all_pai)
+		local tiles = rule.ting_tiles(all_pai,is_zhuang)
 		table.incr(all_pai.shou_pai,tile)
 		if table.nums(tiles) > 0 then return tile,tiles end
 	end)

@@ -362,3 +362,45 @@ message SC_CP_Tuo_Num
 	enum MsgID { Nil = 0; ID = 33147; }
 	repeated int32 tuos = 1;
 }
+
+message CP_BaotingInfo{
+	int32 chair_id = 1;
+	bool  baoting = 2;
+}
+
+message CP_BaotingStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_CP_AllowBaoting{
+	enum MsgID { Nil = 0; ID = 33148;}
+}
+
+message CS_CP_Baoting{
+	enum MsgID { Nil = 0; ID = 33149;}
+	int32 baoting = 1;	// 0 不报听  1 报听
+}
+
+message SC_CP_Baoting{
+	enum MsgID { Nil = 0; ID = 33150;}
+	int32 result = 1;	// 0 不报听  1 报听
+	CP_BaotingStatus status = 2;
+}
+
+message SC_CP_BaotingStatus{
+	enum MsgID { Nil = 0; ID = 33151;}
+	repeated CP_BaotingStatus baoting_status = 1;
+	repeated CP_BaotingInfo   baoting_info = 2;
+}
+
+message SC_CP_BaotingCommit{
+	enum MsgID { Nil = 0; ID = 33152;}
+	repeated CP_BaotingInfo baotings = 1;
+}
+// 能否选择报听信息
+message SC_CP_BaoTingInfos{
+	enum MsgID { Nil = 0; ID = 33153;}	
+	int32 canbaoting = 1;		// 能否报听 0:不能  1:能
+	repeated CP_TingTips ting = 2;	// 能报听牌提示
+}
