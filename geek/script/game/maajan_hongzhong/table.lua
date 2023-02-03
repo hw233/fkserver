@@ -3605,7 +3605,10 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
     if self.rule.play.tian_di_hu then
         -- 天胡
         if player.chair_id == self.zhuang and mo_pai and self.mo_pai_count == 1 then
-            if self.rule.play.qd_pph_th_qys_jia1fen then types[HU_TYPE.TIAN_HU] = 1 end
+            if self.rule.play.qd_pph_th_qys_jia1fen then
+                 types[HU_TYPE.TIAN_HU] = 1 
+                 types[HU_TYPE.PING_HU] = 1 
+            end
         end
         -- 地胡
         -- if player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and player.chu_pai_count == 0 and table.nums(player.pai.ming_pai) == 0 then

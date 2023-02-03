@@ -195,11 +195,13 @@ local function get_hu_types(pai,cache,in_pai)
 			if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
 				if  rule.tile_hongcounts(s.tile)>0 then
 					counthonghei = counthonghei+3
+					base_types[HU_TYPE.HEI_LONG] = nil
 				end
 			end
 			if s.type == SECTION_TYPE.BA_GANG  then
 				if  rule.tile_hongcounts(s.tile)>0 then
 					counthonghei = counthonghei+4
+					base_types[HU_TYPE.HEI_LONG] = nil
 				end
 			end
 		end
@@ -227,6 +229,8 @@ local function get_hu_types(pai,cache,in_pai)
 
 
 	if counthonghei>4 then base_types[HU_TYPE.HEI_LONG] = nil end
+	
+	
 	
 	if not base_types[HU_TYPE.TUOTUO_HONG] and not base_types[HU_TYPE.BABA_HEI] and not base_types[HU_TYPE.HEI_LONG] then 
 		base_types[HU_TYPE.PING_HU] = 1
@@ -257,9 +261,9 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	local hutype =  get_hu_types(pai,shoupai,in_pai)
 
 	if is_zhuang then 
-		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
+		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] or hutype[HU_TYPE.BABA_HEI] then en_tuo = true end
 	else
-		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
+		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] or hutype[HU_TYPE.BABA_HEI] then en_tuo = true end
 	end
 
 	return can_hu and en_tuo 

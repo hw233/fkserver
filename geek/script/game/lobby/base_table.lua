@@ -739,7 +739,7 @@ function base_table:cost_tax(winlose)
 	end
 
 	local taxconf = rule.union and rule.union.tax or nil
-	if not taxconf or (not taxconf.AA and not taxconf.big_win) then
+	if not taxconf or (not taxconf.AA and not taxconf.big_win and taxconf.win_player) then
 		log.error("base_table:cost_tax [%d] got nil private tax conf.",self.private_id)
 		return
 	end
@@ -803,6 +803,54 @@ function base_table:cost_tax(winlose)
 		
 		local each_tax = math.floor(bigwin_tax / #bigwin_datas)
 		local taxs = table.map(bigwin_datas,function(d)
+			return d.guid,each_tax
+		end)
+
+		do_cost_tax_money(taxs)
+
+		self:do_bigwin_commission(bigwin_tax,table.keys(taxs))
+		return
+	end
+
+	if taxconf.win_player and winlose and table.nums(winlose) > 0 then
+		log.dump(winlose)
+		log.dump(taxconf)
+		log.dump(winlose)
+		log.dump(taxconf)
+
+		local win_player_conf = taxconf.win_player
+		local winloselist = table.series(winlose,function(change,guid) 
+			return {guid = guid,change = change} 
+		end)
+
+		table.sort(winloselist,function(l,r) return l.change > r.change end)
+
+		table.sort(win_player_conf,function(l,r)
+			if l[1] < 0 then return false end
+			if r[1] < 0 then return true end
+			return l[1] < r[1]
+		end)
+
+		local maxwin = winloselist[1].change
+		if maxwin <= 0 then
+			log.warning("base_table:cost_tax [%d] invalid maxwin:%s.",self.private_id,maxwin)
+			return
+		end
+
+		local win__player_datas = table.select(winloselist,function(d) return d.change > 0 end,true)
+
+		
+		local bigwin_tax = gutil.roulette_value(win_player_conf,maxwin)
+		if not bigwin_tax then
+			log.warning("base_table:cost_tax [%d] invalid bigwin tax,maxwin:%s.",self.private_id,maxwin)
+			return
+		end
+
+		log.dump(win__player_datas)
+		log.dump(bigwin_tax)
+		
+		local each_tax = math.floor(bigwin_tax / #win__player_datas)
+		local taxs = table.map(win__player_datas,function(d)
 			return d.guid,each_tax
 		end)
 
