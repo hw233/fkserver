@@ -739,7 +739,7 @@ function base_table:cost_tax(winlose)
 	end
 
 	local taxconf = rule.union and rule.union.tax or nil
-	if not taxconf or (not taxconf.AA and not taxconf.big_win and taxconf.win_player) then
+	if not taxconf or (not taxconf.AA and not taxconf.big_win and not taxconf.AA_1) then
 		log.error("base_table:cost_tax [%d] got nil private tax conf.",self.private_id)
 		return
 	end
@@ -767,8 +767,10 @@ function base_table:cost_tax(winlose)
 		self:do_tax_commission(tax)
 		return
 	end
-
-	if taxconf.big_win and winlose and table.nums(winlose) > 0 then
+	local AA1 = taxconf.AA_1
+	log.dump(taxconf)
+	log.dump(AA1)
+	if not taxconf.AA_1 and taxconf.big_win and winlose and table.nums(winlose) > 0 then
 		log.dump(winlose)
 		log.dump(taxconf)
 
@@ -811,14 +813,13 @@ function base_table:cost_tax(winlose)
 		self:do_bigwin_commission(bigwin_tax,table.keys(taxs))
 		return
 	end
-
-	if taxconf.win_player and winlose and table.nums(winlose) > 0 then
+	
+	log.dump(taxconf.big_win)
+	log.dump(AA1)
+	if AA1 and  taxconf.big_win and winlose and table.nums(winlose) > 0 then
 		log.dump(winlose)
 		log.dump(taxconf)
-		log.dump(winlose)
-		log.dump(taxconf)
-
-		local win_player_conf = taxconf.win_player
+		local win_player_conf = taxconf.big_win
 		local winloselist = table.series(winlose,function(change,guid) 
 			return {guid = guid,change = change} 
 		end)
@@ -838,25 +839,22 @@ function base_table:cost_tax(winlose)
 		end
 
 		local win__player_datas = table.select(winloselist,function(d) return d.change > 0 end,true)
+		log.dump(win__player_datas)
 
+		local winplayertax = table.map(win__player_datas,function(d)
+			return d.guid,gutil.roulette_value(win_player_conf,d.change) or 0
+		end)
 		
-		local bigwin_tax = gutil.roulette_value(win_player_conf,maxwin)
-		if not bigwin_tax then
+	
+		if table.nums(winplayertax)  == 0 then
 			log.warning("base_table:cost_tax [%d] invalid bigwin tax,maxwin:%s.",self.private_id,maxwin)
 			return
 		end
 
-		log.dump(win__player_datas)
-		log.dump(bigwin_tax)
+		log.dump(winplayertax)
 		
-		local each_tax = math.floor(bigwin_tax / #win__player_datas)
-		local taxs = table.map(win__player_datas,function(d)
-			return d.guid,each_tax
-		end)
-
-		do_cost_tax_money(taxs)
-
-		self:do_bigwin_commission(bigwin_tax,table.keys(taxs))
+		do_cost_tax_money(winplayertax)
+		self:do_tax_commission(winplayertax)
 		return
 	end
 end

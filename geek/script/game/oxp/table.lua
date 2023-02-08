@@ -70,7 +70,7 @@ function ox_table:begin_start_ticker()
 	local trustee,seconds = self:get_trustee_conf()
 	if trustee then
 		log.info("ox_table:begin_start_ticker table_id:%s",self:id())
-		self:begin_kickout_no_ready_timer(seconds,function()
+		self:begin_kickout_no_ready_timer(seconds+1,function()
 			log.info("ox_table:begin_start_ticker timeout,start,table_id:%s,is_play:%s",self:id(),self:is_play())
 			self:cancel_kickout_no_ready_timer()
 			if not self:is_play() then
@@ -181,6 +181,7 @@ function ox_table:on_started(player_count)
 		balance = {}, --游戏结算
 		callbanker = {},
 		bet = {},
+		rule = self.rule and self.rule or nil,
 		cur_round = self:gaming_round(),
 		players = table.map(self.players,function(v,i) 
 			return i,{
@@ -193,6 +194,7 @@ function ox_table:on_started(player_count)
 		end)
     }
 
+	
 	self:broadcast2client("SC_OxStart",{
 		players = table.map(self.gamers,function(p,chair) 
 			return chair,{
@@ -232,6 +234,8 @@ end
 
 function ox_table:next_banker(banker)
 	local nc = self.chair_count
+	log.dump( self.chair_count)
+	log.dump(self.gamers)
 	if not banker then
 		while true do
 			local bc = math.random(1,nc)
@@ -243,12 +247,19 @@ function ox_table:next_banker(banker)
 	end
 
 	local i = banker or self.banker
-	for c = i + 1,i + nc - 1 do
-		local bc = (c % nc)  + 1
+	log.dump(i + 1)
+	log.dump(i + nc + 1)
+	for c = i + 1,i + nc + 1  do
+		local bc = c
+		if bc > nc then
+			bc = bc % nc
+		end
 		if self.gamers[bc] then
+			log.dump(bc)
 			return bc
 		end
 	end
+	
 end
 
 function ox_table:get_an_cards(cards)
@@ -272,7 +283,7 @@ function ox_table:deal_cards()
 	local dealer = card_dealer.new(all_cards)
 	dealer:shuffle()
 
-	table.foreach(self.gamers,function(p)
+	table.foreach(self.players,function(p)
 		local cards = dealer:deal_cards(5)
 		p.cards = cards
 		p.cards_type = logic.cards_type(cards,self.rule_times)
@@ -648,8 +659,9 @@ function ox_table:do_balance()
 		return chair,self:calc_score_money(s)
 	end)
 
-	local moneies = self:balance(scoremonies,enum.LOG_MONEY_OPT_TYPE_OX)
-
+	log.dump(enum.LOG_MONEY_OPT_TYPE_OX_DIANZI)
+	local moneies = self:balance(scoremonies,enum.LOG_MONEY_OPT_TYPE_OX_DIANZI)
+	local log_player = self.gamelog.players 
 	table.foreach(self.gamers,function(p,chair)
 		p.winlose_count = (p.winlose_count or 0) +  ((scores[chair] or 0) > 0 and 1 or -1)
 		p.total_score = (p.total_score or 0) + (scores[chair] or 0)
@@ -657,9 +669,11 @@ function ox_table:do_balance()
 		if self:is_bankruptcy(p) then
 			p.status = PLAYER_STATUS.BANKRUPTCY
 		end
+		log_player[chair].total_money = p.total_money or 0
+		log_player[chair].win_money = moneies[chair] or 0
 	end)
 
-	
+
 
 	self.gamelog.balance = table.series(self.gamers,function(v,i) 
 		return {
