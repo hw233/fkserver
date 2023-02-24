@@ -2210,9 +2210,12 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         if actions[ACTION.AN_GANG] then
             for tile,_ in pairs(actions[ACTION.AN_GANG]) do
                 if not self:is_baoting_can_gang(p,actions,ACTION.AN_GANG,tile) then
-                    actions[ACTION.AN_GANG] = nil
+                    actions[ACTION.AN_GANG][tile] = nil
                 end
-            end            
+            end    
+            if table.nums(actions[ACTION.AN_GANG]) == 0 then
+                actions[ACTION.AN_GANG] = nil
+            end      
         end
         if actions[ACTION.RUAN_AN_GANG] and table.nums(actions[ACTION.RUAN_AN_GANG]) >= 0 then
             for tile,_ in pairs(actions[ACTION.RUAN_AN_GANG]) do
@@ -3366,7 +3369,9 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
         end
 
         if player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and player.chu_pai_count == 0 and table.nums(player.pai.ming_pai) == 0 then
-            types[HU_TYPE.DI_HU] = 1
+            if self.cur_state_FSM ~= FSM_S.WAIT_BAO_TING then 
+                types[HU_TYPE.DI_HU] = 1
+            end
         end
     end
 
