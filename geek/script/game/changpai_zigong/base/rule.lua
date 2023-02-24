@@ -92,47 +92,31 @@ end
 
 local function feed_hu_tile(tiles)
 	local feed_tiles = {}
+	local ting_tiles = {}
 	if #tiles ~= 1  then
 		return feed_tiles
 	end
-
+	if rule.tile_value(tiles[1]) == 7 then
+		return feed_tiles
+	end
+	log.dump(tiles)
 	if #tiles == 1 then
 		for k, v in pairs(all_tiles) do
-			if tiles[1]+v.value == 14 then
+			if rule.tile_value(tiles[1])+v.value == 14 then
 				feed_tiles[v.index] = true 
 			end
 		end
 
 	end
-	return feed_tiles
-end
-
-
-local function ting(state)
-	local counts = state.counts
-	local tiles = counts_2_tiles(counts)
-	local tile_count = #tiles
-	
-	if tile_count == 1 then
-		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
-		return
-	end
-	local feed_tiles = {}
-	local first_tile = tiles[1]
-	table.decr(counts,first_tile)
-	for tile,c in pairs(counts) do
-		if  c > 0 and rule.tile_value(first_tile)+rule.tile_value(tile) == 14 then
-			table.decr(counts,first_tile)
-			table.decr(counts,tile)
-			ting(state)
-			table.incr(counts,first_tile)
-			table.incr(counts,tile )
+	for key, value in pairs(feed_tiles) do
+		if value then
+			table.insert(ting_tiles,key)
 		end
 	end
-	table.incr(counts,first_tile)
+	log.dump(feed_tiles)
+	log.dump(ting_tiles)
+	return ting_tiles
 end
-
-
 
 local function is_hu(state)
 	local counts = state.counts
@@ -156,6 +140,46 @@ local function is_hu(state)
 
 	return false
 end
+
+local function ting(state)
+	local counts = state.counts
+	local tiles = counts_2_tiles(counts)
+	local tile_count = #tiles
+	local ting_index = 1
+	if tile_count == 1 then
+		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
+		log.dump(tiles)
+		log.dump(state.feed_tiles)
+		return
+	end
+	local feed_tiles = {}
+	local first_tile = tiles[1]	
+	log.dump(tiles)
+	for tile,c in pairs(counts) do
+		if  c > 0  and rule.tile_value(first_tile)+rule.tile_value(tile) == 14 then
+			table.decr(counts,first_tile)
+			table.decr(counts,tile)
+			ting(state)
+			table.incr(counts,tile )
+			table.incr(counts,first_tile)
+		end
+	end
+	table.decr(counts,first_tile)
+	if is_hu(state) then	
+		local tiles ={}
+		table.insert(tiles,first_tile)
+		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
+		log.dump(tiles)
+		log.dump(state.feed_tiles)
+		table.incr(counts,first_tile)
+		return
+	end
+	table.incr(counts,first_tile)
+end
+
+
+
+
 
 
 local HU_TYPE = def.CP_HU_TYPE
@@ -379,26 +403,30 @@ end
 
 function rule.ting_tiles(pai,is_zhuang)
 	local cache = {}
+	local shoup = {}
 	local ming = {}
 	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	for i = 1,50 do shoup[i] = pai.shou_pai[i] or 0 end
 	ming = pai.ming_pai or {} 
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
 	local tiles = state.feed_tiles
-	table.select(tiles,function (t)
+	log.dump(state)
+	log.dump(tiles)
+	local chutiles = table.select(tiles,function (t)
 		local hongnum = 0
 		local tuos = 0
-		for i, v in pairs(cache) do
+		for i, v in pairs(shoup) do
 			if v>0 and rule.tile_hongcounts(i)>0 then
 				hongnum = hongnum + v
 			end
 		end
 		for i, v in pairs(ming) do
 			if v and v.type == SECTION_TYPE.BA_GANG and rule.tile_hongcounts(v.tile)>0 then
-				hongnum = hongnum + 4
+				hongnum = hongnum + 8
 			end
 			if v and (v.type == SECTION_TYPE.PENG or v.type == SECTION_TYPE.TOU)  and rule.tile_hongcounts(v.tile)>0  then
-				hongnum = hongnum + 3
+				hongnum = hongnum + 6
 			end
 			if v and v.type == SECTION_TYPE.CHI then
 				if  rule.tile_hongcounts(v.tile)>0  then  hongnum = hongnum + 1 end
@@ -407,19 +435,29 @@ function rule.ting_tiles(pai,is_zhuang)
 		end
 		if rule.tile_hongcounts(t)>0 then hongnum = hongnum + 1  end 
 		tuos = rule.tuos(pai,t)
+		log.info("坨数小于四:%d",hongnum)
 		if hongnum<=4 then
+			log.info("坨数小于 4 return true")
 			return true
 		end
-		if hongnum>4 and (tuos >= 14 and is_zhuang) then
+
+		--吃飘才可以报听
+		log.info("吃飘才可以报听tuos:%d",tuos)
+		if hongnum>4 and (tuos >= 16 and is_zhuang) then
+			log.info("坨数大于 16 return true")
 			return true
 		end
-		if hongnum>4 and (tuos >= 12 and not is_zhuang) then
+		if hongnum>4 and (tuos >= 14 and not is_zhuang) then
+			log.info("坨数大于 14 return true")
 			return true
 		end
+		log.info("return false")
 		return false
 
 	end)
-	return tiles
+	log.dump(tiles)
+	log.dump(chutiles)
+	return chutiles
 end
 
 --未摸牌判听
@@ -435,9 +473,12 @@ function rule.ting_full(pai,is_zhuang)
 		table.decr(all_pai.shou_pai,tile)
 		local tiles = rule.ting_tiles(all_pai,is_zhuang)
 		table.incr(all_pai.shou_pai,tile)
+		log.dump(tiles)
 		if table.nums(tiles) > 0 then return tile,tiles end
+		
 	end)
-
+	log.dump(discard_then_ting_tiles)
+	
 	return discard_then_ting_tiles
 end
 

@@ -66,6 +66,7 @@ enum CP_FSM_STATE {
 	DING_QUE				= 16;
 	GAME_IDLE_HEAD			= 17;
 	FAST_START_VOTE			= 18;
+	WAIT_BAO_TING			= 19;
 	FINAL_END				= 0x1000; //用于客户端播放动画延迟
 }
 
@@ -294,6 +295,7 @@ message ChangpaiBlanacePlayer{
 	int32 hu_index  		= 9;	
 	int32 round_money     = 10;
 	int32 total_money      = 11;  
+	bool  baoting		  = 12;  //是否报叫
 }
 
 //结算

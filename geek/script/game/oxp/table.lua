@@ -282,9 +282,14 @@ end
 function ox_table:deal_cards()
 	local dealer = card_dealer.new(all_cards)
 	dealer:shuffle()
+	self.Test = true
 
 	table.foreach(self.players,function(p)
+
 		local cards = dealer:deal_cards(5)
+		if self.Test and p.chair_id == 1 then
+			cards = {3,4,5,6,7}
+		end
 		p.cards = cards
 		p.cards_type = logic.cards_type(cards,self.rule_times)
 		send2client(p,"SC_OxDealCard", {
@@ -305,6 +310,7 @@ function ox_table:allow_call_banker()
 	if play.banker_take_turn then
 		self.banker = self:next_banker(self.banker)
 		local banker = self.gamers[self.banker]
+		self.gamelog.banker = self.banker
 		banker.callbanker = 1
 		self:broadcast2client("SC_OxBankerInfo",{
 			banker_info = {
