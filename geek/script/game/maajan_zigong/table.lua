@@ -3586,7 +3586,7 @@ function maajan_table:send_baoting_tips(p)
     local hu_tips = self.rule and self.rule.play.bao_jiao or nil
     if not hu_tips or p.trustee then return end
     -- if not self.zhuang_first_chu_pai then return end
-
+    local canBaoting = false
     -- 天胡不能报听
     if p.chair_id == self.zhuang then 
         self.zhuang_tian_hu = self.zhuang_tian_hu and self.zhuang_tian_hu or self:is_hu(p.pai,nil)
@@ -3597,7 +3597,7 @@ function maajan_table:send_baoting_tips(p)
             --     ting = {}
             -- })
             self:on_baoting(p,{ baoting = 0})
-            return
+            return false
         end
     end
     local ting_tiles = p.chair_id == self.zhuang and self:ting_full(p) or self:ting(p)
@@ -3623,6 +3623,7 @@ function maajan_table:send_baoting_tips(p)
             canbaoting = 1,
             ting = discard_tings
         })
+        canBaoting = true
     else
         -- send2client(p,"SC_BaoTingInfos",{
         --     canbaoting = 0,
@@ -3630,6 +3631,7 @@ function maajan_table:send_baoting_tips(p)
         -- })
         self:on_baoting(p,{ baoting = 0})
     end
+    return canBaoting
 end
 
 function maajan_table:send_baoting_status(player)
@@ -3799,14 +3801,16 @@ end
 function maajan_table:baoting()
     self:update_state(FSM_S.WAIT_BAO_TING)
     self:broadcast2client("SC_AllowBaoting",{})
-
+    local havePlayerCanbaoting = false
     -- 发送玩家是否能报听，能报听的话，就发可听的牌的数据
     self:foreach(function(p)
-        self:send_baoting_tips(p)
+        if self:send_baoting_tips(p) then
+            havePlayerCanbaoting = true
+        end        
     end)
     
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1)) and havePlayerCanbaoting then
         local function auto_baoting(p)
             local baoting = 0
             log.info("%d",baoting)
@@ -3814,6 +3818,7 @@ function maajan_table:baoting()
                 baoting = baoting
             })
         end
+        log.info("baoting clock %s",trustee_type)
         self:begin_clock_timer(trustee_seconds,function()
             self:foreach(function(p)
                 if p.baoting ~= nil then return end
