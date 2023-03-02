@@ -1545,7 +1545,6 @@ function changpai_table:on_reconnect_when_tian_hu(p)
 end
 function changpai_table:on_reconnect_when_first_tou_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-    self:send_baoting_status(p)
     local action = self.waiting_actions[p.chair_id]
     if action and not action.done then
         self:send_action_waiting(action)

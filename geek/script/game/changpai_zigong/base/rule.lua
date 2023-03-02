@@ -142,39 +142,20 @@ local function is_hu(state)
 end
 
 local function ting(state)
-	local counts = state.counts
-	local tiles = counts_2_tiles(counts)
-	local tile_count = #tiles
-	local ting_index = 1
-	if tile_count == 1 then
-		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
-		log.dump(tiles)
-		log.dump(state.feed_tiles)
-		return
-	end
-	local feed_tiles = {}
-	local first_tile = tiles[1]	
-	log.dump(tiles)
-	for tile,c in pairs(counts) do
-		if  c > 0  and rule.tile_value(first_tile)+rule.tile_value(tile) == 14 then
-			table.decr(counts,first_tile)
-			table.decr(counts,tile)
-			ting(state)
-			table.incr(counts,tile )
-			table.incr(counts,first_tile)
+
+	for k, v in pairs(all_tiles) do
+		if rule.tile_value(k)~=7 then
+			table.incr(state.counts,k)
+		if is_hu(state) then 
+			for key, value in pairs(all_tiles) do
+				if value.value == v.value then
+					table.insert(state.feed_tiles,key)
+				end			
+			end
+		end
+		table.decr(state.counts,k)
 		end
 	end
-	table.decr(counts,first_tile)
-	if is_hu(state) then	
-		local tiles ={}
-		table.insert(tiles,first_tile)
-		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
-		log.dump(tiles)
-		log.dump(state.feed_tiles)
-		table.incr(counts,first_tile)
-		return
-	end
-	table.incr(counts,first_tile)
 end
 
 
