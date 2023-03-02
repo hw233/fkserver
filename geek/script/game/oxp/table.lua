@@ -282,7 +282,7 @@ end
 function ox_table:deal_cards()
 	local dealer = card_dealer.new(all_cards)
 	dealer:shuffle()
-	self.Test = true
+	self.Test = false
 
 	table.foreach(self.players,function(p)
 
