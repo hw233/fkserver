@@ -38,7 +38,7 @@ local function ting(state,lai_zi)
 	end	
 end
 
-local function ting_qi_dui(counts)
+local function ting_qi_dui(counts,lai_zi)
 	local qi_dui_tiles = {}
 	if table.sum(counts) ~= 13 then 
 		return qi_dui_tiles 
@@ -78,7 +78,9 @@ local function ting_qi_dui(counts)
 		for _, value in pairs(count_tiles[1]) do
 			table.insert(qi_dui_tiles,value)
 		end
-		table.insert(qi_dui_tiles,TY_VALUE)
+		if lai_zi then
+			table.insert(qi_dui_tiles,TY_VALUE)
+		end
 	end 
 	if one_count == 0  and (ty_num - for_num)+1   == need_count*2  then 
 		for i = 11, 29, 1 do
@@ -86,7 +88,9 @@ local function ting_qi_dui(counts)
 				table.insert(qi_dui_tiles,i)
 			end 
 		end
-		table.insert(qi_dui_tiles,37)
+		if lai_zi then
+			table.insert(qi_dui_tiles,37)
+		end		
 	end 
 	return qi_dui_tiles
 end
@@ -775,7 +779,7 @@ function rule.ting_tiles(pai,si_dui,lai_zi)
 	for i = 1,count do cache[i] = pai.shou_pai[i] or 0 end
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state,lai_zi)
-	local qi_dui_tiles = ting_qi_dui(cache)
+	local qi_dui_tiles = ting_qi_dui(cache,lai_zi)
 	local tiles = state.feed_tiles
 	if table.sum(qi_dui_tiles) >0 then
 		for _, value in pairs(qi_dui_tiles) do

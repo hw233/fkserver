@@ -2212,6 +2212,11 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
                 if not self:is_baoting_can_gang(p,actions,ACTION.AN_GANG,tile) then
                     actions[ACTION.AN_GANG][tile] = nil
                 end
+                if mo_pai then
+                    if mo_pai ~= tile then
+                        actions[ACTION.AN_GANG][tile] = nil
+                    end
+                end
             end    
             if table.nums(actions[ACTION.AN_GANG]) == 0 then
                 actions[ACTION.AN_GANG] = nil
@@ -3584,7 +3589,7 @@ end
 
 function maajan_table:send_baoting_tips(p)
     local hu_tips = self.rule and self.rule.play.bao_jiao or nil
-    if not hu_tips or p.trustee then return end
+    if not hu_tips then return end
     -- if not self.zhuang_first_chu_pai then return end
     local canBaoting = false
     -- 天胡不能报听
