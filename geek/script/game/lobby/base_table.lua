@@ -2271,7 +2271,7 @@ function base_table:check_private_fee()
 			return self.room_:check_room_fee(self.rule,self.conf.club,p) == enum.ERROR_NONE
 		end)
 		return not all and enum.ERROR_LESS_ROOM_CARD or enum.ERROR_NONE
-	elseif payopt == enum.PAY_OPTION_OWNER then
+	elseif payopt == enum.PAY_OPTION_ROOM_OWNER then
 		local owner = player_data[self.owner_guid]
 		return self.room_:check_room_fee(self.rule,self.conf.club,owner)
 	elseif payopt == enum.PAY_OPTION_BOSS then
