@@ -304,12 +304,22 @@ local function is_2_5_8(pai,cache)
 	return is_shou_258 and is_ming_258
 end
 
-local function is_ka_er_tiao(pai,in_pai)
+local function is_ka_er_tiao(pai,in_pai,mo_pai)
 	local is_ka_er_tiao = false
-	if in_pai ~= 22 then
+	if in_pai then
+		if in_pai ~= 22 then
+			return false
+		end
+	elseif mo_pai then
+		if mo_pai ~= 22 then
+			return false
+		end
+	else
 		return false
 	end
+	
 	local all_pai = clone(pai)
+	if in_pai then table.incr(all_pai.shou_pai,in_pai) end
 	log.dump(all_pai,"is_ka_er_tiao")
 	local shou_pai = all_pai.shou_pai
 	if (not shou_pai[21] or shou_pai[21] == 0) or (not shou_pai[23] or shou_pai[23] == 0) then
@@ -638,7 +648,7 @@ local function unique_hu_types(base_hu_types)
 	end)
 end
 
-local function get_hu_types(pai,cache,in_pai)
+local function get_hu_types(pai,cache,in_pai,mo_pai)
 	local base_types = {}
 	local curcounts = clone(cache)
 	local ty_num = curcounts[TY_VALUE] or 0
@@ -687,7 +697,7 @@ local function get_hu_types(pai,cache,in_pai)
 			base_types[HU_TYPE.DA_DUI_ZI] = 1
 		--end
 	end
-	if is_ka_er_tiao(pai,in_pai) then
+	if is_ka_er_tiao(pai,in_pai,mo_pai) then
 		base_types[HU_TYPE.KA_ER_TIAO] = 1
 	end
 
@@ -749,7 +759,7 @@ function rule.hu(pai,in_pai,mo_pai,si_dui,lai_zi)
 		if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
 		-- if lai_zi and ji_num == 0 then common_types[HU_TYPE.WU_JI] = 1 end
 		-- if ji_num ==4 then common_types[HU_TYPE.SI_JI] = 1 end
-		local types = get_hu_types(pai,cache,in_pai or mo_pai)
+		local types = get_hu_types(pai,cache,in_pai,mo_pai)
 		gou = gou_count(pai,cache,(types[HU_TYPE.JIANG_DUI] or types[HU_TYPE.DA_DUI_ZI]) and 3 or -1,ji_num )
 		if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 		local sum = table.sum(pai.shou_pai)
