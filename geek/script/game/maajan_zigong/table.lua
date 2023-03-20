@@ -3373,7 +3373,7 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
             types[HU_TYPE.TIAN_HU] = 1
         end
 
-        if player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and player.chu_pai_count == 0 and table.nums(player.pai.ming_pai) == 0 then
+        if (not mo_pai) and chu_pai_player.chair_id == self.zhuang and player.chair_id ~= self.zhuang and player.mo_pai_count <= 1 and player.chu_pai_count == 0 and table.nums(player.pai.ming_pai) == 0 then
             if self.cur_state_FSM ~= FSM_S.WAIT_BAO_TING then 
                 types[HU_TYPE.DI_HU] = 1
             end
