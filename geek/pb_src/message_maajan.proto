@@ -124,6 +124,8 @@ enum HU_TYPE{
 	RUAN_MING_GANG 			= 119;	//软明杠
 	RUAN_BA_GANG 			= 120;	//软巴杠
 	HAI_DI_PAO				= 121;	//海底炮
+	YI_TIAO_LONG			= 122;	//一条龙
+	KA_WU_TIAO 				= 123;  //卡五条
 }
 
 

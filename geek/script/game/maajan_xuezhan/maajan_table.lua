@@ -3106,7 +3106,9 @@ function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
                 ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not rule_play.men_qing) or 
                 -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
                 ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
-                    not rule_play.si_dui)
+                    not rule_play.si_dui) or
+                (t == HU_TYPE.KA_WU_TIAO and not rule_play.ka_wu_tiao) or
+                (t == HU_TYPE.YI_TIAO_LONG and not rule_play.yi_tiao_long)
             then
                 
             elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then
