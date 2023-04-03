@@ -415,7 +415,7 @@ function rule.ting_tiles(pai,is_zhuang)
 			end
 		end
 		if rule.tile_hongcounts(t)>0 then hongnum = hongnum + 1  end 
-		tuos = rule.tuos(pai,t)
+		tuos = rule.tuos(pai)
 		log.info("坨数小于四:%d",hongnum)
 		if hongnum<=4 then
 			log.info("坨数小于 4 return true")

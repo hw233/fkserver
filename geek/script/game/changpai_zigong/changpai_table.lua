@@ -364,7 +364,7 @@ function changpai_table:action_after_fapai()
     self:cancel_clock_timer()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
     local player = self:chu_pai_player()
-    local actions = self:get_actions_first_turn(player)
+    local actions = self:get_actions_first_turn(player,player.chair_id== self.zhuang and player.mo_pai or nil)
     if table.nums(actions) > 0 then
         self:action_after_tou_pai({
             [self.chu_pai_player_index] = {
@@ -2597,7 +2597,24 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:tou_pai()--从桌子上的牌拿一张   
         self:action_after_fapai()--假如还可以偷牌也要摸一张
     end
+    --这个偷牌
+    if do_action == ACTION.TIAN_HU then
+        -- 天胡
+        --local hu = self:hu(player,nil,tile)
+        local is_zi_mo = true
+        player.hu = {
+            time = timer.nanotime(),
+            tile = tile,
+            types = self:hu(player,nil,tile),
+            zi_mo = is_zi_mo,
+        }
 
+        player.statistics.hu = (player.statistics.hu or 0) + 1
+        
+        self:log_game_action(player,do_action,tile,auto)
+        self:broadcast_player_hu(player,do_action)
+        self:do_balance()
+    end
     if do_action == ACTION.PASS then
 
 
@@ -3225,13 +3242,13 @@ function changpai_table:prepare_tiles()
         -- 测试手牌     
        -- 测试手牌     
        self.pre_tiles = {
-        [1] = {1,1,1,5,17,5,17,3,19,3,19,6,17,5,4},     -- 万 庄
+        [1] = {1,1,1,5,17,5,17,3,19,3,19,6,17,8,15},     -- 万 庄
         [2] = {9,9,9,11,11,11,11,12,12,12,12,18,4,18,4},    -- 筒  
-        [3] = {3,16,7,7,2,16,6,1,1,9,6,2,11,11,9},      -- 万
+        [3] = {3,16,7,7,2,16,6,1,2,9,6,2,11,11,9},      -- 万
     }
     -- 测试摸牌,从前到后
     self.pre_gong_tiles = {
-        19,14,16,17,5,17,4,20,1,15,3,8,
+        8,15,16,17,5,17,4,20,1,15,3,8,
     }
         self.dealer.remain_count = 52
     end
@@ -3343,7 +3360,11 @@ function changpai_table:hu_fan(player,in_pai,mo_pai,qiang_gang)
     end
 
     if real_chipiao then
-        fans[player.chair_id] = fans[player.chair_id] * 2
+        if fans[player.chair_id]==0 then 
+            fans[player.chair_id] = 1 
+        else 
+            fans[player.chair_id] = fans[player.chair_id] * 2
+        end
     end
     log.dump(fans)
     log.dump(tuos,in_pai or 0)
@@ -3354,8 +3375,14 @@ end
 
 function changpai_table:get_actions_first_turn(p,mo_pai)
    
-    local actions = mj_util.get_actions_first_turn(p.pai,mo_pai)
-   
+    log.dump(mo_pai)
+    local actions = mj_util.get_actions_first_turn(p.pai,mo_pai,self.zhuang==p.chair_id)
+    log.dump(actions)
+    if self.zhuang==p.chair_id and actions[ACTION.HU] and  p.chu_pai_count and p.chu_pai_count == 0 then      
+        actions[ACTION.TIAN_HU] = actions[ACTION.HU]
+        actions[ACTION.HU] = nil
+        log.info("tian hu")
+    end
     return actions
 end
 
@@ -3443,21 +3470,39 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         end
 
     end
+
+    
+
     if in_pai and self:is_in_gsc(p,in_pai) and actions[ACTION.CHI] then
-        local action = actions[ACTION.CHI]
-        for gsc_tile,_ in pairs(p.gsc) do
-            
-            for key, value in pairs(action) do
-                
-                if value.tile == gsc_tile then
-                    action[key] = nil
-                end
-            end
-        end
-        if table.nums(action) == 0 then
-            actions[ACTION.CHI] = nil
+
+        local nest_user = 0
+        if self.chu_pai_player_index+1 > self.start_count then
+            nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+        else
+            nest_user = (self.chu_pai_player_index+1 )
         end
 
+        local nest = self.players[nest_user] or nil
+        local chu_player =  self:chu_pai_player()
+
+        if chu_player and chu_player.chair_id == p.chair_id and nest and chu_player.fan_pai == in_pai and 
+        self:is_bao_pai(nest,chu_player.fan_pai)  then
+            log.info("包牌过手吃取消")
+        else
+            local action = actions[ACTION.CHI]
+            for gsc_tile,_ in pairs(p.gsc) do
+                
+                for key, value in pairs(action) do
+                    
+                    if value.tile == gsc_tile then
+                        action[key] = nil
+                    end
+                end
+            end
+            if table.nums(action) == 0 then
+                actions[ACTION.CHI] = nil
+            end
+        end 
     end
     if in_pai and self:is_in_gst(p,in_pai) and actions[ACTION.TOU] then
         local action = actions[ACTION.TOU]
@@ -3475,12 +3520,27 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         actions[ACTION.PENG] = nil
         actions[ACTION.CHI] = nil
         actions[ACTION.TOU] = nil
+
+        local tuonum = mj_util.tuos(p.pai,in_pai)
+        for _,s in pairs(p.pai.ming_pai) do
+                if s.type == SECTION_TYPE.TOU then
+                    if  mj_util.tile_hong(s.tile) <= 0 then
+                        tuonum = tuonum-3    
+                    end
+                end
+                if s.type == SECTION_TYPE.BA_GANG  then
+                    if  mj_util.tile_hong(s.tile) <= 0 then
+                        tuonum = tuonum-4  
+                    end
+                end
+
+        end
         if self.zhuang==p.chair_id then 
-            if mj_util.tuos(p.pai,in_pai)<16 and mj_util.tuos(p.pai,in_pai)>4 then
+            if mj_util.tuos(p.pai,in_pai)<16 and tuonum > 4 then
                 actions[ACTION.HU] = nil
             end
         else
-            if mj_util.tuos(p.pai,in_pai)<14 and mj_util.tuos(p.pai,in_pai)>4 then
+            if mj_util.tuos(p.pai,in_pai)<14 and tuonum > 4 then
                 actions[ACTION.HU] = nil
             end
         end
@@ -4112,6 +4172,7 @@ function changpai_table:on_cs_do_action(player,msg)
         [FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI] = {   --发完牌的第一阶段偷牌
             [ACTION.TOU] = self.on_action_after_first_tou_pai,
             [ACTION.BA_GANG] = self.on_action_after_first_tou_pai,
+            [ACTION.TIAN_HU] = self.on_action_after_first_tou_pai,
             [ACTION.PASS] = self.on_action_after_first_tou_pai
         },
         [FSM_S.WAIT_ACTION_AFTER_JIN_PAI] = {   --进张有点像麻将的摸牌
