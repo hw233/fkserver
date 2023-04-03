@@ -396,6 +396,91 @@ local function gou_count(pai,cache)
 	return shou_gou + ming_gou
 end
 
+local function is_ka_wu_tiao(pai,in_pai,mo_pai)
+	local is_ka_wu_tiao = false
+	if in_pai then
+		if in_pai ~= 25 then
+			return false
+		end
+	elseif mo_pai then
+		if mo_pai ~= 25 then
+			return false
+		end
+	else
+		return false
+	end
+	
+	local all_pai = clone(pai)
+	if in_pai then table.incr(all_pai.shou_pai,in_pai) end
+	log.dump(all_pai,"is_ka_wu_tiao")
+	local shou_pai = all_pai.shou_pai
+	if (not shou_pai[24] or shou_pai[24] == 0) or (not shou_pai[26] or shou_pai[26] == 0) then
+		return false
+	end
+	table.decr(all_pai.shou_pai,24)
+	table.decr(all_pai.shou_pai,25)
+	table.decr(all_pai.shou_pai,26)
+	local cache = {}
+	for i = 1,29 do cache[i] = all_pai.shou_pai[i] or 0 end
+	-- if in_pai then table.incr(cache,in_pai) end
+	local state = {  counts = clone(cache) }
+	if is_hu(state) then
+		is_ka_wu_tiao = true
+	end
+	log.dump(is_ka_wu_tiao,"is_ka_wu_tiao")
+	return is_ka_wu_tiao
+end
+
+local function is_yi_tiao_long(pai,in_pai,mo_pai)
+	local is_yi_tiao_long = false
+	
+	local all_pai = clone(pai)	
+	if in_pai then table.incr(all_pai.shou_pai,in_pai) end
+	local total_count = table.sum(all_pai.shou_pai)
+	-- log.dump(all_pai,"is_yi_tiao_long nn ".. total_count)
+	if total_count < 11 then
+		return false
+	end
+
+	local cache = {}
+	for i = 1,29 do cache[i] = all_pai.shou_pai[i] or 0 end
+	if not is_qing_yi_se(all_pai,cache) then
+		return false
+	end
+	if table.nums(pai.ming_pai) > 1 then
+		return false
+	end
+	local men 
+	for tile, count in pairs(all_pai.shou_pai) do
+		if tile and count > 0 then
+			men = rule.tile_men(tile)
+			log.info("========= men %d ",men)
+			break
+		end
+	end
+	
+	-- log.dump(all_pai,"is_yi_tiao_long")
+	local shou_pai = all_pai.shou_pai
+	for i = men*10+1, men*10+9, 1 do
+		if (not shou_pai[i] or shou_pai[i] == 0) then
+			return false
+		end
+	end
+	for i = men*10+1, men*10+9, 1 do
+		table.decr(all_pai.shou_pai,i)
+	end
+
+	local newcache = {}
+	for i = 1,29 do newcache[i] = all_pai.shou_pai[i] or 0 end
+
+	local state = {  counts = clone(newcache) }
+	if is_hu(state) then
+		is_yi_tiao_long = true
+	end
+	log.dump(is_yi_tiao_long,"is_yi_tiao_long")
+	return is_yi_tiao_long
+end
+
 local function is_all_1_9(pai,sections)
 	return table.logic_and(sections,function(s)
 		local val = rule.tile_value(s.tile)
@@ -430,8 +515,8 @@ local function unique_hu_types(base_hu_types)
 		return (c and c > 0) and c or nil
 	end)
 end
-
-local function get_hu_types(pai,cache,sections,in_pai)
+-- inpai,mopai 用于后面加的卡五条、一条龙判断
+local function get_hu_types(pai,cache,sections,in_pai,inpai,mopai)
 	local base_types = {}
 
 	local shun_zi_list = table.select(sections,function(v)
@@ -458,6 +543,14 @@ local function get_hu_types(pai,cache,sections,in_pai)
 				base_types[HU_TYPE.KA_WU_XING] = 1
 			end
 		end
+	end
+
+	if is_ka_wu_tiao(pai,inpai,mopai) then
+		base_types[HU_TYPE.KA_WU_TIAO] = 1
+	end
+
+	if is_yi_tiao_long(pai,inpai,mopai) then
+		base_types[HU_TYPE.YI_TIAO_LONG] = 1
 	end
 
 	if is_all_1_9(pai,sections) then
@@ -535,7 +628,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
-		local types = get_hu_types(pai,cache,sections,in_pai or mo_pai)
+		local types = get_hu_types(pai,cache,sections,in_pai or mo_pai,in_pai,mo_pai)
 		local sum = table.sum(pai.shou_pai)
 		if (sum == 1 and pai.shou_pai[in_pai] == 1) or
 			(sum == 2 and not in_pai and table.logic_or(pai.shou_pai,function(c,_) return c == 2 end)) then
