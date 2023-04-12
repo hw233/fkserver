@@ -3915,14 +3915,19 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
             types[HU_TYPE.DI_HU] = 1
         end
     end
-
+    local is_zi_mo = mo_pai and true or false
+    -- 海底捞
     if self.dealer.remain_count == 0 then
-        types[HU_TYPE.HAI_DI_LAO_YUE] = 1
+        if is_zi_mo then
+            types[HU_TYPE.HAI_DI_LAO_YUE] = 1
+        else
+            types[HU_TYPE.HAI_DI_PAO] = 1
+        end
     end
 
     local dgh_dian_pao = self.rule.play.dgh_dian_pao
     local discarder_last_action = chu_pai_player.last_action
-    local is_zi_mo = mo_pai and true or false
+    
     local gang_hua = chu_pai_player == player and discarder_last_action and def.is_action_gang(discarder_last_action.action or 0)
     if gang_hua then
         if dgh_dian_pao and player.last_action and player.last_action.action == ACTION.MING_GANG then
@@ -3962,7 +3967,8 @@ function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
                 ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not rule_play.men_qing) or 
                 -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
                 ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
-                    not rule_play.si_dui)
+                    not rule_play.si_dui)or
+                (t == HU_TYPE.YI_TIAO_LONG and not rule_play.yi_tiao_long)
             then
                 
             elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then

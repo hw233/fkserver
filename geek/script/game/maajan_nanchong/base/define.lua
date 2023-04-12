@@ -216,6 +216,8 @@ local HU_TYPE = {
 	LONG_SI_DUI 				= pb.enum("HU_TYPE","LONG_SI_DUI"),	--龙四对
 	QING_SI_DUI 				= pb.enum("HU_TYPE","QING_SI_DUI"), --清四对
 	QING_LONG_SI_DUI 			= pb.enum("HU_TYPE","QING_LONG_SI_DUI"), --清龙四对
+	HAI_DI_PAO 				    = pb.enum("HU_TYPE","HAI_DI_PAO"),   --海底炮
+	YI_TIAO_LONG				= pb.enum("HU_TYPE","YI_TIAO_LONG"), --一条龙
 }
 
 define.HU_TYPE = HU_TYPE
@@ -333,6 +335,8 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.QING_SI_DUI]			= {name = "QING_SI_DUI",fan = 3,score = 0}, --清四对
 	[HU_TYPE.LONG_SI_DUI]			= {name = "LONG_SI_DUI",fan = 3,score = 0}, --龙四对
 	[HU_TYPE.QING_LONG_SI_DUI]		= {name = "QING_LONG_SI_DUI",fan = 4,score = 0}, --龙四对
+	[HU_TYPE.HAI_DI_PAO]		    = {name = "HAI_DI_PAO",score = 0,fan = 1},	--海底炮
+	[HU_TYPE.YI_TIAO_LONG]			= {name = "YI_TIAO_LONG",fan = 1,score = 0}, --一条龙
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO

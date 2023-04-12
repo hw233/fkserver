@@ -414,7 +414,25 @@ end
 local HU_TYPE = def.HU_TYPE
 local UNIQUE_HU_TYPE = def.UNIQUE_HU_TYPE
 
+local function is_qing_yi_se(pai,cache)
+	local men_counts = table.fill(nil,0,0,5)
 
+	table.agg(cache,men_counts,function(tb,c,tile)
+		table.incr(tb,rule.tile_men(tile),c)
+		return tb
+	end)
+
+	table.agg(pai.ming_pai,men_counts,function(tb,s)
+		table.incr(tb,rule.tile_men(s.tile))
+		return tb
+	end)
+
+	local total_men_count = table.sum(men_counts,function(c,men)
+		return (c > 0 and men < 3) and 1 or 0
+	end)
+
+	return total_men_count == 1
+end
 function rule.is_hu(pai,in_pai,with_si_dui)
 	local cache = {}
 	for i=1,50 do
@@ -432,7 +450,55 @@ function rule.is_hu(pai,in_pai,with_si_dui)
 
 	return can_hu or qi_dui or si_dui
 end
+local function is_yi_tiao_long(pai,in_pai,mo_pai)
+	local is_yi_tiao_long = false
+	
+	local all_pai = clone(pai)	
+	if in_pai then table.incr(all_pai.shou_pai,in_pai) end
+	local total_count = table.sum(all_pai.shou_pai)
+	-- log.dump(all_pai,"is_yi_tiao_long nn ".. total_count)
+	if total_count < 11 then
+		return false
+	end
 
+	local cache = {}
+	for i = 1,29 do cache[i] = all_pai.shou_pai[i] or 0 end
+	if not is_qing_yi_se(all_pai,cache) then
+		return false
+	end
+	if table.nums(pai.ming_pai) > 1 then
+		return false
+	end
+	local men 
+	for tile, count in pairs(all_pai.shou_pai) do
+		if tile and count > 0 then
+			men = rule.tile_men(tile)
+			log.info("========= men %d ",men)
+			break
+		end
+	end
+	
+	-- log.dump(all_pai,"is_yi_tiao_long")
+	local shou_pai = all_pai.shou_pai
+	for i = men*10+1, men*10+9, 1 do
+		if (not shou_pai[i] or shou_pai[i] == 0) then
+			return false
+		end
+	end
+	for i = men*10+1, men*10+9, 1 do
+		table.decr(all_pai.shou_pai,i)
+	end
+
+	local newcache = {}
+	for i = 1,29 do newcache[i] = all_pai.shou_pai[i] or 0 end
+
+	local state = {  counts = clone(newcache) }
+	if is_hu(state) then
+		is_yi_tiao_long = true
+	end
+	log.dump(is_yi_tiao_long,"is_yi_tiao_long")
+	return is_yi_tiao_long
+end
 local function get_qi_dui_types(pai,cache)
 	local base_types = {}
 	return base_types
@@ -456,25 +522,7 @@ local function merge_same_type(alltypes)
 end
 
 
-local function is_qing_yi_se(pai,cache)
-	local men_counts = table.fill(nil,0,0,5)
 
-	table.agg(cache,men_counts,function(tb,c,tile)
-		table.incr(tb,rule.tile_men(tile),c)
-		return tb
-	end)
-
-	table.agg(pai.ming_pai,men_counts,function(tb,s)
-		table.incr(tb,rule.tile_men(s.tile))
-		return tb
-	end)
-
-	local total_men_count = table.sum(men_counts,function(c,men)
-		return (c > 0 and men < 3) and 1 or 0
-	end)
-
-	return total_men_count == 1
-end
 
 local function is_2_5_8(pai,cache)
 	local is_shou_258 = table.logic_and(cache,function(c,tile)
@@ -554,7 +602,7 @@ local function unique_hu_types(base_hu_types)
 	end)
 end
 
-local function get_hu_types(pai,cache,sections,in_pai)
+local function get_hu_types(pai,cache,sections,in_pai,inpai,mopai)
 	local base_types = {}
 
 	local shun_zi_list = table.select(sections,function(v)
@@ -595,6 +643,10 @@ local function get_hu_types(pai,cache,sections,in_pai)
 			end
 		end
 			
+	end
+
+	if is_yi_tiao_long(pai,inpai,mopai) then
+		base_types[HU_TYPE.YI_TIAO_LONG] = 1
 	end
 
 	if is_all_1_9(pai,sections) then
@@ -672,7 +724,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
-		local types = get_hu_types(pai,cache,sections,in_pai or mo_pai)
+		local types = get_hu_types(pai,cache,sections,in_pai or mo_pai,in_pai,mo_pai)
 		local sum = table.sum(pai.shou_pai)
 		if (sum == 1 and pai.shou_pai[in_pai] == 1) or
 			(sum == 2 and not in_pai and table.logic_or(pai.shou_pai,function(c,_) return c == 2 end)) then
