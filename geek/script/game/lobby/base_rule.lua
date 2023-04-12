@@ -1,6 +1,6 @@
 
 local enum = require "pb_enums"
-
+local log = require "log"
 
 local base_rule = {}
 
@@ -27,6 +27,8 @@ end
 
 function base_rule.chair_count(option)
 	local gameconf = g_room.conf
+	log.dump(g_room.conf)
+	log.dump(gameconf.private_conf.chair_count_option[option])
 	return gameconf.private_conf.chair_count_option[option]
 end
 
@@ -53,23 +55,28 @@ function base_rule.ready_timeout(rule)
 end
 
 function base_rule.check(rule)
+	
 	local chair_count = base_rule.chair_count(rule.room.player_count_option + 1)
 	if not chair_count then
+		log.dump(chair_count)
 		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local play_round = base_rule.play_round(rule.round.option + 1)
 	if not play_round then
+		log.dump(play_round)
 		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local pay_option = rule.pay.option
 	if not base_rule.check_pay_option(pay_option) then
+		log.dump(pay_option)
 		return enum.ERROR_PARAMETER_ERROR
 	end
 
 	local money_type = rule.pay.money_type
 	if not base_rule.check_money_type(money_type) then
+		log.dump(money_type)
 		return enum.ERROR_PARAMETER_ERROR
 	end
 

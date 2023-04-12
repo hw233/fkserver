@@ -39,7 +39,7 @@ local SECTION_TYPE = def.SECTION_TYPE
 local TILE_AREA = def.TILE_AREA
 local HU_TYPE_INFO = def.HU_TYPE_INFO
 local HU_TYPE = def.HU_TYPE
-local BTEST = false
+
 
 local all_tiles = {
     [4] = {
@@ -220,9 +220,10 @@ function maajan_table:check_start()
 end
 
 function maajan_table:on_started(player_count)
+    self.bTest = false
     self.start_count = player_count
     base_table.on_started(self,player_count)
-    if BTEST then
+    if self.bTest then
         self.zhuang = 1
     else
         self.zhuang = not self.zhuang and self:first_zhuang() or self.zhuang    
@@ -240,7 +241,7 @@ function maajan_table:on_started(player_count)
             huan = nil,
         }
         v.jiao                  = nil
-
+        v.piao = nil
         v.mo_pai = nil
         v.chu_pai = nil
         v.que = nil
@@ -252,7 +253,7 @@ function maajan_table:on_started(player_count)
         v.last_penghu = nil
     end
 
-    
+    self.liuju = false
 	self.chu_pai_player_index      = self.zhuang --出牌人的索引
     self.last_chu_pai              = -1 --上次的出牌
     self.mo_pai_count = nil
@@ -277,7 +278,8 @@ function maajan_table:on_started(player_count)
     -- 是否选择了飘，没有飘就直接洗牌发牌
     if self.rule.piao and self.rule.piao.piao_option ~= nil then    
         local td = self.rule.piao.piao_option     
-        local piaoType = private_conf.piao.piao_option[self.rule.piao.piao_option + 1]
+        log.dump(self.room_.conf.private_conf)
+        local piaoType = self.room_.conf.private_conf.piao.piao_option[self.rule.piao.piao_option + 1]
         if piaoType == 1 then -- 随飘
             log.info("随飘玩法,开始选飘")
             self:piao_fen()
@@ -559,7 +561,15 @@ function maajan_table:on_reconnect_when_action_qiang_gang_hu(p)
         self:send_action_waiting(actions)
     end
 end
+function maajan_table:get_piaofan(winchairid,losechairid)
+    local piaofan = 0
+    if self.rule.piao and self.rule.piao.piao_option ~= nil then
+        piaofan = piaofan + (self.players[winchairid].piao > 0 and 1 or 0)
+        piaofan = piaofan + (self.players[losechairid].piao > 0 and 1 or 0)
+    end
 
+    return piaofan
+end
 function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
     if self.cur_state_FSM ~= FSM_S.WAIT_QIANG_GANG_HU then
         log.error("maajan_table:on_action_qiang_gang_hu wrong state %s",self.cur_state_FSM)
@@ -652,16 +662,12 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
         end
     end)
 
-    local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-    if self.start_count - hu_count == 1 then
-        self:do_balance()
-        return
-    end
-
-    local _,last_hu_chair = table.max(self.qiang_gang_actions or {},function(_,c) return c end)
-    local last_hu_player = self.players[last_hu_chair]
-    self:next_player_index(last_hu_player)
-    self:mo_pai()
+    self:do_balance()
+   -- return
+   -- local _,last_hu_chair = table.max(self.qiang_gang_actions or {},function(_,c) return c end)
+   -- local last_hu_player = self.players[last_hu_chair]
+   -- self:next_player_index(last_hu_player)
+   -- self:mo_pai()
 end
 
 function maajan_table:qiang_gang_hu(player,actions,tile)
@@ -1039,6 +1045,45 @@ function maajan_table:baoting()
         end)
     end
 end
+function maajan_table:baipai()
+    self:update_state(FSM_S.WAIT_BAI_PAI)
+    self:broadcast2client("SC_AllowBaiPai",{})
+    local havePlayerCanbaipai = false
+    -- 发送玩家是否能报听，能报听的话，就发可听的牌的数据
+    self:foreach(function(p)
+        if self:send_baipai_tips(p) then
+            havePlayerCanbaipai = true
+        end        
+    end)
+    
+    local trustee_type,trustee_seconds = self:get_trustee_conf()
+    if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1)) and havePlayerCanbaipai then
+        local function auto_baipai(p)
+            local baipai = 0
+            log.info("%d",baipai)
+            self:on_baipai(p,{
+                baipai = baipai
+            })
+        end
+        log.info("baoting clock %s",trustee_type)
+        self:begin_clock_timer(trustee_seconds,function()
+            self:foreach(function(p)
+                if p.baipai ~= nil then return end
+                self:set_trusteeship(p,true)
+                auto_baipai(p)
+            end)
+        end)
+
+        log.dump(table.series(self.players,function(p) return p.guid end))
+        self:foreach(function(p)
+            log.info("%s,%s",p.guid,p.trustee)
+            if not p.trustee then return end
+            self:begin_auto_action_timer(p,math.random(1,2),function() 
+                auto_baipai(p)
+            end)
+        end)
+    end
+end
 function maajan_table:on_cs_piao_fen(player,msg)
     self:lockcall(function() self:on_piao_fen(player,msg) end)
 end
@@ -1094,6 +1139,59 @@ function maajan_table:on_baoting(player,msg)
 
     self:broadcast2client("SC_BaotingCommit",{
         baotings = p_baotings,
+    })
+    -- 报听后开始出牌等    
+    self:jump_to_player_index(self.zhuang)
+    self:action_after_baoting()
+end
+
+function maajan_table:on_baipai(player,msg)
+    if self.cur_state_FSM ~= FSM_S.WAIT_BAI_PAI then
+        log.error("maajan_table:on_baipai error state %s,guid:%s",self.cur_state_FSM,player.guid)
+        return
+    end
+
+    if player.baipai ~= nil then
+        log.error("maajan_table:on_baipai repeated %s,guid:%s",msg.baipai,player.guid)
+        send2client(player,"SC_Baipai",{
+            result = enum.ERROR_OPERATION_REPEATED
+        })
+        return
+    end
+
+    player.baipai = (msg.baipai == 1) and true or false
+    if not player.baipai then
+        player.baipaiInfo = nil
+    end
+    log.info("player on_baipai guid:%d, baipai:%d ",player.guid,player.baipai)
+    self:broadcast2client("SC_Baipai",{
+        result = enum.ERROR_NONE,
+        status = {
+            chair_id = player.chair_id,
+            done = true,
+        }
+    })
+
+    self:cancel_auto_action_timer(player)
+
+    if not table.And(self.players,function(p) return p.baipai ~= nil end) then
+        return
+    end
+
+    self:cancel_clock_timer()
+    
+    local log_players = self.game_log.players
+    local p_baipais = {}
+    self:foreach(function(p)
+        log_players[p.chair_id].baipai = p.baipai
+        tinsert(p_baipais,{
+            chair_id = p.chair_id,
+            baipai = p.baipai,
+        })
+    end)
+
+    self:broadcast2client("SC_BaipaiCommit",{
+        baipais = p_baipais,
     })
     -- 报听后开始出牌等    
     self:jump_to_player_index(self.zhuang)
@@ -1311,13 +1409,8 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
 
         self:log_game_action(player,do_action,tile,auto)
         self:broadcast_player_hu(player,do_action)
-        local hu_count  = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-        if self.start_count - hu_count  == 1 then
-            self:do_balance()
-        else
-            self:next_player_index()
-            self:mo_pai()
-        end
+        
+        self:do_balance()
     end
 
     if do_action == ACTION.PASS then
@@ -1332,7 +1425,171 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
 
     self:done_last_action(player,{action = do_action,tile = tile,})
 end
+function maajan_table:send_baoting_status(player)
+    if not self.rule.play.bao_jiao then
+        return
+    end
+    local baoting_status = {}
+    local baoting_info = {}
+    if self.cur_state_FSM == FSM_S.WAIT_BAO_TING then
+        tinsert(baoting_info,{
+            chair_id = player.chair_id,
+            baoting = player.baoting or nil,
+        })
+        self:foreach(function(p) 
+            tinsert(baoting_status,{
+                chair_id = p.chair_id,
+                done = p.baoting ~= nil and true or false,
+            })
+        end)
+    else
+        self:foreach(function(p) 
+            tinsert(baoting_info,{
+                chair_id = p.chair_id,
+                baoting = p.baoting or nil,
+            })
+        end)
+        self:foreach(function(p) 
+            tinsert(baoting_status,{
+                chair_id = p.chair_id,
+                done = p.baoting ~= nil and true or false,
+            })
+        end)
+    end
 
+    send2client(player,"SC_BaotingStatus",{
+        baoting_status = baoting_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
+        baoting_info = baoting_info,
+    })
+
+    if self.cur_state_FSM == FSM_S.WAIT_BAO_TING or self.zhuang_first_chu_pai then
+        self:foreach(function(p)
+            self:send_baoting_tips(p)
+        end)
+    end
+end
+function maajan_table:send_baoting_tips(p)
+    local hu_tips = self.rule and self.rule.play.bao_jiao or nil
+    if not hu_tips then return end
+    -- if not self.zhuang_first_chu_pai then return end
+    local canBaoting = false
+    -- 天胡不能报听
+    if p.chair_id == self.zhuang then 
+        self.zhuang_tian_hu = self.zhuang_tian_hu and self.zhuang_tian_hu or self:is_hu(p.pai,nil)
+        if self.zhuang_tian_hu then
+            log.info("zhuang tianhu can not baoting guid:%d",p.guid)
+            -- send2client(p,"SC_BaoTingInfos",{
+            --     canbaoting = 0,
+            --     ting = {}
+            -- })
+            self:on_baoting(p,{ baoting = 0})
+            return false
+        end
+    end
+    local ting_tiles = p.chair_id == self.zhuang and self:ting_full(p) or self:ting(p)
+    log.dump(ting_tiles,"send_baoting_tips_"..p.guid)
+    if table.nums(ting_tiles) > 0 then
+        local pai = p.pai
+        local discard_tings = {}
+        if p.chair_id == self.zhuang then
+            discard_tings = table.series(ting_tiles,function(tiles,discard)
+                table.decr(pai.shou_pai,discard)
+                local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(p,tile)} end)
+                table.incr(pai.shou_pai,discard)
+                return { discard = discard, tiles_info = tings, }
+            end)
+        else
+            discard_tings = table.series(ting_tiles or {},function(_,tile)
+                return {tile = tile,fan = self:hu_fan(p,tile)} 
+            end)
+        end
+        p.baotingInfo = discard_tings
+        log.dump(discard_tings,"discard_tings_"..p.guid)
+        send2client(p,"SC_BaoTingInfos",{
+            canbaoting = 1,
+            ting = discard_tings
+        })
+        canBaoting = true
+    else
+        -- send2client(p,"SC_BaoTingInfos",{
+        --     canbaoting = 0,
+        --     ting = {}
+        -- })
+        self:on_baoting(p,{ baoting = 0})
+    end
+    return canBaoting
+end
+-- 摆牌
+function maajan_table:send_baipai_status(player)
+    if not self.rule.play.bai_pai then
+        return
+    end
+    local baipai_status = {}
+    local baipai_info = {}
+    if self.cur_state_FSM == FSM_S.WAIT_BAI_PAI then
+        tinsert(baipai_info,{
+            chair_id = player.chair_id,
+            baipai = player.baipai or nil,
+        })
+        self:foreach(function(p) 
+            tinsert(baipai_status,{
+                chair_id = p.chair_id,
+                done = p.baipai ~= nil and true or false,
+            })
+        end)
+    else
+        self:foreach(function(p) 
+            tinsert(baipai_info,{
+                chair_id = p.chair_id,
+                baipai = p.baipai or nil,
+            })
+        end)
+        self:foreach(function(p) 
+            tinsert(baipai_status,{
+                chair_id = p.chair_id,
+                done = p.baipai ~= nil and true or false,
+            })
+        end)
+    end
+
+    send2client(player,"SC_BaiPaiStatus",{
+        baipai_status = baipai_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
+        baipai_info = baipai_info,
+    })
+
+    if self.cur_state_FSM == FSM_S.WAIT_BAI_PAI  then
+        self:foreach(function(p)
+            self:send_baipai_tips(p)
+        end)
+    end
+end
+function maajan_table:send_baipai_tips(p)
+    local hu_tips = self.rule and self.rule.play.bai_pai or nil
+    if not hu_tips then return end
+    -- if not self.zhuang_first_chu_pai then return end
+    local canBaipai = false
+
+    local ting_tiles =  self:bai_full(p) 
+    log.dump(ting_tiles,"send_baipai_tips_"..p.guid)
+    if table.nums(ting_tiles) > 0 then
+        local pai = p.pai
+        local discard_tings = {}
+        discard_tings = table.series(ting_tiles,function(tiles,discard)
+            table.decr(pai.shou_pai,discard)
+            local tings = table.series(tiles,function(_,tile) return {tile = tile,fan = self:hu_fan(p,tile)} end)
+            table.incr(pai.shou_pai,discard)
+            return { discard = discard, tiles_info = tings, }
+        end)
+        p.baipaiInfo = discard_tings
+        log.dump(discard_tings,"discard_baipais_"..p.guid)
+        send2client(p,"SC_BaiPaiInfos",{
+            canbaipai = 1,
+            bai = discard_tings
+        })
+        canBaipai = true
+    end
+    return canBaipai
+end
 function maajan_table:on_reconnect_when_action_after_mo_pai(p)
     self:send_ding_que_status(p)
     self:send_piao_fen_status(p)
@@ -1613,15 +1870,7 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
 
         check_all_pass(all_actions)
 
-        local hu_count = table.sum(self.players,function(p) return p.hu and 1 or 0 end)
-        if self.start_count - hu_count == 1 then
-            self:do_balance()
-        else
-            local _,last_hu_chair = table.max(hu_actions,function(act) return act.chair_id end)
-            local last_hu_player = self.players[last_hu_chair]
-            self:next_player_index(last_hu_player)
-            self:mo_pai()
-        end
+        self:do_balance()
     end
 
     if top_done_act == ACTION.PASS then
@@ -1695,6 +1944,7 @@ function maajan_table:fake_mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 0 then
+        self.liuju = true
         self:do_balance()
         return
     end
@@ -1702,7 +1952,7 @@ function maajan_table:fake_mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if BTEST then
+            if self.bTest then
                 mo_pai = tile
             else
                 mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
@@ -1813,6 +2063,7 @@ function maajan_table:mo_pai()
     local len = self.dealer.remain_count
     log.info("-------left pai " .. len .. " tile")
     if len == 0 then
+        self.liuju = true
         self:do_balance()
         return
     end
@@ -1820,7 +2071,7 @@ function maajan_table:mo_pai()
     local mo_pai
     if table.nums(self.pre_gong_tiles or {}) > 0 then
         for i,tile in pairs(self.pre_gong_tiles) do
-            if BTEST then
+            if self.bTest then
                 mo_pai = tile
             else
                 mo_pai = self.dealer:deal_one_on(function(t) return t == tile end)
@@ -1897,7 +2148,22 @@ function maajan_table:ting_full(p)
 
     return ting_tiles
 end
+function maajan_table:bai_full(p)
+    if not self:is_que(p) then return {} end
 
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local ting_tiles = mj_util.is_bai_full(p.pai,si_dui)
+    if p.que then
+        ting_tiles = table.map(ting_tiles,function(tiles,discard)
+            local hu_tiles = table.map(tiles,function(_,tile)
+                return tile,mj_util.tile_men(tile) ~= p.que and tile or nil
+            end)
+            return discard, table.nums(hu_tiles) > 0 and hu_tiles or nil
+        end)
+    end
+
+    return ting_tiles
+end
 function maajan_table:broadcast_discard_turn()
     self:broadcast2client("SC_Maajan_Discard_Round",{chair_id = self.chu_pai_player_index})
 end
@@ -2111,7 +2377,8 @@ function maajan_table:do_balance()
     end)
 
     local jiao_count = table.sum(self.players,function(p) return p.jiao and 1 or 0 end)
-
+    local hu_count = table.sum(self.players,function(p) return ( p.hu) and 1 or 0 end)
+    if hu_count  > 0 then  self.liuju = false  end 
     local chair_money = {}
     for chair_id,p in pairs(self.players) do
         local p_score = fanscores[chair_id] and fanscores[chair_id].score or 0
@@ -2151,6 +2418,8 @@ function maajan_table:do_balance()
             hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
             status = p.hu and 2 or (p.jiao and 3 or (jiao_count > 0 and 1 or nil)),
             hu_index = p.hu and p.hu.index or nil,
+            baoting    		= p.baoting,	-- 是否选择报叫
+            piao    		= p.piao,	    -- 选择的飘分	
         })
 
         local win_money = self:calc_score_money(p_score)
@@ -2161,12 +2430,7 @@ function maajan_table:do_balance()
     log.dump(msg)
 
     local logids = {
-        [200] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN,
-        [201] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_SI_ER,
-        [202] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_SAN_ER,
-        [203] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_SAN,
-        [204] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_ER,
-        [205] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_XUEZHAN_ER_YI,
+        [270] = enum.LOG_MONEY_OPT_TYPE_MAAJAN_NANCHONG
     }
 
     chair_money = self:balance(chair_money,logids[def_first_game_type])
@@ -2302,7 +2566,7 @@ function maajan_table:send_action_waiting(action)
 end
 
 function maajan_table:prepare_tiles()
-    if not BTEST then
+    if not self.bTest then
         self.dealer:shuffle()
         self.pre_tiles = {}
     else   
@@ -2311,15 +2575,25 @@ function maajan_table:prepare_tiles()
         self.dealer.remain_count = 108
         -- 测试手牌     
         self.pre_tiles = {
-            [1] = {2,5,8,9,14,15,15,17,17,18,25,26,26},     -- 万 庄
-            [2] = {3,3,4,22,22,22,23,23,27,27,27,28,29},    -- 筒  
-            [3] = {2,3,4,5,8,12,12,13,13,13,17,18,19},      -- 万
-            [4] = {2,2,6,7,9,9,12,13,14,16,18,19,26},       -- 条
+            [1] = {1,2,3,1,2,3,4,5,6,7,7,4,5},     -- 万 庄
+            [2] = {14,3,14,22,22,22,23,23,27,27,27,28,29},    -- 筒  
+            [3] = {12,3,4,5,8,12,12,13,13,13,17,18,19},      -- 万
+           
+        }
+        self.give_up = {2,2,4,5,6,6,7,8,8,8,9,9,9,9,11,11,11,12,13,14,14,15,15,15,15,16,16,16,16,18,18,18,19,19,19
+        ,21,21,21,24,25,26,26,26,26,28,28,28,29,29,
+        
+
         }
         -- 测试摸牌,从前到后
         self.pre_gong_tiles = {
-            29,24,6,1,17,24,22,23,21,25,25,17,1,7,22,12,17,24,25,27,29,
+            29,24,6,1,17,24,22,23,21,25,25,17,1,7,23,11,17,24,25,27,
         }
+
+        local tiles = self.give_up
+        if tiles then
+            self.dealer:pick_tiles(tiles)
+        end
     end
     self:foreach(function(p)
         local tiles = self.pre_tiles[p.chair_id]
@@ -2444,7 +2718,35 @@ function maajan_table:get_actions_first_turn(p,mo_pai)
             end
         end
     end
-
+     -- 校验报叫后,还能否操作杠牌
+     if p.baoting then
+        if actions[ACTION.HU] or actions[ACTION.ZI_MO] then
+            actions[ACTION.AN_GANG] = nil
+            actions[ACTION.MING_GANG] = nil
+            actions[ACTION.BA_GANG] = nil
+            actions[ACTION.RUAN_AN_GANG] = nil
+            actions[ACTION.RUAN_MING_GANG] = nil
+            actions[ACTION.RUAN_BA_GANG] = nil            
+            actions[ACTION.GANG_HUAN_PAI] = nil
+        end
+        if actions[ACTION.AN_GANG] then
+            for tile,_ in pairs(actions[ACTION.AN_GANG]) do
+                if not self:is_baoting_can_gang(p,actions,ACTION.AN_GANG,tile) then
+                    actions[ACTION.AN_GANG] = nil
+                end
+            end            
+        end
+        if actions[ACTION.RUAN_AN_GANG] and table.nums(actions[ACTION.RUAN_AN_GANG]) >= 0 then
+            for tile,_ in pairs(actions[ACTION.RUAN_AN_GANG]) do
+                if not self:is_baoting_can_gang(p,actions,ACTION.RUAN_AN_GANG,tile) then
+                    actions[ACTION.RUAN_AN_GANG][tile]  = nil
+                end
+            end 
+            if table.nums(actions[ACTION.RUAN_AN_GANG]) == 0 then
+                actions[ACTION.RUAN_AN_GANG] = nil
+            end 
+        end
+    end
     if not self:is_que(p) and (actions[ACTION.HU] or actions[ACTION.ZI_MO]) then
         actions[ACTION.HU] = nil
         actions[ACTION.ZI_MO] = nil
@@ -2452,7 +2754,114 @@ function maajan_table:get_actions_first_turn(p,mo_pai)
 
     return actions
 end
+-- 报听后杠牌，是否影响胡番
+function maajan_table:is_baoting_can_gang(p,actions,type,tile)
+    local canAction = true
+    local player = clone(p)
+    log.dump(player.pai,"is_baoting_can_gang_"..player.guid.."_"..tile.."_"..type)
+    local pai = player.pai
+    log.dump(player.baotingInfo,"baotingInfo_"..player.guid)
+    local baotingFan = self:get_baoting_maxfan(player.baotingInfo)
+    local sub = pai.shou_pai[tile] or 0 
+    local shou_pai = player.pai.shou_pai
+    local ming_pai = player.pai.ming_pai
 
+    if type == ACTION.AN_GANG then
+        table.decr(pai.shou_pai,tile,4)
+        tinsert(ming_pai,{
+            type = SECTION_TYPE.AN_GANG,
+            tile = tile,
+            area = TILE_AREA.MING_TILE,
+        })
+        local ting_tiles = self:ting(player)
+        if table.nums(ting_tiles) > 0 then
+            local hu_tile_fans = table.series(ting_tiles or {},function(_,tile)
+                return {tile = tile,fan = self:hu_fan(player,tile)} 
+            end)
+            local max_hu_fan = self:get_baoting_maxfan(hu_tile_fans)
+            log.info("AN_GANG max_hu_fan:%d,baotingFan:%d",max_hu_fan,baotingFan)
+            if max_hu_fan < baotingFan then
+                canAction = false
+            end
+        else
+            canAction = false
+        end
+        -- table.incr(pai.shou_pai,tile,4)
+    end
+
+    if type == ACTION.MING_GANG then
+        table.decr(pai.shou_pai,tile,3)
+        tinsert(ming_pai,{
+            type = SECTION_TYPE.MING_GANG,
+            tile = tile,
+            area = TILE_AREA.MING_TILE,
+            whoee = self.chu_pai_player_index,
+        })
+        local ting_tiles = self:ting(player)
+        if table.nums(ting_tiles) > 0 then
+            local hu_tile_fans = table.series(ting_tiles or {},function(_,tile)
+                return {tile = tile,fan = self:hu_fan(player,tile)} 
+            end)
+            local max_hu_fan = self:get_baoting_maxfan(hu_tile_fans)
+            log.info("MING_GANG max_hu_fan:%d,baotingFan:%d",max_hu_fan,baotingFan)
+            if max_hu_fan < baotingFan then
+                canAction = false
+            end
+        else
+            canAction = false
+        end
+        -- table.incr(pai.shou_pai,tile,3)
+    end
+    log.dump(canAction,"canAction_"..tile)
+    log.dump(p.pai,"p is_baoting_can_gang_"..p.guid)
+    log.dump(player.pai,"player is_baoting_can_gang_"..player.guid)
+    player = nil
+    return canAction
+end
+-- 报听后不能换牌
+function maajan_table:iscandiscard(p,distile,mopai)
+    local bdiscard = false
+    if p.chair_id == self.zhuang and self.zhuang_first_chu_pai then
+        if p.baotingInfo then
+            for _, ting in pairs(p.baotingInfo) do
+                if ting.discard and ting.tiles_info then
+                    if ting.discard == distile then
+                        bdiscard = true
+                        p.baotingInfo = ting.tiles_info
+                        break
+                    end
+                end
+            end
+        end
+    else
+        if p.baotingInfo and mopai then
+            if distile == mopai then
+                bdiscard = true
+            end
+        end
+    end
+    
+    return bdiscard
+end
+-- 获取报听的最大番
+function maajan_table:get_baoting_maxfan(baotinginfo)
+    local maxfan = 0
+    for _, info in pairs(baotinginfo) do
+        if info.tiles_info then
+            for _, v in pairs(info.tiles_info) do
+                if v.fan > maxfan then
+                    maxfan = v.fan
+                end
+            end
+        else
+            if info.fan > maxfan then
+                maxfan = info.fan
+            end
+        end
+    end
+    
+    return maxfan
+end
 function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     local si_dui = self.rule.play and self.rule.play.si_dui
     local actions = mj_util.get_actions(p.pai,mo_pai,in_pai,si_dui)
@@ -2498,7 +2907,12 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
             actions[ACTION.PENG] = nil
         end
     end
-
+    --是否报听博自摸
+    if self.rule.play.bo_zi_mo then
+        if p.baoting and actions[ACTION.HU] then
+            actions[ACTION.HU] = nil
+        end
+    end
     if not self:is_que(p) and (actions[ACTION.HU] or actions[ACTION.ZI_MO]) then
         actions[ACTION.HU] = nil
         actions[ACTION.ZI_MO] = nil
@@ -2510,7 +2924,40 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         actions[ACTION.MING_GANG] = nil
         actions[ACTION.BA_GANG] = nil
     end
-
+    -- 报听玩家，有胡必胡
+    if p.baoting then
+        actions[ACTION.PENG] = nil
+        -- 报听后能否杠牌
+        if actions[ACTION.HU] or actions[ACTION.ZI_MO] then
+            actions[ACTION.AN_GANG] = nil
+            actions[ACTION.MING_GANG] = nil
+            actions[ACTION.BA_GANG] = nil          
+        end
+        if actions[ACTION.AN_GANG] then
+            for tile,_ in pairs(actions[ACTION.AN_GANG]) do
+                if not self:is_baoting_can_gang(p,actions,ACTION.AN_GANG,tile) then
+                    actions[ACTION.AN_GANG][tile] = nil
+                end
+                if mo_pai then
+                    if mo_pai ~= tile then
+                        actions[ACTION.AN_GANG][tile] = nil
+                    end
+                end
+            end    
+            if table.nums(actions[ACTION.AN_GANG]) == 0 then
+                actions[ACTION.AN_GANG] = nil
+            end      
+        end
+        if in_pai then
+            if actions[ACTION.MING_GANG] then
+                for tile,_ in pairs(actions[ACTION.MING_GANG]) do
+                    if not self:is_baoting_can_gang(p,actions,ACTION.MING_GANG,tile) then
+                        actions[ACTION.MING_GANG] = nil
+                    end
+                end            
+            end
+        end
+    end
     return actions
 end
 -- 自己出牌,判断是否过庄胡、过手碰
@@ -2707,7 +3154,27 @@ function maajan_table:calculate_jiao(p)
     return type_fans[1]
 end
 
+-- 是否金钩钓加番
+function maajan_table:is_jin_gou_diao(chairid,typefan,fan)
+    log.dump(typefan,"fan_score_"..self.players[chairid].guid.."_"..fan)
+    local types,fanscore = typefan,fan+1
+    if table.sum(self.players[chairid].pai.shou_pai) == 1 then
+        local bhave = false
+        for _, vtype in pairs(types) do
+            if vtype.type == HU_TYPE.DAN_DIAO_JIANG then
+                bhave = true
+                break
+            end
+        end
+        if not bhave then
+            tinsert(types,{type = HU_TYPE.DAN_DIAO_JIANG,fan = 1,score = 0,count = 0})
+        end
+        fanscore = fanscore + 1
+    end
+    log.dump(types,"fanscore_"..self.players[chairid].guid.."_"..fanscore)
 
+    return types,fanscore
+end
 function maajan_table:game_balance()
     self:foreach(function(p)
         if p.hu then return end
@@ -2720,14 +3187,19 @@ function maajan_table:game_balance()
     end)
 
     local wei_hu_count = table.sum(self.players,function(p) return (not p.hu) and 1 or 0 end)
+    local hu_count = table.sum(self.players,function(p) return (p.hu) and 1 or 0 end)
 
     log.dump(wei_hu_count)
 
-    local typefans,scores = {},{}
+    local typefans,scores,baotingfans = {},{},{}
     self:foreach(function(p)
         local hu
         if p.hu then
             hu = self:calculate_hu(p.hu)
+            if p.baoting then -- 报听
+                if not baotingfans[p.chair_id] then baotingfans[p.chair_id] = {} end
+                tinsert(baotingfans[p.chair_id],{type = HU_TYPE.BAO_TING,fan = 1,score = 0,count = 1})
+            end
         elseif p.jiao then
             local jiao = self:calculate_jiao(p)
             hu = jiao.types
@@ -2735,63 +3207,156 @@ function maajan_table:game_balance()
         end
         
         local gangfans,gangscores
-        if p.jiao or p.hu or wei_hu_count == 1 then
+        if p.jiao or p.hu or hu_count > 0 then
             gangfans,gangscores = self:calculate_gang(p)
         end
 
-        typefans[p.chair_id] = table.union(hu or {},gangfans or {})
+        if not typefans[p.chair_id] then typefans[p.chair_id] = {} end
+        local types = table.union(hu or {},baotingfans[p.chair_id] or {})
+        typefans[p.chair_id] = table.union(types or {},gangfans or {})
+
         table.mergeto(scores,gangscores or {},function(l,r) return (l or 0) + (r or 0) end)
     end)
 
     log.dump(typefans)
 
-    local max_fan = self:get_max_fan() or 3
+    
 
     local fans = table.map(typefans,function(v,chair)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
-        return chair,(fan > max_fan and max_fan or fan)
+        return chair,(fan or 0)
     end)
 
     self:foreach(function(p)
         local chair_id = p.chair_id
         local fan = fans[chair_id]
-        local fan_score = 2 ^ math.abs(fan)
+
+        
+        local fan_score = fan+1
+        local piaofan = 0
+        local pi_fan_score = 0
         if p.hu then
+            log.dump(fans)
             if not p.hu.zi_mo then
                 local whoee = p.hu.whoee
-                scores[whoee] = (scores[whoee] or 0) - fan_score
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                -- 输家是否也报叫
+                if self.players[whoee].baoting then
+                    fan_score = fan_score+1
+                    fan = fan + 1    
+                end
+                -- 输家是否金钩钓
+                if self.rule.play.jin_gou_gou then
+                    typefans[whoee],fan_score = self:is_jin_gou_diao(whoee,typefans[whoee],fan)
+                end 
+                 -- 飘番
+                 piaofan = self:get_piaofan(chair_id,whoee)
+                 local pi_score = fan_score + piaofan
+
+                
+                scores[whoee] = (scores[whoee] or 0) - pi_score
+                scores[chair_id] = (scores[chair_id] or 0) + pi_score
+                log.dump(pi_score,"pi_score"..chair_id)
+                log.dump(piaofan,"piaofan_"..chair_id)
+                log.dump(fan,"fan_"..chair_id)
+                log.dump(fan_score,"fan_score_"..chair_id)
+                log.dump(self.players[whoee].baoting ,"self.players[whoee].baoting "..whoee)
                 return
             end
-
-            if self.rule.play.zi_mo_jia_di then
-                fan_score = fan_score + 1
-            end
-
+       
             self:foreach_except(p,function(pi)
                 if pi.hu and pi.hu.time <= p.hu.time then return end
-
                 local chair_i = pi.chair_id
-                scores[chair_i] = (scores[chair_i] or 0) - fan_score
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
-            end)
-        elseif p.jiao then
-            self:foreach_except(p,function(pi)
-                if pi.hu or pi.jiao then return end
-                local chair_i = pi.chair_id
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
-                scores[chair_i] = (scores[chair_i] or 0) - fan_score
-                if self.rule.play.cha_da_jiao then
-                    pi.statistics.cha_da_jiao = (pi.statistics.cha_da_jiao or 0) + 1
+                -- 输家是否也报叫
+                fan = fans[chair_id]
+                fan_score =fan+1
+                pi_fan_score = fan_score
+                if self.players[chair_i].baoting then
+                    pi_fan_score = pi_fan_score + 1
+                    fan = fan + 1
                 end
+                -- 输家是否金钩钓
+                if self.rule.play.jin_gou_gou then
+                    typefans[chair_i],pi_fan_score = self:is_jin_gou_diao(chair_i,typefans[chair_i],fan)
+                end
+                if self.rule.play.zi_mo_jia_di then
+                    pi_fan_score = pi_fan_score + 1
+                end
+                -- 飘番
+                piaofan = self:get_piaofan(chair_id,chair_i)
+                pi_fan_score = pi_fan_score + piaofan   
+               
+                
+                scores[chair_i] = (scores[chair_i] or 0) - pi_fan_score
+                scores[chair_id] = (scores[chair_id] or 0) + pi_fan_score
+
+                log.dump(pi_fan_score,"pi_fan_score_"..chair_id)
+                log.dump(piaofan,"piaofan_"..chair_id)
+                log.dump(fans[chair_id],"fan_"..chair_id)
+                log.dump(fan_score,"fan_score_"..chair_id)
+                log.dump(self.players[chair_i].baoting ,"self.players[chair_i].baoting "..chair_i)
             end)
+        
+        elseif self.liuju then
+            if p.baoting then -- 杀报听,报听玩家赔给报叫玩家最大的胡番  
+                self:foreach_except(p,function(pi)
+                    if pi.baoting or not pi.jiao then return end                
+                    local chair_i = pi.chair_id
+                    local bhave = false
+                    for _, vtype in pairs(typefans[chair_i]) do
+                        if vtype.type == HU_TYPE.SHA_BAO then
+                            bhave = true
+                            break
+                        end
+                    end
+                    if not bhave then
+                        tinsert(typefans[chair_i],{type = HU_TYPE.SHA_BAO,fan = 1,score = 1,count = 1})
+                    end
+                    fan = fans[chair_i]
+                    fan_score = fan +1
+                    -- 报听+1番
+                    fan_score = fan_score+1
+                    fan = fan + 1
+                    -- 输家是否金钩钓
+                    if self.rule.play.jin_gou_gou then
+                        typefans[chair_id],fan_score = self:is_jin_gou_diao(chair_id,typefans[chair_id],fan)
+                    end
+                    -- 飘番
+                    piaofan = self:get_piaofan(chair_i,chair_id)
+                    fan_score = fan_score + piaofan   
+                    fan_score = fan_score              
+                    scores[chair_id] = (scores[chair_id] or 0) - fan_score
+                    scores[chair_i] = (scores[chair_i] or 0) + fan_score
+                    if self.rule.play.cha_da_jiao then
+                        pi.statistics.cha_da_jiao = (pi.statistics.cha_da_jiao or 0) + 1
+                    end
+                end)
+            elseif p.jiao then -- 查大叫            
+                self:foreach_except(p,function(pi)
+                    if  pi.jiao or pi.baoting then return end
+                    local chair_i = pi.chair_id
+                    -- 输家是否金钩钓
+                    if self.rule.play.jin_gou_gou then
+                        typefans[chair_i],fan_score = self:is_jin_gou_diao(chair_i,typefans[chair_i],fan)
+                    end
+                    -- 飘番
+                    piaofan = self:get_piaofan(chair_i,chair_id)
+                    fan_score = fan_score + piaofan   
+
+                    scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                    scores[chair_i] = (scores[chair_i] or 0) - fan_score
+                    if self.rule.play.cha_da_jiao then
+                        pi.statistics.cha_da_jiao = (pi.statistics.cha_da_jiao or 0) + 1
+                    end
+                end)
+            end
         end
     end)
-
+    log.dump(scores)
     local fanscores = table.map(self.players,function(_,chair)
         return chair,{fan = fans[chair] or 0,score = scores[chair] or 0,}
     end)
-
+    log.dump(typefans)
+    log.dump(fanscores)
     return typefans,fanscores
 end
 
@@ -2819,10 +3384,11 @@ function maajan_table:on_game_overed()
         v.mo_pai_count = nil
         v.chu_pai = nil
         v.chu_pai_count = nil
-
+        v.baoting = nil
+        v.baotingInfo = nil  -- 听牌数据
         v.que = nil
     end)
-
+    self.liuju = false
     base_table.on_game_overed(self)
 end
 

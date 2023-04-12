@@ -148,7 +148,52 @@ local function feed_hu_tile(tiles)
 	return feed_tiles
 end
 
+local function baipai_feed_hu_tile(tiles)
+	local feed_tiles = {}
+	local bai_tiles ={}
+	if #tiles < 1 or #tiles > 2 then
+		return feed_tiles, bai_tiles
+	end
 
+	if #tiles == 1 then
+		feed_tiles[tiles[1]] = true
+		bai_tiles[tiles[1]] =  1
+	elseif #tiles == 2 then
+		local tile1,tile2 = tiles[1],tiles[2]
+		if tile1 == tile2 then
+			feed_tiles[tile1] = true
+			bai_tiles[tile1] =  2
+		else
+			if rule.tile_men(tile1) ~= rule.tile_men(tile2) then 
+				return feed_tiles
+			end
+
+			local min,max
+			if tile1 > tile2 then min,max = tile2,tile1
+			else min,max = tile1,tile2
+			end
+			local sub = math.abs(tile1 - tile2)
+			if sub == 1 then
+				if rule.tile_value(min) > 1 then 
+					feed_tiles[min - 1] = true 
+					bai_tiles[min] = 1
+					bai_tiles[max] = 1
+				end
+				if rule.tile_value(max) < 9 then 
+					feed_tiles[max + 1] = true 
+					bai_tiles[min] = 1
+					bai_tiles[max] = 1
+				end
+			elseif sub == 2 then
+				feed_tiles[min + 1] = true
+				bai_tiles[min] = 1
+				bai_tiles[max] = 1
+			end
+		end
+	end
+
+	return  bai_tiles
+end
 local function ting(state)
 	local counts = state.counts
 	local tiles = counts_2_tiles(counts)
@@ -196,7 +241,53 @@ local function ting(state)
 		end
 	end
 end
+local function bai(state)
+	local counts = state.counts
+	local tiles = counts_2_tiles(counts)
+	local tile_count = #tiles
+	
+	if tile_count == 1 and not state.jiang then
+		table.mergeto(state.feed_tiles,baipai_feed_hu_tile(tiles))
+		return
+	end
 
+	if tile_count == 2 and state.jiang then
+		table.mergeto(state.feed_tiles,baipai_feed_hu_tile(tiles))
+		return
+	end
+
+	local feed_tiles = {}
+	for _,tile in pairs(tiles) do
+		if counts[tile] >= 3 then
+			table.decr(counts,tile,3)
+			bai(state)
+			table.incr(counts,tile,3)
+		end
+	end
+
+	for _,tile in pairs(tiles) do
+		if not state.jiang and counts[tile] >= 2 then
+			state.jiang = tile
+			table.decr(counts,tile,2)
+			bai(state)
+			table.incr(counts,tile,2)
+			state.jiang = nil
+		end
+	end
+
+	for tile,c in pairs(counts) do
+		if c > 0 and rule.tile_value(tile) <= 7 and rule.tile_value(tile) > 0 and 
+			rule.tile_men(tile) < 3 and counts[tile + 1] > 0 and counts[tile + 2] > 0 then
+			table.decr(counts,tile)
+			table.decr(counts,tile + 1)
+			table.decr(counts,tile + 2)
+			bai(state)
+			table.incr(counts,tile)
+			table.incr(counts,tile + 1)
+			table.incr(counts,tile + 2)
+		end
+	end
+end
 local function ting_qi_dui(pai,counts)
 	local count_tilemaps = table.group(counts,function(c,_) return c end)
 	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
@@ -230,7 +321,39 @@ local function ting_si_dui(pai,counts)
 
 	return nil
 end
+local function bai_qi_dui(pai,counts)
+	local count_tilemaps = table.group(counts,function(c,_) return c end)
+	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
+	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] * 2 or 0)
+	if count_tiles[1] and #count_tiles[1] == 1 and even_count == 6 then
+		return count_tiles[1][1]
+	end
 
+	if count_tiles[3] and #count_tiles[3] == 1 and even_count == 5 then
+		return count_tiles[3][1]
+	end
+
+	return nil
+end
+
+local function bai_si_dui(pai,counts)
+	if table.nums(pai.ming_pai) > 0 then
+		return nil
+	end
+
+	local count_tilemaps = table.group(counts,function(c,_) return c end)
+	local count_tiles = table.map(count_tilemaps,function(gp,c) return c,table.keys(gp) end)
+	local even_count = (count_tiles[2] and #count_tiles[2] or 0) + (count_tiles[4] and #count_tiles[4] * 2 or 0)
+	if count_tiles[1] and #count_tiles[1] == 1 and even_count == 3 then
+		return count_tiles[1][1]
+	end
+
+	if count_tiles[3] and #count_tiles[3] == 1 and even_count == 2 then
+		return count_tiles[3][1]
+	end
+
+	return nil
+end
 local function is_qi_dui(pai,counts)
 	local dui_zi_count = table.sum(counts,function(c)
 		return c == 4 and 2 or c == 2 and 1 or 0
@@ -458,6 +581,20 @@ local function get_hu_types(pai,cache,sections,in_pai)
 				base_types[HU_TYPE.KA_WU_XING] = 1
 			end
 		end
+
+	end
+	--一般高判断
+	for i=1 ,#shun_zi_list do
+		local shunzi = shun_zi_list[i]
+		if shunzi then
+			for k=i+1 ,#shun_zi_list do
+				if shun_zi_list[k] and shunzi.tile == shun_zi_list[k].tile then
+					base_types[HU_TYPE.YI_BAN_GAO] = 1
+					break
+				end
+			end
+		end
+			
 	end
 
 	if is_all_1_9(pai,sections) then
@@ -572,7 +709,22 @@ function rule.ting_tiles(pai,si_dui)
 	end
 	return tiles
 end
-
+function rule.bai_tiles(pai,si_dui)
+	local cache = {}
+	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	local state = { feed_tiles = {}, counts = cache }
+	bai(state)
+	local qi_dui_tile = bai_qi_dui(pai,cache)
+	local tiles = state.feed_tiles
+	if qi_dui_tile then tiles[qi_dui_tile] = true end
+	if si_dui then 
+		local si_dui_tile = bai_si_dui(pai,cache)
+		if si_dui_tile then
+			tiles[si_dui_tile] = true
+		end
+	end
+	return tiles
+end
 --未摸牌判听
 function rule.ting(pai,si_dui)
 	return rule.ting_tiles(pai,si_dui)
@@ -591,7 +743,19 @@ function rule.ting_full(pai,si_dui)
 
 	return discard_then_ting_tiles
 end
+--全部牌判摆拍
+function rule.bai_full(pai,si_dui)
+	local all_pai = clone(pai)
+	local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
+		if c <= 0 then return end
+		table.decr(all_pai.shou_pai,tile)
+		local tiles = rule.bai_tiles(all_pai,si_dui)
+		table.incr(all_pai.shou_pai,tile)
+		if table.nums(tiles) > 0 then return tile,tiles end
+	end)
 
+	return discard_then_ting_tiles
+end
 function rule.get_fan_table_res(base_fan_table)
 	local res = {describe = "",fan = 0}
 	local del_list = {}

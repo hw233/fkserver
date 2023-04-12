@@ -606,14 +606,16 @@ function on_cs_create_private_room(msg,guid,game_id)
 	log.dump(rule)
 
 	local result,round,chair_count,pay_option,_ = base_rule.check(rule)
+	log.dump(result)
 	if result ~= enum.ERROR_NONE  then
+		
 		onlineguid.send(guid,"SC_CreateRoom",{
 			result = result,
 			game_type = game_type,
 		})
 		return
 	end
-
+    log.dump(pay_option)
 	local global_table_id,tb = enum.GAME_SERVER_RESULT_PRIVATE_ROOM_NOT_FOUND,nil
 	if pay_option == enum.PAY_OPTION_BOSS then
 		if not club then
@@ -633,6 +635,7 @@ function on_cs_create_private_room(msg,guid,game_id)
 	elseif pay_option == enum.PAY_OPTION_ROOM_OWNER then
 		result,global_table_id,tb = g_room:create_private_table(player,chair_count,round,rule,club)
 	else
+		log.dump(pay_option)
 		result = enum.ERROR_OPERATION_INVALID
 	end
 

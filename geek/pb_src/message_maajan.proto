@@ -763,8 +763,61 @@ message SC_MaajanZiGongGameFinish {
 }
 
 // 能否选择报听信息
-message SC_BaoTingInfos{
-	enum MsgID { Nil = 0; ID = 23157;}	
-	int32 canbaoting = 1;		// 能否报听 0:不能  1:能
-	repeated TingTips ting = 2;	// 能报听牌提示
+
+message BaiPaiInfo{
+	int32 chair_id = 1;
+	bool  baoting = 2;
+}
+
+message BaiPaiStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_AllowBaiPai{
+	enum MsgID { Nil = 0; ID = 23157;}
+}
+
+message CS_BaiPai{
+	enum MsgID { Nil = 0; ID = 23158;}
+	int32 baoting = 1;	// 0 不报听  1 报听
+}
+
+message SC_BaiPai{
+	enum MsgID { Nil = 0; ID = 23159;}
+	int32 result = 1;	// 0 不报听  1 报听
+	BaiPaiStatus status = 2;
+}
+
+message SC_BaiPaiStatus{
+	enum MsgID { Nil = 0; ID = 23160;}
+	repeated BaiPaiStatus baipai_status = 1;
+	repeated BaiPaiInfo   baipai_info = 2;
+}
+
+message SC_BaiPaiCommit{
+	enum MsgID { Nil = 0; ID = 23161;}
+	repeated BaiPaiInfo baotings = 1;
+}
+
+message BaiTilesInfo{ 
+	repeated int32 tiles = 1;
+	
+}
+
+message BaiTips{
+	int32 discard = 1;
+	repeated BaiTilesInfo tiles_info = 2;
+}
+
+message SC_BaiPaiInfos{
+	enum MsgID { Nil = 0; ID = 23162;}	
+	int32 canbaipai = 1;		// 能否报听 0:不能  1:能
+	repeated BaiTips bai = 2;	// 能报听牌提示
+}
+
+// 摆牌提示
+message SC_BaiTips{
+	enum MsgID { Nil = 0; ID = 23163;}
+	repeated BaiTips bai = 1;
 }

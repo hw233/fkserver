@@ -2591,7 +2591,7 @@ function maajan_table:game_balance()
         end
         
         local gangfans,gangscores
-        if p.jiao or p.hu or wei_hu_count == 1 then
+        if p.hu  then
             gangfans,gangscores = self:calculate_gang(p)
         end
 

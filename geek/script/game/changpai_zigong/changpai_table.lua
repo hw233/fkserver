@@ -2760,7 +2760,10 @@ function changpai_table:is_bao_pai(player,in_pai)
         if s and s.tile == in_pai and (s.type == SECTION_TYPE.PENG or  s.type == SECTION_TYPE.TOU)  then
             return true
         end 
-        if s.type == SECTION_TYPE.CHI and (s.othertile == in_pai or  s.tile == in_pai) and mj_util.tile_is_chongfan(in_pai)then
+        
+        if s.type == SECTION_TYPE.CHI and (s.othertile == in_pai and s.tile == in_pai) and mj_util.tile_is_chongfan(in_pai)then
+            return true
+        elseif s.type == SECTION_TYPE.CHI and (s.othertile == in_pai or  s.tile == in_pai) and mj_util.tile_is_chongfan(in_pai)then
             tileNum= tileNum+1
         end
     end
