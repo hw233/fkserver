@@ -853,11 +853,17 @@ message MaajanPlayerBlanaceItem{
 	int32 	 hu_score				= 5;	// 胡分	
 	int32 	 luobo_score			= 6;	// 萝卜分	
 	int32    gang_score				= 7;	// 杠分(雨分)
-	repeated int32  objects 		= 8;	// 对象椅子号
+	repeated int32  objects 		= 8;	// 对象椅子号	
+	int32 	 hu						= 9;	// 胡牌类型(自摸2，胡牌1)
 }
 // 流水详情
 message SC_MaajanPlayerBlanaceInfos {
 	enum MsgID { Nil = 0; ID = 23167; }
 	repeated Maajan_Luobo_Info 			luobos 	= 1;
 	repeated MaajanPlayerBlanaceItem 	player_balance 	= 2;
+}
+// 萝卜牌值
+message SC_MaajanZiGongLuoboInfos {
+	enum MsgID { Nil = 0; ID = 23168; }
+	repeated Maajan_Luobo_Info 		luobos 	= 1;
 }
