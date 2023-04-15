@@ -490,6 +490,14 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
                         self:set_gzh_on_pass(p,act.tile)
                     end
                 end
+            elseif act.done.action ~= ACTION.HU and act.actions[ACTION.HU] then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,act.tile)
+                    end
+                end
             end
         end
     end
@@ -1278,6 +1286,14 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
                     local peng_action = act.actions[ACTION.PENG]
                     if peng_action then
                         self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
+                    end
+                end
+            elseif act.done.action ~= ACTION.HU and act.actions[ACTION.HU] then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
                     end
                 end
             end

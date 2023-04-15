@@ -1405,6 +1405,14 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
                         self:set_gsg_on_pass(p,chu_pai_player.chu_pai)
                     end
                 end
+            elseif act.done.action ~= ACTION.HU and act.actions[ACTION.HU] then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
+                    end
+                end
             end
         end
     end
