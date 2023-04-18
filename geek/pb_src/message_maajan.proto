@@ -69,7 +69,7 @@ enum HU_TYPE{
 	QING_LONG				= 65;	//清龙
 	YI_SE_SAN_BU_GAO		= 66;	//一色三步高
 	DA_DUI_ZI  				= 67;	//大对子
-	LONG_QI_DUI 			= 68;	//龙七对
+	LONG_QI_DUI 			= 68;	//龙七对(豪华七对)
 	QING_QI_DUI 			= 69;	//清七对
 	QING_LONG_BEI 			= 70;	//清龙背
 	QING_DA_DUI 			= 71;	//清大对
@@ -124,6 +124,10 @@ enum HU_TYPE{
 	RUAN_MING_GANG 			= 119;	//软明杠
 	RUAN_BA_GANG 			= 120;	//软巴杠
 	HAI_DI_PAO				= 121;	//海底炮
+	YI_TIAO_LONG			= 122;	//一条龙
+	KA_WU_TIAO 				= 123;  //卡五条
+	SHUANG_HAOHUA_QI_DUI 	= 124;	//双豪华七对
+	SAN_HAOHUA_QI_DUI 		= 125;	//三豪华七对
 }
 
 
@@ -750,6 +754,7 @@ message MaajanZiGongBlanacePlayer{
 
 message Maajan_Luobo_Info{
 	int32 pai   = 1;	// 牌值
+	int32 count = 2;	// 张数
 }
 
 //结算
@@ -765,4 +770,100 @@ message SC_BaoTingInfos{
 	enum MsgID { Nil = 0; ID = 23157;}	
 	int32 canbaoting = 1;		// 能否报听 0:不能  1:能
 	repeated TingTips ting = 2;	// 能报听牌提示
+}
+
+// 能否选择报听信息
+message BaiPaiInfo{
+	int32 chair_id = 1;
+	bool  baoting = 2;
+}
+
+message BaiPaiStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_AllowBaiPai{
+	enum MsgID { Nil = 0; ID = 23158;}
+}
+
+message CS_BaiPai{
+	enum MsgID { Nil = 0; ID = 23159;}
+	int32 baoting = 1;	// 0 不报听  1 报听
+}
+
+message SC_BaiPai{
+	enum MsgID { Nil = 0; ID = 23160;}
+	int32 result = 1;	// 0 不报听  1 报听
+	BaiPaiStatus status = 2;
+}
+
+message SC_BaiPaiStatus{
+	enum MsgID { Nil = 0; ID = 23161;}
+	repeated BaiPaiStatus baipai_status = 1;
+	repeated BaiPaiInfo   baipai_info = 2;
+}
+
+message SC_BaiPaiCommit{
+	enum MsgID { Nil = 0; ID = 23162;}
+	repeated BaiPaiInfo baotings = 1;
+}
+
+message BaiTilesInfo{ 
+	repeated int32 tiles = 1;
+	
+}
+
+message BaiTips{
+	int32 discard = 1;
+	repeated BaiTilesInfo tiles_info = 2;
+}
+
+message SC_BaiPaiInfos{
+	enum MsgID { Nil = 0; ID = 23163;}	
+	int32 canbaipai = 1;		// 能否报听 0:不能  1:能
+	repeated BaiTips bai = 2;	// 能报听牌提示
+}
+
+// 摆牌提示
+message SC_BaiTips{
+	enum MsgID { Nil = 0; ID = 23164;}
+	repeated BaiTips bai = 1;
+}
+
+// 分数变化
+message MaajanChangeBalanceItem{
+	int32 chair_id 	= 1;
+	int32 type 		= 2;
+	int32 score 	= 3;
+}
+message SC_MaajanPlayerChangeInfos {
+	enum MsgID { Nil = 0; ID = 23165; }
+	repeated MaajanChangeBalanceItem 	player_balance 	= 1;
+}
+message CS_Maajan_GetPlayerBlanaceInfo{
+	enum MsgID { Nil = 0; ID = 23166;}
+}
+// 流水
+message MaajanPlayerBlanaceItem{
+	string   details				= 1;	// 明细
+	int32 	 chair_id 				= 2;	// 玩家椅子号
+	int32	 tile                   = 3;	// 操作的牌
+	int32 	 long_score				= 4;	// 龙分
+	int32 	 hu_score				= 5;	// 胡分	
+	int32 	 luobo_score			= 6;	// 萝卜分	
+	int32    gang_score				= 7;	// 杠分(雨分)
+	repeated int32  objects 		= 8;	// 对象椅子号	
+	int32 	 hu						= 9;	// 胡牌类型(自摸2，胡牌1)
+}
+// 流水详情
+message SC_MaajanPlayerBlanaceInfos {
+	enum MsgID { Nil = 0; ID = 23167; }
+	repeated Maajan_Luobo_Info 			luobos 	= 1;
+	repeated MaajanPlayerBlanaceItem 	player_balance 	= 2;
+}
+// 萝卜牌值
+message SC_MaajanZiGongLuoboInfos {
+	enum MsgID { Nil = 0; ID = 23168; }
+	repeated Maajan_Luobo_Info 		luobos 	= 1;
 }

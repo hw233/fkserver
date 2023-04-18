@@ -43,7 +43,9 @@ local function sorted_pair_values(p)
 
 	tsort(cards,function(l,r) 
 		local lv,rv = get_value(l),get_value(r)
-		if rv ~= lv then return lv > rv end
+		if rv ~= lv then 
+			return lv > rv 
+		end
 		return get_color(l) < get_color(r)
 	end)
 	return cards
@@ -57,7 +59,29 @@ local function compare(l,r)
 	local lcards = sorted_pair_values(l.pair)
 	local rcards = sorted_pair_values(r.pair)
 	local lc1,rc1 = lcards[1],rcards[1]
+	local lc5,rc5 = lcards[5],rcards[5]
 	local lv,rv = get_value(lc1),get_value(rc1)
+	local lv5,rv5 = get_value(lc5),get_value(rc5)
+
+	if l.type == r.type and (l.type == CARDS_TYPE.OX_TONGHUASHUN or l.type == CARDS_TYPE.OX_SHUNZI)  then
+		if lv == rv and lv ==13 then
+			if lv == 13 and lv5 ==1 and rv==13  and rv5 ==1  then
+				local ls,rs = get_color(lv5),get_color(rv5)
+				return ls<rs
+			end
+			if lv == 13 and lv5 ==1 and rv==13  and rv5 ~=1  then
+				
+				return true
+			end
+			if lv == 13 and lv5 ~=1 and rv==13  and rv5 ==1  then
+				
+				return false
+			end
+			local xxs,rrs = get_color(lc1),get_color(rc1)
+			return xxs < rrs
+		end
+		return lv>rv
+	end
 	if lv ~= rv then
 		return lv > rv
 	end
@@ -94,6 +118,7 @@ local function cards_type(cards,opt)
 	
 	local same_color = table.nums(color_count) == 1
 	local seq
+	
 	for _,v in pairs(values) do
 		if seq and mabs(seq - v) ~= 1 then
 			seq = nil
@@ -102,6 +127,17 @@ local function cards_type(cards,opt)
 
 		seq = v
 	end
+	if #values==5 and values[1]== 13 and values[2]== 12 and values[3]== 11 and values[4]== 10 and values[5]== 1 then
+		seq = 1
+	end
+	
+	if opt[CARDS_TYPE.OX_TONGHUASHUN] and same_color and seq then
+		return {
+			type = CARDS_TYPE.OX_TONGHUASHUN,
+			pair = {list},
+		}
+	end
+
 
 	if 	opt[CARDS_TYPE.OX_SMALL_5] and 
 		table.logic_and(values,function(v) return v < 5 end) and
@@ -119,6 +155,16 @@ local function cards_type(cards,opt)
 		}
 	end
 
+
+
+	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] then
+		return {
+			type = CARDS_TYPE.OX_HULU,
+			pair = {list},
+		}
+	end
+
+
 	-- 五花牛
 	if opt[CARDS_TYPE.OX_JINHUA] and jinhua_ox then
 		return {
@@ -131,6 +177,21 @@ local function cards_type(cards,opt)
 	if opt[CARDS_TYPE.OX_YINHUA] and yinhua_ox then
 		return {
 			type = CARDS_TYPE.OX_YINHUA,
+			pair = {list},
+		}
+	end
+
+	
+	if opt[CARDS_TYPE.OX_TONGHUA] and same_color then
+		return {
+			type = CARDS_TYPE.OX_TONGHUA,
+			pair = {list},
+		}
+	end
+
+	if opt[CARDS_TYPE.OX_SHUNZI] and seq then
+		return {
+			type = CARDS_TYPE.OX_SHUNZI,
 			pair = {list},
 		}
 	end
@@ -171,35 +232,6 @@ local function cards_type(cards,opt)
 	tsort(types,compare)
 
 	local t = types[1]
-
-	if opt[CARDS_TYPE.OX_HULU] and count_value[3] and count_value[2] then
-		return {
-			type = CARDS_TYPE.OX_HULU,
-			pair = {list},
-		}
-	end
-
-	if opt[CARDS_TYPE.OX_TONGHUASHUN] and same_color and seq then
-		return {
-			type = CARDS_TYPE.OX_TONGHUASHUN,
-			pair = {list},
-		}
-	end
-
-	if opt[CARDS_TYPE.OX_TONGHUA] and same_color then
-		return {
-			type = CARDS_TYPE.OX_TONGHUA,
-			pair = {list},
-		}
-	end
-
-	if opt[CARDS_TYPE.OX_SHUNZI] and seq then
-		return {
-			type = CARDS_TYPE.OX_SHUNZI,
-			pair = {list},
-		}
-	end
-
 	return t
 end
 

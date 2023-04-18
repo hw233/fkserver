@@ -66,6 +66,7 @@ enum CP_FSM_STATE {
 	DING_QUE				= 16;
 	GAME_IDLE_HEAD			= 17;
 	FAST_START_VOTE			= 18;
+	WAIT_BAO_TING			= 19;
 	FINAL_END				= 0x1000; //用于客户端播放动画延迟
 }
 
@@ -294,6 +295,7 @@ message ChangpaiBlanacePlayer{
 	int32 hu_index  		= 9;	
 	int32 round_money     = 10;
 	int32 total_money      = 11;  
+	bool  baoting		  = 12;  //是否报叫
 }
 
 //结算
@@ -361,4 +363,46 @@ message SC_CP_Tuo_Num
 {
 	enum MsgID { Nil = 0; ID = 33147; }
 	repeated int32 tuos = 1;
+}
+
+message CP_BaotingInfo{
+	int32 chair_id = 1;
+	bool  baoting = 2;
+}
+
+message CP_BaotingStatus{
+	int32 chair_id = 1;
+	bool  done = 2;
+}
+
+message SC_CP_AllowBaoting{
+	enum MsgID { Nil = 0; ID = 33148;}
+}
+
+message CS_CP_Baoting{
+	enum MsgID { Nil = 0; ID = 33149;}
+	int32 baoting = 1;	// 0 不报听  1 报听
+}
+
+message SC_CP_Baoting{
+	enum MsgID { Nil = 0; ID = 33150;}
+	int32 result = 1;	// 0 不报听  1 报听
+	CP_BaotingStatus status = 2;
+}
+
+message SC_CP_BaotingStatus{
+	enum MsgID { Nil = 0; ID = 33151;}
+	repeated CP_BaotingStatus baoting_status = 1;
+	repeated CP_BaotingInfo   baoting_info = 2;
+}
+
+message SC_CP_BaotingCommit{
+	enum MsgID { Nil = 0; ID = 33152;}
+	repeated CP_BaotingInfo baotings = 1;
+}
+// 能否选择报听信息
+message SC_CP_BaoTingInfos{
+	enum MsgID { Nil = 0; ID = 33153;}	
+	int32 canbaoting = 1;		// 能否报听 0:不能  1:能
+	repeated CP_TingTips ting = 2;	// 能报听牌提示
 }

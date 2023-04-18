@@ -490,6 +490,14 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
                         self:set_gzh_on_pass(p,act.tile)
                     end
                 end
+            elseif act.done.action ~= ACTION.HU and act.actions[ACTION.HU] then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,act.tile)
+                    end
+                end
             end
         end
     end
@@ -1278,6 +1286,14 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
                     local peng_action = act.actions[ACTION.PENG]
                     if peng_action then
                         self:set_gsp_on_pass(p,chu_pai_player.chu_pai)
+                    end
+                end
+            elseif act.done.action ~= ACTION.HU and act.actions[ACTION.HU] then
+                local p = self.players[act.chair_id]
+                if self.rule.play.guo_zhuang_hu then
+                    local hu_action = act.actions[ACTION.HU]
+                    if hu_action then
+                        self:set_gzh_on_pass(p,chu_pai_player.chu_pai)
                     end
                 end
             end
@@ -3106,7 +3122,9 @@ function maajan_table:rule_hu_types(pai,in_pai,mo_pai)
                 ((t == HU_TYPE.MEN_QING or t == HU_TYPE.DUAN_YAO) and not rule_play.men_qing) or 
                 -- ((t == HU_TYPE.QI_DUI or t == HU_TYPE.QING_QI_DUI or t == HU_TYPE.QING_LONG_BEI) and play_opt == "er_ren_yi_fang") or
                 ((t == HU_TYPE.SI_DUI or t == HU_TYPE.QING_SI_DUI or t == HU_TYPE.LONG_SI_DUI or t == HU_TYPE.QING_LONG_SI_DUI) and 
-                    not rule_play.si_dui)
+                    not rule_play.si_dui) or
+                (t == HU_TYPE.KA_WU_TIAO and not rule_play.ka_wu_tiao) or
+                (t == HU_TYPE.YI_TIAO_LONG and not rule_play.yi_tiao_long)
             then
                 
             elseif t == HU_TYPE.QING_DA_DUI and play_opt == "er_ren_yi_fang" then

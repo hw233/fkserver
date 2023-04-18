@@ -92,47 +92,31 @@ end
 
 local function feed_hu_tile(tiles)
 	local feed_tiles = {}
+	local ting_tiles = {}
 	if #tiles ~= 1  then
 		return feed_tiles
 	end
-
+	if rule.tile_value(tiles[1]) == 7 then
+		return feed_tiles
+	end
+	log.dump(tiles)
 	if #tiles == 1 then
 		for k, v in pairs(all_tiles) do
-			if tiles[1]+v.value == 14 then
+			if rule.tile_value(tiles[1])+v.value == 14 then
 				feed_tiles[v.index] = true 
 			end
 		end
 
 	end
-	return feed_tiles
-end
-
-
-local function ting(state)
-	local counts = state.counts
-	local tiles = counts_2_tiles(counts)
-	local tile_count = #tiles
-	
-	if tile_count == 1 then
-		table.mergeto(state.feed_tiles,feed_hu_tile(tiles))
-		return
-	end
-	local feed_tiles = {}
-	local first_tile = tiles[1]
-	table.decr(counts,first_tile)
-	for tile,c in pairs(counts) do
-		if  c > 0 and rule.tile_value(first_tile)+rule.tile_value(tile) == 14 then
-			table.decr(counts,first_tile)
-			table.decr(counts,tile)
-			ting(state)
-			table.incr(counts,first_tile)
-			table.incr(counts,tile )
+	for key, value in pairs(feed_tiles) do
+		if value then
+			table.insert(ting_tiles,key)
 		end
 	end
-	table.incr(counts,first_tile)
+	log.dump(feed_tiles)
+	log.dump(ting_tiles)
+	return ting_tiles
 end
-
-
 
 local function is_hu(state)
 	local counts = state.counts
@@ -156,6 +140,27 @@ local function is_hu(state)
 
 	return false
 end
+
+local function ting(state)
+
+	for k, v in pairs(all_tiles) do
+		if rule.tile_value(k)~=7 then
+			table.incr(state.counts,k)
+		if is_hu(state) then 
+			for key, value in pairs(all_tiles) do
+				if value.value == v.value then
+					table.insert(state.feed_tiles,key)
+				end			
+			end
+		end
+		table.decr(state.counts,k)
+		end
+	end
+end
+
+
+
+
 
 
 local HU_TYPE = def.CP_HU_TYPE
@@ -195,11 +200,13 @@ local function get_hu_types(pai,cache,in_pai)
 			if s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU then
 				if  rule.tile_hongcounts(s.tile)>0 then
 					counthonghei = counthonghei+3
+					base_types[HU_TYPE.HEI_LONG] = nil
 				end
 			end
 			if s.type == SECTION_TYPE.BA_GANG  then
 				if  rule.tile_hongcounts(s.tile)>0 then
 					counthonghei = counthonghei+4
+					base_types[HU_TYPE.HEI_LONG] = nil
 				end
 			end
 		end
@@ -227,6 +234,8 @@ local function get_hu_types(pai,cache,in_pai)
 
 
 	if counthonghei>4 then base_types[HU_TYPE.HEI_LONG] = nil end
+	
+	
 	
 	if not base_types[HU_TYPE.TUOTUO_HONG] and not base_types[HU_TYPE.BABA_HEI] and not base_types[HU_TYPE.HEI_LONG] then 
 		base_types[HU_TYPE.PING_HU] = 1
@@ -257,9 +266,9 @@ function rule.is_hu(pai,in_pai,is_zhuang)
 	local hutype =  get_hu_types(pai,shoupai,in_pai)
 
 	if is_zhuang then 
-		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
+		if rule.tuos(pai,in_pai,nil,is_zhuang)>=14 or hutype[HU_TYPE.HEI_LONG] or hutype[HU_TYPE.BABA_HEI] then en_tuo = true end
 	else
-		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] then en_tuo = true end
+		if rule.tuos(pai,in_pai,nil,false)>=12 or hutype[HU_TYPE.HEI_LONG] or hutype[HU_TYPE.BABA_HEI] then en_tuo = true end
 	end
 
 	return can_hu and en_tuo 
@@ -373,32 +382,84 @@ function rule.hu(pai,in_pai,mo_pai,is_zhuang)
 	return alltypes
 end
 
-function rule.ting_tiles(pai)
+function rule.ting_tiles(pai,is_zhuang)
 	local cache = {}
+	local shoup = {}
+	local ming = {}
 	for i = 1,50 do cache[i] = pai.shou_pai[i] or 0 end
+	for i = 1,50 do shoup[i] = pai.shou_pai[i] or 0 end
+	ming = pai.ming_pai or {} 
 	local state = { feed_tiles = {}, counts = cache }
 	ting(state)
 	local tiles = state.feed_tiles
-	
-	return tiles
+	log.dump(state)
+	log.dump(tiles)
+	local chutiles = table.select(tiles,function (t)
+		local hongnum = 0
+		local tuos = 0
+		for i, v in pairs(shoup) do
+			if v>0 and rule.tile_hongcounts(i)>0 then
+				hongnum = hongnum + v
+			end
+		end
+		for i, v in pairs(ming) do
+			if v and v.type == SECTION_TYPE.BA_GANG and rule.tile_hongcounts(v.tile)>0 then
+				hongnum = hongnum + 8
+			end
+			if v and (v.type == SECTION_TYPE.PENG or v.type == SECTION_TYPE.TOU)  and rule.tile_hongcounts(v.tile)>0  then
+				hongnum = hongnum + 6
+			end
+			if v and v.type == SECTION_TYPE.CHI then
+				if  rule.tile_hongcounts(v.tile)>0  then  hongnum = hongnum + 1 end
+				if  rule.tile_hongcounts(v.othertile)>0  then  hongnum = hongnum + 1 end
+			end
+		end
+		if rule.tile_hongcounts(t)>0 then hongnum = hongnum + 1  end 
+		tuos = rule.tuos(pai)
+		log.info("坨数小于四:%d",hongnum)
+		if hongnum<=4 then
+			log.info("坨数小于 4 return true")
+			return true
+		end
+
+		--吃飘才可以报听
+		log.info("吃飘才可以报听tuos:%d",tuos)
+		if hongnum>4 and (tuos >= 16 and is_zhuang) then
+			log.info("坨数大于 16 return true")
+			return true
+		end
+		if hongnum>4 and (tuos >= 14 and not is_zhuang) then
+			log.info("坨数大于 14 return true")
+			return true
+		end
+		log.info("return false")
+		return false
+
+	end)
+	log.dump(tiles)
+	log.dump(chutiles)
+	return chutiles
 end
 
 --未摸牌判听
-function rule.ting(pai,si_dui)
-	return rule.ting_tiles(pai)
+function rule.ting(pai,is_zhuang)
+	return rule.ting_tiles(pai,is_zhuang)
 end
 
 --打牌的时候打那张听的牌是啥
-function rule.ting_full(pai)
+function rule.ting_full(pai,is_zhuang)
 	local all_pai = clone(pai)
 	local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
 		if c <= 0 then return end
 		table.decr(all_pai.shou_pai,tile)
-		local tiles = rule.ting_tiles(all_pai)
+		local tiles = rule.ting_tiles(all_pai,is_zhuang)
 		table.incr(all_pai.shou_pai,tile)
+		log.dump(tiles)
 		if table.nums(tiles) > 0 then return tile,tiles end
+		
 	end)
-
+	log.dump(discard_then_ting_tiles)
+	
 	return discard_then_ting_tiles
 end
 

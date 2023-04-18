@@ -160,7 +160,7 @@ function mj_util.get_actions(pai,mo_pai,in_pai,can_eat,is_zhuang,can_ba)
 end
 
 
-function mj_util.get_actions_first_turn(pai,mo_pai)
+function mj_util.get_actions_first_turn(pai,mo_pai,is_zhuang)
 	local actions = {}
 	local counts = pai.shou_pai
 
@@ -177,6 +177,10 @@ function mj_util.get_actions_first_turn(pai,mo_pai)
 				actions[ACTION.BA_GANG][s.tile] =  {tile =s.tile}
 			end
 		end
+	end
+	if  rule.is_hu(pai,nil,is_zhuang)  then
+		actions[ACTION.HU] = actions[ACTION.HU] or {}
+		actions[ACTION.HU][mo_pai] = { tile= mo_pai,}
 	end
 	return actions
 end
@@ -215,12 +219,12 @@ function mj_util.panGangWithOutInPai(pai)
 	return anGangList,baGangList
 end
 
-function mj_util.is_ting(pai,si_dui)
-	return rule.ting(pai,si_dui)
+function mj_util.is_ting(pai,is_zhuang)
+	return rule.ting(pai,is_zhuang)
 end
 
-function mj_util.is_ting_full(pai)
-	return rule.ting_full(pai)
+function mj_util.is_ting_full(pai,is_zhuang)
+	return rule.ting_full(pai,is_zhuang)
 end
 
 function mj_util.get_fan_table_res(base_fan_table)

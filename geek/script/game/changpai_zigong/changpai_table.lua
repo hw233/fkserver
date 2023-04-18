@@ -262,7 +262,8 @@ function changpai_table:check_start()
 end
 
 function changpai_table:on_started(player_count)
-    self.bTest = false
+    self.bTest =  false
+    
     self.start_count = player_count
     base_table.on_started(self,player_count)
 
@@ -294,13 +295,15 @@ function changpai_table:on_started(player_count)
         v.statistics = v.statistics or {}
         v.last_penghu = nil
         v.tuos = nil
+        v.baoting = nil
         
     end
+    self.zhuang_first_chu_pai      = false
     self.zhuang = nil
     self.rec_chu_pai = {}
     self.rec_fan_pai = {}
 	self.chu_pai_player_index      =  nil --出牌人的索引
-    self.last_chu_pai              = -1 --上次的出牌
+    self.last_chu_pai              = -1 --上次的出牌 
     self.mo_pai_count = nil
     self:update_state(FSM_S.PER_BEGIN)
     self.game_log = {
@@ -361,7 +364,7 @@ function changpai_table:action_after_fapai()
     self:cancel_clock_timer()
     self:update_state(FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI)
     local player = self:chu_pai_player()
-    local actions = self:get_actions_first_turn(player)
+    local actions = self:get_actions_first_turn(player,player.chair_id== self.zhuang and player.mo_pai or nil)
     if table.nums(actions) > 0 then
         self:action_after_tou_pai({
             [self.chu_pai_player_index] = {
@@ -381,13 +384,13 @@ function changpai_table:action_after_fapai()
 end
 function changpai_table:on_action_after_tianhu(player,msg,auto)
     
-    self:cancel_clock_timer()
+    
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if not action then 
         log.warning("on_action_after_mo_pai invalid action guid:%s,action:%s",player.guid,msg.action)
         return 
     end
-    
+    self:cancel_clock_timer()
    
     local do_action = msg.action
     local chair_id = player.chair_id
@@ -438,6 +441,7 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
     
     if do_action == ACTION.PASS then
         
+        
         send2client(player,"SC_Changpai_Do_Action",{
             action = do_action,
             chair_id = player.chair_id,
@@ -445,15 +449,8 @@ function changpai_table:on_action_after_tianhu(player,msg,auto)
            
         })
 
-        if self.rule.play.bao_jiao then
-            self:foreach(player,function(ps)
-                self:baoting()   
-            end)
-        else
-            --这里可能要加一条信息告诉玩家出牌动作
-            self:broadcast_discard_turn()
-            self:chu_pai()
-        end 
+        self:baoting() 
+
         return
     end
 
@@ -464,13 +461,13 @@ function changpai_table:on_cs_bao_ting(player,msg)
 end
 function changpai_table:on_baoting(player,msg)
     if self.cur_state_FSM ~= FSM_S.WAIT_BAO_TING then
-        log.error("maajan_table:on_baoting error state %s,guid:%s",self.cur_state_FSM,player.guid)
+        log.error("changpai_table:on_baoting error state %s,guid:%s",self.cur_state_FSM,player.guid)
         return
     end
 
     if player.baoting ~= nil then
-        log.error("maajan_table:on_baoting repeated %s,guid:%s",msg.baoting,player.guid)
-        send2client(player,"SC_Baoting",{
+        log.error("changpai_table:on_baoting repeated %s,guid:%s",msg.baoting,player.guid)
+        send2client(player,"SC_CP_Baoting",{
             result = enum.ERROR_OPERATION_REPEATED
         })
         return
@@ -481,7 +478,7 @@ function changpai_table:on_baoting(player,msg)
         player.baotingInfo = nil
     end
     log.info("player on_baoting guid:%d, baoting:%d ",player.guid,player.baoting)
-    self:broadcast2client("SC_Baoting",{
+    self:broadcast2client("SC_CP_Baoting",{
         result = enum.ERROR_NONE,
         status = {
             chair_id = player.chair_id,
@@ -507,16 +504,20 @@ function changpai_table:on_baoting(player,msg)
         })
     end)
 
-    self:broadcast2client("SC_BaotingCommit",{
+    self:broadcast2client("SC_CP_BaotingCommit",{
         baotings = p_baotings,
     })
     -- 报听后开始出牌等    
     self:jump_to_player_index(self.zhuang)
-    self:action_after_baoting()
+    --self:action_after_baoting()
+
+    --这里可能要加一条信息告诉玩家出牌动作
+    self:broadcast_discard_turn()
+    self:chu_pai()
 end
 function changpai_table:baoting()
     self:update_state(FSM_S.WAIT_BAO_TING)
-    self:broadcast2client("SC_AllowBaoting",{})
+    self:broadcast2client("SC_CP_AllowBaoting",{})
 
     -- 发送玩家是否能报听，能报听的话，就发可听的牌的数据
     self:foreach(function(p)
@@ -532,7 +533,7 @@ function changpai_table:baoting()
                 baoting = baoting
             })
         end
-        self:begin_clock_timer(trustee_seconds,function()
+        self:begin_clock_timer(trustee_seconds,trustee_seconds,function()
             self:foreach(function(p)
                 if p.baoting ~= nil then return end
                 self:set_trusteeship(p,true)
@@ -551,8 +552,8 @@ function changpai_table:baoting()
     end
 end
 function changpai_table:send_baoting_tips(p)
-    local hu_tips = self.rule and self.rule.play.bao_jiao or nil
-    if not hu_tips or p.trustee then return end
+    --local hu_tips = self.rule and self.rule.play.bao_jiao or nil
+    if  p.trustee then return end
 
 
     local ting_tiles = p.chair_id == self.zhuang and self:ting_full(p) or self:ting(p)
@@ -574,7 +575,7 @@ function changpai_table:send_baoting_tips(p)
         end
         p.baotingInfo = discard_tings
         log.dump(discard_tings,"discard_tings_"..p.guid)
-        send2client(p,"SC_BaoTingInfos",{
+        send2client(p,"SC_CP_BaoTingInfos",{
             canbaoting = 1,
             ting = discard_tings
         })
@@ -588,7 +589,7 @@ function changpai_table:send_baoting_tips(p)
 end
 function changpai_table:send_baoting_status(player)
     if not self.rule.play.bao_jiao then
-        return
+        --return
     end
     local baoting_status = {}
     local baoting_info = {}
@@ -618,12 +619,12 @@ function changpai_table:send_baoting_status(player)
         end)
     end
 
-    send2client(player,"SC_BaotingStatus",{
+    send2client(player,"SC_CP_BaotingStatus",{
         baoting_status = baoting_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
         baoting_info = baoting_info,
     })
 
-    if self.cur_state_FSM == FSM_S.WAIT_BAO_TING or self.zhuang_first_chu_pai then
+    if self.cur_state_FSM == FSM_S.WAIT_BAO_TING or self.zhuang_first_chu_pai  then
         self:foreach(function(p)
             self:send_baoting_tips(p)
         end)
@@ -640,7 +641,7 @@ function changpai_table:action_after_first_tou()--偷牌结束要么天胡，要
 
     local actions = self:get_actions(player,mo_pai,nil,nil,nil)
     log.dump(actions)
-    
+    self.zhuang_first_chu_pai = true
     if table.nums(actions) > 0 and actions[ACTION.TIAN_HU] then
         log.info("---------you tian  hu------")
         local hu_actions = {[ACTION.TIAN_HU] = actions[ACTION.TIAN_HU]}
@@ -654,16 +655,7 @@ function changpai_table:action_after_first_tou()--偷牌结束要么天胡，要
         })
 
     else
-        if self.rule.play.bao_jiao then
-            self:foreach(player,function(ps)
-                self:baoting()
-            end)
-    
-        else
-            --这里可能要加一条信息告诉玩家出牌动作
-            self:broadcast_discard_turn()
-            self:chu_pai()
-        end 
+        self:baoting()
     end
 
 end
@@ -814,7 +806,7 @@ function changpai_table:on_reconnect_when_action_qiang_gang_hu(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
 
     self:send_ting_tips(p)
-
+    self:send_baoting_status(p)
     if self.main_timer then
         self:begin_clock(self.main_timer.remainder,self.main_timer.remainder,p)
     end
@@ -825,8 +817,7 @@ function changpai_table:on_reconnect_when_action_qiang_gang_hu(p)
 end
 
 function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
-    self:cancel_main_timer()
-    self:cancel_clock_timer()
+   
     if self.cur_state_FSM ~= FSM_S.WAIT_QIANG_GANG_HU then
         log.error("changpai_table:on_action_qiang_gang_hu wrong state %s",self.cur_state_FSM)
         return
@@ -837,7 +828,8 @@ function changpai_table:on_action_qiang_gang_hu(player,msg,auto)
         log.error("on_action_qiang_gang_hu,no wait qiang gang action,%s",player.guid)
         return
     end
-
+    self:cancel_main_timer()
+    self:cancel_clock_timer()
     local tile = msg.value_tile
 
     self:cancel_all_auto_action_timer()
@@ -1082,14 +1074,14 @@ function changpai_table:broadcast_players_tuos(player,in_pai)
 end
 function changpai_table:on_action_after_mo_pai(player,msg,auto)
     
-    self:cancel_clock_timer()
+    
     local action = self:check_action_before_do(self.waiting_actions,player,msg)
     if not action then 
         log.warning("on_action_after_mo_pai invalid action guid:%s,action:%s",player.guid,msg.action)
         return 
     end
 
-
+    self:cancel_clock_timer()
     local do_action = msg.action
     local chair_id = player.chair_id
     local tile = msg.value_tile
@@ -1205,6 +1197,10 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
             session_id = msg.session_id,
             
         })
+
+        if player_actions and( player_actions[ACTION.HU] or player_actions[ACTION.TIAN_HU] ) then
+            self:set_gzh_on_pass(player,self:hu_fan(player))       
+        end
         self:broadcast_discard_turn()
         self:chu_pai()
         return
@@ -1214,20 +1210,21 @@ function changpai_table:on_action_after_mo_pai(player,msg,auto)
 end
 function changpai_table:on_reconnect_when_action_after_fan_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
-
+    self:send_baoting_status(p)
     local action =self.waiting_actions and self.waiting_actions[p.chair_id] or nil
     if action and not action.done then
         self:send_action_waiting(action)
     end
-
+    
 end
 function changpai_table:on_reconnect_when_action_after_mo_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_baoting_status(p)
     local action =self.waiting_actions and self.waiting_actions[p.chair_id] or nil
     if action and not action.done then
         self:send_action_waiting(action)
     end
-
+   
 end
 --偷牌摆牌进牌后，产生的事件，以及通知玩家事件等待响应，已经托管玩家的自动响应机制
 function changpai_table:action_after_tou_pai(waiting_actions)
@@ -1536,10 +1533,12 @@ end
 function changpai_table:on_reconnect_when_tian_hu(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
     send2client(p,"SC_Changpai_Discard_Round",{chair_id = self.chu_pai_player_index})
+    self:send_baoting_status(p)
     local action = self.waiting_actions[p.chair_id]
     if action and not action.done then
         self:send_action_waiting(action)
     end
+    
     if self.main_timer then
         self:begin_clock(self.main_timer.remainder,p)
     end
@@ -1550,6 +1549,7 @@ function changpai_table:on_reconnect_when_first_tou_pai(p)
     if action and not action.done then
         self:send_action_waiting(action)
     end
+    
     if self.main_timer then
         self:begin_clock(self.main_timer.remainder,p)
     end
@@ -1557,10 +1557,12 @@ end
 
 function changpai_table:on_reconnect_when_action_after_chu_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_baoting_status(p)
     local action = self.waiting_actions and self.waiting_actions[p.chair_id] or nil 
     if action and not action.done then
         self:send_action_waiting(action)
     end
+    
 end
 function changpai_table:set_palyer_bao_pai(allactions,player)
     
@@ -1600,13 +1602,12 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
     log.dump(player)
     log.dump(msg)
-    
-    self:cancel_clock_timer()
-    if player then self:cancel_auto_action_timer(player) end
     if not self.waiting_actions  or table.nums(self.waiting_actions) == 0 then
         log.error("changpai_table:on_action_after_chu_pai not waiting actions,%s",player.guid)
         return
     end
+    if player then self:cancel_auto_action_timer(player) end
+    
     local fan_tile = msg.value_tile
     local chu_pai_player = self:chu_pai_player()
 
@@ -1655,6 +1656,9 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
                
             })
         end
+    else
+        log.error("session is error,%s",player.guid)
+        return
     end
 
     local all_notdone = {}
@@ -1701,7 +1705,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     -------- 提前结束的时候其它定时器要消掉
     self:cancel_all_auto_action_timer()
     self:cancel_main_timer()
-
+    self:cancel_clock_timer()
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
@@ -1713,7 +1717,10 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
     end)
     
    
-    local top_action = all_actions[1]
+    local top_action = all_actions and   all_actions[1]   or {}
+    if table.nums(top_action) == 0 then
+        return
+    end
     local top_session_id = top_action.session_id
     local top_done_act = top_action.done.action
    
@@ -1728,12 +1735,16 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
     local function check_all_pass(actions)
         for _,act in pairs(actions) do
+            log.info("act.done.action ?= ACTION.PASS")
             if act.done.action == ACTION.PASS then
                 local p = self.players[act.chair_id]
-               
+                    
                     local hu_action = act.actions[ACTION.HU]
+                    log.dump(hu_action)
                     if hu_action then
-                        self:set_gzh_on_pass(p,self:hu_fan(p,chu_pai_player.fan_pai))
+                        log.info("do set_gzh_on_pass")
+                        local beishu = self:hu_fan(p,chu_pai_player.fan_pai)
+                        self:set_gzh_on_pass(p,beishu)
                     end                
                
                     local peng_action = act.actions[ACTION.PENG]
@@ -1866,6 +1877,7 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 
     if top_done_act == ACTION.PASS then
 
+        log.info("top_done_act == ACTION.PASS")
         check_all_pass(all_actions)
         self:next_player_index()
         --self:fan_pai()
@@ -1885,12 +1897,13 @@ function changpai_table:on_action_after_fan_pai(player,msg,auto)
 end
 function changpai_table:on_action_after_chu_pai(player,msg,auto)
     
-    self:cancel_clock_timer()
+    
     if not self.waiting_actions then
         log.error("changpai_table:on_action_after_chu_pai not waiting actions,%s",player.guid)
         return
     end
 
+    
     local nest_user = 1
     if self.chu_pai_player_index+1 > self.start_count then
         nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
@@ -1931,6 +1944,9 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
                 
             })
         end
+    else
+        log.error("session is error,%s",player.guid)
+        return
     end
    
 
@@ -1966,17 +1982,14 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         end
     end
     
-    -------- 提前结束的时候其它定时器要消掉
-    self:cancel_all_auto_action_timer()
-    self:cancel_main_timer()
-    --所有已经操作的 acitons
+    
     local all_actions = table.series(self.waiting_actions,function(action)
         return action.done ~= nil and action or nil
     end)
 
     self.waiting_actions = nil
 
-    
+    log.dump(all_actions)
     table.sort(all_actions,function(l,r)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
@@ -1987,7 +2000,15 @@ function changpai_table:on_action_after_chu_pai(player,msg,auto)
         return ACTION_PRIORITY[l.done.action] < ACTION_PRIORITY[r.done.action]
     end)
 
-    local top_action = all_actions[1]
+    local top_action = all_actions and all_actions[1] or {}
+    if table.nums(top_action) == 0 then
+        return
+    end
+    -------- 提前结束的时候其它定时器要消掉
+    self:cancel_all_auto_action_timer()
+    self:cancel_main_timer()
+    self:cancel_clock_timer()
+    --所有已经操作的 acitons
     local top_session_id = top_action.session_id
     local top_done_act = top_action.done.action
    
@@ -2274,6 +2295,7 @@ function changpai_table:clean_gzh(player)
 end
 
 function changpai_table:set_gzh_on_pass(passer,fans)
+    log.dump(fans)
     passer.gzh = {hufans = fans, istrue = true}
 
 end
@@ -2282,6 +2304,7 @@ function changpai_table:is_in_gzh(player,tile)
     return player.gzh and player.gzh.istrue
 end
 function changpai_table:get_gzh_fans(player)
+    log.dump( player.gzh.hufans)
     return player.gzh and player.gzh.hufans
 end
 -----------------过手吃
@@ -2334,36 +2357,6 @@ function changpai_table:get_last_can_penghu(player)
     return player.last_penghu and player.last_penghu.hufan
 end
 --------------------
--- 手牌最后4张牌,其他玩家出牌是否能操作碰胡,碰后是单吊将
-function changpai_table:last_action_is_can_penghu(player,in_pai,allactions,chair_id)
-    log.dump(player,"last_action_is_can_penghu_"..player.guid) 
-    self:clean_last_can_penghu(player)
-    if self.rule.play.guo_zhuang_hu then
-        local sum = table.sum(player.pai.shou_pai)
-        if sum == 4 then
-            local iscanPeng = false
-            local iscanHu = false
-            for _,act in pairs(allactions) do
-                local hu_action = act.actions[ACTION.HU]
-                if hu_action then
-                    iscanHu = true
-                end
-                local peng_action = act.actions[ACTION.PENG]
-                if peng_action then
-                    iscanPeng = true
-                end
-            end
-            if iscanHu and iscanPeng then
-                local p = self.players[chair_id]
-                p.last_penghu = {
-                    can_penghu = true,
-                    hufan = self:hu_fan(p,in_pai,nil),
-                }     
-                log.dump(p.last_penghu,"last_penghu_"..p.guid)           
-            end
-        end
-    end
-end
 function changpai_table:tou_pai()--偷牌也就是摸牌，但是是在一开始的偷拍阶段 
     local player = self:chu_pai_player()
     local shou_pai = player.pai.shou_pai
@@ -2478,25 +2471,56 @@ function changpai_table:mo_pai()
 end
 
 function changpai_table:ting(p)
-    local si_dui = self.rule.play and self.rule.play.si_dui
-    local ting_tiles = mj_util.is_ting(p.pai,si_dui) or {}
-    if p.que and ting_tiles then
-        table.filter(ting_tiles,function(_,tile) return mj_util.tile_men(tile) ~= p.que end)
-    end
+    
+    local ting_tiles = mj_util.is_ting(p.pai) or {}
+    --local tuos = mj_util.tuos(p.pai,in_pai,nil,nil)
+    -- local tings = table.select(ting_tiles,function (t)
+    --     local tuos = mj_util.tuos(p.pai.shou_pai,s,nil,nil)
+    --     local hong_counts = 0
+    --     for i, c in pairs(p.pai.shou_pai) do
+    --         if c  and  mj_util.tile_hong(i) > 0 then
+    --             hong_counts = hong_counts+c
+    --         end
+    --     end
+    --     for _, s in pairs(p.pai.ming_pai or {}) do
+    --         if s and  (s.type == SECTION_TYPE.PENG or s.type == SECTION_TYPE.TOU) and mj_util.tile_hong(s.tile) > 0  then
+    --             hong_counts = hong_counts +3
+    --         end
+    --         if s and  (s.type == SECTION_TYPE.BA_GANG ) and mj_util.tile_hong(s.tile) > 0  then
+    --             hong_counts = hong_counts +4
+    --         end
+    --         if s and  (s.type == SECTION_TYPE.CHI )  > 0  then
+    --             if mj_util.tile_hong(s.tile) >0 then hong_counts = hong_counts +1 end
+    --             if mj_util.tile_hong(s.othertile) >0 then hong_counts = hong_counts +1 end
+    --         end
+    --     end
+    --     if mj_util.tile_hong(t) >0 then hong_counts = hong_counts + 1 end 
 
+    --     if hong_counts <=4 then --黑龙或者把把黑
+    --         return true 
+    --     end
+    --     if p and p.chair_id == self.zhuang and tuos>=14 then
+    --         return true 
+    --     end
+    --     if p and p.chair_id ~= self.zhuang and tuos>=12 then
+    --         return true 
+    --     end
+    --     return false 
+    -- end)
+    log.dump(ting_tiles)
     return ting_tiles
 end
 
 function changpai_table:ting_full(p)
     
-    local ting_tiles = mj_util.is_ting_full(p.pai)
+    local ting_tiles = mj_util.is_ting_full(p.pai,p.chair_id==self.zhuang)
     ting_tiles = table.map(ting_tiles,function(tiles,discard)
         local hu_tiles = table.map(tiles,function(_,tile)
             return tile, tile or nil
         end)
         return discard, table.nums(hu_tiles) > 0 and hu_tiles or nil
     end)
-
+    log.dump(ting_tiles)
     return ting_tiles
 end
 
@@ -2573,7 +2597,24 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
         self:tou_pai()--从桌子上的牌拿一张   
         self:action_after_fapai()--假如还可以偷牌也要摸一张
     end
+    --这个偷牌
+    if do_action == ACTION.TIAN_HU then
+        -- 天胡
+        --local hu = self:hu(player,nil,tile)
+        local is_zi_mo = true
+        player.hu = {
+            time = timer.nanotime(),
+            tile = tile,
+            types = self:hu(player,nil,tile),
+            zi_mo = is_zi_mo,
+        }
 
+        player.statistics.hu = (player.statistics.hu or 0) + 1
+        
+        self:log_game_action(player,do_action,tile,auto)
+        self:broadcast_player_hu(player,do_action)
+        self:do_balance()
+    end
     if do_action == ACTION.PASS then
 
 
@@ -2597,7 +2638,7 @@ function changpai_table:on_action_after_first_tou_pai(player,msg,auto)
 end
 function changpai_table:on_action_chu_pai(player,msg,auto)
     
-    self:cancel_clock_timer()
+    
     if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
         log.error("changpai_table:on_action_chu_pai state error %s",self.cur_state_FSM)
         return
@@ -2620,6 +2661,9 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
         log.error("tile isn't exist when chu guid:%s,tile:%s",player.guid,chu_pai_val)
         return
     end
+
+    self:cancel_clock_timer()
+
     local cards = self:get_unusecard_list(player)
     for index, value in pairs(cards) do
        
@@ -2656,6 +2700,7 @@ function changpai_table:on_action_chu_pai(player,msg,auto)
     shou_pai[chu_pai_val] = shou_pai[chu_pai_val] - 1
     self:on_chu_pai(chu_pai_val)
 
+    self.zhuang_first_chu_pai      = false
     tinsert(player.pai.desk_tiles,chu_pai_val)
     self:broadcast2client("SC_Changpai_Action_Discard",{chair_id = player.chair_id, tile = chu_pai_val})
     tinsert(self.game_log.action_table,{chair = player.chair_id,act = "Discard",msg = {tile = chu_pai_val},auto = auto,time = timer.nanotime()})
@@ -2715,7 +2760,10 @@ function changpai_table:is_bao_pai(player,in_pai)
         if s and s.tile == in_pai and (s.type == SECTION_TYPE.PENG or  s.type == SECTION_TYPE.TOU)  then
             return true
         end 
-        if s.type == SECTION_TYPE.CHI and s.othertile == in_pai and  mj_util.tile_is_chongfan(in_pai)then
+        
+        if s.type == SECTION_TYPE.CHI and (s.othertile == in_pai and s.tile == in_pai) and mj_util.tile_is_chongfan(in_pai)then
+            return true
+        elseif s.type == SECTION_TYPE.CHI and (s.othertile == in_pai or  s.tile == in_pai) and mj_util.tile_is_chongfan(in_pai)then
             tileNum= tileNum+1
         end
     end
@@ -2748,7 +2796,7 @@ function changpai_table:on_reconnect_when_chu_pai(p)
     send2client(p,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
     send2client(p,"SC_Changpai_Discard_Round",{chair_id = self.chu_pai_player_index})
     self:send_ting_tips(p)
-
+    self:send_baoting_status(p)
     if self.main_timer then
         self:begin_clock(self.main_timer.remainder,p)
     end
@@ -2763,52 +2811,85 @@ function changpai_table:chu_pai()
 
     
     local trustee_type,trustee_seconds = self:get_trustee_conf()
-    if trustee_type then
+    if player.baoting and (player.chair_id~= self.zhuang or player.chu_pai_count >= 1 )then
         local function auto_chu_pai(p)
-            local chu_tile = p.mo_pai
-            
-            if not chu_tile or not p.pai.shou_pai[chu_tile] or p.pai.shou_pai[chu_tile] <= 0 then
-                local c
-                repeat
-                    chu_tile,c = table.choice(p.pai.shou_pai)
-                    local cards = self:get_unusecard_list(player)
-                    for _, value in pairs(cards) do
-                        if value == c then
-                            c=0
-                        end
-                    end
-                until c > 0
-            end
-
-            log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_tile)
             self:lockcall(function()
+            
+                local chu_tile = p.mo_pai
+                if not chu_tile or not p.pai.shou_pai[chu_tile] or p.pai.shou_pai[chu_tile] <= 0 then
+                    local c
+                    local x=10000
+                    repeat
+                        chu_tile,c = table.choice(p.pai.shou_pai)
+                        local cards = self:get_unusecard_list(player)
+                        for _, value in pairs(cards) do
+                            if value == chu_tile then
+                                c=0
+                            end
+                        end
+                        x = x -1 
+                    until c > 0 or x <=0
+                end
+                log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_tile)
                 self:on_action_chu_pai(p,{
                     tile = chu_tile,
                     is_sure = true
                 },true)
             end)
         end
-
-        log.info("begin chu_pai clock %s",player.chair_id)
-        self:begin_main_timer(trustee_seconds,trustee_seconds,function()
-            log.dump(self.chu_pai_player_index)
-            
+        self:begin_auto_action_timer(player,1,function()
             local p = self.players[self.chu_pai_player_index]
-            log.dump(p)
-            log.info("chu_pai clock timeout %s",p.chair_id)
-            self:set_trusteeship(p,true)
             auto_chu_pai(p)
         end)
+       
+    else
 
-        if player.trustee then
-            log.info("begin auto_chu_pai timer %s",player.chair_id)
-            local p = self.players[player.chair_id]
-            self:begin_auto_action_timer(p,math.random(1,2),function()
+        if trustee_type then
+            local function auto_chu_pai(p)
+                self:lockcall(function()
+                
+                    local chu_tile = p.mo_pai
+                    if not chu_tile or not p.pai.shou_pai[chu_tile] or p.pai.shou_pai[chu_tile] <= 0 then
+                        local c
+                        local x=10000
+                        repeat
+                            chu_tile,c = table.choice(p.pai.shou_pai)
+                            local cards = self:get_unusecard_list(player)
+                            for _, value in pairs(cards) do
+                                if value == chu_tile then
+                                    c=0
+                                end
+                            end
+                            x = x -1 
+                        until c > 0 or x <=0
+                    end
+                    log.info("auto_chu_pai chair_id %s,tile %s",p.chair_id,chu_tile)
+                    self:on_action_chu_pai(p,{
+                        tile = chu_tile,
+                        is_sure = true
+                    },true)
+                end)
+            end
+            log.info("begin chu_pai clock %s",player.chair_id)
+            self:begin_main_timer(trustee_seconds,trustee_seconds,function()
+                log.dump(self.chu_pai_player_index)
+                
+                local p = self.players[self.chu_pai_player_index]
+                log.dump(p)
+                log.info("chu_pai clock timeout %s",p.chair_id)
+                self:set_trusteeship(p,true)
                 auto_chu_pai(p)
             end)
+
+            if player.trustee then
+                log.info("begin auto_chu_pai timer %s",player.chair_id)
+                local p = self.players[player.chair_id]
+                self:begin_auto_action_timer(p,math.random(1,2),function()
+                    auto_chu_pai(p)
+                end)
+            end
         end
     end
-
     self:send_ting_tips(player)
 end
 function changpai_table:fan_pai()
@@ -3056,6 +3137,7 @@ function changpai_table:do_balance(in_pai)
             hu = p.hu and (p.hu.zi_mo and 2 or 1) or nil,
             status = p.hu and 2  or nil,
             hu_index = p.hu and p.hu.index or nil,
+            baoting = p.baoting
         })
 
         local win_money = self:calc_score_money(p_score)
@@ -3080,6 +3162,7 @@ function changpai_table:do_balance(in_pai)
         balance.total_money = p.total_money
         p_log.total_money = p.total_money
         p_log.win_money = money
+        p_log.baoting = p.baoting
     end 
     
     msg.leftpai = self.dealer:deal_tiles(self.dealer.remain_count)
@@ -3162,13 +3245,13 @@ function changpai_table:prepare_tiles()
         -- 测试手牌     
        -- 测试手牌     
        self.pre_tiles = {
-        [1] = {12,12,12,4,18,2,20,4,19,5,17,5,17,8,15},     -- 万 庄
-        [2] = {6,7,11,11,16,16,8,9,2,20,15,9,17,7,6},    -- 筒  
-        [3] = {5,16,7,7,2,16,6,1,1,9,6,14,11,11,9},      -- 万
+        [1] = {1,1,1,5,17,5,17,3,19,3,19,6,17,8,15},     -- 万 庄
+        [2] = {9,9,9,11,11,11,11,12,12,12,12,18,4,18,4},    -- 筒  
+        [3] = {3,16,7,7,2,16,6,1,2,9,6,2,11,11,9},      -- 万
     }
     -- 测试摸牌,从前到后
     self.pre_gong_tiles = {
-        11,16,14,12,20,17,14,20,1,15,3,8,
+        8,15,16,17,5,17,4,20,1,15,3,8,
     }
         self.dealer.remain_count = 52
     end
@@ -3181,8 +3264,8 @@ function changpai_table:prepare_tiles()
     else
         log.info("zhuang_pai %d  ",self.zhuang_pai)
         local index  = math.random(21)
-        self.zhuang_pai =  self.dealer:use_one() or index --2的话1号是庄
-        self.zhuang =  mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
+        self.zhuang_pai =  self.dealer:use_one() or index --
+        self.zhuang =mj_util.tile_value(self.zhuang_pai) % (self.start_count)+1
         self.game_log.zhuang = self.zhuang
     end
     --log.error("-------------------------------%d-------%d",self.hashu,self.zhuang)
@@ -3266,15 +3349,43 @@ function changpai_table:hu_fan(player,in_pai,mo_pai,qiang_gang)
         local fan = table.sum(v,function(t) return t.fan * t.count end)
         return chair,fan
     end)
-   
+    local has_chipiao = self:get_is_chi_piao()
+    local real_chipiao = false
+    local tuos = mj_util.tuos(player.pai,in_pai)
+    if has_chipiao then
+       
+        if player.chair_id == self.zhuang  and tuos >=16 then
+            real_chipiao = true
+        end
+        if player.chair_id ~= self.zhuang  and tuos >=14 then
+            real_chipiao = true
+        end
+    end
 
+    if real_chipiao then
+        if fans[player.chair_id]==0 then 
+            fans[player.chair_id] = 1 
+        else 
+            fans[player.chair_id] = fans[player.chair_id] * 2
+        end
+    end
+    log.dump(fans)
+    log.dump(tuos,in_pai or 0)
+    log.dump(hutypes)
+    
     return fans[player.chair_id]
 end
 
 function changpai_table:get_actions_first_turn(p,mo_pai)
    
-    local actions = mj_util.get_actions_first_turn(p.pai,mo_pai)
-   
+    log.dump(mo_pai)
+    local actions = mj_util.get_actions_first_turn(p.pai,mo_pai,self.zhuang==p.chair_id)
+    log.dump(actions)
+    if self.zhuang==p.chair_id and actions[ACTION.HU] and  p.chu_pai_count and p.chu_pai_count == 0 then      
+        actions[ACTION.TIAN_HU] = actions[ACTION.HU]
+        actions[ACTION.HU] = nil
+        log.info("tian hu")
+    end
     return actions
 end
 
@@ -3337,6 +3448,8 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
  
     if in_pai and self:is_in_gzh(p,in_pai) and actions[ACTION.HU] then
         local hufans = self:hu_fan(p,in_pai)
+        log.dump(hufans)
+        log.dump(self:get_gzh_fans(p) )
         if self:get_gzh_fans(p) >=hufans then
             actions[ACTION.HU] = nil
         end   
@@ -3360,21 +3473,39 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         end
 
     end
+
+    
+
     if in_pai and self:is_in_gsc(p,in_pai) and actions[ACTION.CHI] then
-        local action = actions[ACTION.CHI]
-        for gsc_tile,_ in pairs(p.gsc) do
-            
-            for key, value in pairs(action) do
-                
-                if value.tile == gsc_tile then
-                    action[key] = nil
-                end
-            end
-        end
-        if table.nums(action) == 0 then
-            actions[ACTION.CHI] = nil
+
+        local nest_user = 0
+        if self.chu_pai_player_index+1 > self.start_count then
+            nest_user = (self.chu_pai_player_index+1 ) %  self.start_count
+        else
+            nest_user = (self.chu_pai_player_index+1 )
         end
 
+        local nest = self.players[nest_user] or nil
+        local chu_player =  self:chu_pai_player()
+
+        if chu_player and chu_player.chair_id == p.chair_id and nest and chu_player.fan_pai == in_pai and 
+        self:is_bao_pai(nest,chu_player.fan_pai)  then
+            log.info("包牌过手吃取消")
+        else
+            local action = actions[ACTION.CHI]
+            for gsc_tile,_ in pairs(p.gsc) do
+                
+                for key, value in pairs(action) do
+                    
+                    if value.tile == gsc_tile then
+                        action[key] = nil
+                    end
+                end
+            end
+            if table.nums(action) == 0 then
+                actions[ACTION.CHI] = nil
+            end
+        end 
     end
     if in_pai and self:is_in_gst(p,in_pai) and actions[ACTION.TOU] then
         local action = actions[ACTION.TOU]
@@ -3388,6 +3519,37 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
     if in_pai and mj_util.tile_value(in_pai) == 7 then
         actions[ACTION.HU] = nil
     end
+    if p.baoting then
+        actions[ACTION.PENG] = nil
+        actions[ACTION.CHI] = nil
+        actions[ACTION.TOU] = nil
+
+        local tuonum = mj_util.tuos(p.pai,in_pai)
+        for _,s in pairs(p.pai.ming_pai) do
+                if s.type == SECTION_TYPE.TOU then
+                    if  mj_util.tile_hong(s.tile) <= 0 then
+                        tuonum = tuonum-3    
+                    end
+                end
+                if s.type == SECTION_TYPE.BA_GANG  then
+                    if  mj_util.tile_hong(s.tile) <= 0 then
+                        tuonum = tuonum-4  
+                    end
+                end
+
+        end
+        if self.zhuang==p.chair_id then 
+            if mj_util.tuos(p.pai,in_pai)<16 and tuonum > 4 then
+                actions[ACTION.HU] = nil
+            end
+        else
+            if mj_util.tuos(p.pai,in_pai)<14 and tuonum > 4 then
+                actions[ACTION.HU] = nil
+            end
+        end
+    end
+
+
     local remain = self.dealer.remain_count
     if remain < 5 then
         actions[ACTION.BA_GANG] = nil
@@ -3402,6 +3564,8 @@ function changpai_table:get_actions(p,mo_pai,in_pai,qiang_gang,can_eat,can_ba)
         actions[ACTION.TIAN_HU] = actions[ACTION.HU]
         actions[ACTION.HU] = nil
     end
+
+    
     return actions
 end
 
@@ -3578,7 +3742,7 @@ function changpai_table:calculate_gang(p,in_pai)
     --     end
     -- end
 
-    local tuo_num = p.tuos or 0
+    local tuo_num =  mj_util.tuos(p.pai,in_pai) or 0
     if tuo_num>=24 then
         gangfans[HU_TYPE.TUO_24]  = {fan = HU_TYPE_INFO[HU_TYPE.TUO_24].fan,count = 1,type = HU_TYPE.TUO_24} 
     end
@@ -3667,13 +3831,16 @@ function changpai_table:game_balance(in_pai)
 
         if p.hu then
 
+            if p.baoting then
+                zongfan = zongfan + 1
+            end
             if self:get_max_fan()==4 then --超番加分
                 if  zongfan>4  then
                     chaofan_add =  (zongfan - 4) * self:get_chao_add_score()
                     fan_score = 2 ^ math.abs(4)
                     fan_score= fan_score 
-                else
-                    
+     
+                else         
                     fan_score = 2 ^ math.abs(zongfan)
                     fan_score= fan_score   
                 end
@@ -3687,20 +3854,58 @@ function changpai_table:game_balance(in_pai)
                 fan_score = 2 ^ math.abs(zongfan)
                 fan_score= fan_score   
             end
-            if self:get_player_piao(p) then --吃飘加分
+            if self:get_is_chi_piao() then
+                if self:get_player_piao(p) then --吃飘加分
                 
-                fan_score = fan_score*2
+                    fan_score = fan_score*2 
+                    fan_score = fan_score + chaofan_add
+                    
+                end
+                if self:get_player_xiaohu(p) then --只要小胡都是一分
+                    fan_score = 1
+                end
+            else
+                fan_score = fan_score
                 fan_score = fan_score + chaofan_add
-                
             end
-            if self:get_player_xiaohu(p) then --只要小胡都是一分
-                fan_score = 1
-            end
-            winscore= fan_score * (self.start_count-1)
+            
+            --winscore= fan_score * (self.start_count-1)
             if not p.hu.zi_mo then
                 local whoee = p.hu.whoee
-                scores[whoee] = (scores[whoee] or 0) - winscore
-                scores[chair_id] = (scores[chair_id] or 0) + winscore
+                local loseplayer = self.players[whoee] or nil
+                local allwinscore = 0
+                self:foreach_except(p,function(pi)  
+                  
+                    local addscore = fan_score
+                    if pi and pi.baoting then   
+                        if self:get_max_fan()==4 then --超番加分
+                            if  zongfan>=4  then
+                                addscore =  addscore + self:get_chao_add_score()
+                            else
+                                addscore = addscore*2     
+                            end
+                             
+                        elseif self:get_max_fan()==3 then
+                            if  zongfan>=3  then
+                                addscore =  addscore
+                            else   
+                                addscore=  addscore*2     
+                            end
+                        else
+                            addscore =  addscore*2          
+                        end
+                    end 
+                    allwinscore = allwinscore + addscore
+                end)
+                if self:get_player_xiaohu(p) then --只要小胡都是一分
+                    fan_score = 1
+                    winscore= fan_score * (self.start_count-1)
+                    scores[whoee] = (scores[whoee] or 0) - winscore
+                    scores[chair_id] = (scores[chair_id] or 0) + winscore
+                else
+                    scores[whoee] = (scores[whoee] or 0) - allwinscore
+                    scores[chair_id] = (scores[chair_id] or 0) + allwinscore
+                end
                 return
             end
             local chairid = chair_id -1 
@@ -3710,9 +3915,45 @@ function changpai_table:game_balance(in_pai)
             local lastplayer = self.players[chairid]
 
             if lastplayer and lastplayer.bao_card  then     
-                lastplayer.is_bao_pai =true          
-                scores[chairid] = (scores[chairid] or 0) - winscore
-                scores[chair_id] = (scores[chair_id] or 0) + winscore
+                local allwinscore = 0
+                self:foreach_except(p,function(pi)  
+                  
+                    local addscore = fan_score
+                    if pi and pi.baoting then   
+                        if self:get_max_fan()==4 then --超番加分
+                            if  zongfan>=4  then
+                                addscore =  addscore + self:get_chao_add_score()
+                            else
+                                addscore = addscore*2     
+                            end
+                             
+                        elseif self:get_max_fan()==3 then
+                            if  zongfan>=3  then
+                                addscore =  addscore
+                            else   
+                                addscore=  addscore*2     
+                            end
+                        else
+                            addscore =  addscore*2          
+                        end
+                    end 
+                    allwinscore = allwinscore + addscore
+                end)
+                
+                if self:get_is_chi_piao() then
+                    if self:get_player_xiaohu(p) then --只要小胡都是一分
+                        fan_score = 1
+                        winscore= fan_score * (self.start_count-1)
+                        scores[chairid] = (scores[chairid] or 0) - winscore
+                        scores[chair_id] = (scores[chair_id] or 0) + winscore
+                    else
+                        scores[chairid] = (scores[chairid] or 0) - allwinscore
+                        scores[chair_id] = (scores[chair_id] or 0) + allwinscore
+                    end
+                else
+                    scores[chairid] = (scores[chairid] or 0) - allwinscore
+                    scores[chair_id] = (scores[chair_id] or 0) + allwinscore
+                end
                 return
             end       
             
@@ -3722,8 +3963,39 @@ function changpai_table:game_balance(in_pai)
            
             self:foreach_except(p,function(pi)  
                 local chair_i = pi.chair_id
-                scores[chair_i] = (scores[chair_i] or 0) - fan_score
-                scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                local addscore = fan_score
+                if pi and pi.baoting then   
+                    if self:get_max_fan()==4 then --超番加分
+                        if  zongfan>=4  then  
+                            addscore = addscore + self:get_chao_add_score()
+                        else         
+                            addscore = addscore*2
+                        end
+                         
+                    elseif self:get_max_fan()==3 then
+                        if  zongfan>=3  then  
+                            addscore = addscore 
+                        else         
+                            addscore = addscore*2
+                        end
+                    else
+                        addscore = addscore*2     
+                    end
+                end 
+                
+                if self:get_is_chi_piao() then
+                    if self:get_player_xiaohu(p) then --只要小胡都是一分
+                        fan_score = 1
+                        scores[chair_i] = (scores[chair_i] or 0) - fan_score
+                        scores[chair_id] = (scores[chair_id] or 0) + fan_score
+                    else
+                        scores[chair_i] = (scores[chair_i] or 0) - addscore
+                        scores[chair_id] = (scores[chair_id] or 0) + addscore
+                    end
+                else
+                    scores[chair_i] = (scores[chair_i] or 0) - addscore
+                    scores[chair_id] = (scores[chair_id] or 0) + addscore
+                end
             end)
 
         end
@@ -3898,11 +4170,12 @@ function changpai_table:on_cs_do_action(player,msg)
             [ACTION.PASS] = self.on_action_after_tianhu
         },
         [FSM_S.WAIT_CHU_PAI] = {
-            [ACTION.CHU_PAI] = self.on_action_chu_pai
+            --[ACTION.CHU_PAI] = self.on_action_chu_pai
         },
         [FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI] = {   --发完牌的第一阶段偷牌
             [ACTION.TOU] = self.on_action_after_first_tou_pai,
             [ACTION.BA_GANG] = self.on_action_after_first_tou_pai,
+            [ACTION.TIAN_HU] = self.on_action_after_first_tou_pai,
             [ACTION.PASS] = self.on_action_after_first_tou_pai
         },
         [FSM_S.WAIT_ACTION_AFTER_JIN_PAI] = {   --进张有点像麻将的摸牌
@@ -4253,6 +4526,8 @@ function changpai_table:reconnect(player)
         self:on_reconnect_when_chu_pai(player)    
     elseif self.cur_state_FSM == FSM_S.WAIT_ACTION_AFTER_TIAN_HU then
         self:on_reconnect_when_tian_hu(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_BAO_TING then
+        self:on_reconnect_when_baoting(player)
     elseif self.cur_state_FSM == FSM_S.WAIT_ACTION_AFTER_FIRSTFIRST_TOU_PAI then
         self:on_reconnect_when_first_tou_pai(player)
     elseif self.cur_state_FSM == FSM_S.WAIT_ACTION_AFTER_CHU_PAI then
@@ -4269,7 +4544,13 @@ function changpai_table:reconnect(player)
 
     base_table.reconnect(self,player)
 end
-
+function changpai_table:on_reconnect_when_baoting(player)
+    send2client(player,"SC_Changpai_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_baoting_status(player)
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,player)
+    end
+end
 function changpai_table:begin_clock(timeout,player,total_time)
     if player then
         send2client(player,"SC_TimeOutNotify",{
