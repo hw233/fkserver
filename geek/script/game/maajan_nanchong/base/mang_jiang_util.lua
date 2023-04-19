@@ -163,6 +163,9 @@ end
 function mj_util.is_bai_full(pai,si_dui)
 	return rule.bai_full(pai,si_dui)
 end
+function mj_util.is_can_bai(pai,bai_cards)
+	return rule.is_can_bai(pai,bai_cards)
+end
 function mj_util.get_fan_table_res(base_fan_table)
 	return rule.get_fan_table_res(base_fan_table)
 end

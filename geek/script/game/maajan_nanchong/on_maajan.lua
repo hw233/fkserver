@@ -256,3 +256,17 @@ function on_cs_bao_ting(msg,guid)
 		tb:on_cs_bao_ting(player, msg)
 	end
 end
+function on_cs_bai_pai(msg,guid)
+	log.info ("test .................. on_cs_bai_pai,guid:%s",guid)
+	log.dump(msg,string.format("on_cs_bai_pai%s",guid))
+	local player = player_context[guid]
+	if not player then
+		log.error("on_cs_bai_pai no player,guid:%s",guid)
+		return
+	end
+
+	local tb = g_room:find_table_by_player(player)
+	if tb then
+		tb:on_cs_bai_pai(player, msg)
+	end
+end
