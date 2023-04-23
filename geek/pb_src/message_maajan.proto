@@ -203,6 +203,7 @@ enum FSM_STATE {
 	FS_GU_MAI				= 21;	//估卖
 	PIAO_FEN				= 22;	//飘分
 	WAIT_BAO_TING			= 23;	//报听
+	WAIT_BAI_PAI			= 24;	//摆牌
 	GAME_IDLE_HEAD			= 0x1000; //用于客户端播放动画延迟
 }
 

@@ -97,7 +97,9 @@ define.FSM_state = {
 	FAST_START_VOTE 			= pb.enum("FSM_STATE","FAST_START_VOTE"), --快速开始投票
 	PIAO_FEN 					= pb.enum("FSM_STATE","PIAO_FEN"),	--飘分
 	WAIT_BAO_TING 				= pb.enum("FSM_STATE","WAIT_BAO_TING"), --等待报听(报叫)
-	FINAL_END					= pb.enum("FSM_STATE","FINAL_END")
+	WAIT_BAI_PAI				= pb.enum("FSM_STATE","WAIT_BAI_PAI"),
+	FINAL_END					= pb.enum("FSM_STATE","FINAL_END"),
+	
 }
 
 local HU_TYPE = {

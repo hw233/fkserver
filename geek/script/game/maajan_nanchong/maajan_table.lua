@@ -1070,7 +1070,7 @@ end
 function maajan_table:baipai(player)
 
 
-    local ting_tiles = self:ting_full(player)
+    local ting_tiles = self:ting_full_que(player)
         log.dump(ting_tiles)
         if table.nums(ting_tiles) > 0 then
             local pai = player.pai
@@ -2267,6 +2267,22 @@ function maajan_table:ting_full(p)
 
     return ting_tiles
 end
+function maajan_table:ting_full_que(p)
+    
+
+    local si_dui = self.rule.play and self.rule.play.si_dui
+    local ting_tiles = mj_util.is_ting_full(p.pai,si_dui)
+    if p.que then
+        ting_tiles = table.map(ting_tiles,function(tiles,discard)
+            local hu_tiles = table.map(tiles,function(_,tile)
+                return tile,mj_util.tile_men(tile) ~= p.que and tile or nil
+            end)
+            return discard, table.nums(hu_tiles) > 0 and hu_tiles or nil
+        end)
+    end
+
+    return ting_tiles
+end
 function maajan_table:bai_full(p)
     if not self:is_que(p) then return {} end
 
@@ -2373,7 +2389,7 @@ end
 
 function maajan_table:send_ting_tips(p)
     local hu_tips = self.rule and self.rule.play.hu_tips or nil
-    if not hu_tips or p.trustee then return end
+    --if not hu_tips or p.trustee then return end
 
     local ting_tiles = self:ting_full(p)
     if table.nums(ting_tiles) > 0 then
@@ -2396,6 +2412,16 @@ function maajan_table:on_reconnect_when_baoting(player)
     self:send_ding_que_status(player)
     self:send_piao_fen_status(player)
     self:send_baipai_status(player)
+    if self.clock_timer then
+        self:begin_clock(self.clock_timer.remainder,player)
+    end
+end
+function maajan_table:on_reconnect_when_baipai(player)
+    send2client(player,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
+    self:send_baoting_status(player)
+    self:send_ding_que_status(player)
+    self:send_piao_fen_status(player)
+    self:baipai(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
     end
@@ -3103,10 +3129,7 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
             end
         end
     end
-    if self.rule and self.rule.play.bai_pai and not p.baipai then
-        actions[ACTION.ZI_MO] = nil
-        actions[ACTION.HU] = nil
-    end
+    
     if  self.rule and self.rule.play.bai_pai and p.baipai then
         actions[ACTION.PENG] = nil
 
@@ -4005,6 +4028,8 @@ function maajan_table:reconnect(player)
         self:on_reconnect_when_piao_fen(player)
     elseif self.cur_state_FSM == FSM_S.WAIT_BAO_TING then
         self:on_reconnect_when_baoting(player)
+    elseif self.cur_state_FSM == FSM_S.WAIT_BAI_PAI then
+        self:on_reconnect_when_baipai(player)
     elseif self.cur_state_FSM == FSM_S.HUAN_PAI then
         self:on_reconnect_when_huan_pai(player)
     elseif self.cur_state_FSM == FSM_S.DING_QUE then
