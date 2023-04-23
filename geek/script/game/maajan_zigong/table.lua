@@ -3480,6 +3480,14 @@ function maajan_table:is_hu(pai,in_pai)
 end
 
 function maajan_table:can_hu(player,in_pai,mo_pai,qiang_gang)
+    if self.rule.play.yi_fan_qi_hu then -- 一番起胡
+        local fan,_ = self:hu_fan(player,in_pai,mo_pai,qiang_gang)
+        if self.rule.play.bao_jiao then
+            local chupai_player = self:chu_pai_player()
+            if (in_pai and chupai_player.baoting) or player.baoting then fan = fan + 1 end
+        end
+        return fan > 0
+    end
     local room_private_conf = self:room_private_conf()
     if not room_private_conf.play then
         return self:is_hu(player.pai,in_pai)
