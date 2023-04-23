@@ -321,6 +321,10 @@ local function quan_ting_qi_dui(pai,counts)
 		return true
 	end
 
+	if count_tiles[3] and #count_tiles[3] == 2 and even_count == 4 then
+		return true
+	end
+
 	return false
 end
 local function ting_si_dui(pai,counts)
@@ -363,7 +367,7 @@ local function ban_hu(state,is_qi)
 	
 	local feed_tiles = {}
 	if tile_count == 1  then	
-		feed_tiles[tiles[1]] = true
+		feed_tiles[tiles[1]] = true --可以打的牌
 		table.mergeto(state.feed_tiles,feed_tiles)
 		return
 	end
@@ -378,37 +382,39 @@ local function ban_hu(state,is_qi)
 				state.jiang = nil
 			end
 		end
-	end
-	for _,tile in pairs(tiles) do
-		if counts[tile] >= 3 then
-			table.decr(counts,tile,3)
-			ban_hu(state)
-			table.incr(counts,tile,3)
+	else
+		for _,tile in pairs(tiles) do
+			if counts[tile] >= 3 then
+				table.decr(counts,tile,3)
+				ban_hu(state)
+				table.incr(counts,tile,3)
+			end
+		end
+	
+		for _,tile in pairs(tiles) do
+			if not state.jiang and counts[tile] >= 2 then
+				state.jiang = tile
+				table.decr(counts,tile,2)
+				ban_hu(state)
+				table.incr(counts,tile,2)
+				state.jiang = nil
+			end
+		end
+	
+		for tile,c in pairs(counts) do
+			if c > 0 and rule.tile_value(tile) <= 7 and rule.tile_value(tile) > 0 and 
+				rule.tile_men(tile) < 3 and counts[tile + 1] > 0 and counts[tile + 2] > 0 then
+				table.decr(counts,tile)
+				table.decr(counts,tile + 1)
+				table.decr(counts,tile + 2)
+				ban_hu(state)
+				table.incr(counts,tile)
+				table.incr(counts,tile + 1)
+				table.incr(counts,tile + 2)
+			end
 		end
 	end
-
-	for _,tile in pairs(tiles) do
-		if not state.jiang and counts[tile] >= 2 then
-			state.jiang = tile
-			table.decr(counts,tile,2)
-			ban_hu(state)
-			table.incr(counts,tile,2)
-			state.jiang = nil
-		end
-	end
-
-	for tile,c in pairs(counts) do
-		if c > 0 and rule.tile_value(tile) <= 7 and rule.tile_value(tile) > 0 and 
-			rule.tile_men(tile) < 3 and counts[tile + 1] > 0 and counts[tile + 2] > 0 then
-			table.decr(counts,tile)
-			table.decr(counts,tile + 1)
-			table.decr(counts,tile + 2)
-			ban_hu(state)
-			table.incr(counts,tile)
-			table.incr(counts,tile + 1)
-			table.incr(counts,tile + 2)
-		end
-	end
+	
 end
 local function ban_ting(state,is_qi)
 	local counts = state.counts
@@ -601,6 +607,25 @@ local function is_qing_yi_se(pai,cache)
 	end)
 
 	return total_men_count == 1
+end
+local function is_que_yi_men(pai,cache)
+	local men_counts = table.fill(nil,0,0,5)
+
+	table.agg(cache,men_counts,function(tb,c,tile)
+		table.incr(tb,rule.tile_men(tile),c)
+		return tb
+	end)
+
+	table.agg(pai.ming_pai,men_counts,function(tb,s)
+		table.incr(tb,rule.tile_men(s.tile))
+		return tb
+	end)
+
+	local total_men_count = table.sum(men_counts,function(c,men)
+		return (c > 0 and men < 3) and 1 or 0
+	end)
+
+	return total_men_count <= 2
 end
 function rule.is_hu(pai,in_pai,with_si_dui)
 	local cache = {}
@@ -846,6 +871,7 @@ function rule.hu(pai,in_pai,mo_pai)
 
 	local qi_dui = is_qi_dui(pai,cache)
 	local si_dui = is_si_dui(pai,cache)
+	
 	if table.nums(state.hu) == 0 and not qi_dui and not si_dui then
 		return {{[HU_TYPE.WEI_HU] = 1}}
 	end
@@ -854,7 +880,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	local men_qing =  is_men_qing(pai)
 	local duan_yao = is_duan_yao(pai,in_pai)
 	local gou = gou_count(pai,cache)
-
+	local queyimen = is_que_yi_men(pai,cache)
 	if qi_dui then
 		local base_types = {}
 		if gou > 0 then
@@ -866,6 +892,7 @@ function rule.hu(pai,in_pai,mo_pai)
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
 		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
 		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
+		if queyimen and not qing_yi_se then base_types[HU_TYPE.QUE_YI_MEN] = 1 end
 
 		table.insert(alltypes,base_types)
 	end
@@ -881,6 +908,7 @@ function rule.hu(pai,in_pai,mo_pai)
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
 		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
 		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
+		if queyimen and not qing_yi_se then base_types[HU_TYPE.QUE_YI_MEN] = 1 end
 
 		table.insert(alltypes,base_types)
 	end
@@ -890,6 +918,7 @@ function rule.hu(pai,in_pai,mo_pai)
 	if duan_yao then common_types[HU_TYPE.DUAN_YAO] = 1 end
 	if men_qing then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
+	if queyimen and not qing_yi_se then common_types[HU_TYPE.QUE_YI_MEN] = 1 end
 	if gou > 0 then common_types[HU_TYPE.DAI_GOU] = gou end
 
 	for _,sections in pairs(state.hu) do
@@ -970,19 +999,20 @@ function rule.ting_full(pai,si_dui)
 
 	return discard_then_ting_tiles
 end
-function rule.is_can_bai(pai,bai_cards)
+function rule.cards_can_bai(pai,bai_cards)
 	local all_pai = clone(pai)
+	log.dump(bai_cards)
 	if not bai_cards then
-		return false
+		return false ,false
 	end
 
-	local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
-		if c <= 0 then return end
-		table.decr(all_pai.shou_pai,tile)
-		local tiles = rule.ting_tiles(all_pai)
-		table.incr(all_pai.shou_pai,tile)
-		if table.nums(tiles) > 0 then return tile,tiles end
-	end)
+	-- local discard_then_ting_tiles = table.map(all_pai.shou_pai,function(c,tile)
+	-- 	if c <= 0 then return end
+	-- 	table.decr(all_pai.shou_pai,tile)
+	-- 	local tiles = rule.ting_tiles(all_pai)
+	-- 	table.incr(all_pai.shou_pai,tile)
+	-- 	if table.nums(tiles) > 0 then return tile,tiles end
+	-- end)
 	--得出正常打的牌和听的牌
 	local cache1 = {}
 	for i=1,50 do
@@ -1001,23 +1031,47 @@ function rule.is_can_bai(pai,bai_cards)
 	local state1 = {
 		sections = {},
 		counts = cache2,
+		feed_tiles = {},
 	}
+
+	local cache3 = {}
+	for i = 1, 50 do
+		cache3[i] = 0
+	end
+	for i=1,#bai_cards do
+		if cache3[bai_cards[i]] then
+			cache3[bai_cards[i]]=cache3[bai_cards[i]]+1
+		else
+			cache3[bai_cards[i]] = 1
+		end
+	end
 	local state2 = {
 		sections = {},
-		counts = cache2,
+		counts = cache3,
+		feed_tiles = {}
 	}
 	
 	ban_hu(state1,qi_dui)
 	ban_ting(state2,qi_dui)
 
 	
-	local isting = state2.feed_tiles and #state2.feed_tiles or 0
-	local can_hu = state1.feed_tiles and #state2.feed_tiles or 0
+
 	for i, v in pairs(bai_cards) do
 		table.incr(all_pai.shou_pai,v)
 	end
 
-	return state1.feed_tiles , state2.feed_tiles
+	log.dump(state1)
+	log.dump(state2)
+	log.dump(bai_cards)
+	local hutiles = {}
+	local tingtiles = {}
+	for key, value in pairs(state1.feed_tiles) do
+		table.insert(hutiles,key)
+	end
+	for key, value in pairs(state2.feed_tiles) do
+		table.insert(tingtiles,key)
+	end
+	return hutiles , tingtiles
 
 end
 --全部牌判摆拍

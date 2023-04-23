@@ -534,7 +534,7 @@ function maajan_table:on_action_qiang_gang_hu(player,msg,auto)
             whoee = self.chu_pai_player_index,
             qiang_gang = true,
         }
-
+        log.dump(self:hu(p,done_action_tile,nil,true),"self:hu types")
         self:log_game_action(p,act,done_action_tile,action.done.auto)
         self:broadcast_player_hu(p,act,action.target)
         p.statistics.hu = (p.statistics.hu or 0) + 1
@@ -1191,7 +1191,7 @@ function maajan_table:on_action_after_mo_pai(player,msg,auto)
             zi_mo = is_zi_mo,
             whoee = whoee,
         }
-
+        log.dump(self:hu(player,nil,player.mo_pai),"self:hu types")
         player.statistics.zi_mo = (player.statistics.zi_mo or 0) + 1
 
         self:log_game_action(player,do_action,tile,auto)
@@ -1482,7 +1482,7 @@ function maajan_table:on_action_after_chu_pai(player,msg,auto)
                 zi_mo = false,
                 whoee = self.chu_pai_player_index,
             }
-
+            log.dump(self:hu(p,tile),"self:hu types")
             if chu_pai_player.last_action and def.is_action_gang(chu_pai_player.last_action.action) then
                 local pai = chu_pai_player.pai
                 for _,s in pairs(pai.ming_pai) do
@@ -3244,10 +3244,12 @@ function maajan_table:ext_hu(player,mo_pai,qiang_gang)
 
     if chu_pai_player ~= player and discarder_last_action and def.is_action_gang(discarder_last_action.action) then
         types[HU_TYPE.GANG_SHANG_PAO] = 1
+        log.dump(types,"gang_shang_pao")
     end
 
     if qiang_gang then
         types[HU_TYPE.QIANG_GANG_HU] = 1
+        log.dump(types,"qiang_gang_hu")
     end
 
     return types

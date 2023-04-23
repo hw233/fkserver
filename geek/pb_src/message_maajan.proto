@@ -128,6 +128,8 @@ enum HU_TYPE{
 	KA_WU_TIAO 				= 123;  //卡五条
 	SHUANG_HAOHUA_QI_DUI 	= 124;	//双豪华七对
 	SAN_HAOHUA_QI_DUI 		= 125;	//三豪华七对
+	BAI_PAI					= 126;	//摆牌
+	QUE_YI_MEN				= 127; //缺一门
 }
 
 
@@ -813,19 +815,19 @@ message SC_BaiPaiCommit{
 }
 message HuPaiInfo
 {
-	int32 cardvalue = 1;	--牌值
-	int32 count =2;	--数量
+	int32 cardvalue = 1;	//牌值
+	int32 count =2;	//数量
 }
 message BaiTilesInfo{ 
-	int32 discard = 1;	--打的牌
-	repeated int32 tiles = 2;	--摆的牌
+	int32 discard = 1;	//打的牌
+	repeated int32 tiles = 2;	//摆的牌
 	
 }
 
 message BaiTips{
 	
 	repeated BaiTilesInfo tiles_info = 1;
-	repeated HuPaiInfo = 2; --胡牌数据
+	repeated HuPaiInfo hu_info= 2; //胡牌数据
 }
 
 message SC_BaiPaiInfos{
@@ -892,11 +894,18 @@ message MaajanNanChongBlanacePlayer{
 	int32 baoting			= 12;
 	int32 piao				= 13;
 	int32 baipai			= 14;
+	bool fangpao 			= 15; //是否放炮
 }
 
 //结算
 message SC_MaajanNanChongGameFinish {
-	enum MsgID { Nil = 0; ID = 23133; }
+	enum MsgID { Nil = 0; ID = 23169; }
 	repeated Maajan_Player_Info 			players = 1;
 	repeated MaajanNanChongBlanacePlayer 	player_balance = 2;
+}
+
+//结算
+message SC_CanDiscards{
+	enum MsgID { Nil = 0; ID = 23170; }
+	repeated int32 discards  = 1;
 }

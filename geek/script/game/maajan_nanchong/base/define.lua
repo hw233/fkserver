@@ -130,6 +130,7 @@ local HU_TYPE = {
 	SAN_AN_KE					= pb.enum("HU_TYPE","SAN_AN_KE"),	--三暗刻
 	SI_AN_KE					= pb.enum("HU_TYPE","SI_AN_KE"),	--四暗刻
 	BAO_TING					= pb.enum("HU_TYPE","BAO_TING"),	--报听
+	BAI_PAI						= pb.enum("HU_TYPE","BAI_PAI"),	--报听
 	MEN_FENG_KE					= pb.enum("HU_TYPE","MEN_FENG_KE"),	--门风刻
 	QUAN_FENG_KE				= pb.enum("HU_TYPE","QUAN_FENG_KE"),	--圈风刻
 	ZI_MO						= pb.enum("HU_TYPE","ZI_MO"),	--自摸
@@ -218,17 +219,18 @@ local HU_TYPE = {
 	QING_LONG_SI_DUI 			= pb.enum("HU_TYPE","QING_LONG_SI_DUI"), --清龙四对
 	HAI_DI_PAO 				    = pb.enum("HU_TYPE","HAI_DI_PAO"),   --海底炮
 	YI_TIAO_LONG				= pb.enum("HU_TYPE","YI_TIAO_LONG"), --一条龙
+	QUE_YI_MEN					= pb.enum("HU_TYPE","QUE_YI_MEN"), --一条龙
 }
 
 define.HU_TYPE = HU_TYPE
 
 local HU_TYPE_INFO = {
 	[HU_TYPE.WEI_HU]				= {name = "WEI_HU",score = 0,fan = 0},				--未胡
-	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 3},			--天胡
-	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 2},				--地胡
+	[HU_TYPE.TIAN_HU]				= {name = "TIAN_HU",score = 0,fan = 1},			--天胡
+	[HU_TYPE.DI_HU]					= {name = "DI_HU",score = 0,fan = 1},				--地胡
 	[HU_TYPE.REN_HU]				= {name = "REN_HU",score = 0,fan = 0},				--人胡
 	[HU_TYPE.TIAN_TING]				= {name = "TIAN_TING",score = 0,fan = 0},			--天听
-	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 2},			--清一色
+	[HU_TYPE.QING_YI_SE]			= {name = "QING_YI_SE",score = 0,fan = 6},			--清一色
 	[HU_TYPE.QUAN_HUA]				= {name = "QUAN_HUA",score = 0,fan = 0},				--全花
 	[HU_TYPE.ZI_YI_SE]				= {name = "ZI_YI_SE",score = 0,fan = 0},				--字一色
 	[HU_TYPE.MIAO_SHOU_HUI_CHUN]	= {name = "MIAO_SHOU_HUI_CHUN",score = 0,fan = 0},	--妙手回春
@@ -243,7 +245,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.HU_JUE_ZHANG]			= {name = "HU_JUE_ZHANG",score = 0,fan = 0},			--胡绝张
 	[HU_TYPE.JIAN_KE]				= {name = "JIAN_KE",score = 0,fan = 0},				--箭刻
 	[HU_TYPE.MEN_QING]				= {name = "MEN_QING",score = 0,fan = 1},				--门前清
-	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 2,fan = 1},				--暗杠
+	[HU_TYPE.AN_GANG]				= {name = "AN_GANG",score = 0,fan = 1},				--暗杠
 	[HU_TYPE.DUAN_YAO]				= {name = "DUAN_YAO",score = 0,fan = 1},				--断幺
 	[HU_TYPE.SI_GUI_YI]				= {name = "SI_GUI_YI",score = 0,fan = 0},				--四归一
 	[HU_TYPE.PING_HU]				= {name = "PING_HU",score = 1,fan = 0},				--平胡
@@ -251,15 +253,16 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.SAN_AN_KE]				= {name = "SAN_AN_KE",score = 0,fan = 0},			--三暗刻
 	[HU_TYPE.SI_AN_KE]				= {name = "SI_AN_KE",score = 0,fan = 0},				--四暗刻
 	[HU_TYPE.BAO_TING]				= {name = "BAO_TING",score = 0,fan = 0},				--报听
+	[HU_TYPE.BAI_PAI]				= {name = "BAI_PAI",score = 0,fan = 0},				--摆牌
 	[HU_TYPE.MEN_FENG_KE]			= {name = "MEN_FENG_KE",score = 0,fan = 0},			--门风刻
 	[HU_TYPE.QUAN_FENG_KE]			= {name = "QUAN_FENG_KE",score = 0,fan = 0},			--圈风刻
 	[HU_TYPE.ZI_MO]					= {name = "ZI_MO",fan = 1,score = 1},		--自摸
 	[HU_TYPE.DAN_DIAO_JIANG]		= {name = "DAN_DIAO_JIANG",score = 0,fan = 1},		--单钓将
-	[HU_TYPE.YI_BAN_GAO]	 		= {name = "YI_BAN_GAO",score = 0,fan = 0},			--一般高
+	[HU_TYPE.YI_BAN_GAO]	 		= {name = "YI_BAN_GAO",score = 0,fan = 1},			--一般高
 	[HU_TYPE.LAO_SHAO_FU]	 		= {name = "LAO_SHAO_FU",score = 0,fan = 0},			--老少副
 	[HU_TYPE.LIAN_LIU]	 			= {name = "LIAN_LIU",score = 0,fan = 0},				--连六
 	[HU_TYPE.YAO_JIU_KE]	 		= {name = "YAO_JIU_KE",score = 0,fan = 0},			--幺九刻
-	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 2,fan = 1},				--明杠
+	[HU_TYPE.MING_GANG]	 			= {name = "MING_GANG",score = 0,fan = 1},				--明杠
 	[HU_TYPE.DA_SAN_FENG]			= {name = "DA_SAN_FENG",score = 0,fan = 0},			--大三风
 	[HU_TYPE.XIAO_SAN_FENG]			= {name = "XIAO_SAN_FENG",score = 0,fan = 0},		--小三风
 	[HU_TYPE.PENG_PENG_HU]			= {name = "PENG_PENG_HU",score = 0,fan = 0},			--碰碰胡
@@ -271,7 +274,7 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.LIAN_QI_DUI] 			= {name = "LIAN_QI_DUI",score = 0,fan = 0},			--连七对
 	[HU_TYPE.SAN_YUAN_QI_DUI]		= {name = "SAN_YUAN_QI_DUI",score = 0,fan = 0},		--三元七对子
 	[HU_TYPE.SI_XI_QI_DUI]			= {name = "SI_XI_QI_DUI",score = 0,fan = 0},			--四喜七对子
-	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 0,fan = 2},				--普通七对
+	[HU_TYPE.QI_DUI] 				= {name = "QI_DUI",score = 0,fan = 5},				--普通七对
 	[HU_TYPE.DA_YU_WU] 				= {name = "DA_YU_WU",score = 0,fan = 0},				--大于五
 	[HU_TYPE.XIAO_YU_WU] 			= {name = "XIAO_YU_WU",score = 0,fan = 0},			--小于五
 	[HU_TYPE.DA_SI_XI]				= {name = "DA_SI_XI",score = 0,fan = 0},				--大四喜
@@ -290,13 +293,13 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.SI_ZI_KE]				= {name = "SI_ZI_KE",score = 0,fan = 0},				--四字刻
 	[HU_TYPE.QING_LONG]				= {name = "QING_LONG",score = 0,fan = 0},			--清龙
 	[HU_TYPE.YI_SE_SAN_BU_GAO]		= {name = "YI_SE_SAN_BU_GAO",score = 0,fan = 0},		--一色三步高
-	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 0,fan = 1},				--大对子
-	[HU_TYPE.LONG_QI_DUI] 			= {name = "LONG_QI_DUI",score = 0,fan = 3},			--龙七对
+	[HU_TYPE.DA_DUI_ZI]  			= {name = "DA_DUI_ZI",score = 0,fan = 4},				--大对子
+	[HU_TYPE.LONG_QI_DUI] 			= {name = "LONG_QI_DUI",score = 0,fan = 6},			--龙七对
 	[HU_TYPE.QING_QI_DUI] 			= {name = "QING_QI_DUI",score = 0,fan = 4},			--清七对
 	[HU_TYPE.QING_LONG_BEI] 		= {name = "QING_LONG_BEI",score = 0,fan = 5},		--清龙背
 	[HU_TYPE.QING_DA_DUI] 			= {name = "QING_DA_DUI",score = 0,fan = 3},			--清大对
 	[HU_TYPE.QING_DAN_DIAO]			= {name = "QING_DAN_DIAO",score = 0,fan = 0},		--清单吊
-	[HU_TYPE.BA_GANG]				= {name = "BA_GANG",score = 1,fan = 1},				--把杠
+	[HU_TYPE.BA_GANG]				= {name = "BA_GANG",score = 0,fan = 1},				--把杠
 
 	[HU_TYPE.NORMAL_JI]				= {name = "NORMAL_JI",score = 0,fan = 0},				--鸡牌
 	[HU_TYPE.WU_GU_JI]				= {name = "WU_GU_JI",score = 0,fan = 0},				--乌骨鸡
@@ -336,7 +339,8 @@ local HU_TYPE_INFO = {
 	[HU_TYPE.LONG_SI_DUI]			= {name = "LONG_SI_DUI",fan = 3,score = 0}, --龙四对
 	[HU_TYPE.QING_LONG_SI_DUI]		= {name = "QING_LONG_SI_DUI",fan = 4,score = 0}, --龙四对
 	[HU_TYPE.HAI_DI_PAO]		    = {name = "HAI_DI_PAO",score = 0,fan = 1},	--海底炮
-	[HU_TYPE.YI_TIAO_LONG]			= {name = "YI_TIAO_LONG",fan = 1,score = 0}, --一条龙
+	[HU_TYPE.YI_TIAO_LONG]			= {name = "YI_TIAO_LONG",fan = 5,score = 0}, --一条龙
+	[HU_TYPE.QUE_YI_MEN]			= {name = "QUE_YI_MEN",fan = 1,score = 0}, --缺一门
 }
 
 define.HU_TYPE_INFO = HU_TYPE_INFO
