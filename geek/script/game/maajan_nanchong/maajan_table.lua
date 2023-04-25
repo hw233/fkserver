@@ -298,11 +298,15 @@ function maajan_table:on_started(player_count)
     else
         -- 无漂开始洗牌发牌
         self:pre_begin()
-        self:huan_pai() 
+        if self.rule.play.bao_jiao then -- 有报听玩法
+            log.info("无飘,报听玩法,开始报听")
+            self:baoting()
+        else
+            log.info("无飘,无报听玩法")
+            self:jump_to_player_index(self.zhuang)
+            self:action_after_ding_que()
+        end 
     end
-
-
-    
 end
 function maajan_table:on_piao_fen(player,msg)
     if self.cur_state_FSM ~= FSM_S.PIAO_FEN then
@@ -353,7 +357,14 @@ function maajan_table:on_piao_fen(player,msg)
     -- 漂分后开始洗牌发牌
     -- 无漂开始洗牌发牌
     self:pre_begin()
-    self:huan_pai() 
+    if self.rule.play.bao_jiao then -- 有报听玩法
+        log.info("无飘,报听玩法,开始报听")
+        self:baoting()
+    else
+        log.info("无飘,无报听玩法")
+        self:jump_to_player_index(self.zhuang)
+        self:action_after_ding_que()
+    end 
 end   
 function maajan_table:piao_fen()
     self:update_state(FSM_S.PIAO_FEN)
@@ -1069,8 +1080,7 @@ function maajan_table:baoting()
 end
 function maajan_table:baipai(player)
 
-
-    local ting_tiles = self:ting_full_que(player)
+    local ting_tiles = self:ting_full(player)
         log.dump(ting_tiles)
         if table.nums(ting_tiles) > 0 then
             local pai = player.pai
@@ -1101,23 +1111,20 @@ function maajan_table:baipai(player)
                     baipai = baipai
                 })
             end
-            log.info("baoting clock %s",trustee_type)
+            log.info("begin chu_pai clock %s",player.chair_id)
             self:begin_clock_timer(trustee_seconds,function()
-                self:foreach(function(p)
-                    if p.baipai ~= nil then return end
-                    self:set_trusteeship(p,true)
-                    auto_baipai(p)
-                end)
+                log.info("chu_pai clock timeout %s",player.chair_id)
+                self:set_trusteeship(player,true)
+                auto_baipai(player)
             end)
 
-            log.dump(table.series(self.players,function(p) return p.guid end))
-            self:foreach(function(p)
-                log.info("%s,%s",p.guid,p.trustee)
-                if not p.trustee then return end
-                self:begin_auto_action_timer(p,math.random(1,2),function() 
-                    auto_baipai(p)
+            if player.trustee then
+                log.info("begin auto_chu_pai timer %s",player.chair_id)
+                self:begin_auto_action_timer(player,math.random(1,2),function()
+                    log.info("auto_chu_pai timeout %s",player.chair_id)
+                    auto_baipai(player)
                 end)
-            end)
+            end
         end
 
         
@@ -1218,11 +1225,15 @@ function maajan_table:on_cs_bai_pai(player,msg)
     self:lockcall(function() self:on_baipai(player,msg) end)
 end
 function maajan_table:on_baipai(player,msg)
+
+    
     if self.cur_state_FSM ~= FSM_S.WAIT_BAI_PAI then
         log.error("maajan_table:on_baipai error state %s,guid:%s",self.cur_state_FSM,player.guid)
         return
     end
 
+    self:cancel_clock_timer()
+    self:cancel_auto_action_timer(player)
     if player.baipai ~= nil then
         log.error("maajan_table:on_baipai repeated %s,guid:%s",msg.baipai,player.guid)
         send2client(player,"SC_BaiPai",{
@@ -1230,7 +1241,6 @@ function maajan_table:on_baipai(player,msg)
         })
         return
     end
-
     
     log.dump(msg)
     log.dump(self:can_bai_pai(player,msg.cards))
@@ -1255,20 +1265,22 @@ function maajan_table:on_baipai(player,msg)
         player.baiting_num = table.nums(tingcards) --摆听的个数
         player.pai.bai_pai =   msg.cards and msg.cards or {}
         if  discards and table.nums(discards)>0 then
-            for key, value in pairs(discards ) do  
-                player.can_discards = {}        
+            player.can_discards = {}  
+            for key, value in pairs(discards ) do        
                 table.insert(player.can_discards,value)
             end
             
         end
         if tingcards and table.nums(tingcards)>0 then
-            for key, value in pairs(tingcards) do   
-                player.pai.bai_ting = {}       
+            player.pai.bai_ting = {} 
+            for key, value in pairs(tingcards) do       
                 table.insert(player.pai.bai_ting,value)
             end
         end
         log.dump(discards,"baipai_discards")
         log.dump(tingcards,"baipai_tingcards")
+        log.dump(player.pai.bai_ting,"player.pai.bai_ting")
+        log.dump(player.can_discards,"player.can_discards")
         log.info("player on_baipai guid:%d, baipai:%d ",player.guid,player.baipai)
         self:broadcast2client("SC_BaiPai",{
             result = enum.ERROR_NONE,    --- 0的时候成功
@@ -1283,8 +1295,8 @@ function maajan_table:on_baipai(player,msg)
         
     end
    
-    self:cancel_auto_action_timer(player)
-    self:cancel_clock_timer()
+    
+    
   
     local log_players = self.game_log.players
     local p_baipais = {
@@ -1656,6 +1668,15 @@ function maajan_table:send_baipai_status(player)
         baipai_status = baipai_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
         baipai_info = baipai_info,
     })
+    if player.can_discards then
+        send2client(player,"SC_CanDiscards",{
+            discards = player.can_discards -- 240
+        })  
+    else
+        send2client(player,"SC_CanDiscards",{
+            
+        }) 
+    end
 
 end
 function maajan_table:send_baipai_tips(p)
@@ -2207,9 +2228,9 @@ function maajan_table:mo_pai()
 
     if player.baipai then
         player.can_discards = {}
-        player.can_discards = mo_pai
+        table.insert(player.can_discards,mo_pai) 
     end
-
+    log.dump( player.can_discards)
     local actions = self:get_actions(player,mo_pai)
     log.dump(actions,tostring(player.guid))
     if table.nums(actions) > 0 then
@@ -2268,7 +2289,7 @@ function maajan_table:ting_full(p)
     return ting_tiles
 end
 function maajan_table:ting_full_que(p)
-    
+    if not self:is_que(p) then return {} end
 
     local si_dui = self.rule.play and self.rule.play.si_dui
     local ting_tiles = mj_util.is_ting_full(p.pai,si_dui)
@@ -2309,6 +2330,11 @@ function maajan_table:broadcast_wait_discard(player)
 end
 
 function maajan_table:on_action_chu_pai(player,msg,auto)
+
+
+    log.dump(self.chu_pai_player_index)
+    log.dump(player.chair_id,"出牌玩家")
+
     if self.cur_state_FSM ~= FSM_S.WAIT_CHU_PAI then
         log.error("maajan_table:on_action_chu_pai state error %s",self.cur_state_FSM)
         return
@@ -2425,6 +2451,15 @@ function maajan_table:on_reconnect_when_baipai(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
     end
+    if player.can_discards then
+        send2client(player,"SC_CanDiscards",{
+            discards = player.can_discards -- 240
+        })  
+    else
+        send2client(player,"SC_CanDiscards",{
+            
+        }) 
+    end
 end
 function maajan_table:on_reconnect_when_chu_pai(p)
     send2client(p,"SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
@@ -2434,12 +2469,6 @@ function maajan_table:on_reconnect_when_chu_pai(p)
     self:send_baoting_status(p)
     self:send_ting_tips(p)
     self:send_baipai_status(p)
-    log.dump( p.can_discards)
-    if p.can_discards then
-        send2client(p,"SC_CanDiscards",{
-            discards = p.can_discards -- 240
-        })  
-    end
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,p)
     end
@@ -3132,11 +3161,21 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
     
     if  self.rule and self.rule.play.bai_pai and p.baipai then
         actions[ACTION.PENG] = nil
-
         log.dump(p.pai.bai_ting)
+        local haspai = false
         if mo_pai then
             for k, v in pairs(p.pai.bai_ting) do
-                if mo_pai == v then break end;
+                if mo_pai == v then 
+                    haspai =true
+                    log.dump(mo_pai)
+                    log.dump(v)
+                    
+                    break
+                end
+                
+            end
+            log.dump(haspai)
+            if not haspai  then
                 actions[ACTION.ZI_MO] = nil
             end
             
@@ -3144,10 +3183,18 @@ function maajan_table:get_actions(p,mo_pai,in_pai,qiang_gang)
         end
         if in_pai then
             for k, v in pairs(p.pai.bai_ting) do
-                if in_pai == v then break end;
+                if in_pai == v then 
+                    haspai =true
+                    log.dump(in_pai)
+                    log.dump(v)
+                    break
+                end
+                
+            end
+            log.dump(haspai)
+            if not haspai  then
                 actions[ACTION.HU] = nil
             end
-           
         end
     end
     return actions
@@ -3421,7 +3468,7 @@ function maajan_table:game_balance()
         local fan = table.sum(v,function(t) return t.fan * t.count end)
         return chair,(fan or 0)
     end)
-    local gamedifen = self.rule.hf_num and self.rule.hf_num  or 1
+    local gamedifen = self.rule.option.hf_num and self.rule.option.hf_num  or 1
     self:foreach(function(p)
         local chair_id = p.chair_id
         local fan = fans[chair_id]

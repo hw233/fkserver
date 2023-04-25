@@ -890,7 +890,7 @@ function rule.hu(pai,in_pai,mo_pai)
 		end
 
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
-		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
+		
 		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
 		if queyimen and not qing_yi_se then base_types[HU_TYPE.QUE_YI_MEN] = 1 end
 
@@ -906,7 +906,7 @@ function rule.hu(pai,in_pai,mo_pai)
 		end
 
 		if qing_yi_se then base_types[HU_TYPE.QING_YI_SE] = 1 end
-		if duan_yao then base_types[HU_TYPE.DUAN_YAO] = 1 end
+		
 		if men_qing then base_types[HU_TYPE.MEN_QING] = 1 end
 		if queyimen and not qing_yi_se then base_types[HU_TYPE.QUE_YI_MEN] = 1 end
 
@@ -915,7 +915,7 @@ function rule.hu(pai,in_pai,mo_pai)
 
 	local common_types = {}
 	
-	if duan_yao then common_types[HU_TYPE.DUAN_YAO] = 1 end
+	
 	if men_qing then common_types[HU_TYPE.MEN_QING] = 1 end
 	if qing_yi_se then common_types[HU_TYPE.QING_YI_SE] = 1 end
 	if queyimen and not qing_yi_se then common_types[HU_TYPE.QUE_YI_MEN] = 1 end
