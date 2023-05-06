@@ -1101,6 +1101,9 @@ function maajan_table:baipai(player)
         send2client(player,"SC_BaiPaiInfos",{
             canbaipai = 1,
         })
+
+        table.insert(self.game_log.action_table,{chair = player.chair_id,act = "BaiActions",msg = {canbaipai = 1}})
+    
         
         local trustee_type,trustee_seconds = self:get_trustee_conf()
         if trustee_type and (trustee_type == 1 or (trustee_type == 2 and self.cur_round > 1))  then
@@ -1292,18 +1295,19 @@ function maajan_table:on_baipai(player,msg)
             }
         })
         
-        
+        table.insert(self.game_log.action_table,{chair = player.chair_id,act = "BaiCommit",msg = {done = true,baicards = msg.cards}})  
     end
    
     
     
-  
+    
+
     local log_players = self.game_log.players
     local p_baipais = {
         chair_id = player.chair_id,
         baipai = player.baipai,}
     log_players[player.chair_id].baipai = player.baipai
-    
+                      
     self:jump_to_player_index(player.chair_id)
     self:broadcast2client("SC_Maajan_Tile_Left",{tile_left = self.dealer.remain_count,})
     self:chu_pai()
@@ -1668,15 +1672,18 @@ function maajan_table:send_baipai_status(player)
         baipai_status = baipai_status, -- table.nums(baoting_status) > 0 and baoting_status or nil,
         baipai_info = baipai_info,
     })
-    if player.can_discards then
-        send2client(player,"SC_CanDiscards",{
-            discards = player.can_discards -- 240
-        })  
-    else
-        send2client(player,"SC_CanDiscards",{
-            
-        }) 
+    if player.baipai then
+        if player.can_discards then
+            send2client(player,"SC_CanDiscards",{
+                discards = player.can_discards -- 240
+            })  
+        else
+            send2client(player,"SC_CanDiscards",{
+                
+            }) 
+        end 
     end
+    
 
 end
 function maajan_table:send_baipai_tips(p)
@@ -2451,14 +2458,16 @@ function maajan_table:on_reconnect_when_baipai(player)
     if self.clock_timer then
         self:begin_clock(self.clock_timer.remainder,player)
     end
-    if player.can_discards then
-        send2client(player,"SC_CanDiscards",{
-            discards = player.can_discards -- 240
-        })  
-    else
-        send2client(player,"SC_CanDiscards",{
-            
-        }) 
+    if player.baipai then
+        if player.can_discards then
+            send2client(player,"SC_CanDiscards",{
+                discards = player.can_discards -- 240
+            })  
+        else
+            send2client(player,"SC_CanDiscards",{
+                
+            }) 
+        end 
     end
 end
 function maajan_table:on_reconnect_when_chu_pai(p)
@@ -4244,27 +4253,27 @@ end
 
 function maajan_table:get_ting_tiles_info(player)
     self:lockcall(function()
-        local hu_tips = self.rule and self.rule.play.hu_tips or nil
-        if not hu_tips then 
-            send2client(player,"SC_MaajanGetTingTilesInfo",{
-                result = enum.ERROR_OPERATION_INVALID,
-            })
-            return
-        end
+        -- local hu_tips = self.rule and self.rule.play.hu_tips or nil
+        -- if not hu_tips then 
+        --     send2client(player,"SC_MaajanGetTingTilesInfo",{
+        --         result = enum.ERROR_OPERATION_INVALID,
+        --     })
+        --     return
+        -- end
 
-        if player.hu then 
-            send2client(player,"SC_MaajanGetTingTilesInfo",{
-                result = enum.ERROR_OPERATION_INVALID,
-            })
-            return
-        end
+        -- if player.hu then 
+        --     send2client(player,"SC_MaajanGetTingTilesInfo",{
+        --         result = enum.ERROR_OPERATION_INVALID,
+        --     })
+        --     return
+        -- end
         
-        if not self:is_que(player) then
-            send2client(player,"SC_MaajanGetTingTilesInfo",{
-                result = enum.ERROR_NONE,
-            })
-            return
-        end
+        -- if not self:is_que(player) then
+        --     send2client(player,"SC_MaajanGetTingTilesInfo",{
+        --         result = enum.ERROR_NONE,
+        --     })
+        --     return
+        -- end
 
         local ting_tiles = self:ting(player)
         local hu_tile_fans = table.series(ting_tiles or {},function(_,tile)

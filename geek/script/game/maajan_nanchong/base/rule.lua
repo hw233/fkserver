@@ -377,7 +377,7 @@ local function ban_hu(state,is_qi)
 			if  counts[tile] >= 2 then
 				state.jiang = tile
 				table.decr(counts,tile,2)
-				ban_hu(state)
+				ban_hu(state,is_qi)
 				table.incr(counts,tile,2)
 				state.jiang = nil
 			end
@@ -430,7 +430,7 @@ local function ban_ting(state,is_qi)
 			if  counts[tile] >= 2 then
 				state.jiang = tile
 				table.decr(counts,tile,2)
-				ban_ting(state)
+				ban_ting(state,is_qi)
 				table.incr(counts,tile,2)
 				state.jiang = nil
 			end
@@ -1050,7 +1050,7 @@ function rule.cards_can_bai(pai,bai_cards)
 		counts = cache3,
 		feed_tiles = {}
 	}
-	
+	log.dump(qi_dui)
 	ban_hu(state1,qi_dui)
 	ban_ting(state2,qi_dui)
 
